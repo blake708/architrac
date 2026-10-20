@@ -1,0 +1,725 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ArchiTrac — Build</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=Barlow:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F2F2F2}
+a{color:#141414}a:hover{color:#000000}
+button{font:inherit;color:inherit}
+h1,h2,h3,th,.cap{text-transform:uppercase;letter-spacing:0.08em}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; font-family: 'Barlow', system-ui, sans-serif; font-size: 14px; color: #141414; background: #F2F2F2">
+
+<nav aria-label="Main menu" style="{{railNavStyle}}">
+<a href="Home.dc.html" aria-label="ArchiTrac home" style="{{railLogoStyle}}">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 26px"><path d="M3 20h18"></path><path d="M5 20V9l7-5 7 5v11"></path><path d="M9 20v-6h6v6"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span style="font-size: 13px; font-weight: 700; letter-spacing: 0.16em">ARCHITRAC</span></sc-if>
+</a>
+<sc-for list="{{modules}}" as="m" hint-placeholder-count="15">
+<sc-if value="{{m.isLabel}}" hint-placeholder-val="{{ false }}">
+<span style="{{m.labelStyle}}">{{m.labelText}}</span>
+</sc-if>
+<sc-if value="{{m.isLink}}" hint-placeholder-val="{{ true }}">
+<a href="{{m.href}}" aria-current="{{m.current}}" aria-label="{{m.label}}" title="{{m.label}}" style="{{m.rowStyle}}">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 20px"><path d="{{m.icon}}"></path></svg>
+<sc-if value="{{m.showLabel}}" hint-placeholder-val="{{ true }}"><span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{m.label}}</span></sc-if>
+<sc-if value="{{m.addon}}" hint-placeholder-val="{{ false }}"><span style="{{m.addStyle}}">{{m.addText}}</span></sc-if>
+</a>
+</sc-if>
+</sc-for>
+<button type="button" onClick="{{railToggle}}" aria-label="{{railToggleLabel}}" title="{{railToggleLabel}}" style="{{railToggleStyle}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 18px; transform: rotate({{railChev}}deg)"><path d="M4 4v16"></path><path d="M15 7l-5 5 5 5"></path><path d="M10 12h10"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span>Collapse menu</span></sc-if>
+</button>
+</nav>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 10px 32px; background: #141414; color: #F2F2F2">
+<button type="button" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px 0 4px; border: 1px solid #3A3A3A; border-radius: 2px; background: transparent; color: #F2F2F2; cursor: pointer">
+<span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; background: #F2F2F2; color: #141414; font-size: 12px; font-weight: 700">F</span>
+<span style="font-weight: 600">[FIRM NAME]</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+<span class="cap" style="color: #F2F2F2; font-weight: 500">Build</span>
+<div style="margin-left: auto; display: flex; align-items: center; gap: 12px">
+<a href="Settings.dc.html" aria-label="Settings" title="Settings" style="width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 2px; color: #BDBDBD"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></a>
+<span title="You" style="width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #3A3A3A; color: #FFFFFF; font-size: 11px; font-weight: 600">BM</span>
+</div>
+</header>
+
+<div style="background: #FFFFFF; border-bottom: 1px solid #DCDCDC">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px; padding: 32px 32px 28px">
+<div style="flex: 1 1 380px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">CONSTRUCTION ADMINISTRATION · ALL PROJECTS</div>
+<h1 style="margin: 10px 0 0; font-size: 30px; line-height: 1.15; font-weight: 500">Build</h1>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" style="height: 38px; padding: 0 14px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer; font-weight: 500">Invite a contractor</button>
+<button type="button" style="height: 38px; padding: 0 14px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer; font-weight: 500">Plan site visits</button>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); border-top: 1px solid #EBEBEB">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="5">
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 20px 32px 22px; border-right: 1px solid #EBEBEB">
+<span class="cap" style="font-size: 11px; font-weight: 500; color: #3A3A3A">{{k.label}}</span>
+<span style="font-size: 26px; line-height: 1.15; font-weight: 500; font-variant-numeric: tabular-nums; color: {{k.color}}">{{k.value}}</span>
+<span style="font-size: 12.5px; color: {{k.noteColor}}">{{k.note}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+
+<main style="flex: 1; display: flex; flex-direction: column; gap: 20px; padding: 28px 32px 32px">
+
+<section aria-labelledby="ca-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding: 14px 18px 10px">
+<h2 id="ca-title" style="margin: 0; font-size: 13px; font-weight: 600">Projects in construction</h2>
+<span style="font-size: 12.5px; color: #666666">Open a project to work its RFIs, submittals, field reports and pay apps on its Build tab.</span>
+</div>
+<table style="width: 100%; min-width: 1100px; border-collapse: collapse">
+<thead>
+<tr style="text-align: left; font-size: 11px; color: #666666; background: #FAFAFA">
+<sc-for list="{{heads}}" as="h" hint-placeholder-count="9"><th scope="col" style="{{h.style}}">{{h.label}}</th></sc-for>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="2">
+<tr>
+<td style="padding: 14px 10px 14px 18px; border-bottom: 1px solid #EBEBEB; vertical-align: top">
+<a href="{{r.href}}" style="display: flex; flex-direction: column; gap: 3px; text-decoration: none"><span style="font-weight: 600; text-decoration: underline; text-underline-offset: 2px">{{r.name}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #4D4D4D">{{r.num}} · PM {{r.pm}}</span><span style="font-size: 12px; color: #666666">{{r.gc}}</span></a>
+</td>
+<td style="padding: 14px 10px; border-bottom: 1px solid #EBEBEB; vertical-align: top; width: 200px">
+<span style="display: flex; flex-direction: column; gap: 6px">
+<span role="img" aria-label="{{r.progLabel}}" style="position: relative; display: block; height: 8px; border-radius: 1px; background: #EBEBEB"><span style="{{r.workBar}}"></span><span style="{{r.timeMark}}"></span></span>
+<span style="display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #4D4D4D"><span>{{r.pct}} built</span><span>{{r.time}} time</span></span>
+<span style="font-size: 12px; color: #666666">Done {{r.subst}}</span>
+</span>
+</td>
+<td style="padding: 14px 10px; border-bottom: 1px solid #EBEBEB; vertical-align: top; text-align: right"><span style="{{r.needsStyle}}">{{r.needs}}</span></td>
+<sc-for list="{{r.stats}}" as="c" hint-placeholder-count="5">
+<td style="padding: 14px 10px; border-bottom: 1px solid #EBEBEB; vertical-align: top; text-align: right"><span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; color: {{c.color}}">{{c.v}}</span><span style="font-size: 12px; color: {{c.noteColor}}">{{c.note}}</span></span></td>
+</sc-for>
+<td style="padding: 14px 18px 14px 10px; border-bottom: 1px solid #EBEBEB; vertical-align: top; text-align: right"><a href="{{r.href}}" style="display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border-radius: 2px; background: #141414; color: #FFFFFF; font-weight: 600; text-decoration: none; white-space: nowrap">Open</a></td>
+</tr>
+</sc-for>
+<tr>
+<td colspan="9" style="padding: 12px 18px; background: #FAFAFA; font-size: 13px; color: #4D4D4D">
+<span class="cap" style="font-size: 10.5px; font-weight: 700; color: #3A3A3A; margin-right: 8px">Up next</span><a href="Project.dc.html">Medical Office Building</a> · 2026-014 · construction starts Mar 2027. Build turns on automatically when the project reaches Construction Admin.
+</td>
+</tr>
+</tbody>
+</table>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<section aria-labelledby="all-title" style="flex: 999 1 620px; min-width: 0; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding: 14px 18px 12px; border-bottom: 1px solid #EBEBEB">
+<h2 id="all-title" style="margin: 0; font-size: 13px; font-weight: 600">Needs you · all projects</h2>
+<span style="font-size: 12.5px; color: #666666">Soonest first. Opens the item on its project's Build tab.</span>
+<span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{inboxCount}} items</span>
+</div>
+<ul style="list-style: none; margin: 0; padding: 0">
+<sc-for list="{{inbox}}" as="it" hint-placeholder-count="8">
+<li style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 11px 18px; border-bottom: 1px solid #EBEBEB">
+<span style="{{it.chip}}">{{it.type}}</span>
+<span style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 2px">
+<span style="font-weight: 600">{{it.title}}</span>
+<span style="font-size: 12.5px; color: #666666"><strong style="font-weight: 600; color: #3A3A3A">{{it.project}}</strong> · {{it.sub}}</span>
+</span>
+<span style="flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: {{it.dueColor}}; font-weight: {{it.dueWeight}}"><sc-if value="{{it.late}}" hint-placeholder-val="{{ false }}"><span aria-hidden="true" style="width: 7px; height: 7px; transform: rotate(45deg); background: #C2410C"></span></sc-if>{{it.due}}</span>
+<a href="{{it.href}}" style="flex: 0 0 auto; display: inline-flex; align-items: center; height: 30px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; font-weight: 600; text-decoration: none; white-space: nowrap">{{it.action}}</a>
+</li>
+</sc-for>
+</ul>
+</section>
+
+<div style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<section aria-labelledby="court-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 14px 18px 16px">
+<h2 id="court-title" style="margin: 0 0 4px; font-size: 13px; font-weight: 600">Ball in court · all projects</h2>
+<p style="margin: 0 0 12px; font-size: 12.5px; color: #666666">Who is holding up open items across every job.</p>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{court}}" as="c" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: 100px minmax(0, 1fr) 28px; align-items: center; gap: 10px">
+<span style="font-weight: 500">{{c.who}}</span>
+<span aria-hidden="true" style="display: block; height: 10px; border-radius: 1px; background: #EBEBEB; overflow: hidden"><span style="{{c.bar}}"></span></span>
+<span style="text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{c.n}}</span>
+</div>
+</sc-for>
+</div>
+</section>
+<section aria-labelledby="site-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<h2 id="site-title" style="margin: 0; padding: 14px 18px 10px; font-size: 13px; font-weight: 600; border-bottom: 1px solid #EBEBEB">This week on site</h2>
+<ul style="list-style: none; margin: 0; padding: 4px 0">
+<sc-for list="{{week}}" as="w" hint-placeholder-count="6">
+<li style="display: grid; grid-template-columns: 54px minmax(0, 1fr); gap: 10px; padding: 8px 18px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">{{w.d}}</span><span style="display: flex; flex-direction: column"><span>{{w.t}}</span><span style="font-size: 12px; color: #666666">{{w.p}}</span></span></li>
+</sc-for>
+</ul>
+</section>
+</div>
+</div>
+
+</main>
+</div>
+</div>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var st = Object.assign({ proj: 'ns', rfi: {}, sub: {}, iss: {}, co: {}, obs: {}, cert: {}, ncw: {}, nudged: {}, filt: {}, fr: {}, drawer: null, btab: 'inbox' }, this.state || {});
+
+    // ---------- Module bar ----------
+    var ICONS = {
+      home: 'M3 11l9-7 9 7M5 10v10h14V10',
+      projects: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+      contacts: 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M21 19v-1a4 4 0 0 0-3-3.9M15 3.2a3.5 3.5 0 0 1 0 6.6',
+      team: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1',
+      workload: 'M4 5h9M4 10h15M4 15h12M4 20h6',
+      time: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7v5l3 2',
+      reports: 'M3 21h18M6 21V11M11 21V5M16 21v-7M21 21v-4',
+      schedule: 'M4 4v16M4 6h7M7 10h8M10 14h7M8 18h5',
+      build: 'M3 18h18M5 18v-3a7 7 0 0 1 14 0v3M12 8V5M9 11V8.7M15 11V8.7',
+      accounting: 'M12 3v18M16 7.5c-.5-1.5-2-2.5-4-2.5-2.2 0-4 1.3-4 3s1.8 2.6 4 3 4 1.3 4 3-1.8 3-4 3c-2 0-3.5-1-4-2.5',
+      marketing: 'M3 10v4h4l6 4V6L7 10zM17 9a4 4 0 0 1 0 6M19.5 6.5a7.5 7.5 0 0 1 0 11',
+      knowledge: 'M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2zM22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z',
+      website: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M3 12h18M12 3c2.5 2.5 3.8 5.6 3.8 9s-1.3 6.5-3.8 9M12 3c-2.5 2.5-3.8 5.6-3.8 9s1.3 6.5 3.8 9',
+      hiring: 'M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 7h18v12H3zM3 12h18'
+    };
+
+    // ---------- Menu rail: wide with labels, or collapsed to icons (remembered per browser) ----------
+    var RAILMIN = (this.state && this.state.railMin != null) ? this.state.railMin : (function () { try { return window.localStorage.getItem('architrac.railMin') === '1'; } catch (e) { return false; } })();
+    function RAIL(list) {
+      return list.map(function (m) {
+        if (m.isLabel) return Object.assign({}, m, { labelText: RAILMIN ? '' : m.label,
+          labelStyle: RAILMIN ? 'display:block;height:1px;margin:10px 8px;background:#2A2A2A' : 'display:block;padding:16px 12px 6px;font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8A8A8A' });
+        var cur = !!m.current;
+        return Object.assign({}, m, {
+          showLabel: !RAILMIN, addText: RAILMIN ? '' : 'ADD',
+          addStyle: RAILMIN ? 'position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:#8A8A8A' : 'flex:0 0 auto;padding:1px 5px;border-radius:2px;background:#2A2A2A;color:#D9D9D9;font-size:9.5px;font-weight:600;letter-spacing:0.06em',
+          rowStyle: 'position:relative;display:flex;align-items:center;gap:12px;height:40px;box-sizing:border-box;border-radius:2px;text-decoration:none;white-space:nowrap;text-transform:uppercase;letter-spacing:0.08em;font-size:12px;'
+            + (RAILMIN ? 'width:44px;justify-content:center;padding:0;margin:0 auto;' : 'width:100%;padding:0 12px;')
+            + 'font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#8A8A8A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+        });
+      });
+    }
+    var RAILV = {
+      railMin: RAILMIN, railMax: !RAILMIN, railChev: RAILMIN ? 180 : 0,
+      railToggleLabel: RAILMIN ? 'Expand menu' : 'Collapse menu',
+      railToggle: function () { var v = !RAILMIN; try { window.localStorage.setItem('architrac.railMin', v ? '1' : '0'); } catch (e) {} self.setState({ railMin: v }); },
+      railNavStyle: 'flex:0 0 ' + (RAILMIN ? 64 : 216) + 'px;width:' + (RAILMIN ? 64 : 216) + 'px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;padding:14px ' + (RAILMIN ? '10px' : '12px') + ';background:#000000;color:#BDBDBD;transition:width 140ms, flex-basis 140ms',
+      railLogoStyle: 'display:flex;align-items:center;gap:10px;height:40px;margin-bottom:8px;color:#F2F2F2;text-decoration:none;' + (RAILMIN ? 'justify-content:center;' : 'padding:0 10px;'),
+      railToggleStyle: 'margin-top:auto;display:flex;align-items:center;gap:10px;height:38px;border:0;border-radius:2px;background:transparent;color:#8A8A8A;cursor:pointer;font-size:12px;font-weight:500;letter-spacing:0.04em;' + (RAILMIN ? 'justify-content:center;width:44px;margin-left:auto;margin-right:auto;' : 'width:100%;padding:0 12px;')
+    };
+    var CURRENT = 'build';
+    var modules = [
+      { label: 'Home', key: 'home', href: 'Home.dc.html' }, { label: 'Projects', key: 'projects', href: 'Projects.dc.html' },
+      { label: 'Contacts', key: 'contacts', href: 'Contacts.dc.html' }, { label: 'Team', key: 'team', href: 'Team.dc.html' },
+      { label: 'Time', key: 'time', href: 'Time.dc.html' },
+      { label: 'Reports', key: 'reports', href: 'Reports.dc.html' },
+      { label: 'Modules', isLabel: true },
+      { label: 'Build', key: 'build', href: 'Build.dc.html' }, { label: 'Workload', key: 'workload', href: 'Workload.dc.html' },
+      { label: 'Accounting', key: 'accounting', href: 'Accounting.dc.html' }, { label: 'Marketing', key: 'marketing', href: 'Marketing.dc.html' },
+      { label: 'Knowledge', key: 'knowledge', href: 'Knowledge.dc.html' },
+      { label: 'Website', key: 'website', href: 'Website.dc.html' }, { label: 'Hiring', key: 'hiring', href: 'Hiring.dc.html' }
+    ].map(function (m) {
+      if (m.isLabel) return { isLabel: true, isLink: false, label: m.label };
+      var cur = m.key === CURRENT;
+      return {
+        isLabel: false, isLink: true, label: m.label, icon: ICONS[m.key], addon: !!m.addon,
+        href: m.href || '#', current: cur ? 'page' : null,
+        style: 'position:relative;flex:0 0 64px;height:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:2px;text-decoration:none;font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#9A9A9A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';text-transform:uppercase;letter-spacing:0.06em;font-size:9.5px;box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+      };
+    });
+
+
+    // ---------- Helpers ----------
+    function money(v) { return (v < 0 ? '−$' : '$') + Math.round(Math.abs(v)).toLocaleString('en-US'); }
+    function day(d) { var dt = new Date(2026, 9, 18 + d); return ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][dt.getMonth()] + ' ' + dt.getDate(); }
+    function dueText(d) { return d === 0 ? 'Today' : d === 1 ? 'Tomorrow' : d < 0 ? (-d) + ' d late' : day(d); }
+    var SHAPE = {
+      filled: function (c) { return 'border-radius:50%;background:' + c; },
+      half: function (c) { return 'border-radius:50%;background:linear-gradient(90deg,' + c + ' 50%,transparent 50%);box-shadow:inset 0 0 0 1.5px ' + c; },
+      hollow: function (c) { return 'border-radius:50%;box-shadow:inset 0 0 0 1.5px ' + c; },
+      diamond: function (c) { return 'transform:rotate(45deg);background:' + c; }
+    };
+    var PILLS = {
+      open: ['Open', '#E4EBF8', '#1E3F7A', 'filled', '#2F5BAA'],
+      overdue: ['Overdue', '#FCE7DF', '#9A3412', 'diamond', '#C2410C'],
+      answered: ['Answered', '#E2F1E6', '#1D6234', 'filled', '#1D6234'],
+      closed: ['Closed', '#EBEBEB', '#4D4D4D', 'hollow', '#6B6B6B'],
+      review: ['In review', '#E4EBF8', '#1E3F7A', 'half', '#2F5BAA'],
+      approved: ['Approved', '#E2F1E6', '#1D6234', 'filled', '#1D6234'],
+      noted: ['Approved as noted', '#E2F1E6', '#1D6234', 'half', '#1D6234'],
+      revise: ['Revise & resubmit', '#FCE7DF', '#9A3412', 'diamond', '#C2410C'],
+      rejected: ['Rejected', '#FBE4E1', '#B42318', 'filled', '#B42318'],
+      ready: ['Ready for review', '#EFE7FA', '#5B2E9E', 'filled', '#5B2E9E'],
+      ncw: ['NCW issued', '#FBE4E1', '#B42318', 'diamond', '#B42318'],
+      pricing: ['Contractor pricing', '#EBEBEB', '#4D4D4D', 'hollow', '#6B6B6B'],
+      coreview: ['Architect review', '#E4EBF8', '#1E3F7A', 'half', '#2F5BAA'],
+      owner: ['With owner', '#EFE7FA', '#5B2E9E', 'half', '#5B2E9E'],
+      issued: ['Issued', '#E2F1E6', '#1D6234', 'filled', '#1D6234']
+    };
+    function pill(key) {
+      var p = PILLS[key];
+      return {
+        label: p[0],
+        pill: 'display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:2px;font-size:10.5px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;white-space:nowrap;background:' + p[1] + ';color:' + p[2],
+        dot: 'display:inline-block;flex:0 0 auto;width:8px;height:8px;box-sizing:border-box;' + SHAPE[p[3]](p[4])
+      };
+    }
+
+    // ---------- Data (two projects in construction) ----------
+    var PROJECTS = {
+      ns: {
+        id: 'ns', name: 'Northside Self-Storage', num: '2025-031', short: 'Northside', pm: 'JR',
+        meta: '96,000 SF · 3-story climate-controlled self-storage · Ground-up · PM JR', gc: '[General contractor]', owner: 'Northside Storage Holdings', gcUsers: 5,
+        start: 'Jun 2, 2026', subst: 'Mar 12, 2027', timePct: 49, contract: 7600000,
+        week: [{ d: 'Mon 19', t: 'RFI 014 response due' }, { d: 'Tue 20', t: 'Roofing crew on site · membrane' }, { d: 'Wed 21', t: 'OAC meeting · 10:00 on site' }, { d: 'Thu 22', t: 'FR-09 corrections due' }],
+        rfis: [
+          { id: 'r14', no: '014', title: 'Elevator pit depth conflicts with footing', ref: 'S2.1 / A5.2', from: 'Super · [GC]', recv: -2, due: 1, status: 'open', bic: 'TMG', impact: 'Possible cost', q: 'Elevator manufacturer requires a 5\'-0" pit. Footing F3 at grid B/3 is shown at 3\'-6" below slab. Please confirm pit depth and footing revision.', sug: 'Lower F3 by 1\'-6" and step the footing per structural.' },
+          { id: 'r15', no: '015', title: 'Hardware at unit corridor doors', ref: 'A6.1', from: 'PM · [GC]', recv: -1, due: 3, status: 'open', bic: 'TMG', impact: 'None expected', q: 'Hardware set 4 calls for closers at all corridor doors. Owner\'s operator asked about adding hold-opens on magnetic releases. Please advise.', sug: 'Add magnetic hold-opens tied to the fire alarm at corridor doors only.' },
+          { id: 'r12', no: '012', title: 'Lobby storefront head vs. canopy framing', ref: 'A3.1 / S3.2', from: 'PM · [GC]', recv: -8, due: -4, status: 'open', bic: 'Structural', impact: 'Possible cost & time', q: 'Canopy framing shown at elevation 12\'-0" interferes with storefront head at 11\'-8". Please coordinate.', sug: '' },
+          { id: 'r13', no: '013', title: 'Roof drain location at grid C/4', ref: 'A1.4 / P2.1', from: 'Super · [GC]', recv: -9, due: -5, status: 'answered', bic: 'Contractor', impact: 'None', q: 'Roof drain RD-3 lands on a joist. Can it shift 18" east?', sug: '', ans: 'Shift RD-3 18" east; maintain slope to drain. Overflow scupper stays as shown.' },
+          { id: 'r11', no: '011', title: 'Sprinkler main routing at 2nd floor', ref: 'FP1.0', from: 'Fire protection sub', recv: -20, due: -16, status: 'closed', bic: '—', impact: 'None', q: 'Main conflicts with duct at corridor.', sug: '', ans: 'Route main above duct; maintain 1" clearance.' },
+          { id: 'r10', no: '010', title: 'EIFS control joint layout', ref: 'A2.1', from: 'PM · [GC]', recv: -30, due: -27, status: 'closed', bic: '—', impact: 'None', q: 'Confirm joint spacing at north elevation.', sug: '', ans: 'Per elevation; max 20\'-0" o.c.' }
+        ],
+        subs: [
+          { id: 's1', no: '084113-01', spec: '08 4113', title: 'Aluminum storefront', rev: 1, recv: -4, due: 4, status: 'review', bic: 'TMG' },
+          { id: 's2', no: '083613-00', spec: '08 3613', title: 'Sectional overhead doors', rev: 0, recv: -3, due: 6, status: 'review', bic: 'TMG' },
+          { id: 's3', no: '102213-00', spec: '10 2213', title: 'Storage unit partition system', rev: 0, recv: -6, due: 8, status: 'review', bic: 'TMG' },
+          { id: 's4', no: '054000-00', spec: '05 4000', title: 'Cold-formed framing · delegated design', rev: 0, recv: -8, due: 2, status: 'review', bic: 'Structural' },
+          { id: 's5', no: '211313-01', spec: '21 1313', title: 'Sprinkler shop drawings & hydraulic calcs', rev: 1, recv: -15, due: -5, status: 'revise', bic: 'Contractor' },
+          { id: 's6', no: '142100-00', spec: '14 2100', title: 'Elevator', rev: 0, recv: -24, due: -12, status: 'noted', bic: '—' },
+          { id: 's7', no: '075423-00', spec: '07 5423', title: 'TPO roofing', rev: 0, recv: -30, due: -18, status: 'approved', bic: '—' },
+          { id: 's8', no: '092116-00', spec: '09 2116', title: 'Gypsum board assemblies', rev: 0, recv: -34, due: -22, status: 'approved', bic: '—' }
+        ],
+        issues: [
+          { id: 'ns21', no: 'NS-21', text: 'Head-of-wall fire joint missing at 2-hr corridor wall', loc: '2nd floor · grid D/2–5', src: 'FR-09', ref: 'A5.4 / 3', action: 'Install listed head-of-wall joint system per UL design on A5.4.', photo: '09-04', due: 4, status: 'open', opened: -3 },
+          { id: 'ns22', no: 'NS-22', text: 'Overflow scupper not installed at roof drain C/4', loc: 'Roof · grid C/4', src: 'FR-09', ref: 'A1.4 / 6', action: 'Install overflow scupper before membrane closes this area.', photo: '09-07', due: 6, status: 'open', opened: -3 },
+          { id: 'ns23', no: 'NS-23', text: 'Window rough opening flashing incomplete', loc: 'East elevation · 3rd floor', src: 'FR-09', ref: 'A5.1 / 2', action: 'Complete sill pan and jamb flashing before windows are set.', photo: '09-09', due: 4, status: 'open', opened: -3 },
+          { id: 'ns17', no: 'NS-17', text: 'Storefront anchor spacing exceeds shop drawing', loc: 'Lobby · grid A/1–2', src: 'FR-08', ref: '084113-01', action: 'Add anchors to match approved shop drawing spacing.', photo: '08-03', due: -10, status: 'open', opened: -17 },
+          { id: 'ns19', no: 'NS-19', text: 'Firestopping missing at 2nd floor penetrations', loc: '2nd floor · electrical room', src: 'FR-08', ref: 'A5.5', action: 'Install listed firestop systems at all penetrations.', photo: '08-06', due: -8, status: 'ready', opened: -17 },
+          { id: 'ns16', no: 'NS-16', text: 'Damaged vapor retarder at slab edge', loc: 'Grid F/1', src: 'FR-08', ref: 'A5.2', action: 'Patch per manufacturer.', photo: '08-01', due: -10, status: 'closed', opened: -17 },
+          { id: 'ns15', no: 'NS-15', text: 'Sheathing joints not taped at west wall', loc: 'West elevation', src: 'FR-07', ref: 'A5.1 / 1', action: 'Tape and seal joints before air barrier.', photo: '07-02', due: -21, status: 'ready', opened: -31 },
+          { id: 'ns12', no: 'NS-12', text: 'Anchor bolt projection short at column B/2', loc: 'Grid B/2', src: 'FR-07', ref: 'S1.1', action: 'Engineer of record to review.', photo: '07-05', due: -24, status: 'closed', opened: -31 }
+        ],
+        cos: [
+          { id: 'c1', no: 'CO-01', title: 'Undercut unsuitable soils at building pad', origin: 'Field condition', cost: 54300, days: 6, status: 'approved' },
+          { id: 'c2', no: 'CO-02', title: 'Security camera conduit · owner request', origin: 'Owner request', cost: 18750, days: 0, status: 'approved' },
+          { id: 'c3', no: 'CO-03', title: 'Add two roof hatches', origin: 'RFI 007', cost: 13400, days: 0, status: 'approved' },
+          { id: 'c6', no: 'PCO-06', title: 'Upgrade unit corridor doors to 20-minute', origin: 'Owner request', cost: 25600, days: 0, status: 'coreview' },
+          { id: 'c5', no: 'PCO-05', title: 'Revise lobby canopy framing', origin: 'RFI 012', cost: 22600, days: 3, status: 'owner' },
+          { id: 'c4', no: 'PCO-04', title: 'Deepen elevator pit and step footing F3', origin: 'RFI 014', cost: 0, days: 0, status: 'pricing' }
+        ],
+        pay: { no: 5, period: 'Period to Sep 30 · received Oct 8 · certify by Oct 22', retain: 5, sov: [
+          ['General conditions', 610000, 45, 52, 52], ['Sitework & paving', 920000, 80, 85, 85], ['Concrete & foundations', 1140000, 100, 100, 100],
+          ['Structural steel & joists', 980000, 100, 100, 100], ['Cold-formed framing & sheathing', 760000, 55, 80, 70], ['Roofing', 410000, 0, 40, 25],
+          ['Doors, storefront & overhead doors', 520000, 0, 10, 10], ['Storage partitions', 640000, 0, 0, 0], ['Elevator', 280000, 20, 35, 35],
+          ['Fire protection', 330000, 35, 55, 55], ['Plumbing', 260000, 30, 45, 45], ['HVAC', 420000, 25, 40, 40], ['Electrical', 330000, 30, 50, 50],
+          ['Approved change orders', 86450, 70, 100, 100] ],
+          notes: { 'Cold-formed framing & sheathing': 'FR-09: 3rd floor framing about 70% at visit', 'Roofing': 'FR-09: membrane just started; insulation only on about 25%' } },
+        frs: [
+          { no: 'FR-09', date: 'Oct 15', status: 'issued', conditions: '72°F, clear · 9:30–11:45 AM', present: 'Super [Name], framing and roofing foremen', sent: 'Oct 15, 4:10 PM',
+            observed: 'Third floor cold-formed framing about 70% complete; second floor drywall stocked. Roof insulation and TPO membrane started at the north end. East elevation window openings framed; flashing in progress. Elevator pit excavated (see RFI 014).',
+            photos: ['09-01', '09-02', '09-04', '09-07', '09-09', '09-11'], items: ['ns21', 'ns22', 'ns23'] },
+          { no: 'FR-08', date: 'Oct 1', status: 'issued', conditions: '81°F, partly cloudy · 10:00 AM–12:15 PM', present: 'Super [Name], electrical foreman', sent: 'Oct 1, 3:30 PM',
+            observed: 'Second floor framing complete; MEP rough-in under way. Storefront frames set at lobby. Electrical room penetrations open.',
+            photos: ['08-01', '08-03', '08-06'], items: ['ns16', 'ns17', 'ns19'] },
+          { no: 'FR-07', date: 'Sep 17', status: 'issued', conditions: '86°F, clear · 9:00–11:00 AM', present: 'Super [Name]', sent: 'Sep 17, 2:45 PM',
+            observed: 'Structural steel and joists complete. Sheathing at west wall. Anchor bolts reviewed at column lines B and C.',
+            photos: ['07-02', '07-05'], items: ['ns12', 'ns15'] }
+        ]
+      },
+      mc: {
+        id: 'mc', name: 'Mill Creek Pediatrics', num: '2025-027', short: 'Mill Creek', pm: 'AP',
+        meta: '5,200 SF · Pediatric clinic · Tenant upfit · PM AP', gc: '[General contractor]', owner: 'Mill Creek Pediatrics PA', gcUsers: 3,
+        start: 'Aug 17, 2026', subst: 'Dec 18, 2026', timePct: 50, contract: 950000,
+        week: [{ d: 'Wed 21', t: 'Storefront submittal review due' }, { d: 'Thu 22', t: 'Site visit · casework blocking check' }, { d: 'Fri 23', t: 'Above-ceiling inspection · AHJ' }],
+        rfis: [
+          { id: 'm6', no: '006', title: 'Exam room sink rough-in height', ref: 'A6.2 / P1.1', from: 'Plumbing sub', recv: -1, due: 2, status: 'open', bic: 'TMG', impact: 'None expected', q: 'Elevations show sink rim at 34" in exam rooms; plumbing shows 31" for pediatric use. Which governs?', sug: 'Use 34" per accessibility with a pediatric step stool by owner.' },
+          { id: 'm5', no: '005', title: 'Nurse station counter depth', ref: 'A6.4', from: 'PM · [GC]', recv: -9, due: -6, status: 'answered', bic: 'Contractor', impact: 'Possible cost', q: 'Counter depth conflicts with column wrap.', sug: '', ans: 'Reduce depth to 24" at column; see SK-03.' },
+          { id: 'm4', no: '004', title: 'Ceiling height at waiting room soffit', ref: 'A7.1', from: 'PM · [GC]', recv: -20, due: -17, status: 'closed', bic: '—', impact: 'None', q: 'Duct conflicts with soffit.', sug: '', ans: 'Raise soffit 4".' }
+        ],
+        subs: [
+          { id: 'ms1', no: '084113-00', spec: '08 4113', title: 'Aluminum storefront', rev: 0, recv: -5, due: 3, status: 'review', bic: 'TMG' },
+          { id: 'ms2', no: '123530-01', spec: '12 3530', title: 'Exam room casework', rev: 1, recv: -12, due: -2, status: 'noted', bic: '—' },
+          { id: 'ms3', no: '102800-00', spec: '10 2800', title: 'Toilet accessories', rev: 0, recv: -14, due: -4, status: 'revise', bic: 'Contractor' },
+          { id: 'ms4', no: '096519-00', spec: '09 6519', title: 'Luxury vinyl tile', rev: 0, recv: -21, due: -11, status: 'approved', bic: '—' }
+        ],
+        issues: [
+          { id: 'mc1', no: 'MC-4', text: 'Casework blocking missing in Exam 4', loc: 'Exam 4', src: 'FR-03', ref: 'A6.2 / 5', action: 'Install blocking before board goes up.', photo: '03-02', due: 3, status: 'open', opened: -5 },
+          { id: 'mc2', no: 'MC-5', text: 'Insulation gap above corridor ceiling', loc: 'Corridor 110', src: 'FR-03', ref: 'A7.1', action: 'Fill gap per wall type.', photo: '03-04', due: 1, status: 'ready', opened: -5 },
+          { id: 'mc3', no: 'MC-2', text: 'Door 104 swing reversed from plan', loc: 'Door 104', src: 'FR-02', ref: 'A1.1 / A6.1', action: 'Re-hang to match plan and hardware schedule.', photo: '02-03', due: -9, status: 'open', opened: -16 },
+          { id: 'mc4', no: 'MC-1', text: 'Missing deflection track at demising wall', loc: 'Demising wall', src: 'FR-02', ref: 'A5.1', action: 'Install deflection track.', photo: '02-01', due: -10, status: 'closed', opened: -16 }
+        ],
+        cos: [
+          { id: 'mco1', no: 'CO-01', title: 'Added data drops at nurse station', origin: 'Owner request', cost: 4850, days: 0, status: 'approved' },
+          { id: 'mco2', no: 'PCO-02', title: 'Nurse station counter revision', origin: 'RFI 005', cost: 2100, days: 0, status: 'coreview' }
+        ],
+        pay: { no: 3, period: 'Period to Sep 30 · received Oct 9 · certify by Oct 23', retain: 5, sov: [
+          ['General conditions', 95000, 45, 55, 55], ['Demolition', 28000, 100, 100, 100], ['Framing & drywall', 180000, 50, 80, 75],
+          ['Doors, frames & hardware', 64000, 10, 30, 30], ['Casework', 88000, 0, 20, 0], ['Finishes', 120000, 0, 10, 10],
+          ['Plumbing', 105000, 40, 60, 60], ['HVAC', 120000, 40, 55, 55], ['Electrical', 110000, 45, 60, 60], ['Fire protection', 40000, 50, 70, 70],
+          ['Approved change orders', 4850, 0, 100, 100] ],
+          notes: { 'Casework': 'Not delivered at FR-03; stored material needs an invoice to bill', 'Framing & drywall': 'Board hung but not finished in exam wing' } },
+        frs: [
+          { no: 'FR-03', date: 'Oct 13', status: 'issued', conditions: 'Interior · 2:00–3:30 PM', present: 'Super [Name], drywall foreman', sent: 'Oct 13, 5:05 PM',
+            observed: 'Board hung throughout; taping in waiting and admin areas. Exam wing open for above-ceiling work. Casework not yet delivered.',
+            photos: ['03-01', '03-02', '03-04'], items: ['mc1', 'mc2'] },
+          { no: 'FR-02', date: 'Oct 2', status: 'issued', conditions: 'Interior · 9:30–10:45 AM', present: 'Super [Name]', sent: 'Oct 2, 1:20 PM',
+            observed: 'Framing complete; MEP rough-in under way. Doors 101–106 frames set.',
+            photos: ['02-01', '02-03'], items: ['mc3', 'mc4'] }
+        ]
+      }
+    };
+
+    // ---------- Apply state overrides ----------
+    function workspace(pid) {
+    var P = PROJECTS[pid];
+    function key(id) { return pid + ':' + id; }
+    var rfis = P.rfis.map(function (r) { var o = st.rfi[key(r.id)] || {}; return Object.assign({}, r, o); });
+    var subs = P.subs.map(function (s) { var o = st.sub[key(s.id)] || {}; return Object.assign({}, s, o); });
+    var issues = P.issues.map(function (i) { var o = st.iss[key(i.id)] || {}; return Object.assign({}, i, o); });
+    var cos = P.cos.map(function (c) { var o = st.co[key(c.id)] || {}; return Object.assign({}, c, o); });
+    var issById = {}; issues.forEach(function (i) { issById[i.id] = i; });
+    function rfiKey(r) { return r.status === 'open' ? (r.due < 0 ? 'overdue' : 'open') : r.status; }
+    function issKey(i) { return st.ncw[key(i.id)] && i.status === 'open' ? 'ncw' : i.status; }
+    function issBic(i) { return i.status === 'open' ? 'Contractor' : i.status === 'ready' ? 'TMG' : '—'; }
+    function coBic(c) { return c.status === 'pricing' ? 'Contractor' : c.status === 'coreview' ? 'TMG' : c.status === 'owner' ? 'Owner' : '—'; }
+    var BICNAME = { TMG: 'Us', Structural: 'Structural eng.', Contractor: 'Contractor', Owner: 'Owner', '—': '—' };
+
+    // ---------- Pay app ----------
+    var obsEd = st.obs[pid] || {};
+    var certified = !!st.cert[pid];
+    var rate = 1 - P.pay.retain / 100;
+    var tVal = 0, tPrev = 0, tClaim = 0, tObs = 0;
+    var payLines = P.pay.sov.map(function (l, i) {
+      var obs = obsEd[i] != null ? obsEd[i] : l[4];
+      tVal += l[1]; tPrev += l[1] * l[2] / 100; tClaim += l[1] * l[3] / 100; tObs += l[1] * obs / 100;
+      var short = obs < l[3];
+      return {
+        name: l[0], value: money(l[1]), prev: l[2], claim: l[3], obs: obs, done: money(l[1] * obs / 100),
+        bg: short ? '#FFF8F4' : '#FFFFFF', inputBorder: short ? '#C2410C' : '#D4D4D4', inputBg: short ? '#FFFFFF' : '#FFFFFF',
+        note: short ? 'Claimed ' + l[3] + '%, observed ' + obs + '%' + (P.pay.notes[l[0]] ? ' · ' + P.pay.notes[l[0]] : '') : (P.pay.notes[l[0]] && obs === l[3] ? '' : ''),
+        noteColor: short ? '#9A3412' : '#666666',
+        set: function (e) { var o = Object.assign({}, st.obs), m = Object.assign({}, o[pid] || {}); m[i] = Math.max(0, Math.min(100, Number(e.target.value) || 0)); o[pid] = m; var c = Object.assign({}, st.cert); c[pid] = false; self.setState({ obs: o, cert: c }); }
+      };
+    });
+    var prevCert = tPrev * rate, claimDue = tClaim * rate - prevCert, certDue = tObs * rate - prevCert;
+    var pctDone = Math.round(tObs / tVal * 100);
+
+    // ---------- Drawer ----------
+    function act(label, fn, primary, danger) {
+      return { label: label, fn: fn, style: 'height:34px;padding:0 12px;border-radius:2px;cursor:pointer;font-weight:' + (primary ? '600' : '500') + ';border:' + (primary ? '0' : '1px solid #D4D4D4') + ';background:' + (primary ? '#141414' : '#FFFFFF') + ';color:' + (primary ? '#FFFFFF' : (danger ? '#B42318' : '#141414')) };
+    }
+    function setRec(bucket, id, patch, close) {
+      var b = Object.assign({}, st[bucket]); b[key(id)] = Object.assign({}, b[key(id)] || {}, patch);
+      var ns = {}; ns[bucket] = b; if (close) ns.drawer = null; self.setState(ns);
+    }
+    var dr = null, D = st.drawer;
+    if (D && D.p === pid) {
+      if (D.t === 'rfi') {
+        var r = rfis.filter(function (x) { return x.id === D.id; })[0], pk = pill(rfiKey(r));
+        dr = { kicker: 'RFI ' + r.no + ' · ' + P.short.toUpperCase(), title: r.title, status: pk.label, pill: pk.pill, dot: pk.dot,
+          rows: [{ k: 'Reference', v: r.ref }, { k: 'From', v: r.from }, { k: 'Received', v: day(r.recv) }, { k: 'Response due', v: day(r.due) + (r.status === 'open' && r.due < 0 ? ' · ' + (-r.due) + ' days late' : '') }, { k: 'Ball in court', v: BICNAME[r.bic] }, { k: 'Impact', v: r.impact }],
+          blocks: [{ k: 'Question', v: r.q }].concat(r.sug ? [{ k: 'Contractor\'s suggestion', v: r.sug }] : []).concat(r.ans ? [{ k: 'Response', v: r.ans }] : []),
+          hasReply: r.status === 'open' && r.bic === 'TMG', replyLabel: 'Your response', reply: '', actions: [], waiting: '' };
+        if (r.status === 'open' && r.bic === 'TMG') dr.actions = [
+          act('Send response', function () { setRec('rfi', r.id, { status: 'answered', bic: 'Contractor', ans: 'Response sent from ArchiTrac.' }, true); }, true),
+          act('Forward to structural', function () { setRec('rfi', r.id, { bic: 'Structural' }, true); }),
+          act('Flag for change order', function () {})
+        ];
+        else if (r.status === 'open') { dr.actions = [act(st.nudged[key(r.id)] ? 'Reminder sent' : 'Send reminder to structural', function () { var n = Object.assign({}, st.nudged); n[key(r.id)] = true; self.setState({ nudged: n }); }, true), act('Answer it yourself', function () { setRec('rfi', r.id, { bic: 'TMG' }); })]; }
+        else dr.waiting = r.status === 'answered' ? 'Answered. Waiting for the contractor to accept and close it.' : 'Closed.';
+      } else if (D.t === 'sub') {
+        var s = subs.filter(function (x) { return x.id === D.id; })[0], ps = pill(s.status);
+        dr = { kicker: 'SUBMITTAL ' + s.no + ' · ' + P.short.toUpperCase(), title: s.spec + ' ' + s.title, status: ps.label, pill: ps.pill, dot: ps.dot,
+          rows: [{ k: 'Revision', v: String(s.rev) }, { k: 'Received', v: day(s.recv) }, { k: 'Review due', v: day(s.due) }, { k: 'Ball in court', v: BICNAME[s.bic] }, { k: 'Files', v: 'Product data · shop drawings (PDF, 14 pages)' }],
+          blocks: [], hasReply: s.status === 'review' && s.bic === 'TMG', replyLabel: 'Review comments', reply: '', actions: [], waiting: '' };
+        if (s.status === 'review' && s.bic === 'TMG') dr.actions = [
+          act('Approved', function () { setRec('sub', s.id, { status: 'approved', bic: '—' }, true); }, true),
+          act('Approved as noted', function () { setRec('sub', s.id, { status: 'noted', bic: '—' }, true); }),
+          act('Revise & resubmit', function () { setRec('sub', s.id, { status: 'revise', bic: 'Contractor' }, true); }),
+          act('Rejected', function () { setRec('sub', s.id, { status: 'rejected', bic: 'Contractor' }, true); }, false, true)
+        ];
+        else dr.waiting = s.status === 'review' ? 'With the structural engineer for delegated-design review. Due ' + day(s.due) + '.' : (s.bic === 'Contractor' ? 'Returned. Waiting for the contractor to resubmit.' : 'Review complete.');
+      } else if (D.t === 'iss') {
+        var it = issById[D.id], pi = pill(issKey(it));
+        dr = { kicker: it.no + ' · ' + it.src + ' · ' + P.short.toUpperCase(), title: it.text, status: pi.label, pill: pi.pill, dot: pi.dot,
+          rows: [{ k: 'Location', v: it.loc }, { k: 'Reference', v: it.ref }, { k: 'Photo', v: it.photo }, { k: 'Due', v: day(it.due) }, { k: 'Open for', v: (-it.opened) + ' days' }],
+          blocks: [{ k: 'Required action', v: it.action }], hasReply: false, actions: [], waiting: '' };
+        if (it.status === 'ready') dr.actions = [
+          act('Verified · close it', function () { setRec('iss', it.id, { status: 'closed' }, true); }, true),
+          act('Not fixed · reopen', function () { setRec('iss', it.id, { status: 'open' }, true); }, false, true)
+        ];
+        else if (it.status === 'open') { dr.actions = [act('Send reminder', function () {}, true)].concat(-it.opened >= 14 && !st.ncw[key(it.id)] ? [act('Issue NCW notice', function () { var n = Object.assign({}, st.ncw); n[key(it.id)] = true; self.setState({ ncw: n, drawer: null }); }, false, true)] : []); }
+        else dr.waiting = 'Verified and closed.';
+      } else if (D.t === 'co') {
+        var c = cos.filter(function (x) { return x.id === D.id; })[0], pc = pill(c.status);
+        dr = { kicker: c.no + ' · ' + P.short.toUpperCase(), title: c.title, status: pc.label, pill: pc.pill, dot: pc.dot,
+          rows: [{ k: 'Origin', v: c.origin }, { k: 'Cost', v: c.cost ? '+' + money(c.cost) : 'Not priced yet' }, { k: 'Time', v: c.days ? '+' + c.days + ' days' : 'No change' }, { k: 'Ball in court', v: BICNAME[coBic(c)] }],
+          blocks: c.status === 'coreview' ? [{ k: 'What you\'re checking', v: 'Is the price fair for the scope, and is it a real change, not something already in the contract documents?' }] : [],
+          hasReply: c.status === 'coreview', replyLabel: 'Note to owner', reply: '', actions: [], waiting: '' };
+        if (c.status === 'coreview') dr.actions = [
+          act('Recommend to owner', function () { setRec('co', c.id, { status: 'owner' }, true); }, true),
+          act('Return to contractor', function () { setRec('co', c.id, { status: 'pricing' }, true); })
+        ];
+        else if (c.status === 'owner') dr.actions = [act('Owner approved', function () { setRec('co', c.id, { status: 'approved' }, true); }, true), act('Owner rejected', function () { setRec('co', c.id, { status: 'rejected' }, true); }, false, true)];
+        else dr.waiting = c.status === 'pricing' ? 'Waiting for the contractor\'s price.' : 'Final.';
+      }
+      if (dr) { dr.hasActions = dr.actions.length > 0; dr.noActions = !dr.hasActions; }
+    }
+    function open(t, id) { return function () { self.setState({ drawer: { p: pid, t: t, id: id } }); }; }
+
+    // ---------- Inbox ----------
+    var CHIP = { RFI: ['#E4EBF8', '#1E3F7A'], Submittal: ['#EFE7FA', '#5B2E9E'], Issue: ['#FCE7DF', '#9A3412'], 'Change order': ['#E2F1E6', '#1D6234'], 'Pay app': ['#141414', '#FFFFFF'] };
+    function chip(t) { return 'flex:0 0 96px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 6px;border-radius:2px;font-size:10px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;background:' + CHIP[t][0] + ';color:' + CHIP[t][1]; }
+    var IN = [];
+    rfis.forEach(function (r) {
+      if (r.status === 'open' && r.bic === 'TMG') IN.push({ type: 'RFI', title: 'RFI ' + r.no + ' · ' + r.title, sub: r.ref + ' · from ' + r.from + (r.impact.indexOf('cost') >= 0 ? ' · may affect cost' : ''), due: r.due, action: 'Respond', act: open('rfi', r.id) });
+      if (r.status === 'open' && r.bic !== 'TMG' && r.due < 0) IN.push({ type: 'RFI', title: 'RFI ' + r.no + ' · structural is late', sub: 'Contractor is waiting on ' + BICNAME[r.bic] + '. Nudge them.', due: r.due, action: 'Follow up', act: open('rfi', r.id) });
+    });
+    subs.forEach(function (s) { if (s.status === 'review' && s.bic === 'TMG') IN.push({ type: 'Submittal', title: s.spec + ' ' + s.title, sub: 'Rev ' + s.rev + ' · received ' + day(s.recv), due: s.due, action: 'Review', act: open('sub', s.id) }); });
+    issues.forEach(function (i) {
+      if (i.status === 'ready') IN.push({ type: 'Issue', title: i.no + ' · ' + i.text, sub: 'Contractor says it\'s fixed. Check it on your next visit or from their photo.', due: i.due < 0 ? 0 : i.due, action: 'Verify', act: open('iss', i.id) });
+      if (i.status === 'open' && -i.opened >= 14 && !st.ncw[key(i.id)]) IN.push({ type: 'Issue', title: i.no + ' · open ' + (-i.opened) + ' days', sub: i.text + ' · consider a Notice of Non-Conforming Work', due: i.due, action: 'Escalate', act: open('iss', i.id) });
+    });
+    cos.forEach(function (c) { if (c.status === 'coreview') IN.push({ type: 'Change order', title: c.no + ' · ' + c.title, sub: '+' + money(c.cost) + (c.days ? ' · +' + c.days + ' days' : '') + ' · ' + c.origin, due: 3, action: 'Review', act: open('co', c.id) }); });
+    if (!certified) IN.push({ type: 'Pay app', title: 'Pay application #' + P.pay.no, sub: money(claimDue) + ' requested · ' + P.pay.period.split(' · ').pop(), due: pid === 'ns' ? 4 : 5, action: 'Review', act: function () { self.setState({ btab: 'pay', drawer: null }); } });
+    IN.sort(function (a, b) { return a.due - b.due; });
+    var inbox = IN.map(function (x) {
+      var late = x.due < 0;
+      return Object.assign({}, x, { chip: chip(x.type), due: dueText(x.due), late: late, dueColor: late ? '#9A3412' : (x.due <= 1 ? '#141414' : '#4D4D4D'), dueWeight: x.due <= 1 ? '600' : '400' });
+    });
+
+    // ---------- Ball in court ----------
+    var BC = { TMG: 0, Contractor: 0, Consultants: 0, Owner: 0 };
+    rfis.forEach(function (r) { if (r.status === 'open') BC[r.bic === 'TMG' ? 'TMG' : 'Consultants']++; else if (r.status === 'answered') BC.Contractor++; });
+    subs.forEach(function (s) { if (s.status === 'review') BC[s.bic === 'TMG' ? 'TMG' : 'Consultants']++; else if (s.bic === 'Contractor') BC.Contractor++; });
+    issues.forEach(function (i) { if (i.status === 'open') BC.Contractor++; else if (i.status === 'ready') BC.TMG++; });
+    cos.forEach(function (c) { var b = coBic(c); if (b === 'TMG') BC.TMG++; else if (b === 'Owner') BC.Owner++; else if (b === 'Contractor') BC.Contractor++; });
+    var bcMax = Math.max(1, BC.TMG, BC.Contractor, BC.Consultants, BC.Owner);
+    var court = [['Us', 'TMG', '#141414'], ['Contractor', 'Contractor', '#2F5BAA'], ['Consultants', 'Consultants', '#A9BDE3'], ['Owner', 'Owner', '#5B2E9E']].map(function (c) {
+      return { who: c[0], n: BC[c[1]], bar: 'display:block;height:100%;width:' + (BC[c[1]] / bcMax * 100) + '%;background:' + c[2] };
+    });
+
+    // ---------- Generic logs ----------
+    var TH = 'padding:9px 10px;font-weight:500;border-top:1px solid #DCDCDC;border-bottom:1px solid #DCDCDC';
+    function heads(list) { return list.map(function (h, i) { return { label: h[0], style: TH + (i === 0 ? ';padding-left:18px' : '') + (i === list.length - 1 ? ';padding-right:18px' : '') + (h[1] ? ';text-align:right' : '') }; }); }
+    function cell(text, o) {
+      o = o || {};
+      var base = 'padding:11px 10px;border-bottom:1px solid #EBEBEB;vertical-align:top' + (o.first ? ';padding-left:18px' : '') + (o.last ? ';padding-right:18px' : '') + (o.right ? ';text-align:right' : '');
+      if (o.pill) { var p = pill(o.pill); return { style: base, isPill: true, isText: false, text: p.label, pill: p.pill, dot: p.dot }; }
+      return { style: base, isPill: false, isText: true, text: text, sub: o.sub || '', align: o.right ? 'flex-end' : 'flex-start',
+        mainStyle: (o.mono ? "font-family:'IBM Plex Mono',monospace;font-size:12.5px;" : '') + (o.bold ? 'font-weight:600;' : '') + (o.color ? 'color:' + o.color + ';' : '') };
+    }
+    function filters(defs, cur, setKey) {
+      return defs.map(function (f) {
+        var on = cur === f[0];
+        return { label: f[1], count: f[2], on: on ? 'true' : 'false', pick: function () { var o = Object.assign({}, st.filt); o[setKey] = f[0]; self.setState({ filt: o }); },
+          style: 'height:30px;padding:0 12px;border:0;border-radius:2px;cursor:pointer;font-size:13px;font-weight:' + (on ? '600' : '500') + ';background:' + (on ? '#FFFFFF' : 'transparent') + ';box-shadow:' + (on ? '0 1px 2px rgba(20,20,20,0.12)' : 'none') };
+      });
+    }
+    function dueCell(d, active, last) { var late = active && d < 0; return cell(day(d), { mono: true, color: late ? '#9A3412' : (active && d <= 1 ? '#141414' : '#4D4D4D'), bold: active && d <= 1, sub: late ? (-d) + ' days late' : '', last: last }); }
+    var log = null, tab = st.btab, F = st.filt;
+    if (tab === 'rfis') {
+      var fr = F.rfis || 'open';
+      var rows = rfis.filter(function (r) { return fr === 'all' || (fr === 'open' ? r.status === 'open' : r.status !== 'open'); });
+      log = { title: 'RFIs', hint: 'TMG commits to a 24–48 hour response. Every RFI needs a sheet reference.',
+        filters: filters([['open', 'Open', rfis.filter(function (r) { return r.status === 'open'; }).length], ['done', 'Answered & closed', rfis.filter(function (r) { return r.status !== 'open'; }).length], ['all', 'All', rfis.length]], fr, 'rfis'),
+        heads: heads([['No.'], ['Question'], ['From'], ['Received'], ['Due'], ['Ball in court'], ['Status']]),
+        rows: rows.map(function (r) { return { open: open('rfi', r.id), bg: '#FFFFFF', cells: [cell(r.no, { mono: true, bold: true, first: true }), cell(r.title, { bold: true, sub: r.ref + (r.impact.indexOf('cost') >= 0 || r.impact.indexOf('time') >= 0 ? ' · ' + r.impact.toLowerCase() : '') }), cell(r.from), cell(day(r.recv), { mono: true }), dueCell(r.due, r.status === 'open'), cell(BICNAME[r.bic], { bold: r.bic === 'TMG' && r.status === 'open' }), cell('', { pill: rfiKey(r), last: true })] }; }) };
+    } else if (tab === 'subs') {
+      var fs = F.subs || 'review';
+      var srows = subs.filter(function (s) { return fs === 'all' || (fs === 'review' ? s.status === 'review' : s.status !== 'review'); });
+      log = { title: 'Submittals', hint: 'Action codes go back to the contractor with your stamp. No work proceeds in a trade until its submittals are approved.',
+        filters: filters([['review', 'In review', subs.filter(function (s) { return s.status === 'review'; }).length], ['done', 'Returned', subs.filter(function (s) { return s.status !== 'review'; }).length], ['all', 'All', subs.length]], fs, 'subs'),
+        heads: heads([['No.'], ['Spec section'], ['Rev', 1], ['Received'], ['Due'], ['Ball in court'], ['Action']]),
+        rows: srows.map(function (s) { return { open: open('sub', s.id), bg: '#FFFFFF', cells: [cell(s.no, { mono: true, first: true }), cell(s.title, { bold: true, sub: s.spec }), cell(String(s.rev), { mono: true, right: true }), cell(day(s.recv), { mono: true }), dueCell(s.due, s.status === 'review'), cell(BICNAME[s.bic], { bold: s.bic === 'TMG' && s.status === 'review' }), cell('', { pill: s.status, last: true })] }; }) };
+    } else if (tab === 'issues') {
+      var fi = F.issues || 'active';
+      var irows = issues.filter(function (i) { return fi === 'all' || (fi === 'active' ? i.status !== 'closed' : i.status === fi); });
+      log = { title: 'Issues', hint: 'Discrepancies from field reports and punch items. The contractor marks them ready; you verify and close.',
+        filters: filters([['active', 'Not closed', issues.filter(function (i) { return i.status !== 'closed'; }).length], ['ready', 'Ready for review', issues.filter(function (i) { return i.status === 'ready'; }).length], ['closed', 'Closed', issues.filter(function (i) { return i.status === 'closed'; }).length], ['all', 'All', issues.length]], fi, 'issues'),
+        heads: heads([['No.'], ['Issue'], ['Source'], ['Due'], ['Open', 1], ['Ball in court'], ['Status']]),
+        rows: irows.map(function (i) { var age = -i.opened; return { open: open('iss', i.id), bg: '#FFFFFF', cells: [cell(i.no, { mono: true, bold: true, first: true }), cell(i.text, { bold: true, sub: i.loc + ' · ' + i.ref }), cell(i.src, { mono: true }), dueCell(i.due, i.status === 'open'), cell(i.status === 'closed' ? '—' : age + ' d', { mono: true, right: true, color: i.status !== 'closed' && age >= 14 ? '#9A3412' : '' }), cell(BICNAME[issBic(i)], { bold: i.status === 'ready' }), cell('', { pill: issKey(i), last: true })] }; }) };
+    } else if (tab === 'cos') {
+      var fc = F.cos || 'all';
+      var pend = function (c) { return c.status !== 'approved' && c.status !== 'rejected'; };
+      var crows = cos.filter(function (c) { return fc === 'all' || (fc === 'pending' ? pend(c) : c.status === 'approved'); });
+      log = { title: 'Change orders', hint: 'Potential change orders (PCOs) become change orders once the owner signs.',
+        filters: filters([['all', 'All', cos.length], ['pending', 'Pending', cos.filter(pend).length], ['approved', 'Approved', cos.filter(function (c) { return c.status === 'approved'; }).length]], fc, 'cos'),
+        heads: heads([['No.'], ['Change'], ['Origin'], ['Cost', 1], ['Time', 1], ['Ball in court'], ['Status']]),
+        rows: crows.map(function (c) { return { open: open('co', c.id), bg: '#FFFFFF', cells: [cell(c.no, { mono: true, bold: true, first: true }), cell(c.title, { bold: true }), cell(c.origin), cell(c.cost ? '+' + money(c.cost) : 'TBD', { mono: true, right: true }), cell(c.days ? '+' + c.days + ' d' : '—', { mono: true, right: true }), cell(BICNAME[coBic(c)], { bold: c.status === 'coreview' }), cell('', { pill: c.status, last: true })] }; }) };
+    }
+    if (log) log.empty = log.rows.length === 0;
+    var approved = cos.filter(function (c) { return c.status === 'approved'; }).reduce(function (a, c) { return a + c.cost; }, 0);
+    var pending = cos.filter(function (c) { return c.status !== 'approved' && c.status !== 'rejected'; }).reduce(function (a, c) { return a + c.cost; }, 0);
+    var unpriced = cos.filter(function (c) { return c.status === 'pricing' && !c.cost; }).length;
+    var coSummary = [
+      { k: 'Original contract', v: money(P.contract), note: 'Signed ' + P.start, color: '#141414' },
+      { k: 'Approved changes', v: '+' + money(approved), note: '+' + (approved / P.contract * 100).toFixed(1) + '% of contract', color: '#141414' },
+      { k: 'Current contract', v: money(P.contract + approved), note: 'What the pay app is measured against', color: '#141414' },
+      { k: 'Pending', v: '+' + money(pending), note: unpriced ? unpriced + ' more not priced yet' : 'All priced', color: '#5B2E9E' }
+    ];
+
+    // ---------- Field reports ----------
+    var frIdx = Math.min(st.fr[pid] || 0, P.frs.length - 1);
+    var FR = P.frs[frIdx];
+    var frList = P.frs.map(function (f, i) {
+      var on = i === frIdx;
+      return { no: f.no, date: f.date, summary: f.items.length + ' new items · ' + f.photos.length + ' photos', current: on ? 'true' : null,
+        pick: function () { var o = Object.assign({}, st.fr); o[pid] = i; self.setState({ fr: o }); },
+        style: 'display:flex;flex-direction:column;align-items:flex-start;gap:3px;width:100%;padding:10px 18px;border:0;text-align:left;cursor:pointer;background:' + (on ? '#EAF0FB' : '#FFFFFF') + ';box-shadow:' + (on ? 'inset 3px 0 0 #2F5BAA' : 'none') };
+    });
+    var later = P.frs.slice(frIdx + 1).map(function (f) { return f.items; }).reduce(function (a, b) { return a.concat(b); }, []);
+    var fpill = pill(FR.status);
+    var fr = {
+      no: FR.no, date: FR.date, conditions: FR.conditions, observed: FR.observed, present: FR.present, sent: FR.sent, photos: FR.photos,
+      status: fpill.label, pill: fpill.pill, dot: fpill.dot,
+      items: FR.items.map(function (id, n) { var i = issById[id], p = pill(issKey(i)); return { no: n + 1, text: i.text, action: i.action, ref: i.ref, photo: i.photo, due: day(i.due), status: p.label, pill: p.pill, dot: p.dot }; }),
+      carried: later.map(function (id) { return issById[id]; }).filter(function (i) { return i.status !== 'closed'; }).map(function (i) {
+        var age = -i.opened, k = issKey(i), p = pill(k), can = i.status === 'open' && age >= 14 && !st.ncw[key(i.id)];
+        return { text: i.no + ' · ' + i.text, from: i.src, age: age, ageColor: age >= 14 ? '#9A3412' : '#4D4D4D', canEscalate: can, showPill: !can, status: p.label, pill: p.pill, dot: p.dot,
+          escalate: function () { var n = Object.assign({}, st.ncw); n[key(i.id)] = true; self.setState({ ncw: n }); } };
+      })
+    };
+
+    // ---------- Pay object ----------
+    var pay = {
+      title: 'Pay application #' + P.pay.no + ' · ' + P.pay.period,
+      retText: 'Retainage ' + P.pay.retain + '%.',
+      lines: payLines, certified: certified, notCertified: !certified, certText: money(certDue),
+      certify: function () { var c = Object.assign({}, st.cert); c[pid] = true; self.setState({ cert: c }); },
+      totals: [
+        { k: 'Contract to date', v: money(tVal), color: '#141414' },
+        { k: 'Requested this period', v: money(claimDue), color: '#141414' },
+        { k: 'Observed complete', v: money(tObs) + ' · ' + pctDone + '%', color: '#141414' },
+        { k: 'Retainage held', v: money(tObs * (1 - rate)), color: '#141414' },
+        { k: 'Certify this period', v: money(certDue), color: certDue < claimDue ? '#9A3412' : '#1D6234' }
+      ]
+    };
+
+    // ---------- Header ----------
+    var openR = rfis.filter(function (r) { return r.status === 'open'; }), lateR = openR.filter(function (r) { return r.due < 0; });
+    var revS = subs.filter(function (s) { return s.status === 'review'; }), weekS = revS.filter(function (s) { return s.due <= 6; });
+    var openI = issues.filter(function (i) { return i.status !== 'closed'; }), readyI = issues.filter(function (i) { return i.status === 'ready'; });
+    var kpis = [
+      { label: 'Open RFIs', value: String(openR.length), note: lateR.length ? lateR.length + ' overdue · avg. 2.1 days to answer' : 'None overdue · avg. 2.1 days to answer', color: lateR.length ? '#C2410C' : '#141414', noteColor: lateR.length ? '#9A3412' : '#666666', click: function () { self.setState({ btab: 'rfis', drawer: null }); } },
+      { label: 'Submittals in review', value: String(revS.length), note: weekS.length + ' due this week', color: '#141414', noteColor: '#666666', click: function () { self.setState({ btab: 'subs', drawer: null }); } },
+      { label: 'Open issues', value: String(openI.length), note: readyI.length + ' ready for you to verify', color: '#141414', noteColor: '#666666', click: function () { self.setState({ btab: 'issues', drawer: null }); } },
+      { label: 'Change orders', value: '+' + (approved / P.contract * 100).toFixed(1) + '%', note: money(pending) + ' pending', color: '#141414', noteColor: '#666666', click: function () { self.setState({ btab: 'cos', drawer: null }); } },
+      { label: 'Pay app #' + P.pay.no, value: certified ? 'Certified' : money(claimDue), note: certified ? money(certDue) + ' sent to owner' : 'Requested · certify by ' + P.pay.period.split('by ').pop(), color: certified ? '#1D6234' : '#141414', noteColor: '#666666', click: function () { self.setState({ btab: 'pay', drawer: null }); } }
+    ];
+    var TABS = [['inbox', 'Needs you', inbox.length], ['rfis', 'RFIs', openR.length], ['subs', 'Submittals', revS.length], ['reports', 'Field reports', P.frs.length], ['issues', 'Issues', openI.length], ['cos', 'Change orders', cos.filter(function (c) { return c.status !== 'approved' && c.status !== 'rejected'; }).length], ['pay', 'Pay apps', certified ? '✓' : '#' + P.pay.no]];
+    var tabs = TABS.map(function (t) {
+      var on = st.btab === t[0];
+      return { label: t[1], count: t[2], on: on, countColor: t[0] === 'inbox' && t[2] ? '#141414' : '#666666',
+        pick: function () { self.setState({ btab: t[0], drawer: null }); },
+        style: 'display:inline-flex;align-items:center;height:32px;padding:0 12px;border:0;border-radius:2px;cursor:pointer;white-space:nowrap;font-size:13px;font-weight:' + (on ? '600' : '500') + ';background:' + (on ? '#FFFFFF' : 'transparent') + ';color:#141414;box-shadow:' + (on ? '0 1px 2px rgba(20,20,20,0.12)' : 'none') };
+    });
+    var is = { inbox: tab === 'inbox', reports: tab === 'reports', pay: tab === 'pay', cos: tab === 'cos' };
+    return {
+      P: P, kpis: kpis, tabs: tabs, is: is,
+      p: {
+        kicker: P.num, name: P.name, meta: P.meta, gc: P.gc, owner: P.owner, gcUsers: P.gcUsers,
+        start: P.start, subst: P.subst, pctText: pctDone + '%', week: P.week,
+        timeText: P.timePct + '% of schedule',
+        workBar: 'position:absolute;left:0;top:0;bottom:0;width:' + pctDone + '%;background:#2F5BAA;border-radius:1px',
+        timeMark: 'position:absolute;top:-3px;bottom:-3px;width:2px;background:#141414;left:' + P.timePct + '%'
+      },
+      goReports: function () { self.setState({ btab: 'reports', drawer: null }); },
+      inbox: inbox, inboxCount: inbox.length, inboxEmpty: inbox.length === 0, court: court,
+      showLog: !!log, log: log || { filters: [], heads: [], rows: [], empty: false, title: '', hint: '' }, coSummary: coSummary,
+      frList: frList, fr: fr, pay: pay,
+      drawerOpen: !!dr, dr: dr || { rows: [], blocks: [], actions: [] }, closeDrawer: function () { self.setState({ drawer: null }); },
+      raw: { inbox: IN, openR: openR.length, lateR: lateR.length, revS: revS.length, weekS: weekS.length, openI: openI.length, readyI: readyI.length,
+        approved: approved, pending: pending, claimDue: claimDue, certDue: certDue, certified: certified, pctDone: pctDone, BC: BC }
+    };
+    }
+
+
+    // ---------- Firm-wide overview ----------
+    var IDS = ['ns', 'mc'];
+    var WS = IDS.map(function (id) { return workspace(id); });
+    var HREF = { ns: 'ProjectCA.dc.html#ns', mc: 'ProjectCA.dc.html#mc' };
+    var TH = 'padding:9px 10px;font-weight:500;border-top:1px solid #DCDCDC;border-bottom:1px solid #DCDCDC';
+    var heads = [['Project'], ['Progress'], ['Needs you', 1], ['RFIs', 1], ['Submittals', 1], ['Issues', 1], ['Change orders', 1], ['Pay app', 1], ['']].map(function (h, i, a) {
+      return { label: h[0], style: TH + (i === 0 ? ';padding-left:18px' : '') + (i === a.length - 1 ? ';padding-right:18px' : '') + (h[1] ? ';text-align:right' : '') };
+    });
+    var rows = WS.map(function (w, i) {
+      var P = w.P, R = w.raw, need = w.inboxCount;
+      return {
+        name: P.name, num: P.num, pm: P.pm, gc: P.gc, href: HREF[IDS[i]], subst: P.subst,
+        pct: R.pctDone + '%', time: P.timePct + '%',
+        progLabel: R.pctDone + '% built, ' + P.timePct + '% of schedule elapsed',
+        workBar: 'position:absolute;left:0;top:0;bottom:0;width:' + R.pctDone + '%;background:#2F5BAA;border-radius:1px',
+        timeMark: 'position:absolute;top:-3px;bottom:-3px;width:2px;background:#141414;left:' + P.timePct + '%',
+        needs: String(need),
+        needsStyle: 'display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:26px;padding:0 8px;border-radius:2px;font-family:IBM Plex Mono,monospace;font-weight:600;background:' + (need ? '#141414' : '#EBEBEB') + ';color:' + (need ? '#FFFFFF' : '#4D4D4D'),
+        stats: [
+          { v: R.openR + ' open', note: R.lateR ? R.lateR + ' overdue' : 'none overdue', color: '#141414', noteColor: R.lateR ? '#9A3412' : '#666666' },
+          { v: R.revS + ' in review', note: R.weekS + ' due this week', color: '#141414', noteColor: '#666666' },
+          { v: R.openI + ' open', note: R.readyI + ' to verify', color: '#141414', noteColor: '#666666' },
+          { v: '+' + (R.approved / P.contract * 100).toFixed(1) + '%', note: money(R.pending) + ' pending', color: '#141414', noteColor: '#666666' },
+          { v: R.certified ? 'Certified' : money(R.claimDue), note: R.certified ? 'sent to owner' : '#' + P.pay.no + ' · ' + P.pay.period.split('by ').pop(), color: R.certified ? '#1D6234' : '#141414', noteColor: '#666666' }
+        ]
+      };
+    });
+
+    // combined inbox
+    var CHIP2 = { RFI: ['#E4EBF8', '#1E3F7A'], Submittal: ['#EFE7FA', '#5B2E9E'], Issue: ['#FCE7DF', '#9A3412'], 'Change order': ['#E2F1E6', '#1D6234'], 'Pay app': ['#141414', '#FFFFFF'] };
+    var ALL = [];
+    WS.forEach(function (w, i) { w.raw.inbox.forEach(function (x) { ALL.push(Object.assign({}, x, { project: w.P.name, href: HREF[IDS[i]] })); }); });
+    ALL.sort(function (a, b) { return a.due - b.due; });
+    var inbox = ALL.map(function (x) {
+      var late = x.due < 0;
+      return {
+        type: x.type, title: x.title, sub: x.sub, project: x.project, href: x.href, action: x.action,
+        chip: 'flex:0 0 96px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;height:22px;padding:0 6px;border-radius:2px;font-size:10px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;background:' + CHIP2[x.type][0] + ';color:' + CHIP2[x.type][1],
+        due: dueText(x.due), late: late, dueColor: late ? '#9A3412' : (x.due <= 1 ? '#141414' : '#4D4D4D'), dueWeight: x.due <= 1 ? '600' : '400'
+      };
+    });
+    var lateN = ALL.filter(function (x) { return x.due < 0; }).length;
+
+    // ball in court, summed
+    var BCT = { TMG: 0, Contractor: 0, Consultants: 0, Owner: 0 };
+    WS.forEach(function (w) { Object.keys(BCT).forEach(function (k) { BCT[k] += w.raw.BC[k]; }); });
+    var mx = Math.max(1, BCT.TMG, BCT.Contractor, BCT.Consultants, BCT.Owner);
+    var court = [['Us', 'TMG', '#141414'], ['Contractors', 'Contractor', '#2F5BAA'], ['Consultants', 'Consultants', '#A9BDE3'], ['Owners', 'Owner', '#5B2E9E']].map(function (c) {
+      return { who: c[0], n: BCT[c[1]], bar: 'display:block;height:100%;width:' + (BCT[c[1]] / mx * 100) + '%;background:' + c[2] };
+    });
+
+    // site week, merged
+    var week = [];
+    WS.forEach(function (w) { w.P.week.forEach(function (x) { week.push({ d: x.d, t: x.t, p: w.P.name, n: Number(x.d.split(' ')[1]) }); }); });
+    week.sort(function (a, b) { return a.n - b.n; });
+
+    var openR = WS.reduce(function (a, w) { return a + w.raw.openR; }, 0), lateR = WS.reduce(function (a, w) { return a + w.raw.lateR; }, 0);
+    var toCert = WS.filter(function (w) { return !w.raw.certified; });
+    var kpis = [
+      { label: 'Projects in CA', value: String(WS.length), note: 'Medical Office Building joins Mar 2027', color: '#141414', noteColor: '#666666' },
+      { label: 'Needs you', value: String(ALL.length), note: lateN ? lateN + ' already late' : 'Nothing late', color: '#141414', noteColor: lateN ? '#9A3412' : '#666666' },
+      { label: 'Open RFIs', value: String(openR), note: lateR ? lateR + ' overdue' : 'None overdue', color: lateR ? '#C2410C' : '#141414', noteColor: lateR ? '#9A3412' : '#666666' },
+      { label: 'Pay apps to certify', value: money(toCert.reduce(function (a, w) { return a + w.raw.claimDue; }, 0)), note: toCert.length + ' requested · due Oct 22–23', color: '#141414', noteColor: '#666666' },
+      { label: 'Pending change orders', value: money(WS.reduce(function (a, w) { return a + w.raw.pending; }, 0)), note: 'Across ' + WS.length + ' projects', color: '#5B2E9E', noteColor: '#666666' }
+    ];
+
+    return { modules: RAIL(modules), railMin: RAILV.railMin, railMax: RAILV.railMax, railChev: RAILV.railChev, railToggleLabel: RAILV.railToggleLabel, railToggle: RAILV.railToggle, railNavStyle: RAILV.railNavStyle, railLogoStyle: RAILV.railLogoStyle, railToggleStyle: RAILV.railToggleStyle, kpis: kpis, heads: heads, rows: rows, inbox: inbox, inboxCount: inbox.length, court: court, week: week };
+  }
+}
+</script>
+</body>
+</html>

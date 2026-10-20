@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ArchiTrac — Accounting</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=Barlow:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F2F2F2}
+a{color:#141414}a:hover{color:#000000}
+button{font:inherit;color:inherit}
+h1,h2,h3,th,.cap{text-transform:uppercase;letter-spacing:0.08em}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; font-family: 'Barlow', system-ui, sans-serif; font-size: 14px; color: #141414; background: #F2F2F2">
+
+<nav aria-label="Main menu" style="{{railNavStyle}}">
+<a href="Home.dc.html" aria-label="ArchiTrac home" style="{{railLogoStyle}}">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 26px"><path d="M3 20h18"></path><path d="M5 20V9l7-5 7 5v11"></path><path d="M9 20v-6h6v6"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span style="font-size: 13px; font-weight: 700; letter-spacing: 0.16em">ARCHITRAC</span></sc-if>
+</a>
+<sc-for list="{{modules}}" as="m" hint-placeholder-count="15">
+<sc-if value="{{m.isLabel}}" hint-placeholder-val="{{ false }}">
+<span style="{{m.labelStyle}}">{{m.labelText}}</span>
+</sc-if>
+<sc-if value="{{m.isLink}}" hint-placeholder-val="{{ true }}">
+<a href="{{m.href}}" aria-current="{{m.current}}" aria-label="{{m.label}}" title="{{m.label}}" style="{{m.rowStyle}}">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 20px"><path d="{{m.icon}}"></path></svg>
+<sc-if value="{{m.showLabel}}" hint-placeholder-val="{{ true }}"><span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{m.label}}</span></sc-if>
+<sc-if value="{{m.addon}}" hint-placeholder-val="{{ false }}"><span style="{{m.addStyle}}">{{m.addText}}</span></sc-if>
+</a>
+</sc-if>
+</sc-for>
+<button type="button" onClick="{{railToggle}}" aria-label="{{railToggleLabel}}" title="{{railToggleLabel}}" style="{{railToggleStyle}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 18px; transform: rotate({{railChev}}deg)"><path d="M4 4v16"></path><path d="M15 7l-5 5 5 5"></path><path d="M10 12h10"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span>Collapse menu</span></sc-if>
+</button>
+</nav>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 10px 32px; background: #141414; color: #F2F2F2">
+<button type="button" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px 0 4px; border: 1px solid #3A3A3A; border-radius: 2px; background: transparent; color: #F2F2F2; cursor: pointer">
+<span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; background: #F2F2F2; color: #141414; font-size: 12px; font-weight: 700">F</span>
+<span style="font-weight: 600">[FIRM NAME]</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+<span class="cap" style="color: #F2F2F2; font-weight: 500">Accounting</span>
+<div style="margin-left: auto; display: flex; align-items: center; gap: 12px">
+<a href="Settings.dc.html" aria-label="Settings" title="Settings" style="width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 2px; color: #BDBDBD"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></a>
+<span title="You" style="width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #3A3A3A; color: #FFFFFF; font-size: 11px; font-weight: 600">BM</span>
+</div>
+</header>
+
+<div style="background: #FFFFFF; border-bottom: 1px solid #DCDCDC">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px; padding: 32px 32px 28px">
+<div style="flex: 1 1 380px">
+<div style="display: inline-flex; align-items: center; gap: 8px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1D6234" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>
+SYNCED WITH QUICKBOOKS ONLINE · 6 MIN AGO
+</div>
+<h1 style="margin: 10px 0 0; font-size: 30px; line-height: 1.15; font-weight: 500">Accounting</h1>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" style="height: 38px; padding: 0 14px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer; font-weight: 500">Record payment</button>
+<button type="button" style="height: 38px; padding: 0 14px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer; font-weight: 500">Enter vendor bill</button>
+<button type="button" onClick="{{goBill}}" style="display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 16px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-weight: 600">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+New invoice
+</button>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); border-top: 1px solid #EBEBEB">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="5">
+<button type="button" onClick="{{k.go}}" style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 20px 32px 22px; border: 0; border-right: 1px solid #EBEBEB; background: transparent; text-align: left; cursor: pointer">
+<span class="cap" style="font-size: 11px; font-weight: 500; color: #3A3A3A">{{k.label}}</span>
+<span style="font-size: 26px; line-height: 1.15; font-weight: 500; font-variant-numeric: tabular-nums; color: {{k.color}}">{{k.value}}</span>
+<span style="font-size: 12.5px; color: #666666">{{k.note}}</span>
+</button>
+</sc-for>
+</div>
+
+<div role="tablist" aria-label="Accounting sections" style="display: flex; gap: 6px; padding: 4px 22px 0; border-top: 1px solid #EBEBEB; overflow-x: auto">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+<button type="button" role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; color: #666666; margin-left: 8px">{{t.count}}</span></button>
+</sc-for>
+</div>
+</div>
+
+<main style="position: relative; flex: 1; display: flex; flex-direction: column; gap: 20px; padding: 28px 32px 32px">
+
+<sc-if value="{{tabAR}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 20px">
+<section aria-labelledby="aging-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 18px 20px 20px">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-bottom: 14px">
+<h2 id="aging-title" style="margin: 0; font-size: 13px; font-weight: 600">Receivables aging</h2>
+<span style="font-size: 12.5px; color: #666666">Days past the due date. Select a bar to filter the list.</span>
+<sc-if value="{{hasBucket}}" hint-placeholder-val="{{ false }}">
+<button type="button" onClick="{{clearBucket}}" style="margin-left: auto; padding: 0; border: 0; background: transparent; cursor: pointer; font-weight: 500; text-decoration: underline; text-underline-offset: 2px">Show all</button>
+</sc-if>
+</div>
+<div style="display: flex; gap: 2px; height: 28px">
+<sc-for list="{{aging}}" as="a" hint-placeholder-count="5">
+<button type="button" onClick="{{a.pick}}" aria-pressed="{{a.on}}" aria-label="{{a.aria}}" title="{{a.aria}}" style="{{a.barStyle}}"></button>
+</sc-for>
+</div>
+<div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; margin-top: 12px">
+<sc-for list="{{aging}}" as="a" hint-placeholder-count="5">
+<button type="button" onClick="{{a.pick}}" style="display: flex; flex-direction: column; align-items: flex-start; gap: 2px; padding: 6px 0 0; border: 0; border-top: {{a.keyBorder}}; background: transparent; text-align: left; cursor: pointer">
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: #3A3A3A"><span aria-hidden="true" style="{{a.swatch}}"></span><span class="cap" style="font-size: 11px; font-weight: 500">{{a.label}}</span></span>
+<span style="font-size: 18px; font-weight: 500; font-variant-numeric: tabular-nums">{{a.amount}}</span>
+<span style="font-size: 12px; color: #666666">{{a.countText}}</span>
+</button>
+</sc-for>
+</div>
+</section>
+
+<section aria-labelledby="open-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 16px 20px 12px">
+<h2 id="open-title" style="margin: 0; font-size: 13px; font-weight: 600">Open invoices</h2>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">{{openSummary}}</span>
+<div style="margin-left: auto; display: flex; gap: 8px">
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer">Send statements</button>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer">Export</button>
+</div>
+</div>
+<table style="width: 100%; min-width: 980px; border-collapse: collapse">
+<thead>
+<tr style="text-align: left; font-size: 11px; color: #666666; background: #FAFAFA">
+<th scope="col" style="padding: 9px 20px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Invoice</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Client / project</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Sent</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Due</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Balance</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Aging</th>
+<th scope="col" style="padding: 9px 20px 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Last reminder</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{openRows}}" as="r" hint-placeholder-count="8">
+<tr style="background: {{r.bg}}">
+<td style="padding: 12px 20px; border-bottom: 1px solid #EBEBEB"><button type="button" onClick="{{r.open}}" style="padding: 0; border: 0; background: transparent; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600; text-decoration: underline; text-underline-offset: 2px">{{r.number}}</button></td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB"><span style="display: flex; flex-direction: column"><span style="font-weight: 500">{{r.client}}</span><span style="font-size: 12.5px; color: #666666">{{r.project}}</span></span></td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{r.sent}}</td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{r.due}}</td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600">{{r.amount}}</td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB"><span style="{{r.pillStyle}}"><span aria-hidden="true" style="{{r.dotStyle}}"></span>{{r.ageText}}</span></td>
+<td style="padding: 12px 20px 12px 10px; border-bottom: 1px solid #EBEBEB; font-size: 12.5px; color: #4D4D4D">{{r.reminder}}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</section>
+</div>
+</sc-if>
+
+<sc-if value="{{tabBill}}" hint-placeholder-val="{{ false }}">
+<section aria-labelledby="bill-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 18px 20px 14px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 id="bill-title" style="margin: 0; font-size: 13px; font-weight: 600">October billing run</h2>
+<span style="font-size: 12.5px; color: #666666">Work through the Oct 31 cutoff that hasn't been invoiced: phase progress, hourly and additional services, consultant pass-through and reimbursables.</span>
+</div>
+<button type="button" onClick="{{createDrafts}}" style="margin-left: auto; height: 38px; padding: 0 16px; border: 0; border-radius: 2px; background: {{createBg}}; color: #FFFFFF; cursor: pointer; font-weight: 600">{{createLabel}}</button>
+</div>
+<sc-if value="{{draftsMade}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; align-items: center; gap: 10px; margin: 0 20px 14px; padding: 12px 14px; border-radius: 2px; background: #E2F1E6; color: #1D6234">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>
+<span>{{draftsMsg}}</span>
+</div>
+</sc-if>
+<table style="width: 100%; min-width: 1040px; border-collapse: collapse">
+<thead>
+<tr style="text-align: left; font-size: 11px; color: #666666; background: #FAFAFA">
+<th scope="col" style="width: 44px; padding: 9px 0 9px 20px; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Include</span></th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Project</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Phase progress</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Fee</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Hourly &amp; add. svcs</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Consultants</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Reimbursables</th>
+<th scope="col" style="padding: 9px 20px 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Ready to bill</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{billRows}}" as="b" hint-placeholder-count="9">
+<tr style="background: {{b.bg}}">
+<td style="padding: 12px 0 12px 20px; border-bottom: 1px solid #EBEBEB"><input type="checkbox" aria-label="{{b.aria}}" checked="{{b.on}}" onChange="{{b.toggle}}" style="width: 18px; height: 18px; margin: 0; accent-color: #141414"></td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB"><span style="display: flex; flex-direction: column"><a href="{{b.href}}" style="font-weight: 600; text-decoration: none">{{b.project}}</a><span style="font-size: 12.5px; color: #666666">{{b.client}}</span></span></td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB; font-size: 13px; color: #3A3A3A">{{b.progress}}</td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{b.fee}}</td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{b.hourly}}</td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{b.cons}}</td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{b.reimb}}</td>
+<td style="padding: 12px 20px 12px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600">{{b.total}}</td>
+</tr>
+</sc-for>
+<tr style="font-weight: 600">
+<td style="padding: 12px 0 12px 20px"></td>
+<td style="padding: 12px 10px" colspan="2">Selected · {{billSelCount}} projects</td>
+<td style="padding: 12px 10px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{billSum.fee}}</td>
+<td style="padding: 12px 10px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{billSum.hourly}}</td>
+<td style="padding: 12px 10px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{billSum.cons}}</td>
+<td style="padding: 12px 10px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{billSum.reimb}}</td>
+<td style="padding: 12px 20px 12px 10px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{billSum.total}}</td>
+</tr>
+</tbody>
+</table>
+</section>
+</sc-if>
+
+<sc-if value="{{tabAP}}" hint-placeholder-val="{{ false }}">
+<section aria-labelledby="ap-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 16px 20px 12px">
+<h2 id="ap-title" style="margin: 0; font-size: 13px; font-weight: 600">Vendor bills</h2>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">{{apSummary}}</span>
+<button type="button" style="margin-left: auto; height: 32px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer">Pay approved bills</button>
+</div>
+<table style="width: 100%; min-width: 1040px; border-collapse: collapse">
+<thead>
+<tr style="text-align: left; font-size: 11px; color: #666666; background: #FAFAFA">
+<th scope="col" style="padding: 9px 20px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Vendor</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Bill no.</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Project</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Due</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Amount</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Pass-through</th>
+<th scope="col" style="padding: 9px 20px 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Status</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{apRows}}" as="p" hint-placeholder-count="7">
+<tr>
+<td style="padding: 12px 20px; border-bottom: 1px solid #EBEBEB"><span style="display: flex; flex-direction: column"><span style="font-weight: 500">{{p.vendor}}</span><span style="font-size: 12.5px; color: #666666">{{p.kind}}</span></span></td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{p.number}}</td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB">{{p.project}}</td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{p.due}}</td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600">{{p.amount}}</td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB; font-size: 13px; color: #3A3A3A">{{p.pass}}</td>
+<td style="padding: 12px 20px 12px 10px; border-bottom: 1px solid #EBEBEB">
+<sc-if value="{{p.needsApproval}}" hint-placeholder-val="{{ false }}">
+<button type="button" onClick="{{p.approve}}" style="height: 30px; padding: 0 12px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-weight: 600; font-size: 13px">Approve</button>
+</sc-if>
+<sc-if value="{{p.showPill}}" hint-placeholder-val="{{ true }}">
+<span style="{{p.pillStyle}}"><span aria-hidden="true" style="{{p.dotStyle}}"></span>{{p.status}}</span>
+</sc-if>
+</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</section>
+</sc-if>
+
+<sc-if value="{{tabRec}}" hint-placeholder-val="{{ false }}">
+<section aria-labelledby="rec-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 16px 20px 12px">
+<h2 id="rec-title" style="margin: 0; font-size: 13px; font-weight: 600">Client receipts</h2>
+<span style="font-size: 12.5px; color: #666666">Payments received. Group undeposited receipts into a bank deposit.</span>
+<button type="button" onClick="{{makeDeposit}}" style="margin-left: auto; height: 34px; padding: 0 14px; border: 0; border-radius: 2px; background: {{depositBg}}; color: #FFFFFF; cursor: pointer; font-weight: 600">{{depositLabel}}</button>
+</div>
+<table style="width: 100%; min-width: 900px; border-collapse: collapse">
+<thead>
+<tr style="text-align: left; font-size: 11px; color: #666666; background: #FAFAFA">
+<th scope="col" style="padding: 9px 20px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Received</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Client</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Method</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Applied to</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Amount</th>
+<th scope="col" style="padding: 9px 20px 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Deposit</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{receipts}}" as="c" hint-placeholder-count="5">
+<tr>
+<td style="padding: 12px 20px; border-bottom: 1px solid #EBEBEB; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{c.date}}</td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB; font-weight: 500">{{c.client}}</td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB">{{c.method}}</td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{c.applied}}</td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600">{{c.amount}}</td>
+<td style="padding: 12px 20px 12px 10px; border-bottom: 1px solid #EBEBEB"><span style="{{c.pillStyle}}"><span aria-hidden="true" style="{{c.dotStyle}}"></span>{{c.status}}</span></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</section>
+</sc-if>
+
+<sc-if value="{{drawerOpen}}" hint-placeholder-val="{{ false }}">
+<aside aria-label="Invoice details" style="position: absolute; top: 28px; right: 32px; z-index: 5; width: min(420px, calc(100% - 64px)); background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; box-shadow: 0 12px 32px rgba(20, 20, 20, 0.16), 0 2px 6px rgba(20, 20, 20, 0.08)">
+<div style="padding: 20px 22px 18px; border-bottom: 1px solid #EBEBEB">
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">INVOICE {{inv.number}}</span>
+<button type="button" onClick="{{closeDrawer}}" aria-label="Close invoice details" style="margin-left: auto; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 2px; background: transparent; cursor: pointer; color: #4D4D4D">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg>
+</button>
+</div>
+<h2 style="margin: 4px 0 6px; font-size: 17px; font-weight: 600">{{inv.client}}</h2>
+<div style="color: #4D4D4D">{{inv.project}}</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px">
+<span style="{{inv.pillStyle}}"><span aria-hidden="true" style="{{inv.dotStyle}}"></span>{{inv.ageText}}</span>
+<span style="font-size: 12.5px; color: #666666">Sent {{inv.sent}} · due {{inv.due}}</span>
+</div>
+</div>
+<dl style="margin: 0; padding: 14px 22px 4px">
+<sc-for list="{{inv.lines}}" as="l" hint-placeholder-count="4">
+<div style="display: flex; justify-content: space-between; gap: 12px; padding: 8px 0; border-bottom: 1px solid #EBEBEB">
+<dt style="display: flex; flex-direction: column"><span style="font-weight: 500">{{l.label}}</span><span style="font-size: 12px; color: #666666">{{l.detail}}</span></dt>
+<dd style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{l.amount}}</dd>
+</div>
+</sc-for>
+<div style="display: flex; justify-content: space-between; gap: 12px; padding: 12px 0 10px; font-weight: 600">
+<dt class="cap" style="font-size: 12px">Balance due</dt>
+<dd style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 14px">{{inv.amount}}</dd>
+</div>
+</dl>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; padding: 6px 22px 22px">
+<button type="button" style="height: 36px; padding: 0 14px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-weight: 600">Record payment</button>
+<button type="button" style="height: 36px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer">Send reminder</button>
+<button type="button" style="height: 36px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer">PDF</button>
+</div>
+</aside>
+</sc-if>
+
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1360}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var st = Object.assign({ tab: 'ar', bucket: null, drawer: null, skip: {}, drafts: false, approved: {}, deposited: false }, this.state || {});
+
+    // ---------- Module bar ----------
+    var ICONS = {
+      home: 'M3 11l9-7 9 7M5 10v10h14V10',
+      projects: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+      contacts: 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M21 19v-1a4 4 0 0 0-3-3.9M15 3.2a3.5 3.5 0 0 1 0 6.6',
+      team: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1',
+      workload: 'M4 5h9M4 10h15M4 15h12M4 20h6',
+      time: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7v5l3 2',
+      documents: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h6',
+      reports: 'M3 21h18M6 21V11M11 21V5M16 21v-7M21 21v-4',
+      schedule: 'M4 4v16M4 6h7M7 10h8M10 14h7M8 18h5',
+      build: 'M3 18h18M5 18v-3a7 7 0 0 1 14 0v3M12 8V5M9 11V8.7M15 11V8.7',
+      accounting: 'M12 3v18M16 7.5c-.5-1.5-2-2.5-4-2.5-2.2 0-4 1.3-4 3s1.8 2.6 4 3 4 1.3 4 3-1.8 3-4 3c-2 0-3.5-1-4-2.5',
+      marketing: 'M3 10v4h4l6 4V6L7 10zM17 9a4 4 0 0 1 0 6M19.5 6.5a7.5 7.5 0 0 1 0 11',
+      knowledge: 'M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2zM22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z',
+      website: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M3 12h18M12 3c2.5 2.5 3.8 5.6 3.8 9s-1.3 6.5-3.8 9M12 3c-2.5 2.5-3.8 5.6-3.8 9s1.3 6.5 3.8 9',
+      hiring: 'M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 7h18v12H3zM3 12h18'
+    };
+
+    // ---------- Menu rail: wide with labels, or collapsed to icons (remembered per browser) ----------
+    var RAILMIN = (this.state && this.state.railMin != null) ? this.state.railMin : (function () { try { return window.localStorage.getItem('architrac.railMin') === '1'; } catch (e) { return false; } })();
+    function RAIL(list) {
+      return list.map(function (m) {
+        if (m.isLabel) return Object.assign({}, m, { labelText: RAILMIN ? '' : m.label,
+          labelStyle: RAILMIN ? 'display:block;height:1px;margin:10px 8px;background:#2A2A2A' : 'display:block;padding:16px 12px 6px;font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8A8A8A' });
+        var cur = !!m.current;
+        return Object.assign({}, m, {
+          showLabel: !RAILMIN, addText: RAILMIN ? '' : 'ADD',
+          addStyle: RAILMIN ? 'position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:#8A8A8A' : 'flex:0 0 auto;padding:1px 5px;border-radius:2px;background:#2A2A2A;color:#D9D9D9;font-size:9.5px;font-weight:600;letter-spacing:0.06em',
+          rowStyle: 'position:relative;display:flex;align-items:center;gap:12px;height:40px;box-sizing:border-box;border-radius:2px;text-decoration:none;white-space:nowrap;text-transform:uppercase;letter-spacing:0.08em;font-size:12px;'
+            + (RAILMIN ? 'width:44px;justify-content:center;padding:0;margin:0 auto;' : 'width:100%;padding:0 12px;')
+            + 'font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#8A8A8A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+        });
+      });
+    }
+    var RAILV = {
+      railMin: RAILMIN, railMax: !RAILMIN, railChev: RAILMIN ? 180 : 0,
+      railToggleLabel: RAILMIN ? 'Expand menu' : 'Collapse menu',
+      railToggle: function () { var v = !RAILMIN; try { window.localStorage.setItem('architrac.railMin', v ? '1' : '0'); } catch (e) {} self.setState({ railMin: v }); },
+      railNavStyle: 'flex:0 0 ' + (RAILMIN ? 64 : 216) + 'px;width:' + (RAILMIN ? 64 : 216) + 'px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;padding:14px ' + (RAILMIN ? '10px' : '12px') + ';background:#000000;color:#BDBDBD;transition:width 140ms, flex-basis 140ms',
+      railLogoStyle: 'display:flex;align-items:center;gap:10px;height:40px;margin-bottom:8px;color:#F2F2F2;text-decoration:none;' + (RAILMIN ? 'justify-content:center;' : 'padding:0 10px;'),
+      railToggleStyle: 'margin-top:auto;display:flex;align-items:center;gap:10px;height:38px;border:0;border-radius:2px;background:transparent;color:#8A8A8A;cursor:pointer;font-size:12px;font-weight:500;letter-spacing:0.04em;' + (RAILMIN ? 'justify-content:center;width:44px;margin-left:auto;margin-right:auto;' : 'width:100%;padding:0 12px;')
+    };
+    var CURRENT = 'accounting';
+    var modules = [
+      { label: 'Home', key: 'home', href: 'Home.dc.html' }, { label: 'Projects', key: 'projects', href: 'Projects.dc.html' },
+      { label: 'Contacts', key: 'contacts', href: 'Contacts.dc.html' }, { label: 'Team', key: 'team', href: 'Team.dc.html' },
+      { label: 'Time', key: 'time', href: 'Time.dc.html' },
+      { label: 'Reports', key: 'reports', href: 'Reports.dc.html' },
+      { label: 'Modules', isLabel: true },
+      { label: 'Build', key: 'build', href: 'Build.dc.html' }, { label: 'Workload', key: 'workload', href: 'Workload.dc.html' },
+      { label: 'Accounting', key: 'accounting', href: 'Accounting.dc.html' }, { label: 'Marketing', key: 'marketing', href: 'Marketing.dc.html' },
+      { label: 'Knowledge', key: 'knowledge', href: 'Knowledge.dc.html' },
+      { label: 'Website', key: 'website', href: 'Website.dc.html' }, { label: 'Hiring', key: 'hiring', href: 'Hiring.dc.html' }
+    ].map(function (m) {
+      if (m.isLabel) return { isLabel: true, isLink: false, label: m.label };
+      var cur = m.key === CURRENT;
+      return {
+        isLabel: false, isLink: true, label: m.label, icon: ICONS[m.key], addon: !!m.addon,
+        href: m.href || '#', current: cur ? 'page' : null,
+        style: 'position:relative;flex:0 0 64px;height:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:2px;text-decoration:none;font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#9A9A9A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';text-transform:uppercase;letter-spacing:0.06em;font-size:9.5px;box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+      };
+    });
+
+    // ---------- Helpers ----------
+    function money(v) { return '$' + Math.round(v).toLocaleString('en-US'); }
+    var PILL = {
+      done: ['#E2F1E6', '#1D6234', 'border-radius:50%;background:#1D6234'],
+      underway: ['#E4EBF8', '#1E3F7A', 'border-radius:50%;background:linear-gradient(90deg,#1E3F7A 50%,transparent 50%);box-shadow:inset 0 0 0 1.5px #1E3F7A'],
+      waiting: ['#EBEBEB', '#4D4D4D', 'border-radius:50%;box-shadow:inset 0 0 0 1.5px #6B6B6B'],
+      attention: ['#FCE7DF', '#9A3412', 'transform:rotate(45deg);background:#C2410C;width:7px;height:7px'],
+      danger: ['#FBE4E1', '#B42318', 'background:#B42318']
+    };
+    function pill(kind) {
+      var c = PILL[kind];
+      return {
+        pillStyle: 'display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:2px;font-size:10.5px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;white-space:nowrap;background:' + c[0] + ';color:' + c[1],
+        dotStyle: 'display:inline-block;flex:0 0 auto;width:8px;height:8px;box-sizing:border-box;' + c[2]
+      };
+    }
+    var TODAY = Date.UTC(2026, 9, 18), DAY = 86400000;
+    var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    function d(s) { var p = s.split('-').map(Number); return Date.UTC(p[0], p[1] - 1, p[2]); }
+    function short(t) { var x = new Date(t); return MON[x.getUTCMonth()] + ' ' + x.getUTCDate(); }
+
+    // ---------- Receivables (sample) ----------
+    // Aging buckets: one orange ramp, light to dark as invoices get older.
+    var BUCKETS = [
+      { id: 'current', label: 'Current', min: -9999, max: 0, color: '#D6E0F2' },
+      { id: 'b30', label: '1–30 days', min: 1, max: 30, color: '#F4C2A6' },
+      { id: 'b60', label: '31–60 days', min: 31, max: 60, color: '#E3895A' },
+      { id: 'b90', label: '61–90 days', min: 61, max: 90, color: '#C2410C' },
+      { id: 'b90p', label: '90+ days', min: 91, max: 99999, color: '#7A2A08' }
+    ];
+    function I(number, client, project, sent, due, amount, reminder, href) { return { number: number, client: client, project: project, sent: d(sent), due: d(due), amount: amount, reminder: reminder, href: href }; }
+    var invoices = [
+      I('2026-121', 'Palmetto Medical Properties', 'Medical Office Building', '2026-10-16', '2026-11-15', 11160, '—'),
+      I('2026-124', 'Oakmont Health', 'Oakmont Urgent Care', '2026-10-16', '2026-11-15', 11040, '—'),
+      I('2026-125', 'Northside Storage Holdings', 'Northside Self-Storage', '2026-10-16', '2026-11-15', 24500, '—'),
+      I('2026-126', 'Summerville Office Park LLC', 'Summerville Office Park, Bldg B', '2026-10-16', '2026-11-15', 21240, '—'),
+      I('2026-127', 'Pine Street Hospitality', 'Pine Street Bistro', '2026-10-16', '2026-11-15', 12710, '—'),
+      I('2026-123', 'Mill Creek Pediatrics PA', 'Mill Creek Pediatrics', '2026-10-09', '2026-11-08', 17750, '—'),
+      I('2026-112', 'Grove Street Coffee Co.', 'Grove Street Café', '2026-09-15', '2026-10-15', 6600, 'Oct 16 · auto'),
+      I('2026-116', 'Summerville Office Park LLC', 'Summerville Office Park, Bldg B', '2026-09-01', '2026-10-01', 25550, 'Oct 8 · auto'),
+      I('2026-104', 'Pine Street Hospitality', 'Pine Street Bistro', '2026-08-11', '2026-09-10', 14800, 'Oct 1 · BM called'),
+      I('2026-118', 'Coastal Federal Credit Union', 'Coastal Credit Union Branch', '2026-07-18', '2026-08-17', 19000, 'Oct 10 · auto'),
+      I('2026-101', 'Northside Storage Holdings', 'Northside Self-Storage', '2026-07-02', '2026-08-01', 8400, 'Oct 3 · auto'),
+      I('2025-188', 'Westside Auto Group', 'Westside Tire & Service', '2026-05-31', '2026-06-30', 11500, 'Sep 30 · letter sent')
+    ];
+    invoices.forEach(function (v) {
+      v.days = Math.round((TODAY - v.due) / DAY);
+      v.bucket = BUCKETS.filter(function (b) { return v.days >= b.min && v.days <= b.max; })[0].id;
+    });
+    var arTotal = invoices.reduce(function (a, v) { return a + v.amount; }, 0);
+    function agePill(v) {
+      if (v.days <= 0) return Object.assign(pill('waiting'), { ageText: 'Due in ' + (-v.days) + ' d' });
+      if (v.days <= 30) return Object.assign(pill('attention'), { ageText: v.days + ' d late' });
+      return Object.assign(pill('danger'), { ageText: v.days + ' d late' });
+    }
+    var aging = BUCKETS.map(function (b) {
+      var items = invoices.filter(function (v) { return v.bucket === b.id; });
+      var amt = items.reduce(function (a, v) { return a + v.amount; }, 0);
+      var on = st.bucket === b.id || (st.bucket === 'over60' && (b.id === 'b90' || b.id === 'b90p')), dim = st.bucket && !on;
+      return {
+        label: b.label, amount: money(amt), countText: items.length + (items.length === 1 ? ' invoice' : ' invoices'), on: on,
+        aria: b.label + ': ' + money(amt) + ', ' + items.length + ' invoices',
+        pick: function () { self.setState({ bucket: on ? null : b.id }); },
+        barStyle: 'flex:' + amt + ' 1 0;min-width:6px;height:100%;padding:0;border:0;border-radius:1px;cursor:pointer;background:' + b.color + ';opacity:' + (dim ? '0.35' : '1') + ';box-shadow:' + (on ? 'inset 0 0 0 2px #141414' : 'none'),
+        swatch: 'display:inline-block;width:10px;height:10px;border-radius:1px;background:' + b.color,
+        keyBorder: on ? '3px solid #141414' : '3px solid transparent'
+      };
+    });
+    var shown = invoices.filter(function (v) { return !st.bucket || v.bucket === st.bucket || (st.bucket === 'over60' && v.days > 60); }).sort(function (a, b) { return b.days - a.days; });
+    var openRows = shown.map(function (v) {
+      return Object.assign(agePill(v), {
+        number: v.number, client: v.client, project: v.project, sent: short(v.sent), due: short(v.due), amount: money(v.amount), reminder: v.reminder,
+        bg: st.drawer === v.number ? '#EAF0FB' : '#FFFFFF',
+        open: function () { self.setState({ drawer: v.number }); }
+      });
+    });
+    var shownSum = shown.reduce(function (a, v) { return a + v.amount; }, 0);
+    var over60 = invoices.filter(function (v) { return v.days > 60; });
+    var over60Sum = over60.reduce(function (a, v) { return a + v.amount; }, 0);
+
+    // Invoice drawer: how this invoice was built.
+    var inv = null;
+    var selInv = invoices.filter(function (v) { return v.number === st.drawer; })[0];
+    if (selInv) {
+      var lines;
+      if (selInv.number === '2026-121') {
+        lines = [
+          { label: 'Architectural fee', detail: 'Schematic Design · final 40% of $27,900', amount: money(11160) },
+          { label: 'Consultants', detail: 'None this period', amount: money(0) },
+          { label: 'Reimbursables', detail: 'None this period', amount: money(0) },
+          { label: 'Prepayment applied', detail: 'Retainer fully applied in August', amount: money(0) }
+        ];
+      } else {
+        var arch = Math.round(selInv.amount * 0.8), cons = Math.round(selInv.amount * 0.16), reimb = selInv.amount - arch - cons;
+        lines = [
+          { label: 'Architectural fee', detail: 'Phase progress this period', amount: money(arch) },
+          { label: 'Consultants', detail: 'Vendor bills passed through at 1.10×', amount: money(cons) },
+          { label: 'Reimbursables', detail: 'Printing, permit fees, mileage', amount: money(reimb) }
+        ];
+      }
+      inv = Object.assign(agePill(selInv), { number: selInv.number, client: selInv.client, project: selInv.project, sent: short(selInv.sent), due: short(selInv.due), amount: money(selInv.amount), lines: lines });
+    }
+
+    // ---------- Ready to bill (sample) ----------
+    function B(id, project, client, progress, fee, hourly, cons, reimb, href) { return { id: id, project: project, client: client, progress: progress, fee: fee, hourly: hourly, cons: cons, reimb: reimb, href: href || '#' }; }
+    var bills = [
+      B('mob', 'Medical Office Building', 'Palmetto Medical Properties', 'DD 0% → 30%', 13950, 0, 0, 0, 'Project.dc.html'),
+      B('smv', 'Summerville Office Park, Bldg B', 'Summerville Office Park LLC', 'CD 55% → 75%', 26300, 0, 4180, 0),
+      B('riv', 'Riverside Retail Shell', 'Riverside Partners LLC', 'Pre-Design 0% → 100%', 12800, 0, 0, 0),
+      B('oak', 'Oakmont Urgent Care', 'Oakmont Health', 'SD 12% → 22%', 9200, 0, 2300, 0),
+      B('nss', 'Northside Self-Storage', 'Northside Storage Holdings', 'CA · hourly', 0, 7850, 1650, 0),
+      B('pin', 'Pine Street Bistro', 'Pine Street Hospitality', 'DD 31% → 46%', 6150, 0, 0, 420),
+      B('ccu', 'Coastal Credit Union Branch', 'Coastal Federal Credit Union', 'Permitting 40% → 90%', 3800, 2400, 0, 0),
+      B('mcp', 'Mill Creek Pediatrics', 'Mill Creek Pediatrics PA', 'CA 40% → 50%', 3600, 0, 0, 380),
+      B('hvd', 'Harbor View Dental', 'Harbor View Dental Group', 'Pre-Design 4% → 9%', 1420, 0, 0, 0)
+    ];
+    var billSum = { fee: 0, hourly: 0, cons: 0, reimb: 0, total: 0 }, billSelCount = 0, billAll = 0;
+    var billRows = bills.map(function (b) {
+      var total = b.fee + b.hourly + b.cons + b.reimb, on = !st.skip[b.id];
+      billAll += total;
+      if (on) { billSelCount++; billSum.fee += b.fee; billSum.hourly += b.hourly; billSum.cons += b.cons; billSum.reimb += b.reimb; billSum.total += total; }
+      function m(v) { return v ? money(v) : '—'; }
+      return {
+        project: b.project, client: b.client, progress: b.progress, href: b.href, on: on,
+        fee: m(b.fee), hourly: m(b.hourly), cons: m(b.cons), reimb: m(b.reimb), total: money(total),
+        aria: 'Include ' + b.project, bg: on ? '#FFFFFF' : '#FAFAFA',
+        toggle: function () { var s = Object.assign({}, st.skip); s[b.id] = on; self.setState({ skip: s, drafts: false }); }
+      };
+    });
+    var billSumText = { fee: money(billSum.fee), hourly: money(billSum.hourly), cons: money(billSum.cons), reimb: money(billSum.reimb), total: money(billSum.total) };
+
+    // ---------- Payables (sample) ----------
+    function V(id, vendor, kind, number, project, due, amount, pass, status) { return { id: id, vendor: vendor, kind: kind, number: number, project: project, due: d(due), amount: amount, pass: pass, status: status }; }
+    var bills2 = [
+      V('v1', 'Coastal MEP Engineers', 'Consultant', 'CME-2291', 'Medical Office Building', '2026-11-11', 5520, 'Bill in Oct run at 1.10×', 'approval'),
+      V('v2', 'Lowcountry Civil Group', 'Consultant', 'LCG-1150', 'Oakmont Urgent Care', '2026-11-07', 2300, 'In Oct billing run', 'approval'),
+      V('v3', 'Tidewater Structural Engineers', 'Consultant', 'TS-0874', 'Summerville Office Park, Bldg B', '2026-11-09', 4180, 'In Oct billing run', 'approved'),
+      V('v4', 'Coastal MEP Engineers', 'Consultant', 'CME-2276', 'Northside Self-Storage', '2026-10-30', 1650, 'In Oct billing run', 'approved'),
+      V('v5', 'Lowcountry Civil Group', 'Consultant', 'LCG-1138', 'Riverside Retail Shell', '2026-10-28', 8900, 'Billed on 2026-119', 'scheduled'),
+      V('v6', '[Landlord]', 'Office lease · overhead', 'NOV-RENT', '—', '2026-11-01', 12450, 'Not billable', 'scheduled'),
+      V('v7', '[Software vendor]', 'Design software · overhead', 'INV-55102', '—', '2026-10-25', 6800, 'Not billable', 'scheduled')
+    ];
+    var apTotal = 0, needs = 0;
+    var apRows = bills2.map(function (v) {
+      apTotal += v.amount;
+      var status = st.approved[v.id] ? 'approved' : v.status;
+      if (status === 'approval') needs++;
+      var p = status === 'approved' ? Object.assign(pill('underway'), { status: 'Approved' })
+        : status === 'scheduled' ? Object.assign(pill('done'), { status: 'Pay ' + short(v.due) })
+        : Object.assign(pill('attention'), { status: 'Needs approval' });
+      return Object.assign(p, {
+        vendor: v.vendor, kind: v.kind, number: v.number, project: v.project, due: short(v.due), amount: money(v.amount), pass: v.pass,
+        needsApproval: status === 'approval', showPill: status !== 'approval',
+        approve: function () { var a = Object.assign({}, st.approved); a[v.id] = true; self.setState({ approved: a }); }
+      });
+    });
+
+    // ---------- Receipts (sample) ----------
+    var recs = [
+      { date: 'Oct 16', client: 'Northside Storage Holdings', method: 'ACH', applied: '2026-107', amount: 22000, deposited: 'Oct 16' },
+      { date: 'Oct 14', client: 'Mill Creek Pediatrics PA', method: 'Check 4418', applied: '2026-110', amount: 9800, deposited: null },
+      { date: 'Oct 12', client: 'Palmetto Medical Properties', method: 'ACH', applied: '2026-109', amount: 16740, deposited: 'Oct 12' },
+      { date: 'Oct 9', client: 'Grove Street Coffee Co.', method: 'Card (3% fee added)', applied: '2026-105', amount: 3300, deposited: 'Oct 10' },
+      { date: 'Oct 7', client: 'Bayside PT', method: 'Check 1022', applied: 'Retainer · Bayside PT', amount: 3100, deposited: null }
+    ];
+    var undeposited = recs.filter(function (r) { return !r.deposited; });
+    var undepSum = undeposited.reduce(function (a, r) { return a + r.amount; }, 0);
+    var receipts = recs.map(function (r) {
+      var dep = r.deposited || (st.deposited ? 'Oct 18' : null);
+      var p = dep ? Object.assign(pill('done'), { status: 'Deposited ' + dep }) : Object.assign(pill('waiting'), { status: 'Undeposited' });
+      return Object.assign(p, { date: r.date, client: r.client, method: r.method, applied: r.applied, amount: money(r.amount) });
+    });
+
+    // ---------- Header: KPIs and tabs ----------
+    var kpis = [
+      { label: 'Receivables', value: money(arTotal), note: invoices.length + ' open invoices', color: '#141414', go: function () { self.setState({ tab: 'ar', bucket: null }); } },
+      { label: 'Over 60 days', value: money(over60Sum), note: over60.length + ' invoices need follow-up', color: '#B42318', go: function () { self.setState({ tab: 'ar', bucket: 'over60' }); } },
+      { label: 'Ready to bill', value: money(billAll), note: bills.length + ' projects · Oct 31 cutoff', color: '#141414', go: function () { self.setState({ tab: 'bill' }); } },
+      { label: 'Payables', value: money(apTotal), note: bills2.length + ' bills · ' + needs + ' need approval', color: '#141414', go: function () { self.setState({ tab: 'ap' }); } },
+      { label: 'Collected in October', value: money(54940), note: recs.length + ' receipts · ' + money(undepSum) + ' not yet deposited', color: '#141414', go: function () { self.setState({ tab: 'rec' }); } }
+    ];
+    var TABS = [['ar', 'Receivables', invoices.length], ['bill', 'Ready to bill', bills.length], ['ap', 'Payables', bills2.length], ['rec', 'Receipts & deposits', recs.length]];
+    var tabs = TABS.map(function (t) {
+      var on = st.tab === t[0];
+      return {
+        label: t[1], count: t[2], on: on,
+        pick: function () { self.setState({ tab: t[0], drawer: null }); },
+        style: 'display:inline-flex;align-items:center;height:50px;padding:0 12px;border:0;background:transparent;cursor:pointer;white-space:nowrap;text-transform:uppercase;letter-spacing:0.07em;font-size:12.5px;font-weight:' + (on ? '700' : '500') + ';color:' + (on ? '#141414' : '#4D4D4D') + ';box-shadow:' + (on ? 'inset 0 -3px 0 #141414' : 'none')
+      };
+    });
+
+    return {
+      modules: RAIL(modules), railMin: RAILV.railMin, railMax: RAILV.railMax, railChev: RAILV.railChev, railToggleLabel: RAILV.railToggleLabel, railToggle: RAILV.railToggle, railNavStyle: RAILV.railNavStyle, railLogoStyle: RAILV.railLogoStyle, railToggleStyle: RAILV.railToggleStyle, kpis: kpis, tabs: tabs,
+      tabAR: st.tab === 'ar', tabBill: st.tab === 'bill', tabAP: st.tab === 'ap', tabRec: st.tab === 'rec',
+      aging: aging, hasBucket: !!st.bucket, clearBucket: function () { self.setState({ bucket: null }); },
+      openRows: openRows,
+      openSummary: openRows.length + ' shown · ' + money(shownSum),
+      drawerOpen: !!inv && st.tab === 'ar', inv: inv || { lines: [] },
+      closeDrawer: function () { self.setState({ drawer: null }); },
+      billRows: billRows, billSum: billSumText, billSelCount: billSelCount,
+      createLabel: st.drafts ? 'Drafts created' : 'Create ' + billSelCount + ' draft invoices · ' + money(billSum.total),
+      createBg: billSelCount ? '#141414' : '#8A8A8A',
+      createDrafts: function () { if (billSelCount) self.setState({ drafts: true }); },
+      draftsMade: st.drafts,
+      draftsMsg: billSelCount + ' draft invoices created for ' + money(billSum.total) + '. Review and send them from Receivables; they sync to QuickBooks when sent.',
+      goBill: function () { self.setState({ tab: 'bill', drawer: null }); },
+      apRows: apRows, apSummary: money(apTotal) + ' · ' + needs + ' need approval',
+      receipts: receipts,
+      depositLabel: st.deposited ? 'Deposit recorded' : 'Deposit ' + undeposited.length + ' receipts · ' + money(undepSum),
+      depositBg: st.deposited ? '#8A8A8A' : '#141414',
+      makeDeposit: function () { self.setState({ deposited: true }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

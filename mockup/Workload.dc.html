@@ -1,0 +1,484 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ArchiTrac — Workload</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=Barlow:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F2F2F2}
+a{color:#141414}a:hover{color:#000000}
+button{font:inherit;color:inherit}
+h1,h2,h3,th,.cap{text-transform:uppercase;letter-spacing:0.08em}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; font-family: 'Barlow', system-ui, sans-serif; font-size: 14px; color: #141414; background: #F2F2F2">
+
+<nav aria-label="Main menu" style="{{railNavStyle}}">
+<a href="Home.dc.html" aria-label="ArchiTrac home" style="{{railLogoStyle}}">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 26px"><path d="M3 20h18"></path><path d="M5 20V9l7-5 7 5v11"></path><path d="M9 20v-6h6v6"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span style="font-size: 13px; font-weight: 700; letter-spacing: 0.16em">ARCHITRAC</span></sc-if>
+</a>
+<sc-for list="{{modules}}" as="m" hint-placeholder-count="15">
+<sc-if value="{{m.isLabel}}" hint-placeholder-val="{{ false }}">
+<span style="{{m.labelStyle}}">{{m.labelText}}</span>
+</sc-if>
+<sc-if value="{{m.isLink}}" hint-placeholder-val="{{ true }}">
+<a href="{{m.href}}" aria-current="{{m.current}}" aria-label="{{m.label}}" title="{{m.label}}" style="{{m.rowStyle}}">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 20px"><path d="{{m.icon}}"></path></svg>
+<sc-if value="{{m.showLabel}}" hint-placeholder-val="{{ true }}"><span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{m.label}}</span></sc-if>
+<sc-if value="{{m.addon}}" hint-placeholder-val="{{ false }}"><span style="{{m.addStyle}}">{{m.addText}}</span></sc-if>
+</a>
+</sc-if>
+</sc-for>
+<button type="button" onClick="{{railToggle}}" aria-label="{{railToggleLabel}}" title="{{railToggleLabel}}" style="{{railToggleStyle}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 18px; transform: rotate({{railChev}}deg)"><path d="M4 4v16"></path><path d="M15 7l-5 5 5 5"></path><path d="M10 12h10"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span>Collapse menu</span></sc-if>
+</button>
+</nav>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 10px 32px; background: #141414; color: #F2F2F2">
+<button type="button" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px 0 4px; border: 1px solid #3A3A3A; border-radius: 2px; background: transparent; color: #F2F2F2; cursor: pointer">
+<span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; background: #F2F2F2; color: #141414; font-size: 12px; font-weight: 700">F</span>
+<span style="font-weight: 600">[FIRM NAME]</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+<span class="cap" style="color: #F2F2F2; font-weight: 500">Workload</span>
+<div style="margin-left: auto; display: flex; align-items: center; gap: 12px">
+<a href="Settings.dc.html" aria-label="Settings" title="Settings" style="width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 2px; color: #BDBDBD"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></a>
+<span title="You" style="width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #3A3A3A; color: #FFFFFF; font-size: 11px; font-weight: 600">BM</span>
+</div>
+</header>
+
+<div style="background: #FFFFFF; border-bottom: 1px solid #DCDCDC">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px; padding: 32px 32px 28px">
+<div style="flex: 1 1 380px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">WHO'S BUSY · BUILT FROM EVERY PROJECT SCHEDULE</div>
+<h1 style="margin: 10px 0 0; font-size: 30px; line-height: 1.15; font-weight: 500">Workload</h1>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<div role="group" aria-label="Range" style="display: inline-flex; gap: 2px; padding: 3px; border-radius: 2px; background: #E3E3E3">
+<sc-for list="{{ranges}}" as="r" hint-placeholder-count="2"><button type="button" aria-pressed="{{r.on}}" onClick="{{r.pick}}" style="{{r.style}}">{{r.label}}</button></sc-for>
+</div>
+<div role="group" aria-label="Show" style="display: inline-flex; gap: 2px; padding: 3px; border-radius: 2px; background: #E3E3E3">
+<sc-for list="{{modes}}" as="r" hint-placeholder-count="2"><button type="button" aria-pressed="{{r.on}}" onClick="{{r.pick}}" style="{{r.style}}">{{r.label}}</button></sc-for>
+</div>
+<label style="display: inline-flex; align-items: center; gap: 8px; margin-left: 6px; cursor: pointer; font-weight: 500">
+<button type="button" role="switch" aria-checked="{{tentAria}}" aria-label="Show tentative work" onClick="{{toggleTent}}" style="{{tentTrack}}"><span style="{{tentKnob}}"></span></button>
+Tentative work
+</label>
+</div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); border-top: 1px solid #EBEBEB">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="5">
+<button type="button" onClick="{{k.click}}" style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 20px 32px 22px; border: 0; border-right: 1px solid #EBEBEB; background: transparent; text-align: left; cursor: {{k.cursor}}">
+<span class="cap" style="font-size: 11px; font-weight: 500; color: #3A3A3A">{{k.label}}</span>
+<span style="font-size: 26px; line-height: 1.15; font-weight: 500; font-variant-numeric: tabular-nums; color: {{k.color}}">{{k.value}}</span>
+<span style="font-size: 12.5px; color: {{k.noteColor}}">{{k.note}}</span>
+</button>
+</sc-for>
+</div>
+</div>
+
+<main style="position: relative; flex: 1; display: flex; flex-direction: column; gap: 14px; padding: 28px 32px 32px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+<div role="group" aria-label="Team" style="display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 2px; background: #E3E3E3">
+<sc-for list="{{teamFilters}}" as="f" hint-placeholder-count="5"><button type="button" aria-pressed="{{f.on}}" onClick="{{f.pick}}" style="{{f.style}}">{{f.label}}</button></sc-for>
+</div>
+<div style="margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 14px; font-size: 12px; color: #4D4D4D">
+<sc-for list="{{legend}}" as="l" hint-placeholder-count="4"><span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="{{l.sw}}"></span>{{l.label}}</span></sc-for>
+</div>
+</div>
+
+<sc-if value="{{tentOn}}" hint-placeholder-val="{{ true }}">
+<section aria-label="Tentative work from the pipeline" style="display: flex; flex-direction: column; gap: 10px; padding: 14px 16px; background: #F7F3FC; border: 1px solid #E2D6F3; border-radius: 2px">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px"><span class="cap" style="font-size: 11px; font-weight: 700; color: #5B2E9E">Tentative · from the Marketing pipeline</span><span style="font-size: 12.5px; color: #4D4D4D">Check a pursuit to add its proposal staffing plan as dashed hours. Nothing is booked until it's won.</span><a href="Marketing.dc.html" style="margin-left: auto; font-size: 12.5px; font-weight: 500">Open pipeline</a></div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 8px">
+<sc-for list="{{pursuits}}" as="q" hint-placeholder-count="4">
+<button type="button" aria-pressed="{{q.on}}" onClick="{{q.pick}}" style="{{q.style}}"><span aria-hidden="true" style="{{q.box}}">{{q.mark}}</span><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">{{q.name}}</span><span style="font-size: 12px; color: #4D4D4D">{{q.meta}}</span></span></button>
+</sc-for>
+</div>
+</section>
+</sc-if>
+
+<section aria-label="Workload by person and week" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="min-width: {{minW}}px">
+<div style="display: grid; grid-template-columns: {{cols}}; align-items: end; border-bottom: 1px solid #DCDCDC; background: #FAFAFA">
+<span class="cap" style="padding: 10px 18px; font-size: 11px; font-weight: 500; color: #666666">Person · capacity</span>
+<sc-for list="{{weeks}}" as="w" hint-placeholder-count="8">
+<span style="display: flex; flex-direction: column; align-items: center; gap: 1px; padding: 8px 2px; font-size: 11px; color: #666666"><span class="cap" style="font-weight: 600; color: #3A3A3A">{{w.label}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: {{w.noteColor}}">{{w.note}}</span></span>
+</sc-for>
+</div>
+
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+<div style="padding: 8px 18px 6px; background: #F5F5F5; border-bottom: 1px solid #EBEBEB; display: flex; align-items: baseline; gap: 10px">
+<span class="cap" style="font-size: 11px; font-weight: 700">{{g.name}}</span><span style="font-size: 12px; color: #666666">Leader {{g.leader}}</span>
+</div>
+<sc-for list="{{g.people}}" as="p" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: {{cols}}; align-items: center; border-bottom: 1px solid #EBEBEB">
+<button type="button" onClick="{{p.toggle}}" aria-expanded="{{p.open}}" style="display: flex; align-items: center; gap: 10px; padding: 8px 10px 8px 18px; border: 0; background: transparent; cursor: pointer; text-align: left; min-width: 0">
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#666666" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 12px; transform: rotate({{p.chev}}deg)"><path d="M9 6l6 6-6 6"></path></svg>
+<span style="{{p.avatar}}">{{p.initials}}</span>
+<span style="display: flex; flex-direction: column; min-width: 0"><span style="font-weight: 600; white-space: nowrap">{{p.role}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #666666">{{p.capText}}</span></span>
+</button>
+<sc-for list="{{p.cells}}" as="c" hint-placeholder-count="8">
+<button type="button" onClick="{{c.pick}}" aria-label="{{c.aria}}" style="{{c.style}}">{{c.text}}</button>
+</sc-for>
+</div>
+<sc-if value="{{p.open}}" hint-placeholder-val="{{ false }}">
+<sc-for list="{{p.projects}}" as="pr" hint-placeholder-count="3">
+<div style="display: grid; grid-template-columns: {{cols}}; align-items: center; border-bottom: 1px solid #F2F2F2; background: #FCFCFC">
+<a href="{{pr.href}}" style="padding: 6px 10px 6px 64px; font-size: 12.5px; color: #3A3A3A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{pr.name}}</a>
+<sc-for list="{{pr.cells}}" as="c" hint-placeholder-count="8"><span style="text-align: center; font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #4D4D4D">{{c}}</span></sc-for>
+</div>
+</sc-for>
+</sc-if>
+</sc-for>
+</sc-for>
+
+<div style="display: grid; grid-template-columns: {{cols}}; align-items: center; background: #FAFAFA; border-top: 1px solid #DCDCDC">
+<span class="cap" style="padding: 10px 18px; font-size: 11px; font-weight: 700">Firm total</span>
+<sc-for list="{{totals}}" as="t" hint-placeholder-count="8">
+<span style="display: flex; flex-direction: column; align-items: center; padding: 6px 2px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600; color: {{t.color}}">{{t.pct}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 10.5px; color: #666666">{{t.h}}</span></span>
+</sc-for>
+</div>
+</div>
+</section>
+<p style="margin: 0; font-size: 12.5px; color: #666666">Hours come from tasks assigned in each project's Schedule, spread over the task's working days. Dashed cells add tentative hours from proposals in the pipeline. Capacity is each person's billable target from the Team page, less holidays. Click a week to see the tasks behind it and reassign.</p>
+
+<sc-if value="{{drawerOpen}}" hint-placeholder-val="{{ false }}">
+<aside aria-label="Week details" style="position: absolute; top: 28px; right: 32px; z-index: 5; width: min(480px, calc(100% - 64px)); background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; box-shadow: 0 12px 32px rgba(20, 20, 20, 0.16), 0 2px 6px rgba(20, 20, 20, 0.08)">
+<div style="padding: 20px 22px 16px; border-bottom: 1px solid #EBEBEB">
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">{{dr.kicker}}</span>
+<button type="button" onClick="{{closeDrawer}}" aria-label="Close" style="margin-left: auto; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 2px; background: transparent; cursor: pointer; color: #4D4D4D">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg>
+</button>
+</div>
+<h2 style="margin: 4px 0 6px; font-size: 18px; font-weight: 600; text-transform: none; letter-spacing: 0">{{dr.title}}</h2>
+<div style="color: {{dr.subColor}}; font-weight: 500">{{dr.sub}}</div>
+</div>
+<ul style="list-style: none; margin: 0; padding: 0">
+<sc-for list="{{dr.tasks}}" as="t" hint-placeholder-count="3">
+<li style="display: flex; flex-direction: column; gap: 8px; padding: 14px 22px; border-bottom: 1px solid #EBEBEB">
+<span style="display: flex; align-items: baseline; gap: 10px"><span style="font-weight: 600">{{t.name}}</span><span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600">{{t.hrs}}</span></span>
+<span style="font-size: 12.5px; color: #4D4D4D">{{t.project}} · {{t.dates}} · {{t.total}}</span>
+<span style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+<label style="display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px"><span class="cap" style="font-size: 10.5px; font-weight: 600; color: #4D4D4D">{{t.assignLabel}}</span>
+<select onChange="{{t.reassign}}" style="height: 30px; padding: 0 6px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; font: inherit">
+<sc-for list="{{t.options}}" as="o" hint-placeholder-count="5"><option value="{{o.v}}" selected="{{o.on}}">{{o.label}}</option></sc-for>
+</select></label>
+<a href="{{t.href}}" style="margin-left: auto; font-size: 12.5px; font-weight: 500">Open schedule</a>
+</span>
+</li>
+</sc-for>
+</ul>
+<p style="margin: 0; padding: 12px 22px 16px; font-size: 12.5px; color: #666666">{{dr.foot}}</p>
+</aside>
+</sc-if>
+
+</main>
+</div>
+</div>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1120}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var st = Object.assign({ range: 8, mode: 'hours', team: 'All', open: {}, cell: null, unassigned: false, re: {}, tent: true, inc: {} }, this.state || {});
+
+    // ---------- Module bar ----------
+    var ICONS = {
+      home: 'M3 11l9-7 9 7M5 10v10h14V10',
+      projects: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+      contacts: 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M21 19v-1a4 4 0 0 0-3-3.9M15 3.2a3.5 3.5 0 0 1 0 6.6',
+      team: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1',
+      workload: 'M4 5h9M4 10h15M4 15h12M4 20h6',
+      time: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7v5l3 2',
+      reports: 'M3 21h18M6 21V11M11 21V5M16 21v-7M21 21v-4',
+      schedule: 'M4 4v16M4 6h7M7 10h8M10 14h7M8 18h5',
+      build: 'M3 18h18M5 18v-3a7 7 0 0 1 14 0v3M12 8V5M9 11V8.7M15 11V8.7',
+      accounting: 'M12 3v18M16 7.5c-.5-1.5-2-2.5-4-2.5-2.2 0-4 1.3-4 3s1.8 2.6 4 3 4 1.3 4 3-1.8 3-4 3c-2 0-3.5-1-4-2.5',
+      marketing: 'M3 10v4h4l6 4V6L7 10zM17 9a4 4 0 0 1 0 6M19.5 6.5a7.5 7.5 0 0 1 0 11',
+      knowledge: 'M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2zM22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z',
+      website: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M3 12h18M12 3c2.5 2.5 3.8 5.6 3.8 9s-1.3 6.5-3.8 9M12 3c-2.5 2.5-3.8 5.6-3.8 9s1.3 6.5 3.8 9',
+      hiring: 'M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 7h18v12H3zM3 12h18'
+    };
+
+    // ---------- Menu rail: wide with labels, or collapsed to icons (remembered per browser) ----------
+    var RAILMIN = (this.state && this.state.railMin != null) ? this.state.railMin : (function () { try { return window.localStorage.getItem('architrac.railMin') === '1'; } catch (e) { return false; } })();
+    function RAIL(list) {
+      return list.map(function (m) {
+        if (m.isLabel) return Object.assign({}, m, { labelText: RAILMIN ? '' : m.label,
+          labelStyle: RAILMIN ? 'display:block;height:1px;margin:10px 8px;background:#2A2A2A' : 'display:block;padding:16px 12px 6px;font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8A8A8A' });
+        var cur = !!m.current;
+        return Object.assign({}, m, {
+          showLabel: !RAILMIN, addText: RAILMIN ? '' : 'ADD',
+          addStyle: RAILMIN ? 'position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:#8A8A8A' : 'flex:0 0 auto;padding:1px 5px;border-radius:2px;background:#2A2A2A;color:#D9D9D9;font-size:9.5px;font-weight:600;letter-spacing:0.06em',
+          rowStyle: 'position:relative;display:flex;align-items:center;gap:12px;height:40px;box-sizing:border-box;border-radius:2px;text-decoration:none;white-space:nowrap;text-transform:uppercase;letter-spacing:0.08em;font-size:12px;'
+            + (RAILMIN ? 'width:44px;justify-content:center;padding:0;margin:0 auto;' : 'width:100%;padding:0 12px;')
+            + 'font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#8A8A8A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+        });
+      });
+    }
+    var RAILV = {
+      railMin: RAILMIN, railMax: !RAILMIN, railChev: RAILMIN ? 180 : 0,
+      railToggleLabel: RAILMIN ? 'Expand menu' : 'Collapse menu',
+      railToggle: function () { var v = !RAILMIN; try { window.localStorage.setItem('architrac.railMin', v ? '1' : '0'); } catch (e) {} self.setState({ railMin: v }); },
+      railNavStyle: 'flex:0 0 ' + (RAILMIN ? 64 : 216) + 'px;width:' + (RAILMIN ? 64 : 216) + 'px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;padding:14px ' + (RAILMIN ? '10px' : '12px') + ';background:#000000;color:#BDBDBD;transition:width 140ms, flex-basis 140ms',
+      railLogoStyle: 'display:flex;align-items:center;gap:10px;height:40px;margin-bottom:8px;color:#F2F2F2;text-decoration:none;' + (RAILMIN ? 'justify-content:center;' : 'padding:0 10px;'),
+      railToggleStyle: 'margin-top:auto;display:flex;align-items:center;gap:10px;height:38px;border:0;border-radius:2px;background:transparent;color:#8A8A8A;cursor:pointer;font-size:12px;font-weight:500;letter-spacing:0.04em;' + (RAILMIN ? 'justify-content:center;width:44px;margin-left:auto;margin-right:auto;' : 'width:100%;padding:0 12px;')
+    };
+    var CURRENT = 'workload';
+    var modules = [
+      { label: 'Home', key: 'home', href: 'Home.dc.html' }, { label: 'Projects', key: 'projects', href: 'Projects.dc.html' },
+      { label: 'Contacts', key: 'contacts', href: 'Contacts.dc.html' }, { label: 'Team', key: 'team', href: 'Team.dc.html' },
+      { label: 'Time', key: 'time', href: 'Time.dc.html' },
+      { label: 'Reports', key: 'reports', href: 'Reports.dc.html' },
+      { label: 'Modules', isLabel: true },
+      { label: 'Build', key: 'build', href: 'Build.dc.html' }, { label: 'Workload', key: 'workload', href: 'Workload.dc.html' },
+      { label: 'Accounting', key: 'accounting', href: 'Accounting.dc.html' }, { label: 'Marketing', key: 'marketing', href: 'Marketing.dc.html' },
+      { label: 'Knowledge', key: 'knowledge', href: 'Knowledge.dc.html' },
+      { label: 'Website', key: 'website', href: 'Website.dc.html' }, { label: 'Hiring', key: 'hiring', href: 'Hiring.dc.html' }
+    ].map(function (m) {
+      if (m.isLabel) return { isLabel: true, isLink: false, label: m.label };
+      var cur = m.key === CURRENT;
+      return {
+        isLabel: false, isLink: true, label: m.label, icon: ICONS[m.key], addon: !!m.addon,
+        href: m.href || '#', current: cur ? 'page' : null,
+        style: 'position:relative;flex:0 0 64px;height:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:2px;text-decoration:none;font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#9A9A9A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';text-transform:uppercase;letter-spacing:0.06em;font-size:9.5px;box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+      };
+    });
+
+
+
+    // ---------- Calendar ----------
+    var MS = 86400000, W0 = Date.UTC(2026, 9, 19);              // Monday Oct 19, 2026
+    function D(s) { var p = s.split('-').map(Number); return Date.UTC(p[0], p[1] - 1, p[2]); }
+    var HOL = [D('2026-11-26'), D('2026-11-27'), D('2026-12-24'), D('2026-12-25'), D('2027-01-01')];
+    function isWork(t) { var w = new Date(t).getUTCDay(); return w !== 0 && w !== 6 && HOL.indexOf(t) < 0; }
+    function wd(a, b) { var n = 0; for (var t = a; t <= b; t += MS) if (isWork(t)) n++; return n; }
+    var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    function md(t) { var d = new Date(t); return MON[d.getUTCMonth()] + ' ' + d.getUTCDate(); }
+    var NW = st.range;
+    var WEEKS = []; for (var i = 0; i < NW; i++) { var a = W0 + i * 7 * MS; WEEKS.push({ a: a, b: a + 4 * MS, days: wd(a, a + 4 * MS) }); }
+
+    // ---------- People (capacity = 40 h × billable target from the Team page) ----------
+    var TEAMS = [['med', 'Medical studio', 'JR'], ['com', 'Commercial studio', 'TC'], ['lead', 'Leadership', 'BM']];
+    var PEOPLE = [
+      ['JR', 'Project manager', 'med', 32], ['KL', 'Designer', 'med', 34], ['DS', 'Designer', 'med', 34], ['AP', 'Interior designer', 'med', 32], ['EW', 'Intern', 'med', 18],
+      ['TC', 'Project architect', 'com', 32], ['SG', 'Project architect', 'com', 32], ['LP', 'Designer', 'com', 34], ['RH', 'Designer', 'com', 34], ['CF', 'Designer', 'com', 34], ['NB', 'Designer · starts Oct 26', 'com', 34, D('2026-10-26')],
+      ['BM', 'Principal', 'lead', 20]
+    ];
+    var pById = {}; PEOPLE.forEach(function (p) { pById[p[0]] = p; });
+    function capOf(id, w) { var p = pById[id]; if (p[4] && w.b < p[4]) return 0; var days = p[4] && w.a < p[4] ? wd(p[4], w.b) : w.days; return p[3] * days / 5; }
+
+    // ---------- Tasks from every project schedule ----------
+    var PROJ = {
+      mob: ['Medical Office Building', 'Main.dc.html'], ns: ['Northside Self-Storage', 'ProjectCA.dc.html#ns'], mc: ['Mill Creek Pediatrics', 'ProjectCA.dc.html#mc'],
+      hv: ['Harbor View Dental', '#'], rr: ['Riverside Retail Shell', '#'], ok: ['Oakmont Urgent Care', '#'], ps: ['Pine Street Bistro', '#'],
+      so: ['Summerville Office Park, Bldg B', '#'], cc: ['Coastal Credit Union Branch', '#'], gs: ['Grove Street Café', '#'],
+      hp: ['Harbor Pointe Medical Pavilion', 'Marketing.dc.html'], bp: ['Bayside Physical Therapy', 'Marketing.dc.html'], fr: ['Folly Road Taproom', 'Marketing.dc.html'], lv: ['Lakeview Retail Center', 'Marketing.dc.html']
+    };
+    // Pursuits from the Marketing pipeline, with the staffing plan from each proposal.
+    var PURSUITS = [
+      { id: 'hp', name: 'Harbor Pointe Medical Pavilion', stage: 'Negotiating', chance: 75, start: 'Nov 16' },
+      { id: 'bp', name: 'Bayside Physical Therapy', stage: 'Proposal sent', chance: 50, start: 'Nov 9' },
+      { id: 'fr', name: 'Folly Road Taproom', stage: 'Proposal sent', chance: 50, start: 'Nov 30' },
+      { id: 'lv', name: 'Lakeview Retail Center', stage: 'Proposal draft', chance: 30, start: 'Jan 4' }
+    ];
+    function included(pk) { var q = PURSUITS.filter(function (x) { return x.id === pk; })[0]; return st.inc[pk] != null ? st.inc[pk] : q.chance >= 50; }
+    // [id, project, task, who, start, end, total hours]  (perWeek: true = hours each week)
+    var TASKS = [
+      ['t8', 'mob', 'DD plans & sections', 'JR', '2026-10-19', '2026-11-06', 105],
+      ['t9', 'mob', 'Structural coordination', 'KL', '2026-10-26', '2026-11-13', 60],
+      ['t10', 'mob', 'Owner finish & FF&E selections', 'AP', '2026-10-15', '2026-11-20', 60],
+      ['t12', 'mob', 'CD sheet set', 'JR', '2026-11-30', '2027-01-15', 160],
+      ['t13', 'mob', 'Project specifications', 'KL', '2026-12-07', '2027-01-15', 120],
+      ['mob-dh', 'mob', 'Door hardware schedule', '', '2026-12-07', '2026-12-18', 30],
+      ['ns-ca', 'ns', 'Construction administration', 'JR', '2026-10-19', '2027-03-12', 8, true],
+      ['ns-sub', 'ns', 'Submittal reviews', 'SG', '2026-10-19', '2026-12-18', 6, true],
+      ['mc-ca', 'mc', 'Construction administration', 'AP', '2026-10-19', '2026-12-18', 6, true],
+      ['hv1', 'hv', 'Programming & test fits', 'BM', '2026-10-19', '2026-11-06', 30],
+      ['hv2', 'hv', 'Existing conditions survey', 'DS', '2026-10-19', '2026-10-23', 16],
+      ['hv3', 'hv', 'SD plans', 'DS', '2026-11-16', '2026-12-04', 60],
+      ['rr1', 'rr', 'Site plan options', 'SG', '2026-10-19', '2026-11-06', 60],
+      ['rr2', 'rr', 'Zoning review', 'JR', '2026-10-26', '2026-10-30', 12],
+      ['rr3', 'rr', 'SD shell design', 'SG', '2026-11-09', '2026-12-18', 140],
+      ['rr4', 'rr', 'SD elevations', 'LP', '2026-11-30', '2026-12-18', 60],
+      ['rr5', 'rr', 'Code analysis', '', '2026-11-02', '2026-11-13', 16],
+      ['ok1', 'ok', 'SD plans', 'KL', '2026-10-19', '2026-10-30', 50],
+      ['ok2', 'ok', 'SD elevations & renderings', 'RH', '2026-10-19', '2026-11-13', 100],
+      ['ok3', 'ok', 'DD plans', 'RH', '2026-11-16', '2027-01-08', 180],
+      ['ok4', 'ok', 'Interior elevations', '', '2026-11-30', '2026-12-18', 60],
+      ['ok5', 'ok', 'Code research', 'EW', '2026-10-19', '2026-11-06', 24],
+      ['ps1', 'ps', 'Kitchen equipment coordination', 'AP', '2026-10-19', '2026-10-30', 30],
+      ['ps2', 'ps', 'DD plans', 'CF', '2026-10-19', '2026-11-13', 100],
+      ['ps3', 'ps', 'Construction documents', 'CF', '2026-11-16', '2026-12-18', 120],
+      ['ps4', 'ps', 'CD support', 'NB', '2026-11-16', '2026-12-18', 80],
+      ['ps5', 'ps', 'Finish selections', 'AP', '2026-11-02', '2026-11-13', 24],
+      ['so1', 'so', 'CD sheets', 'LP', '2026-10-19', '2026-11-20', 140],
+      ['so2', 'so', 'CD details', 'TC', '2026-10-19', '2026-11-20', 110],
+      ['so3', 'so', 'Specifications', 'KL', '2026-11-02', '2026-11-13', 40],
+      ['so4', 'so', 'Door & finish schedules', 'DS', '2026-10-26', '2026-11-13', 50],
+      ['so5', 'so', 'QA/QC review', 'BM', '2026-11-16', '2026-11-20', 12],
+      ['cc1', 'cc', 'Permit comment responses', 'TC', '2026-10-19', '2026-10-30', 20],
+      ['cc2', 'cc', 'Bid questions', 'BM', '2026-11-02', '2026-11-13', 10],
+      ['gs1', 'gs', 'Record drawings & closeout', 'EW', '2026-10-19', '2026-10-30', 20],
+      ['ad1', 'rr', 'Riverside SD support', 'NB', '2026-10-26', '2026-11-13', 45],
+      ['hp1', 'hp', 'Project management', 'JR', '2026-11-16', '2027-01-15', 12, true],
+      ['hp2', 'hp', 'Schematic design', 'TC', '2026-11-23', '2027-01-15', 20, true],
+      ['hp3', 'hp', 'SD production', 'RH', '2026-11-30', '2027-01-15', 8, true],
+      ['bp1', 'bp', 'Test fit & SD', 'DS', '2026-11-09', '2026-12-04', 10, true],
+      ['bp2', 'bp', 'Project management', 'JR', '2026-11-09', '2026-12-04', 4, true],
+      ['fr1', 'fr', 'Kitchen planning & DD', 'AP', '2026-11-30', '2027-01-08', 14, true],
+      ['fr2', 'fr', 'DD production', 'NB', '2026-12-07', '2027-01-08', 12, true],
+      ['lv1', 'lv', 'Site & shell planning', 'SG', '2027-01-04', '2027-02-26', 24, true],
+      ['lv2', 'lv', 'Shell design', 'LP', '2027-01-04', '2027-02-26', 16, true]
+    ].map(function (t) {
+      var s = D(t[4]), e = D(t[5]), days = wd(s, e);
+      var who = st.re[t[0]] != null ? st.re[t[0]] : t[3];
+      var tent = ['hp', 'bp', 'fr', 'lv'].indexOf(t[1]) >= 0;
+      return { id: t[0], proj: t[1], name: t[2], who: who, s: s, e: e, total: t[7] ? t[6] * days / 5 : t[6], perDay: t[7] ? t[6] / 5 : t[6] / days, weekly: !!t[7], rate: t[6], tent: tent };
+    });
+    function hoursIn(t, w) { var a = Math.max(t.s, w.a), b = Math.min(t.e, w.b); return a > b ? 0 : t.perDay * wd(a, b); }
+
+    // ---------- Load grid ----------
+    var LOAD = {}; PEOPLE.forEach(function (p) { LOAD[p[0]] = WEEKS.map(function () { return 0; }); });
+    var TENT = {}; PEOPLE.forEach(function (p) { TENT[p[0]] = WEEKS.map(function () { return 0; }); });
+    function live(t) { return !t.tent || (st.tent && included(t.proj)); }
+    TASKS.forEach(function (t) { if (!t.who || !LOAD[t.who] || !live(t)) return; WEEKS.forEach(function (w, i) { (t.tent ? TENT : LOAD)[t.who][i] += hoursIn(t, w); }); });
+    function free(id, i) { return capOf(id, WEEKS[i]) - LOAD[id][i] - TENT[id][i]; }
+
+    var HATCH = 'repeating-linear-gradient(135deg,#C2410C 0 1.5px,#F6CDB9 1.5px 5px)';
+    function shade(pct, cap) {
+      if (!cap) return ['#FAFAFA', '#AFAFAF', '400'];
+      if (pct > 1.05) return ['#C2410C', '#FFFFFF', '700'];
+      if (pct >= 0.85) return ['#2F5BAA', '#FFFFFF', '600'];
+      if (pct >= 0.5) return ['#C9D6EE', '#1E3F7A', '600'];
+      return ['#F2F2F2', '#4D4D4D', '500'];
+    }
+    var cols = '230px repeat(' + NW + ', minmax(68px, 1fr))';
+    var weeks = WEEKS.map(function (w) { var hol = w.days < 5; return { label: md(w.a), note: hol ? (5 - w.days) + ' day holiday' : (w.a <= D('2026-10-23') ? 'this week' : ''), noteColor: hol ? '#9A3412' : '#666666' }; });
+
+    var overPeople = {}, tentOver = {}, firm = WEEKS.map(function () { return { h: 0, c: 0, t: 0 }; });
+    var groups = TEAMS.filter(function (g) { return st.team === 'All' || st.team === g[0]; }).map(function (g) {
+      return {
+        name: g[1], leader: g[2],
+        people: PEOPLE.filter(function (p) { return p[2] === g[0]; }).map(function (p) {
+          var id = p[0], open = !!st.open[id];
+          var cells = WEEKS.map(function (w, i) {
+            var cap = capOf(id, w), h = LOAD[id][i], tH = TENT[id][i], pct = cap ? h / cap : 0, tot = cap ? (h + tH) / cap : 0;
+            firm[i].h += h; firm[i].c += cap; firm[i].t += tH;
+            if (pct > 1.05 && i < 4) overPeople[id] = true;
+            if (tot > 1.05 && pct <= 1.05) tentOver[id] = tentOver[id] || md(w.a);
+            var sh = shade(pct, cap), sel = st.cell && st.cell.p === id && st.cell.w === i;
+            var ring = tH > 0.5 ? ';outline:2px dashed ' + (tot > 1.05 ? '#C2410C' : '#5B2E9E') + ';outline-offset:-2px' : '';
+            return {
+              text: !cap ? '—' : (st.mode === 'pct' ? Math.round((tH > 0.5 ? tot : pct) * 100) + '%' : Math.round(h) + (tH > 0.5 ? ' +' + Math.round(tH) : '')),
+              aria: id + ', week of ' + md(w.a) + ': ' + Math.round(h) + ' of ' + Math.round(cap) + ' hours' + (tH > 0.5 ? ', plus ' + Math.round(tH) + ' tentative' : ''),
+              pick: function () { self.setState({ cell: { p: id, w: i }, unassigned: false }); },
+              style: 'margin:3px;height:34px;border:0;border-radius:2px;cursor:pointer;font-family:IBM Plex Mono,monospace;font-size:' + (tH > 0.5 && st.mode !== 'pct' ? '11.5' : '12.5') + 'px;white-space:nowrap;font-weight:' + sh[2] + ';background:' + sh[0] + ';color:' + sh[1] + ring + ';box-shadow:' + (sel ? '0 0 0 2px #FFFFFF, 0 0 0 4px #141414' : 'none')
+            };
+          });
+          var byProj = {};
+          TASKS.forEach(function (t) { if (t.who !== id || !live(t)) return; WEEKS.forEach(function (w, i) { var h = hoursIn(t, w); if (h) { byProj[t.proj] = byProj[t.proj] || WEEKS.map(function () { return 0; }); byProj[t.proj][i] += h; } }); });
+          var next4 = [0, 1, 2, 3].reduce(function (a, i) { return a + LOAD[id][i]; }, 0), cap4 = [0, 1, 2, 3].reduce(function (a, i) { return a + capOf(id, WEEKS[i]); }, 0);
+          return {
+            initials: id, role: p[1], open: open, chev: open ? 90 : 0,
+            capText: p[3] + ' h/wk · next 4 wks ' + (cap4 ? Math.round(next4 / cap4 * 100) : 0) + '%',
+            avatar: 'flex:0 0 28px;width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10.5px;font-weight:600;color:#FFFFFF;background:#3A3A3A',
+            toggle: function () { var o = Object.assign({}, st.open); o[id] = !o[id]; self.setState({ open: o }); },
+            cells: cells,
+            projects: Object.keys(byProj).map(function (k) { var tt = ['hp', 'bp', 'fr', 'lv'].indexOf(k) >= 0; return { name: PROJ[k][0] + (tt ? ' · tentative' : ''), href: PROJ[k][1], cells: byProj[k].map(function (h) { return h ? (tt ? '+' : '') + Math.round(h) : '·'; }) }; })
+          };
+        })
+      };
+    });
+    var totals = firm.map(function (f) { var pct = f.c ? f.h / f.c : 0, tp = f.c ? (f.h + f.t) / f.c : 0; return { pct: Math.round(pct * 100) + '%' + (f.t > 0.5 ? ' → ' + Math.round(tp * 100) + '%' : ''), h: Math.round(f.h) + (f.t > 0.5 ? ' +' + Math.round(f.t) : '') + ' / ' + Math.round(f.c), color: pct > 1 ? '#C2410C' : '#141414' }; });
+
+    // ---------- Drawer ----------
+    function options(task, wi) {
+      var list = PEOPLE.filter(function (p) { return capOf(p[0], WEEKS[wi]) > 0; }).map(function (p) { return { v: p[0], f: free(p[0], wi) }; });
+      list.sort(function (a, b) { return b.f - a.f; });
+      var out = list.map(function (o) { return { v: o.v, on: o.v === task.who, label: o.v + ' · ' + (o.f >= 0 ? Math.round(o.f) + ' h free' : Math.round(-o.f) + ' h over') + ' that week' }; });
+      if (!task.who) out.unshift({ v: '', on: true, label: 'Unassigned' });
+      return out;
+    }
+    function taskRow(t, wi) {
+      var h = hoursIn(t, WEEKS[wi]);
+      return {
+        name: t.name + (t.tent ? ' · tentative' : ''), project: PROJ[t.proj][0] + (t.tent ? ' (' + PURSUITS.filter(function (x) { return x.id === t.proj; })[0].stage + ', ' + PURSUITS.filter(function (x) { return x.id === t.proj; })[0].chance + '%)' : ''), href: t.tent ? 'Marketing.dc.html' : PROJ[t.proj][1],
+        dates: md(t.s) + ' – ' + md(t.e), total: t.weekly ? t.rate + ' h every week' : Math.round(t.total) + ' h total',
+        hrs: Math.round(h) + ' h this week', assignLabel: t.who ? 'Reassign' : 'Assign',
+        options: options(t, wi),
+        reassign: function (e) { var r = Object.assign({}, st.re); r[t.id] = e.target.value; self.setState({ re: r }); }
+      };
+    }
+    var dr = null;
+    if (st.unassigned) {
+      var un = TASKS.filter(function (t) { return !t.who && !t.tent; });
+      dr = { kicker: 'UNASSIGNED TASKS', title: un.length + ' tasks with nobody on them', sub: Math.round(un.reduce(function (a, t) { return a + t.total; }, 0)) + ' hours that won\'t show in anyone\'s workload', subColor: '#9A3412',
+        tasks: un.map(function (t) { var wi = Math.max(0, Math.min(NW - 1, Math.floor((t.s - W0) / (7 * MS)))); return taskRow(t, wi); }),
+        foot: 'People are sorted by free time in the task\'s first week. Assigning here updates the project schedule.' };
+    } else if (st.cell) {
+      var pid = st.cell.p, wi = st.cell.w, w = WEEKS[wi], cap = capOf(pid, w), h = LOAD[pid][wi] + TENT[pid][wi];
+      var tasks = TASKS.filter(function (t) { return t.who === pid && live(t) && hoursIn(t, w) > 0; });
+      var over = h - cap;
+      dr = { kicker: pid + ' · WEEK OF ' + md(w.a).toUpperCase(), title: pById[pid][1].split(' ·')[0] + ' · ' + Math.round(h) + ' of ' + Math.round(cap) + ' h',
+        sub: over > 0.5 ? Math.round(over) + ' h over capacity. Move a task to someone with room.' : Math.round(-over) + ' h free this week.', subColor: over > 0.5 ? '#9A3412' : '#1D6234',
+        tasks: tasks.map(function (t) { return taskRow(t, wi); }),
+        foot: 'Reassigning moves the whole task in its project schedule, and both people\'s workload updates.' };
+    }
+
+    // ---------- Header ----------
+    var h4 = 0, c4 = 0; for (var k = 0; k < 4; k++) { h4 += firm[k].h; c4 += firm[k].c; }
+    var overList = Object.keys(overPeople);
+    var roomH = PEOPLE.reduce(function (a, p) { var f = 0; for (var k2 = 0; k2 < 4; k2++) f += Math.max(0, capOf(p[0], WEEKS[k2]) - LOAD[p[0]][k2]); return a + f; }, 0);
+    var unT = TASKS.filter(function (t) { return !t.who && !t.tent; });
+    var kpis = [
+      { label: 'Next 4 weeks', value: Math.round(h4 / c4 * 100) + '%', note: Math.round(h4) + ' of ' + Math.round(c4) + ' h scheduled', color: '#141414', noteColor: '#666666', cursor: 'default', click: function () {} },
+      { label: 'Overbooked', value: String(overList.length), note: overList.length ? overList.join(', ') + ' in the next 4 weeks' : 'Nobody in the next 4 weeks', color: overList.length ? '#C2410C' : '#1D6234', noteColor: overList.length ? '#9A3412' : '#666666', cursor: 'default', click: function () {} },
+      { label: 'Room for new work', value: Math.round(roomH) + ' h', note: 'Unscheduled time, next 4 weeks', color: '#141414', noteColor: '#666666', cursor: 'default', click: function () {} },
+      { label: 'If pursuits are won', value: st.tent ? String(Object.keys(tentOver).length) : 'Off', note: !st.tent ? 'Turn on tentative work to test' : (Object.keys(tentOver).length ? Object.keys(tentOver).map(function (k3) { return k3 + ' from ' + tentOver[k3]; }).join(' · ') + ' · over capacity' : 'Nobody goes over capacity'), color: st.tent && Object.keys(tentOver).length ? '#5B2E9E' : '#141414', noteColor: st.tent && Object.keys(tentOver).length ? '#5B2E9E' : '#666666', cursor: 'default', click: function () {} },
+      { label: 'Unassigned tasks', value: String(unT.length), note: unT.length ? Math.round(unT.reduce(function (a, t) { return a + t.total; }, 0)) + ' h with nobody on them · assign' : 'Every task has an owner', color: unT.length ? '#C2410C' : '#1D6234', noteColor: unT.length ? '#9A3412' : '#666666', cursor: 'pointer', click: function () { self.setState({ unassigned: true, cell: null }); } }
+    ];
+    function seg(list, cur, keyName) {
+      return list.map(function (r) { var on = r[0] === cur; return { label: r[1], on: on ? 'true' : 'false', pick: function () { var o = {}; o[keyName] = r[0]; self.setState(o); },
+        style: 'height:30px;padding:0 12px;border:0;border-radius:2px;cursor:pointer;font-size:13px;font-weight:' + (on ? '600' : '500') + ';background:' + (on ? '#FFFFFF' : 'transparent') + ';box-shadow:' + (on ? '0 1px 2px rgba(20,20,20,0.12)' : 'none') }; });
+    }
+    var sw = 'display:inline-block;width:18px;height:12px;border-radius:2px;';
+    return {
+      modules: RAIL(modules), railMin: RAILV.railMin, railMax: RAILV.railMax, railChev: RAILV.railChev, railToggleLabel: RAILV.railToggleLabel, railToggle: RAILV.railToggle, railNavStyle: RAILV.railNavStyle, railLogoStyle: RAILV.railLogoStyle, railToggleStyle: RAILV.railToggleStyle, kpis: kpis,
+      ranges: seg([[8, '8 weeks'], [12, '12 weeks']], st.range, 'range'),
+      modes: seg([['hours', 'Hours'], ['pct', '% of capacity']], st.mode, 'mode'),
+      teamFilters: seg([['All', 'Everyone'], ['med', 'Medical studio'], ['com', 'Commercial studio'], ['lead', 'Leadership']], st.team, 'team'),
+      legend: [{ label: 'Under 50%', sw: sw + 'background:#F2F2F2;box-shadow:inset 0 0 0 1px #DCDCDC' }, { label: '50–85%', sw: sw + 'background:#C9D6EE' }, { label: '85–105% · full', sw: sw + 'background:#2F5BAA' }, { label: 'Over capacity', sw: sw + 'background:#C2410C' }, { label: '+ Tentative', sw: sw + 'background:#FFFFFF;outline:2px dashed #5B2E9E;outline-offset:-2px' }],
+      tentOn: st.tent, tentTrack: 'position:relative;flex:0 0 40px;width:40px;height:22px;padding:0;border:0;border-radius:11px;cursor:pointer;background:' + (st.tent ? '#5B2E9E' : '#C4C4C4'),
+      tentKnob: 'position:absolute;top:3px;width:16px;height:16px;border-radius:50%;background:#FFFFFF;transition:left 120ms;left:' + (st.tent ? '21px' : '3px'),
+      tentAria: st.tent ? 'true' : 'false', toggleTent: function () { self.setState({ tent: !st.tent }); },
+      pursuits: PURSUITS.map(function (q) {
+        var on = included(q.id), hrs = TASKS.filter(function (t) { return t.proj === q.id; }).reduce(function (a, t) { return a + WEEKS.reduce(function (b, w) { return b + hoursIn(t, w); }, 0); }, 0);
+        return { name: q.name, meta: q.stage + ' · ' + q.chance + '% · starts ' + q.start + ' · ' + Math.round(hrs) + ' h in view', on: on,
+          pick: function () { var o = Object.assign({}, st.inc); o[q.id] = !on; self.setState({ inc: o }); },
+          style: 'display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:2px;cursor:pointer;text-align:left;background:#FFFFFF;border:' + (on ? '2px solid #5B2E9E' : '1px dashed #C4C4C4') + ';opacity:' + (on ? '1' : '0.75'),
+          box: 'flex:0 0 16px;width:16px;height:16px;margin-top:1px;border-radius:2px;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;color:#FFFFFF;font-size:12px;line-height:1;' + (on ? 'background:#5B2E9E' : 'border:1.5px solid #8A8A8A'), mark: on ? '✓' : '' };
+      }),
+      cols: cols, minW: 230 + NW * 74, weeks: weeks, groups: groups, totals: totals,
+      drawerOpen: !!dr, dr: dr || { tasks: [] }, closeDrawer: function () { self.setState({ cell: null, unassigned: false }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

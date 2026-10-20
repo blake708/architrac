@@ -1,0 +1,974 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ArchiTrac — Medical Office Building</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=Barlow:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F2F2F2}
+a{color:#141414}a:hover{color:#000000}
+button{font:inherit;color:inherit}
+h1,h2,h3,th,.cap{text-transform:uppercase;letter-spacing:0.08em}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; font-family: 'Barlow', system-ui, sans-serif; font-size: 14px; color: #141414; background: #F2F2F2">
+
+<nav aria-label="Main menu" style="{{railNavStyle}}">
+<a href="Home.dc.html" aria-label="ArchiTrac home" style="{{railLogoStyle}}">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 26px"><path d="M3 20h18"></path><path d="M5 20V9l7-5 7 5v11"></path><path d="M9 20v-6h6v6"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span style="font-size: 13px; font-weight: 700; letter-spacing: 0.16em">ARCHITRAC</span></sc-if>
+</a>
+<sc-for list="{{modules}}" as="m" hint-placeholder-count="15">
+<sc-if value="{{m.isLabel}}" hint-placeholder-val="{{ false }}">
+<span style="{{m.labelStyle}}">{{m.labelText}}</span>
+</sc-if>
+<sc-if value="{{m.isLink}}" hint-placeholder-val="{{ true }}">
+<a href="{{m.href}}" aria-current="{{m.current}}" aria-label="{{m.label}}" title="{{m.label}}" style="{{m.rowStyle}}">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 20px"><path d="{{m.icon}}"></path></svg>
+<sc-if value="{{m.showLabel}}" hint-placeholder-val="{{ true }}"><span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{m.label}}</span></sc-if>
+<sc-if value="{{m.addon}}" hint-placeholder-val="{{ false }}"><span style="{{m.addStyle}}">{{m.addText}}</span></sc-if>
+</a>
+</sc-if>
+</sc-for>
+<button type="button" onClick="{{railToggle}}" aria-label="{{railToggleLabel}}" title="{{railToggleLabel}}" style="{{railToggleStyle}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 18px; transform: rotate({{railChev}}deg)"><path d="M4 4v16"></path><path d="M15 7l-5 5 5 5"></path><path d="M10 12h10"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span>Collapse menu</span></sc-if>
+</button>
+</nav>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 10px 32px; background: #141414; color: #F2F2F2">
+<button type="button" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px 0 4px; border: 1px solid #3A3A3A; border-radius: 2px; background: transparent; color: #F2F2F2; cursor: pointer">
+<span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; background: #F2F2F2; color: #141414; font-size: 12px; font-weight: 700">F</span>
+<span style="font-weight: 600">[FIRM NAME]</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+<nav aria-label="Breadcrumb" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: #BDBDBD">
+<a href="Projects.dc.html" style="color: #BDBDBD; text-decoration: none">Projects</a>
+<span aria-hidden="true">/</span>
+<span class="cap" style="color: #F2F2F2; font-weight: 500">Medical Office Building</span>
+</nav>
+<div style="margin-left: auto; display: flex; align-items: center; gap: 12px">
+<a href="Settings.dc.html" aria-label="Settings" title="Settings" style="width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 2px; color: #BDBDBD"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></a>
+<span title="You" style="width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #3A3A3A; color: #FFFFFF; font-size: 11px; font-weight: 600">BM</span>
+</div>
+</header>
+
+<div style="background: #FFFFFF; border-bottom: 1px solid #DCDCDC">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 32px 32px 28px">
+<div style="flex: 1 1 420px; min-width: 0">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">
+<span>2026-014</span><span aria-hidden="true">·</span><span>MEDICAL</span><span aria-hidden="true">·</span><span>GROUND-UP</span><span aria-hidden="true">·</span><span>20,000 SF</span>
+</div>
+<h1 style="margin: 10px 0 8px; font-size: 30px; line-height: 1.15; font-weight: 500">Medical Office Building</h1>
+<p style="margin: 0; color: #4D4D4D">Palmetto Medical Properties · [Site address]</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<span style="display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 2px; background: #FCE7DF; color: #9A3412; font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase"><span aria-hidden="true" style="display: inline-block; width: 7px; height: 7px; transform: rotate(45deg); background: #C2410C"></span>At risk</span>
+<button type="button" style="height: 36px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer; font-weight: 500">Edit project</button>
+<button type="button" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-weight: 600">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+New
+</button>
+</div>
+</div>
+
+<ol aria-label="Project phases" style="list-style: none; margin: 0; padding: 24px 32px 28px; border-top: 1px solid #EBEBEB; display: grid; grid-template-columns: repeat(7, minmax(120px, 1fr)); gap: 10px; overflow-x: auto">
+<sc-for list="{{stepper}}" as="s" hint-placeholder-count="7">
+<li aria-current="{{s.current}}" style="display: flex; flex-direction: column; gap: 8px">
+<span aria-hidden="true" style="{{s.bar}}"></span>
+<span style="display: flex; align-items: center; gap: 6px">
+<sc-if value="{{s.done}}" hint-placeholder-val="{{ false }}">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1D6234" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>
+</sc-if>
+<span style="{{s.labelStyle}}">{{s.name}}</span>
+</span>
+<span style="font-size: 12px; color: #666666">{{s.note}}</span>
+</li>
+</sc-for>
+</ol>
+
+<div role="tablist" aria-label="Project sections" style="display: flex; gap: 6px; padding: 4px 22px 0; border-top: 1px solid #EBEBEB; overflow-x: auto">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="9">
+<sc-if value="{{t.isLink}}" hint-placeholder-val="{{ false }}">
+<a href="{{t.href}}" style="{{t.style}}">{{t.label}}</a>
+</sc-if>
+<sc-if value="{{t.isTab}}" hint-placeholder-val="{{ true }}">
+<button type="button" role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}</button>
+</sc-if>
+</sc-for>
+</div>
+</div>
+
+<main style="flex: 1; display: flex; flex-direction: column; gap: 16px; padding: 28px 32px 32px">
+
+<sc-if value="{{tabOverview}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="5">
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<span class="cap" style="font-size: 11px; font-weight: 500; color: #3A3A3A">{{k.label}}</span>
+<span style="font-size: 24px; line-height: 1.15; font-weight: 500; font-variant-numeric: tabular-nums">{{k.value}}</span>
+<span style="font-size: 12.5px; color: #666666">{{k.note}}</span>
+</div>
+</sc-for>
+</div>
+
+<section aria-labelledby="snap-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding: 16px 18px 12px">
+<h2 id="snap-title" style="margin: 0; font-size: 13px; font-weight: 600">Project snapshot</h2>
+<span style="font-size: 12.5px; color: #666666">Hours, billing and profit by phase · click a phase to see who worked on it</span>
+<label style="margin-left: auto; display: inline-flex; align-items: center; gap: 10px; cursor: pointer">
+<button type="button" role="switch" aria-checked="{{ohOn}}" aria-label="Include overhead" onClick="{{toggleOh}}" style="{{ohTrack}}"><span style="{{ohKnob}}"></span></button>
+<span style="display: flex; flex-direction: column; line-height: 1.2"><span style="font-weight: 600">Include overhead</span><span style="font-size: 11.5px; color: #666666">{{ohRateText}} of labor · <a href="Settings.dc.html">Settings</a></span></span>
+</label>
+<span aria-hidden="true" style="width: 1px; height: 28px; background: #DCDCDC"></span>
+<button type="button" onClick="{{goFees}}" style=" padding: 0; border: 0; background: transparent; cursor: pointer; font-weight: 500; text-decoration: underline; text-underline-offset: 2px">Phases &amp; fees</button>
+</div>
+<table style="width: 100%; min-width: 1040px; border-collapse: collapse">
+<thead>
+<tr style="text-align: left; font-size: 11px; color: #666666; background: #FAFAFA">
+<th scope="col" style="padding: 9px 18px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Phase</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC; width: 230px">Hours · used / budget</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Fee</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Billed</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">{{costHead}}</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Profit to date</th>
+<th scope="col" style="padding: 9px 18px 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Projected profit</th>
+</tr>
+</thead>
+<sc-for list="{{snap}}" as="p" hint-placeholder-count="6">
+<tbody>
+<tr onClick="{{p.toggle}}" style="cursor: pointer; background: {{p.rowBg}}">
+<th scope="row" style="padding: 11px 18px; border-bottom: 1px solid #EBEBEB; text-align: left; text-transform: none; letter-spacing: 0; font-weight: 500">
+<span style="display: flex; align-items: center; gap: 8px">
+<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#666666" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transform: rotate({{p.chev}}deg); transition: transform 120ms"><path d="M9 6l6 6-6 6"></path></svg>
+<span style="display: flex; flex-direction: column; gap: 4px; align-items: flex-start">
+<button type="button" aria-expanded="{{p.open}}" style="padding: 0; border: 0; background: transparent; cursor: pointer; font-weight: 600; text-align: left">{{p.name}}</button>
+<span style="{{p.pillStyle}}"><span aria-hidden="true" style="{{p.dotStyle}}"></span>{{p.status}}</span>
+</span>
+</span>
+</th>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB">
+<span style="display: flex; flex-direction: column; gap: 5px">
+<span role="img" aria-label="{{p.barLabel}}" style="position: relative; display: block; height: 10px; border-radius: 1px; background: #EBEBEB"><span style="{{p.usedStyle}}"></span><span style="{{p.overStyle}}"></span></span>
+<span style="display: flex; justify-content: space-between; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: {{p.hoursColor}}"><span>{{p.hoursText}}</span><span>{{p.hoursPct}}</span></span>
+</span>
+</td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{p.feeText}}</td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px"><span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><span>{{p.billedText}}</span><span style="font-family: 'Barlow', sans-serif; font-size: 11.5px; color: #666666">{{p.billedPctText}} of fee</span></span></td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{p.costText}}</td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px"><span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><span style="color: {{p.profitColor}}; font-weight: 600">{{p.profitText}}</span><span style="font-family: 'Barlow', sans-serif; font-size: 11.5px; color: #666666">{{p.profitNote}}</span></span></td>
+<td style="padding: 11px 18px 11px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px"><span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><span style="font-weight: 600; color: {{p.projColor}}">{{p.projText}}</span><span style="font-family: 'Barlow', sans-serif; font-size: 11.5px; color: #666666">{{p.projNote}}</span></span></td>
+</tr>
+<sc-if value="{{p.open}}" hint-placeholder-val="{{ false }}">
+<tr>
+<td colspan="7" style="padding: 0 18px 14px 40px; border-bottom: 1px solid #EBEBEB; background: #FAFAFA">
+<sc-if value="{{p.hasPeople}}" hint-placeholder-val="{{ true }}">
+<table style="width: 100%; max-width: 640px; border-collapse: collapse; margin-top: 10px; font-size: 13px">
+<thead><tr style="text-align: left; font-size: 10.5px; color: #666666"><th scope="col" style="padding: 6px 8px 6px 0; font-weight: 500">Person</th><th scope="col" style="padding: 6px 8px; font-weight: 500; text-align: right">Hours</th><th scope="col" style="padding: 6px 8px; font-weight: 500; text-align: right">Cost rate</th><th scope="col" style="padding: 6px 0 6px 8px; font-weight: 500; text-align: right">{{costHead}}</th></tr></thead>
+<tbody>
+<sc-for list="{{p.people}}" as="w" hint-placeholder-count="3">
+<tr>
+<td style="padding: 6px 8px 6px 0; border-top: 1px solid #E3E3E3"><span style="display: inline-flex; align-items: center; gap: 8px"><span style="{{w.avatar}}">{{w.initials}}</span>{{w.role}}</span></td>
+<td style="padding: 6px 8px; border-top: 1px solid #E3E3E3; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{w.hours}} h</td>
+<td style="padding: 6px 8px; border-top: 1px solid #E3E3E3; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{w.rate}}</td>
+<td style="padding: 6px 0 6px 8px; border-top: 1px solid #E3E3E3; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{w.cost}}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</sc-if>
+<p style="margin: 10px 0 0; font-size: 12.5px; color: #4D4D4D">{{p.detailNote}}</p>
+</td>
+</tr>
+</sc-if>
+</tbody>
+</sc-for>
+<tbody>
+<tr style="font-weight: 600; background: #FAFAFA">
+<th scope="row" style="padding: 12px 18px; text-align: left">Total</th>
+<td style="padding: 12px 10px; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{snapTot.hours}}</td>
+<td style="padding: 12px 10px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{snapTot.fee}}</td>
+<td style="padding: 12px 10px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{snapTot.billed}}</td>
+<td style="padding: 12px 10px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{snapTot.cost}}</td>
+<td style="padding: 12px 10px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: {{snapTot.profitColor}}">{{snapTot.profit}}</td>
+<td style="padding: 12px 18px 12px 10px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px"><span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px"><span>{{snapTot.proj}}</span><span style="font-family: 'Barlow', sans-serif; font-size: 11.5px; font-weight: 500; color: #666666">{{snapTot.projMargin}} margin</span></span></td>
+</tr>
+</tbody>
+</table>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 12px 18px 14px; border-top: 1px solid #EBEBEB; font-size: 12px; color: #4D4D4D">
+<span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 16px; height: 8px; background: #2F5BAA"></span>Hours used</span>
+<span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 16px; height: 8px; background: repeating-linear-gradient(135deg, #C2410C 0 1.5px, #F6CDB9 1.5px 5px)"></span>Over budget</span>
+<span style="flex: 1 1 420px; text-align: right; color: #666666">{{snapFoot}}</span>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+
+<div style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+
+<section aria-labelledby="info-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 16px 18px">
+<h2 id="info-title" style="margin: 0 0 12px; font-size: 13px; font-weight: 600">Project information</h2>
+<dl style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px 24px; margin: 0">
+<sc-for list="{{info}}" as="i" hint-placeholder-count="10">
+<div style="display: flex; flex-direction: column; gap: 2px; padding-bottom: 10px; border-bottom: 1px solid #EBEBEB">
+<dt class="cap" style="font-size: 11px; font-weight: 500; color: #666666">{{i.label}}</dt>
+<dd style="margin: 0">{{i.value}}</dd>
+</div>
+</sc-for>
+</dl>
+</section>
+
+</div>
+
+<div style="flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+
+<section aria-labelledby="next-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<h2 id="next-title" style="margin: 0; padding: 14px 18px 10px; font-size: 13px; font-weight: 600; border-bottom: 1px solid #EBEBEB">Coming up</h2>
+<ul style="list-style: none; margin: 0; padding: 0">
+<sc-for list="{{upcoming}}" as="u" hint-placeholder-count="4">
+<li style="display: flex; align-items: center; gap: 12px; padding: 10px 18px; border-bottom: 1px solid #EBEBEB">
+<span style="flex: 0 0 48px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">{{u.date}}</span>
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px">
+<span style="{{u.chipStyle}}">{{u.module}}</span>
+<span>{{u.title}}</span>
+</span>
+</li>
+</sc-for>
+</ul>
+</section>
+
+<section aria-labelledby="team-mini-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 14px 18px">
+<div style="display: flex; align-items: baseline; margin-bottom: 10px">
+<h2 id="team-mini-title" style="margin: 0; font-size: 13px; font-weight: 600">Team</h2>
+<button type="button" onClick="{{goTeam}}" style="margin-left: auto; padding: 0; border: 0; background: transparent; cursor: pointer; font-weight: 500; text-decoration: underline; text-underline-offset: 2px">View all</button>
+</div>
+<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{staff}}" as="s" hint-placeholder-count="4">
+<li style="display: flex; align-items: center; gap: 10px">
+<span style="{{s.avatar}}">{{s.initials}}</span>
+<span style="flex: 1; display: flex; flex-direction: column">
+<span style="font-weight: 500">{{s.role}}</span>
+<span style="font-size: 12px; color: #666666">{{s.hours}} h logged</span>
+</span>
+</li>
+</sc-for>
+</ul>
+</section>
+
+<section aria-labelledby="log-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<h2 id="log-title" style="margin: 0; padding: 14px 18px 10px; font-size: 13px; font-weight: 600; border-bottom: 1px solid #EBEBEB">Recent activity</h2>
+<ol style="list-style: none; margin: 0; padding: 10px 18px 14px; display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{activity}}" as="a" hint-placeholder-count="5">
+<li style="display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 10px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #666666">{{a.date}}</span>
+<span style="line-height: 1.4"><strong style="font-weight: 600">{{a.who}}</strong> {{a.text}}</span>
+</li>
+</sc-for>
+</ol>
+</section>
+
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{tabFees}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 16px">
+<section aria-labelledby="fees-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding: 14px 18px 10px">
+<h2 id="fees-title" style="margin: 0; font-size: 13px; font-weight: 600">Architectural fee by phase</h2>
+<span style="font-size: 12.5px; color: #666666">Fixed fee · billed by % complete</span>
+<button type="button" style="margin-left: auto; height: 32px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer; font-weight: 500">Add phase</button>
+</div>
+<table style="width: 100%; min-width: 900px; border-collapse: collapse">
+<thead>
+<tr style="text-align: left; font-size: 11px; color: #666666; background: #FAFAFA">
+<th scope="col" style="padding: 9px 18px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Phase</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Fee</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">% of total</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Billed</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Left to bill</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Hours (used / budget)</th>
+<th scope="col" style="padding: 9px 18px 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Status</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{phases}}" as="p" hint-placeholder-count="6">
+<tr>
+<td style="padding: 11px 18px; border-bottom: 1px solid #EBEBEB; font-weight: 500">{{p.name}}</td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{p.feeText}}</td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{p.sharePct}}%</td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{p.billedText}}</td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{p.leftText}}</td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: {{p.hoursColor}}">{{p.hoursText}}</td>
+<td style="padding: 11px 18px 11px 10px; border-bottom: 1px solid #EBEBEB"><span style="{{p.pillStyle}}"><span aria-hidden="true" style="{{p.dotStyle}}"></span>{{p.status}}</span></td>
+</tr>
+</sc-for>
+<tr style="font-weight: 600">
+<td style="padding: 11px 18px">Total</td>
+<td style="padding: 11px 10px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{feeTotal}}</td>
+<td style="padding: 11px 10px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">100%</td>
+<td style="padding: 11px 10px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{billedTotal}}</td>
+<td style="padding: 11px 10px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{leftTotal}}</td>
+<td style="padding: 11px 10px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{hoursTotal}}</td>
+<td style="padding: 11px 18px 11px 10px"></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+<section aria-labelledby="cons-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding: 14px 18px 10px">
+<h2 id="cons-title" style="margin: 0; font-size: 13px; font-weight: 600">Consultant fees</h2>
+<span style="font-size: 12.5px; color: #666666">From accepted vendor proposals · billed through to the client</span>
+</div>
+<table style="width: 100%; min-width: 760px; border-collapse: collapse">
+<thead>
+<tr style="text-align: left; font-size: 11px; color: #666666; background: #FAFAFA">
+<th scope="col" style="padding: 9px 18px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Discipline</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Consultant</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Proposal</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Invoiced to us</th>
+<th scope="col" style="padding: 9px 18px 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Billed to client</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{consultants}}" as="c" hint-placeholder-count="4">
+<tr>
+<td style="padding: 11px 18px; border-bottom: 1px solid #EBEBEB; font-weight: 500">{{c.discipline}}</td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB">{{c.firm}}</td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{c.fee}}</td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{c.invoiced}}</td>
+<td style="padding: 11px 18px 11px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{c.billed}}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</section>
+</div>
+</sc-if>
+
+<sc-if value="{{tabTeam}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+<section aria-labelledby="staff-title" style="flex: 1 1 380px; min-width: 0; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<div style="display: flex; align-items: baseline; padding: 14px 18px 10px; border-bottom: 1px solid #EBEBEB">
+<h2 id="staff-title" style="margin: 0; font-size: 13px; font-weight: 600">Firm team</h2>
+<button type="button" style="margin-left: auto; height: 30px; padding: 0 10px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer">Add person</button>
+</div>
+<ul style="list-style: none; margin: 0; padding: 0">
+<sc-for list="{{staff}}" as="s" hint-placeholder-count="4">
+<li style="display: flex; align-items: center; gap: 12px; padding: 12px 18px; border-bottom: 1px solid #EBEBEB">
+<span style="{{s.avatar}}">{{s.initials}}</span>
+<span style="flex: 1; display: flex; flex-direction: column">
+<span style="font-weight: 600">{{s.initials}} · {{s.role}}</span>
+<span style="font-size: 12.5px; color: #666666">{{s.note}}</span>
+</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{s.hours}} h</span>
+</li>
+</sc-for>
+</ul>
+</section>
+<section aria-labelledby="ext-title" style="flex: 999 1 520px; min-width: 0; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<div style="display: flex; align-items: baseline; padding: 14px 18px 10px; border-bottom: 1px solid #EBEBEB">
+<h2 id="ext-title" style="margin: 0; font-size: 13px; font-weight: 600">Client &amp; consultants</h2>
+<button type="button" style="margin-left: auto; height: 30px; padding: 0 10px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer">Add contact</button>
+</div>
+<ul style="list-style: none; margin: 0; padding: 0">
+<sc-for list="{{external}}" as="e" hint-placeholder-count="6">
+<li style="display: grid; grid-template-columns: 150px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 18px; border-bottom: 1px solid #EBEBEB">
+<span class="cap" style="font-size: 11px; font-weight: 500; color: #4D4D4D">{{e.role}}</span>
+<span style="display: flex; flex-direction: column; min-width: 0">
+<span style="font-weight: 600">{{e.firm}}</span>
+<span style="font-size: 12.5px; color: #666666">{{e.contact}}</span>
+</span>
+<a href="#" style="font-size: 12.5px; font-weight: 500">{{e.action}}</a>
+</li>
+</sc-for>
+</ul>
+</section>
+</div>
+</sc-if>
+
+<sc-if value="{{tabBuild}}" hint-placeholder-val="{{ false }}">
+<section style="display: flex; flex-direction: column; align-items: flex-start; gap: 12px; max-width: 640px; padding: 28px; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<span style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 2px; background: #FCE7DF; color: #9A3412">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 18h18M5 18v-3a7 7 0 0 1 14 0v3M12 8V5M9 11V8.7M15 11V8.7"></path></svg>
+</span>
+<h2 style="margin: 0; font-size: 15px; font-weight: 600">Build starts at Construction Admin</h2>
+<p style="margin: 0; line-height: 1.5; color: #3A3A3A">RFIs, submittals, field reports and pay applications for this project will live here. Construction Admin is scheduled to begin after contract award on <strong style="font-weight: 600">Mar 12, 2027</strong>.</p>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" style="height: 36px; padding: 0 14px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-weight: 600">Set up Build now</button>
+<button type="button" style="height: 36px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer">Invite the contractor</button>
+<a href="Build.dc.html" style="display: inline-flex; align-items: center; height: 36px; padding: 0 4px; font-weight: 500">See Build on a project in construction</a>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{tabInvoices}}" hint-placeholder-val="{{ false }}">
+<section aria-labelledby="inv-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding: 14px 18px 10px">
+<h2 id="inv-title" style="margin: 0; font-size: 13px; font-weight: 600">Invoices</h2>
+<span style="{{acctChip}}">Accounting</span>
+<span style="font-size: 12.5px; color: #666666">{{invoiceSummary}}</span>
+<button type="button" style="margin-left: auto; height: 32px; padding: 0 12px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-weight: 600">New invoice</button>
+</div>
+<table style="width: 100%; min-width: 760px; border-collapse: collapse">
+<thead>
+<tr style="text-align: left; font-size: 11px; color: #666666; background: #FAFAFA">
+<th scope="col" style="padding: 9px 18px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Invoice</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Date</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">For</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Amount</th>
+<th scope="col" style="padding: 9px 18px 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Status</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{invoices}}" as="v" hint-placeholder-count="4">
+<tr>
+<td style="padding: 11px 18px; border-bottom: 1px solid #EBEBEB; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px"><a href="#">{{v.number}}</a></td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{v.date}}</td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB">{{v.desc}}</td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{v.amount}}</td>
+<td style="padding: 11px 18px 11px 10px; border-bottom: 1px solid #EBEBEB"><span style="{{v.pillStyle}}"><span aria-hidden="true" style="{{v.dotStyle}}"></span>{{v.status}}</span></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</section>
+</sc-if>
+
+<sc-if value="{{tabDocs}}" hint-placeholder-val="{{ false }}">
+<section aria-labelledby="docs-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding: 14px 18px 10px; border-bottom: 1px solid #EBEBEB">
+<h2 id="docs-title" style="margin: 0; font-size: 13px; font-weight: 600">Documents</h2>
+<span style="font-size: 12.5px; color: #666666">Letters, meeting agendas and minutes, addenda, construction revisions and additional services</span>
+<button type="button" style="margin-left: auto; height: 32px; padding: 0 12px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-weight: 600">New document</button>
+</div>
+<ul style="list-style: none; margin: 0; padding: 0">
+<sc-for list="{{docs}}" as="d" hint-placeholder-count="6">
+<li>
+<a href="#" style="display: grid; grid-template-columns: 170px minmax(0, 1fr) 88px 40px 110px; align-items: center; gap: 12px; padding: 12px 18px; border-bottom: 1px solid #EBEBEB; color: #141414; text-decoration: none">
+<span class="cap" style="font-size: 11px; font-weight: 600; color: #3A3A3A">{{d.type}}</span>
+<span style="min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{d.title}}</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">{{d.date}}</span>
+<span style="{{d.avatar}}">{{d.who}}</span>
+<span><span style="{{d.pillStyle}}"><span aria-hidden="true" style="{{d.dotStyle}}"></span>{{d.status}}</span></span>
+</a>
+</li>
+</sc-for>
+</ul>
+</section>
+</sc-if>
+
+<sc-if value="{{tabChecklist}}" hint-placeholder-val="{{ false }}">
+<section aria-labelledby="check-title" style="max-width: 760px; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 18px 12px; border-bottom: 1px solid #EBEBEB">
+<h2 id="check-title" style="margin: 0; font-size: 13px; font-weight: 600">Design Development checklist</h2>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">{{checkDone}} of {{checkTotal}} done</span>
+<span aria-hidden="true" style="flex: 0 0 120px; display: block; height: 6px; border-radius: 1px; background: #E3E3E3; overflow: hidden"><span style="display: block; height: 100%; width: {{checkPct}}%; background: #1D6234"></span></span>
+</div>
+<ul style="list-style: none; margin: 0; padding: 6px 0">
+<sc-for list="{{checklist}}" as="c" hint-placeholder-count="6">
+<li>
+<label style="display: flex; align-items: center; gap: 12px; padding: 10px 18px; cursor: pointer">
+<input type="checkbox" checked="{{c.done}}" onChange="{{c.toggle}}" style="width: 18px; height: 18px; margin: 0; accent-color: #1D6234">
+<span style="{{c.textStyle}}">{{c.text}}</span>
+<span style="margin-left: auto; font-size: 12px; color: #666666">{{c.owner}}</span>
+</label>
+</li>
+</sc-for>
+</ul>
+</section>
+</sc-if>
+
+<sc-if value="{{tabPortal}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 16px">
+<section aria-label="Portal status" style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 16px 20px; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<span style="display: inline-flex; align-items: center; gap: 6px; height: 24px; padding: 0 9px; border-radius: 2px; background: #E2F1E6; color: #1D6234; font-size: 10.5px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase"><span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 50%; background: #1D6234"></span>Portal on</span>
+<span style="flex: 1 1 360px; color: #3A3A3A">Palmetto Medical Properties sees this project at <span style="font-family: 'IBM Plex Mono', monospace">portal.[firm-domain].com</span>, with your firm's name and logo. Last client visit: <strong style="font-weight: 600">Oct 17</strong>.</span>
+<button type="button" style="height: 36px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer; font-weight: 500">Invite client user</button>
+<a href="Portal.dc.html" style="display: inline-flex; align-items: center; height: 36px; padding: 0 16px; border-radius: 2px; background: #141414; color: #FFFFFF; font-weight: 600; text-decoration: none">Preview as client</a>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+<div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<section aria-labelledby="req-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding: 14px 18px 10px">
+<h2 id="req-title" style="margin: 0; font-size: 13px; font-weight: 600">Requests to the client</h2>
+<span style="font-size: 12.5px; color: #666666">Approvals and signatures. Every response is recorded with name, date and time.</span>
+<button type="button" style="margin-left: auto; height: 32px; padding: 0 12px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-weight: 600">+ New request</button>
+</div>
+<table style="width: 100%; min-width: 640px; border-collapse: collapse">
+<thead><tr style="text-align: left; font-size: 11px; color: #666666; background: #FAFAFA">
+<th scope="col" style="padding: 9px 18px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Request</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Type</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Sent</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Client activity</th>
+<th scope="col" style="padding: 9px 18px 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Status</th>
+</tr></thead>
+<tbody>
+<sc-for list="{{requests}}" as="r" hint-placeholder-count="5">
+<tr>
+<td style="padding: 11px 18px; border-bottom: 1px solid #EBEBEB; font-weight: 500">{{r.title}}</td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB">{{r.type}}</td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{r.sent}}</td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB; font-size: 12.5px; color: #4D4D4D">{{r.seen}}</td>
+<td style="padding: 11px 18px 11px 10px; border-bottom: 1px solid #EBEBEB"><span style="{{r.pillStyle}}"><span aria-hidden="true" style="{{r.dotStyle}}"></span>{{r.status}}</span></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</section>
+
+<section aria-labelledby="pdocs-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding: 14px 18px 10px; border-bottom: 1px solid #EBEBEB">
+<h2 id="pdocs-title" style="margin: 0; font-size: 13px; font-weight: 600">Documents shared with the client</h2>
+<span style="font-size: 12.5px; color: #666666">Nothing is shared until you switch it on. Drafts are never shared.</span>
+</div>
+<ul style="list-style: none; margin: 0; padding: 0">
+<sc-for list="{{shareDocs}}" as="d" hint-placeholder-count="6">
+<li style="display: flex; align-items: center; gap: 12px; padding: 10px 18px; border-bottom: 1px solid #F2F2F2">
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-weight: 500">{{d.title}}</span><span style="font-size: 12px; color: #666666">{{d.type}} · {{d.date}}{{d.seen}}</span></span>
+<span style="font-size: 12.5px; color: #4D4D4D">{{d.label}}</span>
+<button type="button" role="switch" aria-checked="{{d.on}}" aria-label="{{d.aria}}" onClick="{{d.toggle}}" style="{{d.track}}"><span style="{{d.knob}}"></span></button>
+</li>
+</sc-for>
+</ul>
+</section>
+</div>
+
+<div style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<section aria-labelledby="sees-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 14px 18px 16px">
+<h2 id="sees-title" style="margin: 0 0 4px; font-size: 13px; font-weight: 600">What the client sees</h2>
+<p style="margin: 0 0 12px; font-size: 12.5px; color: #666666">Internal details stay internal: hours, budgets, profit, notes and the full schedule never show.</p>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{portalShow}}" as="t" hint-placeholder-count="6">
+<div style="display: flex; align-items: flex-start; gap: 12px">
+<button type="button" role="switch" aria-checked="{{t.on}}" aria-label="{{t.label}}" onClick="{{t.toggle}}" style="{{t.track}}"><span style="{{t.knob}}"></span></button>
+<span style="display: flex; flex-direction: column"><span style="font-weight: 500">{{t.label}}</span><span style="font-size: 12.5px; color: #666666">{{t.note}}</span></span>
+</div>
+</sc-for>
+</div>
+</section>
+<section aria-labelledby="who-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<h2 id="who-title" style="margin: 0; padding: 14px 18px 10px; font-size: 13px; font-weight: 600; border-bottom: 1px solid #EBEBEB">People with access</h2>
+<ul style="list-style: none; margin: 0; padding: 4px 0">
+<sc-for list="{{portalPeople}}" as="u" hint-placeholder-count="3">
+<li style="display: flex; align-items: center; gap: 10px; padding: 9px 18px">
+<span style="width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #EBEBEB; font-size: 11px; font-weight: 600">{{u.ini}}</span>
+<span style="flex: 1; display: flex; flex-direction: column"><span style="font-weight: 500">{{u.name}}</span><span style="font-size: 12px; color: #666666">{{u.access}}</span></span>
+<span style="font-size: 12px; color: {{u.color}}">{{u.last}}</span>
+</li>
+</sc-for>
+</ul>
+</section>
+<section aria-labelledby="clog-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<h2 id="clog-title" style="margin: 0; padding: 14px 18px 10px; font-size: 13px; font-weight: 600; border-bottom: 1px solid #EBEBEB">Client activity</h2>
+<ol style="list-style: none; margin: 0; padding: 8px 18px 12px; display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{clientLog}}" as="a" hint-placeholder-count="5">
+<li style="display: grid; grid-template-columns: 48px minmax(0, 1fr); gap: 10px; font-size: 13px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #666666">{{a.d}}</span><span>{{a.t}}</span></li>
+</sc-for>
+</ol>
+</section>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{tabCode}}" hint-placeholder-val="{{ false }}">
+<section aria-labelledby="code-title" style="display: flex; flex-wrap: wrap; gap: 32px; align-items: center; max-width: 1080px; padding: 32px; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<div style="flex: 1 1 340px; display: flex; flex-direction: column; align-items: flex-start; gap: 14px">
+<span style="display: inline-flex; align-items: center; justify-content: center; width: 44px; height: 44px; border-radius: 2px; background: #EFE7FA; color: #5B2E9E">
+<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z"></path><path d="M4 10h16"></path><path d="M10 10v10"></path></svg>
+</span>
+<h2 id="code-title" style="margin: 0; font-size: 16px; font-weight: 600">Add the Code module</h2>
+<p style="margin: 0; line-height: 1.55; color: #3A3A3A">Run a building code analysis right from the project. Enter floors and occupancy areas once, and ArchiTrac checks allowable area, height, stories and occupant load against the IBC tables, then keeps the summary ready for your cover sheet.</p>
+<ul style="margin: 0; padding-left: 18px; line-height: 1.7; color: #3A3A3A">
+<li>Allowable area, height and story checks</li>
+<li>Occupant load by space and floor</li>
+<li>Code summary export for drawings</li>
+</ul>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px">
+<button type="button" style="height: 38px; padding: 0 16px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-weight: 600">Add Code module</button>
+<button type="button" style="height: 38px; padding: 0 14px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer">Learn more</button>
+</div>
+<span style="font-size: 12.5px; color: #666666">Only firm admins can add modules. Others can request it.</span>
+</div>
+<div aria-hidden="true" style="flex: 1 1 380px; min-width: 0; padding: 16px; border: 1px dashed #D4D4D4; border-radius: 2px; background: #FAFAFA; opacity: 0.75">
+<div class="cap" style="font-size: 11px; font-weight: 600; color: #4D4D4D; margin-bottom: 10px">Preview · this project</div>
+<sc-for list="{{code}}" as="c" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: minmax(0, 1fr) 84px 84px; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid #EBEBEB">
+<span style="font-weight: 500">{{c.check}}</span>
+<span style="text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">{{c.allowed}}</span>
+<span style="text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12px">{{c.actual}}</span>
+</div>
+</sc-for>
+</div>
+</section>
+</sc-if>
+
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1380}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var st = Object.assign({ tab: 'overview', checks: {}, pshow: {}, pdoc: {} }, this.state || {});
+
+    // ---------- Module bar ----------
+    var ICONS = {
+      home: 'M3 11l9-7 9 7M5 10v10h14V10',
+      projects: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+      contacts: 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M21 19v-1a4 4 0 0 0-3-3.9M15 3.2a3.5 3.5 0 0 1 0 6.6',
+      team: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1',
+      workload: 'M4 5h9M4 10h15M4 15h12M4 20h6',
+      time: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7v5l3 2',
+      documents: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h6',
+      reports: 'M3 21h18M6 21V11M11 21V5M16 21v-7M21 21v-4',
+      schedule: 'M4 4v16M4 6h7M7 10h8M10 14h7M8 18h5',
+      build: 'M3 18h18M5 18v-3a7 7 0 0 1 14 0v3M12 8V5M9 11V8.7M15 11V8.7',
+      accounting: 'M12 3v18M16 7.5c-.5-1.5-2-2.5-4-2.5-2.2 0-4 1.3-4 3s1.8 2.6 4 3 4 1.3 4 3-1.8 3-4 3c-2 0-3.5-1-4-2.5',
+      marketing: 'M3 10v4h4l6 4V6L7 10zM17 9a4 4 0 0 1 0 6M19.5 6.5a7.5 7.5 0 0 1 0 11',
+      knowledge: 'M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2zM22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z',
+      website: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M3 12h18M12 3c2.5 2.5 3.8 5.6 3.8 9s-1.3 6.5-3.8 9M12 3c-2.5 2.5-3.8 5.6-3.8 9s1.3 6.5 3.8 9',
+      hiring: 'M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 7h18v12H3zM3 12h18'
+    };
+
+    // ---------- Menu rail: wide with labels, or collapsed to icons (remembered per browser) ----------
+    var RAILMIN = (this.state && this.state.railMin != null) ? this.state.railMin : (function () { try { return window.localStorage.getItem('architrac.railMin') === '1'; } catch (e) { return false; } })();
+    function RAIL(list) {
+      return list.map(function (m) {
+        if (m.isLabel) return Object.assign({}, m, { labelText: RAILMIN ? '' : m.label,
+          labelStyle: RAILMIN ? 'display:block;height:1px;margin:10px 8px;background:#2A2A2A' : 'display:block;padding:16px 12px 6px;font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8A8A8A' });
+        var cur = !!m.current;
+        return Object.assign({}, m, {
+          showLabel: !RAILMIN, addText: RAILMIN ? '' : 'ADD',
+          addStyle: RAILMIN ? 'position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:#8A8A8A' : 'flex:0 0 auto;padding:1px 5px;border-radius:2px;background:#2A2A2A;color:#D9D9D9;font-size:9.5px;font-weight:600;letter-spacing:0.06em',
+          rowStyle: 'position:relative;display:flex;align-items:center;gap:12px;height:40px;box-sizing:border-box;border-radius:2px;text-decoration:none;white-space:nowrap;text-transform:uppercase;letter-spacing:0.08em;font-size:12px;'
+            + (RAILMIN ? 'width:44px;justify-content:center;padding:0;margin:0 auto;' : 'width:100%;padding:0 12px;')
+            + 'font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#8A8A8A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+        });
+      });
+    }
+    var RAILV = {
+      railMin: RAILMIN, railMax: !RAILMIN, railChev: RAILMIN ? 180 : 0,
+      railToggleLabel: RAILMIN ? 'Expand menu' : 'Collapse menu',
+      railToggle: function () { var v = !RAILMIN; try { window.localStorage.setItem('architrac.railMin', v ? '1' : '0'); } catch (e) {} self.setState({ railMin: v }); },
+      railNavStyle: 'flex:0 0 ' + (RAILMIN ? 64 : 216) + 'px;width:' + (RAILMIN ? 64 : 216) + 'px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;padding:14px ' + (RAILMIN ? '10px' : '12px') + ';background:#000000;color:#BDBDBD;transition:width 140ms, flex-basis 140ms',
+      railLogoStyle: 'display:flex;align-items:center;gap:10px;height:40px;margin-bottom:8px;color:#F2F2F2;text-decoration:none;' + (RAILMIN ? 'justify-content:center;' : 'padding:0 10px;'),
+      railToggleStyle: 'margin-top:auto;display:flex;align-items:center;gap:10px;height:38px;border:0;border-radius:2px;background:transparent;color:#8A8A8A;cursor:pointer;font-size:12px;font-weight:500;letter-spacing:0.04em;' + (RAILMIN ? 'justify-content:center;width:44px;margin-left:auto;margin-right:auto;' : 'width:100%;padding:0 12px;')
+    };
+    var CURRENT = 'projects';
+    var modules = [
+      { label: 'Home', key: 'home', href: 'Home.dc.html' }, { label: 'Projects', key: 'projects', href: 'Projects.dc.html' },
+      { label: 'Contacts', key: 'contacts', href: 'Contacts.dc.html' }, { label: 'Team', key: 'team', href: 'Team.dc.html' },
+      { label: 'Time', key: 'time', href: 'Time.dc.html' },
+      { label: 'Reports', key: 'reports', href: 'Reports.dc.html' },
+      { label: 'Modules', isLabel: true },
+      { label: 'Build', key: 'build', href: 'Build.dc.html' }, { label: 'Workload', key: 'workload', href: 'Workload.dc.html' },
+      { label: 'Accounting', key: 'accounting', href: 'Accounting.dc.html' }, { label: 'Marketing', key: 'marketing', href: 'Marketing.dc.html' },
+      { label: 'Knowledge', key: 'knowledge', href: 'Knowledge.dc.html' },
+      { label: 'Website', key: 'website', href: 'Website.dc.html' }, { label: 'Hiring', key: 'hiring', href: 'Hiring.dc.html' }
+    ].map(function (m) {
+      if (m.isLabel) return { isLabel: true, isLink: false, label: m.label };
+      var cur = m.key === CURRENT;
+      return {
+        isLabel: false, isLink: true, label: m.label, icon: ICONS[m.key], addon: !!m.addon,
+        href: m.href || '#', current: cur ? 'page' : null,
+        style: 'position:relative;flex:0 0 64px;height:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:2px;text-decoration:none;font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#9A9A9A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';text-transform:uppercase;letter-spacing:0.06em;font-size:9.5px;box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+      };
+    });
+
+    // ---------- Shared styles ----------
+    var CHIPS = { Schedule: ['#E4EBF8', '#1E3F7A'], Build: ['#FCE7DF', '#9A3412'], Accounting: ['#E2F1E6', '#1D6234'], Documents: ['#EBEBEB', '#3A3A3A'], Code: ['#EFE7FA', '#5B2E9E'] };
+    function chip(mod) {
+      var c = CHIPS[mod];
+      return 'display:inline-flex;align-self:flex-start;align-items:center;height:18px;padding:0 6px;border-radius:2px;font-family:IBM Plex Mono,monospace;font-size:10px;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;white-space:nowrap;background:' + c[0] + ';color:' + c[1];
+    }
+    // Status pill: color + shape (filled = done, half = underway, hollow = not started, diamond = attention)
+    var PILL = {
+      done: ['#E2F1E6', '#1D6234', 'border-radius:50%;background:#1D6234'],
+      underway: ['#E4EBF8', '#1E3F7A', 'border-radius:50%;background:linear-gradient(90deg,#1E3F7A 50%,transparent 50%);box-shadow:inset 0 0 0 1.5px #1E3F7A'],
+      waiting: ['#EBEBEB', '#4D4D4D', 'border-radius:50%;box-shadow:inset 0 0 0 1.5px #6B6B6B'],
+      attention: ['#FCE7DF', '#9A3412', 'transform:rotate(45deg);background:#C2410C;width:7px;height:7px']
+    };
+    function pill(kind) {
+      var c = PILL[kind];
+      return {
+        pillStyle: 'display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:2px;font-size:10.5px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;white-space:nowrap;background:' + c[0] + ';color:' + c[1],
+        dotStyle: 'display:inline-block;flex:0 0 auto;width:8px;height:8px;box-sizing:border-box;' + c[2]
+      };
+    }
+    function money(v) { return '$' + Math.round(v).toLocaleString('en-US'); }
+    var PEOPLE = { BM: '#3A3A3A', JR: '#141414', KL: '#5C5C5C', AP: '#4D4D4D' };
+    function avatar(who, size) { return 'flex:0 0 ' + size + 'px;width:' + size + 'px;height:' + size + 'px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#FFFFFF;background:' + (PEOPLE[who] || '#3A3A3A'); }
+
+    // ---------- Phase stepper ----------
+    var STEPS = [
+      ['Pre-Design', 'Done · Aug'], ['Schematic Design', 'Done · Oct 16'], ['Design Development', 'Now · to Nov 25'],
+      ['Construction Documents', 'Nov 30 – Jan 22'], ['Permitting', 'Jan 25 – Feb 26'], ['Construction Admin', 'From Mar 2027'], ['Close Out', '—']
+    ];
+    var CUR = 2;
+    var stepper = STEPS.map(function (s, i) {
+      var done = i < CUR, cur = i === CUR;
+      return {
+        name: s[0], note: s[1], done: done, current: cur ? 'step' : null,
+        bar: 'display:block;height:6px;border-radius:1px;background:' + (cur ? '#2F5BAA' : (done ? '#A9BDE3' : '#E3E3E3')),
+        labelStyle: 'font-size:12px;font-weight:' + (cur ? '700' : '500') + ';letter-spacing:0.06em;text-transform:uppercase;color:' + (cur || done ? '#141414' : '#666666')
+      };
+    });
+
+    // ---------- Phases & fees (sample) ----------
+    var FEE = 186000;
+    var phaseData = [
+      { name: 'Pre-Design', share: 5, billedPct: 100, used: 58, budget: 62, kind: 'done', status: 'Complete' },
+      { name: 'Schematic Design', share: 15, billedPct: 100, used: 201, budget: 186, kind: 'done', status: 'Complete' },
+      { name: 'Design Development', share: 25, billedPct: 0, used: 64, budget: 310, kind: 'underway', status: 'In progress' },
+      { name: 'Construction Documents', share: 35, billedPct: 0, used: 0, budget: 434, kind: 'waiting', status: 'Not started' },
+      { name: 'Permitting', share: 5, billedPct: 0, used: 0, budget: 62, kind: 'waiting', status: 'Not started' },
+      { name: 'Construction Admin', share: 15, billedPct: 0, used: 0, budget: 186, kind: 'waiting', status: 'Not started' }
+    ];
+    var billedTotal = 0, usedTotal = 0, budgetTotal = 0;
+    var phases = phaseData.map(function (p) {
+      var fee = FEE * p.share / 100, billed = fee * p.billedPct / 100;
+      billedTotal += billed; usedTotal += p.used; budgetTotal += p.budget;
+      var over = Math.max(0, p.used - p.budget);
+      var scale = Math.max(p.budget, p.used);
+      var usedW = Math.min(p.used, p.budget) / scale * 100, overW = over / scale * 100;
+      return Object.assign(pill(p.kind), {
+        name: p.name, status: p.status, sharePct: p.share,
+        feeText: money(fee), billedText: money(billed), leftText: money(fee - billed), billedPctText: p.billedPct + '%',
+        hoursText: p.used + ' / ' + p.budget + ' h', hoursColor: over ? '#B42318' : '#3A3A3A',
+        barLabel: p.name + ': ' + p.used + ' of ' + p.budget + ' budgeted hours' + (over ? ', ' + over + ' over' : ''),
+        usedStyle: 'position:absolute;left:0;top:0;bottom:0;width:' + usedW + '%;background:#2F5BAA',
+        overStyle: 'position:absolute;top:0;bottom:0;left:' + usedW + '%;width:' + overW + '%;background:repeating-linear-gradient(135deg,#C2410C 0 1.5px,#F6CDB9 1.5px 5px)'
+      });
+    });
+
+
+    // ---------- Project snapshot ----------
+    var COST = { BM: 95, JR: 62, KL: 44, AP: 52 };   // cost rates from Settings → Roles & rates
+    var ROLE = { BM: 'Principal', JR: 'Project manager', KL: 'Designer', AP: 'Interior designer' };
+    var WORK = [ { BM: 24, JR: 22, KL: 12 }, { BM: 14, JR: 92, KL: 66, AP: 29 }, { BM: 4, JR: 50, KL: 10 }, {}, {}, {} ];
+    var PLAN_RATE = [70, 58, 52, 50, 60, 66];         // planned blended cost rate for remaining hours
+    var snapOpen = st.snapOpen || {};
+    var OH_RATE = 60;                                  // overhead rate from Settings → Roles & rates
+    var ohOn = !!st.ohOn, OHF = ohOn ? 1 + OH_RATE / 100 : 1;
+    var T = { fee: 0, billed: 0, cost: 0, proj: 0 };
+    var snap = phaseData.map(function (p, i) {
+      var base = phases[i];
+      var fee = FEE * p.share / 100, billed = fee * p.billedPct / 100;
+      var people = Object.keys(WORK[i]).map(function (k) {
+        var h = WORK[i][k];
+        return { initials: k, role: ROLE[k], hours: h, rate: '$' + (COST[k] * OHF).toFixed(2).replace('.00', '') + ' / h', cost: money(h * COST[k] * OHF), avatar: avatar(k, 24) };
+      });
+      var cost = Object.keys(WORK[i]).reduce(function (a, k) { return a + WORK[i][k] * COST[k]; }, 0) * OHF;
+      var remaining = p.kind === 'done' ? 0 : Math.max(0, p.budget - p.used);
+      var projCost = cost + remaining * PLAN_RATE[i] * OHF;
+      var profit = billed - cost, proj = fee - projCost;
+      T.fee += fee; T.billed += billed; T.cost += cost; T.proj += proj;
+      var open = !!snapOpen[i];
+      var over = Math.max(0, p.used - p.budget);
+      var profitNote = p.kind === 'waiting' ? 'Not started' : (billed ? Math.round(profit / billed * 100) + '% margin' : 'Work not billed yet');
+      return Object.assign({}, base, {
+        open: open, chev: open ? 90 : 0, rowBg: open ? '#FAFAFA' : '#FFFFFF',
+        toggle: function () { var o = Object.assign({}, snapOpen); o[i] = !o[i]; self.setState({ snapOpen: o }); },
+        hoursPct: p.budget ? Math.round(p.used / p.budget * 100) + '%' : '',
+        costText: cost ? money(cost) : '—',
+        profitText: p.kind === 'waiting' ? '—' : (profit < 0 ? '−' + money(-profit) : money(profit)),
+        profitColor: profit < 0 ? '#B42318' : '#141414',
+        profitNote: profitNote,
+        projText: money(proj), projColor: '#141414',
+        projNote: Math.round(proj / fee * 100) + '% margin' + (p.kind === 'done' ? ' · final' : ''),
+        people: people, hasPeople: people.length > 0,
+        detailNote: p.kind === 'done' ? (over ? 'Finished ' + over + ' h over budget. Those hours cost about ' + money(over * PLAN_RATE[i] * OHF) + ' in profit.' : 'Finished within budget.')
+          : p.kind === 'underway' ? (p.budget - p.used) + ' budget hours left. At the planned rate that\'s about ' + money(remaining * PLAN_RATE[i] * OHF) + ' more ' + (ohOn ? 'cost' : 'labor') + ' before this phase is billed in full.'
+          : 'No time logged yet. Budget: ' + p.budget + ' h at a planned ' + '$' + Math.round(PLAN_RATE[i] * OHF) + ' / h' + (ohOn ? ' with overhead.' : '.')
+      });
+    });
+    var snapTot = {
+      hours: usedTotal + ' / ' + budgetTotal.toLocaleString('en-US') + ' h', fee: money(T.fee), billed: money(T.billed), cost: money(T.cost),
+      profit: (T.billed - T.cost < 0 ? '−' : '') + money(Math.abs(T.billed - T.cost)), profitColor: T.billed - T.cost < 0 ? '#B42318' : '#141414',
+      proj: money(T.proj), projMargin: Math.round(T.proj / T.fee * 100) + '%'
+    };
+
+    var kpis = [
+      { label: 'Architectural fee', value: money(FEE), note: 'Fixed fee · 3.0% of construction' },
+      { label: 'Billed', value: money(billedTotal), note: Math.round(billedTotal / FEE * 100) + '% of fee · ' + money(11160) + ' outstanding' },
+      { label: 'Hours', value: usedTotal + ' h', note: 'of ' + budgetTotal.toLocaleString('en-US') + ' budgeted · SD ran 15 h over' },
+      { label: 'Construction estimate', value: '$6.2M', note: '$310 / SF · 20,000 SF' },
+      { label: 'Next milestone', value: 'Nov 25', note: 'DD pricing set issued' }
+    ];
+
+    var info = [
+      { label: 'Client', value: 'Palmetto Medical Properties' },
+      { label: 'Client contact', value: '[Client contact name]' },
+      { label: 'Address', value: '[Site address]' },
+      { label: 'Building', value: '20,000 SF · 2 stories · 34 ft' },
+      { label: 'Occupancy / construction', value: 'B (Business) · Type II-B, sprinklered' },
+      { label: 'Delivery', value: 'Design-bid-build' },
+      { label: 'Start date', value: 'Aug 3, 2026' },
+      { label: 'Design review board', value: 'Not required' }
+    ];
+
+    var upcoming = [
+      { date: 'Oct 19', module: 'Schedule', title: 'MEP coordination kickoff' },
+      { date: 'Oct 21', module: 'Documents', title: 'Owner meeting · agenda draft' },
+      { date: 'Oct 31', module: 'Accounting', title: 'DD progress invoice (draft)' },
+      { date: 'Nov 25', module: 'Schedule', title: 'DD pricing set issued' }
+    ].map(function (u) { return Object.assign(u, { chipStyle: chip(u.module) }); });
+
+    var staff = [
+      { initials: 'BM', role: 'Principal', hours: 42, note: 'Owner meetings, design reviews' },
+      { initials: 'JR', role: 'Project manager', hours: 164, note: 'Plans, coordination, schedule' },
+      { initials: 'KL', role: 'Designer', hours: 88, note: 'Code analysis, specifications' },
+      { initials: 'AP', role: 'Interior designer', hours: 29, note: 'Finishes and FF&E' }
+    ].map(function (s) { return Object.assign(s, { avatar: avatar(s.initials, 32) }); });
+
+    var activity = [
+      { date: 'Oct 17', who: 'JR', text: 'updated DD plans & sections to 35%' },
+      { date: 'Oct 16', who: 'AP', text: 'flagged owner finish selections as at risk' },
+      { date: 'Oct 16', who: 'BM', text: 'issued Meeting minutes 04 · owner design review' },
+      { date: 'Oct 16', who: 'BM', text: 'sent invoice 2026-121 for SD final billing' },
+      { date: 'Oct 12', who: 'Client', text: 'paid invoice 2026-109 · $16,740' }
+    ];
+
+    var consultants = [
+      { discipline: 'Civil', firm: 'Lowcountry Civil Group', fee: 14500, invoiced: 5800 },
+      { discipline: 'Structural', firm: 'Tidewater Structural Engineers', fee: 18200, invoiced: 3640 },
+      { discipline: 'MEP', firm: 'Coastal MEP Engineers', fee: 36800, invoiced: 5520 },
+      { discipline: 'Landscape', firm: 'Greenline Landscape Architecture', fee: 6400, invoiced: 0 }
+    ].map(function (c) { return { discipline: c.discipline, firm: c.firm, fee: money(c.fee), invoiced: money(c.invoiced), billed: money(c.invoiced * 1.1) }; });
+
+    var external = [
+      { role: 'Client', firm: 'Palmetto Medical Properties', contact: '[Client contact] · Owner representative', action: 'Email' },
+      { role: 'Civil engineer', firm: 'Lowcountry Civil Group', contact: '[Contact name]', action: 'Email' },
+      { role: 'Structural engineer', firm: 'Tidewater Structural Engineers', contact: '[Contact name]', action: 'Email' },
+      { role: 'MEP engineer', firm: 'Coastal MEP Engineers', contact: '[Contact name]', action: 'Email' },
+      { role: 'Landscape architect', firm: 'Greenline Landscape Architecture', contact: '[Contact name]', action: 'Email' },
+      { role: 'Contractor', firm: 'To be selected', contact: 'Bid period Feb 1 – Feb 26, 2027', action: 'Invite' }
+    ];
+
+    var invoices = [
+      { number: '2026-097', date: 'Aug 31', desc: 'Pre-Design · 100%', amount: 9300, kind: 'done', status: 'Paid Sep 18' },
+      { number: '2026-109', date: 'Sep 30', desc: 'Schematic Design · 60%', amount: 16740, kind: 'done', status: 'Paid Oct 12' },
+      { number: '2026-121', date: 'Oct 16', desc: 'Schematic Design · final 40%', amount: 11160, kind: 'underway', status: 'Sent · due Nov 15' },
+      { number: 'Draft', date: 'Oct 31', desc: 'Design Development · 30%', amount: 13950, kind: 'waiting', status: 'Draft' }
+    ].map(function (v) { return Object.assign(pill(v.kind), { number: v.number, date: v.date, desc: v.desc, amount: money(v.amount), status: v.status }); });
+
+    var docs = [
+      { type: 'Meeting agenda', title: 'Owner meeting · DD kickoff', date: 'Oct 21', who: 'JR', kind: 'waiting', status: 'Draft' },
+      { type: 'Meeting minutes', title: 'Minutes 04 · Owner design review', date: 'Oct 16', who: 'BM', kind: 'done', status: 'Issued' },
+      { type: 'Meeting minutes', title: 'Minutes 03 · Schematic design review', date: 'Oct 9', who: 'JR', kind: 'done', status: 'Issued' },
+      { type: 'Letter', title: 'Zoning confirmation request to county planning', date: 'Oct 2', who: 'BM', kind: 'underway', status: 'Awaiting reply' },
+      { type: 'Additional services', title: 'AS-01 · Site lighting photometrics', date: 'Sep 28', who: 'BM', kind: 'done', status: 'Approved' },
+      { type: 'Letter', title: 'Proposal acceptance and notice to proceed', date: 'Aug 3', who: 'BM', kind: 'done', status: 'Issued' }
+    ].map(function (d) { return Object.assign(pill(d.kind), { type: d.type, title: d.title, date: d.date, who: d.who, status: d.status, avatar: avatar(d.who, 26) }); });
+
+    var checkItems = [
+      { id: 'c1', text: 'Confirm program and room data sheets with owner', owner: 'JR', done: true },
+      { id: 'c2', text: 'Update code analysis for DD floor plans', owner: 'KL', done: true },
+      { id: 'c3', text: 'Receive MEP system narratives', owner: 'JR', done: false },
+      { id: 'c4', text: 'Select structural system', owner: 'KL', done: false },
+      { id: 'c5', text: 'Owner approval of finish selections', owner: 'AP', done: false },
+      { id: 'c6', text: 'Issue DD pricing set to contractor', owner: 'JR', done: false }
+    ];
+    var checkDone = 0;
+    var checklist = checkItems.map(function (c) {
+      var done = st.checks[c.id] ?? c.done;
+      if (done) checkDone++;
+      return {
+        text: c.text, owner: c.owner, done: done,
+        toggle: function () { var ch = Object.assign({}, st.checks); ch[c.id] = !done; self.setState({ checks: ch }); },
+        textStyle: done ? 'color:#666666;text-decoration:line-through' : 'color:#141414'
+      };
+    });
+
+    var code = [
+      { check: 'Allowable area per story', ref: 'IBC Table 506.2 · B, II-B, SM', allowed: '69,000 SF', actual: '10,000 SF', kind: 'done', result: 'Complies' },
+      { check: 'Allowable height', ref: 'IBC Table 504.3 · B, II-B, S', allowed: '75 ft', actual: '34 ft', kind: 'done', result: 'Complies' },
+      { check: 'Allowable stories', ref: 'IBC Table 504.4 · B, II-B, S', allowed: '4', actual: '2', kind: 'done', result: 'Complies' },
+      { check: 'Occupant load', ref: 'IBC Table 1004.5 · Business, 150 SF gross', allowed: '—', actual: '134', kind: 'waiting', result: 'For reference' }
+    ].map(function (c) { return Object.assign(pill(c.kind), c); });
+
+    // ---------- Tabs ----------
+
+    // ---------- Client portal (firm-side controls) ----------
+    function sw2(on) {
+      return { track: 'position:relative;flex:0 0 40px;width:40px;height:22px;margin-top:1px;padding:0;border:0;border-radius:11px;cursor:pointer;background:' + (on ? '#141414' : '#C4C4C4'),
+        knob: 'position:absolute;top:3px;width:16px;height:16px;border-radius:50%;background:#FFFFFF;transition:left 120ms;left:' + (on ? '21px' : '3px') };
+    }
+    var PSHOW = [['status', 'Status & phase', 'Current phase and a short update from the PM', true], ['dates', 'Key dates', 'Milestones only, pulled from the Schedule tab', true], ['invoices', 'Invoices & payments', 'Sent invoices with Pay now. Drafts stay hidden.', true], ['docs', 'Shared documents', 'Only the documents switched on below', true], ['approvals', 'Approvals & decisions', 'Requests and the permanent record', true], ['team', 'Team contacts', 'PM name and phone', true], ['fees', 'Fee summary', 'Total fee, paid and due', true]];
+    var portalShow = PSHOW.map(function (t) { var on = st.pshow[t[0]] != null ? st.pshow[t[0]] : t[3], k = sw2(on); return { label: t[1], note: t[2], on: on ? 'true' : 'false', track: k.track, knob: k.knob, toggle: function () { var o = Object.assign({}, st.pshow); o[t[0]] = !on; self.setState({ pshow: o }); } }; });
+    var SD = [['m4', 'Minutes 04 · Owner design review', 'Meeting minutes', 'Oct 16', true, ' · opened Oct 17'], ['sd', 'Schematic Design set (approved)', 'Drawings', 'Oct 14', true, ' · downloaded Oct 16'], ['m3', 'Minutes 03 · Schematic design review', 'Meeting minutes', 'Oct 9', true, ''], ['as1', 'AS-01 · Site lighting photometrics (signed)', 'Additional services', 'Sep 28', true, ''], ['agr', 'Proposal and owner-architect agreement', 'Agreement', 'Aug 3', true, ''], ['zon', 'Zoning confirmation request to county planning', 'Letter', 'Oct 2', false, ''], ['agd', 'Owner meeting · DD kickoff agenda', 'Meeting agenda · draft', 'Oct 21', false, '']];
+    var shareDocs = SD.map(function (d) { var draft = d[2].indexOf('draft') >= 0, on = draft ? false : (st.pdoc[d[0]] != null ? st.pdoc[d[0]] : d[4]), k = sw2(on);
+      return { title: d[1], type: d[2], date: d[3], seen: on ? d[5] : '', on: on ? 'true' : 'false', label: draft ? 'Draft · can\'t share' : (on ? 'Shared' : 'Not shared'), aria: 'Share ' + d[1],
+        track: k.track + (draft ? ';opacity:0.4;cursor:not-allowed' : ''), knob: k.knob, toggle: function () { if (draft) return; var o = Object.assign({}, st.pdoc); o[d[0]] = !on; self.setState({ pdoc: o }); } }; });
+    var requests = [
+      Object.assign({ title: 'Finish & FF&E selections', type: 'Approval', sent: 'Oct 16', seen: 'Opened Oct 17 · due Nov 6', status: 'Waiting' }, pill('underway')),
+      Object.assign({ title: 'AS-02 · Imaging equipment coordination · $6,800', type: 'Signature', sent: 'Oct 17', seen: 'Not opened yet', status: 'Waiting' }, pill('underway')),
+      Object.assign({ title: 'Invoice 2026-121 · $11,160', type: 'Payment', sent: 'Oct 16', seen: 'Viewed Oct 17 · due Nov 15', status: 'Sent' }, pill('underway')),
+      Object.assign({ title: 'Schematic Design set', type: 'Approval', sent: 'Oct 14', seen: 'Approved Oct 16', status: 'Approved' }, pill('done')),
+      Object.assign({ title: 'AS-01 · Site lighting photometrics · $3,200', type: 'Signature', sent: 'Sep 25', seen: 'Signed Sep 28', status: 'Signed' }, pill('done'))
+    ];
+    var portalPeople = [{ ini: 'CC', name: '[Client contact]', access: 'Owner representative · everything', last: 'Visited Oct 17', color: '#666666' }, { ini: 'AC', name: '[Accounting contact]', access: 'Invoices & payments only', last: 'Invited · not signed in', color: '#9A3412' }];
+    var clientLog = [{ d: 'Oct 17', t: 'Viewed invoice 2026-121' }, { d: 'Oct 17', t: 'Opened finish & FF&E selections' }, { d: 'Oct 17', t: 'Opened Minutes 04' }, { d: 'Oct 16', t: 'Approved the Schematic Design set' }, { d: 'Oct 12', t: 'Paid invoice 2026-109 by bank transfer' }];
+    var TABS = [
+      { id: 'overview', label: 'Overview' }, { id: 'fees', label: 'Phases & fees' }, { id: 'team', label: 'Team' },
+      { id: 'schedule', label: 'Schedule', link: 'Main.dc.html', chip: 'Schedule' },
+      { id: 'build', label: 'Build', chip: 'Build' },
+      { id: 'invoices', label: 'Invoices', chip: 'Accounting' },
+      { id: 'docs', label: 'Documents' }, { id: 'checklist', label: 'Checklist' }, { id: 'portal', label: 'Client portal' },
+      { id: 'code', label: 'Code', notAdded: true }
+    ];
+    var tabs = TABS.map(function (t) {
+      var on = st.tab === t.id;
+      // A module the firm hasn't added stays in the menu (lighter text) and opens an add prompt.
+      var color = on ? '#141414' : (t.notAdded ? '#8A8A8A' : '#4D4D4D');
+      var base = 'display:inline-flex;align-items:center;height:50px;padding:0 12px;border:0;background:transparent;cursor:pointer;text-decoration:none;white-space:nowrap;text-transform:uppercase;letter-spacing:0.07em;font-size:12.5px;font-weight:' + (on ? '700' : '500') + ';color:' + color + ';box-shadow:' + (on ? 'inset 0 -3px 0 #141414' : 'none');
+      return {
+        label: t.label, on: on, isLink: !!t.link, isTab: !t.link, href: t.link || '#',
+        pick: function () { self.setState({ tab: t.id }); },
+        style: base
+      };
+    });
+
+    return {
+      modules: RAIL(modules), railMin: RAILV.railMin, railMax: RAILV.railMax, railChev: RAILV.railChev, railToggleLabel: RAILV.railToggleLabel, railToggle: RAILV.railToggle, railNavStyle: RAILV.railNavStyle, railLogoStyle: RAILV.railLogoStyle, railToggleStyle: RAILV.railToggleStyle, stepper: stepper, tabs: tabs, kpis: kpis, phases: phases, info: info, upcoming: upcoming,
+      snap: snap, snapTot: snapTot,
+      ohOn: ohOn ? 'true' : 'false', ohRateText: OH_RATE + '%',
+      toggleOh: function (e) { if (e && e.preventDefault) e.preventDefault(); self.setState({ ohOn: !ohOn }); },
+      ohTrack: 'position:relative;flex:0 0 40px;width:40px;height:22px;padding:0;border:0;border-radius:11px;cursor:pointer;background:' + (ohOn ? '#141414' : '#C4C4C4'),
+      ohKnob: 'position:absolute;top:3px;width:16px;height:16px;border-radius:50%;background:#FFFFFF;transition:left 120ms;left:' + (ohOn ? '21px' : '3px'),
+      costHead: ohOn ? 'Cost + overhead' : 'Labor cost',
+      snapFoot: ohOn
+        ? 'Cost = hours × cost rate × ' + (1 + OH_RATE / 100).toFixed(2) + ' (labor plus ' + OH_RATE + '% overhead from Settings). Profit shown is true profit. Projected profit = fee − cost so far − remaining budget hours at the planned rate, with overhead.'
+        : 'Labor cost = hours × each person\'s cost rate (Settings → Roles & rates). Overhead isn\'t included, so true profit is lower. Turn on “Include overhead” to see it.',
+      staff: staff, activity: activity, consultants: consultants, external: external, invoices: invoices, docs: docs,
+      checklist: checklist, checkDone: checkDone, checkTotal: checkItems.length, checkPct: Math.round(checkDone / checkItems.length * 100),
+      code: code,
+      feeTotal: money(FEE), billedTotal: money(billedTotal), leftTotal: money(FEE - billedTotal), hoursTotal: usedTotal + ' / ' + budgetTotal.toLocaleString('en-US') + ' h',
+      invoiceSummary: money(billedTotal) + ' billed · ' + money(26040) + ' received · ' + money(11160) + ' outstanding',
+      acctChip: chip('Accounting'),
+      tabOverview: st.tab === 'overview', tabFees: st.tab === 'fees', tabTeam: st.tab === 'team', tabBuild: st.tab === 'build',
+      tabInvoices: st.tab === 'invoices', tabDocs: st.tab === 'docs', tabChecklist: st.tab === 'checklist', tabCode: st.tab === 'code', tabPortal: st.tab === 'portal',
+      portalShow: portalShow, shareDocs: shareDocs, requests: requests, portalPeople: portalPeople, clientLog: clientLog,
+      goFees: function () { self.setState({ tab: 'fees' }); },
+      goTeam: function () { self.setState({ tab: 'team' }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

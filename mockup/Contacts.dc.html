@@ -1,0 +1,449 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ArchiTrac — Contacts</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=Barlow:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F2F2F2}
+a{color:#141414}a:hover{color:#000000}
+button{font:inherit;color:inherit}
+h1,h2,h3,th,.cap{text-transform:uppercase;letter-spacing:0.08em}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; font-family: 'Barlow', system-ui, sans-serif; font-size: 14px; color: #141414; background: #F2F2F2">
+
+<nav aria-label="Main menu" style="{{railNavStyle}}">
+<a href="Home.dc.html" aria-label="ArchiTrac home" style="{{railLogoStyle}}">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 26px"><path d="M3 20h18"></path><path d="M5 20V9l7-5 7 5v11"></path><path d="M9 20v-6h6v6"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span style="font-size: 13px; font-weight: 700; letter-spacing: 0.16em">ARCHITRAC</span></sc-if>
+</a>
+<sc-for list="{{modules}}" as="m" hint-placeholder-count="15">
+<sc-if value="{{m.isLabel}}" hint-placeholder-val="{{ false }}">
+<span style="{{m.labelStyle}}">{{m.labelText}}</span>
+</sc-if>
+<sc-if value="{{m.isLink}}" hint-placeholder-val="{{ true }}">
+<a href="{{m.href}}" aria-current="{{m.current}}" aria-label="{{m.label}}" title="{{m.label}}" style="{{m.rowStyle}}">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 20px"><path d="{{m.icon}}"></path></svg>
+<sc-if value="{{m.showLabel}}" hint-placeholder-val="{{ true }}"><span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{m.label}}</span></sc-if>
+<sc-if value="{{m.addon}}" hint-placeholder-val="{{ false }}"><span style="{{m.addStyle}}">{{m.addText}}</span></sc-if>
+</a>
+</sc-if>
+</sc-for>
+<button type="button" onClick="{{railToggle}}" aria-label="{{railToggleLabel}}" title="{{railToggleLabel}}" style="{{railToggleStyle}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 18px; transform: rotate({{railChev}}deg)"><path d="M4 4v16"></path><path d="M15 7l-5 5 5 5"></path><path d="M10 12h10"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span>Collapse menu</span></sc-if>
+</button>
+</nav>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 10px 32px; background: #141414; color: #F2F2F2">
+<button type="button" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px 0 4px; border: 1px solid #3A3A3A; border-radius: 2px; background: transparent; color: #F2F2F2; cursor: pointer">
+<span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; background: #F2F2F2; color: #141414; font-size: 12px; font-weight: 700">F</span>
+<span style="font-weight: 600">[FIRM NAME]</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+<span class="cap" style="color: #F2F2F2; font-weight: 500">Contacts</span>
+<div style="margin-left: auto; display: flex; align-items: center; gap: 12px">
+<a href="Settings.dc.html" aria-label="Settings" title="Settings" style="width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 2px; color: #BDBDBD"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></a>
+<span title="You" style="width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #3A3A3A; color: #FFFFFF; font-size: 11px; font-weight: 600">BM</span>
+</div>
+</header>
+
+<div style="background: #FFFFFF; border-bottom: 1px solid #DCDCDC">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px; padding: 32px 32px 28px">
+<div style="flex: 1 1 380px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">CLIENTS · CONSULTANTS · CONTRACTORS · AGENCIES</div>
+<h1 style="margin: 10px 0 0; font-size: 30px; line-height: 1.15; font-weight: 500">Contacts</h1>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" style="height: 38px; padding: 0 14px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer; font-weight: 500">Import</button>
+<button type="button" style="height: 38px; padding: 0 14px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer; font-weight: 500">New company</button>
+<button type="button" style="display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 16px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-weight: 600">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+New contact
+</button>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); border-top: 1px solid #EBEBEB">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 20px 32px 22px; border-right: 1px solid #EBEBEB">
+<span class="cap" style="font-size: 11px; font-weight: 500; color: #3A3A3A">{{k.label}}</span>
+<span style="font-size: 26px; line-height: 1.15; font-weight: 500; font-variant-numeric: tabular-nums; color: {{k.color}}">{{k.value}}</span>
+<span style="font-size: 12.5px; color: #666666">{{k.note}}</span>
+</div>
+</sc-for>
+</div>
+
+<div role="tablist" aria-label="Contact sections" style="display: flex; gap: 6px; padding: 4px 22px 0; border-top: 1px solid #EBEBEB; overflow-x: auto">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="2">
+<button type="button" role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; color: #666666; margin-left: 8px">{{t.count}}</span></button>
+</sc-for>
+</div>
+</div>
+
+<main style="position: relative; flex: 1; display: flex; flex-direction: column; gap: 16px; padding: 28px 32px 32px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+<label style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; color: #666666; flex: 0 1 320px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Search contacts</span>
+<input type="search" value="{{query}}" onInput="{{onQuery}}" placeholder="{{searchHint}}" style="flex: 1; min-width: 0; border: 0; outline: none; background: transparent; color: #141414; font: inherit">
+</label>
+<div role="group" aria-label="Filter by type" style="display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 2px; background: #E3E3E3">
+<sc-for list="{{typeFilters}}" as="f" hint-placeholder-count="6">
+<button type="button" aria-pressed="{{f.on}}" onClick="{{f.pick}}" style="{{f.style}}">{{f.label}}</button>
+</sc-for>
+</div>
+<span style="margin-left: auto; font-size: 12.5px; color: #666666">{{resultNote}}</span>
+</div>
+
+<sc-if value="{{tabCompanies}}" hint-placeholder-val="{{ true }}">
+<section aria-label="Companies" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="min-width: 1040px">
+<div class="cap" style="display: grid; grid-template-columns: minmax(260px, 1.5fr) 130px minmax(180px, 1fr) 100px 150px 150px; gap: 0 14px; padding: 10px 20px; background: #FAFAFA; border-bottom: 1px solid #DCDCDC; font-size: 11px; font-weight: 500; color: #666666">
+<span>Company</span><span>Type</span><span>Main contact</span><span style="text-align: right">Projects</span><span style="text-align: right">{{moneyHead}}</span><span>Billing</span>
+</div>
+<sc-for list="{{companies}}" as="c" hint-placeholder-count="10">
+<button type="button" onClick="{{c.open}}" style="{{c.rowStyle}}">
+<span style="display: flex; align-items: center; gap: 12px; min-width: 0">
+<span style="{{c.logo}}">{{c.mono}}</span>
+<span style="display: flex; flex-direction: column; min-width: 0"><span style="font-weight: 600">{{c.name}}</span><span style="font-size: 12.5px; color: #666666">{{c.sub}}</span></span>
+</span>
+<span><span style="{{c.typePill}}">{{c.type}}</span></span>
+<span style="display: flex; flex-direction: column"><span>{{c.main}}</span><span style="font-size: 12px; color: #666666">{{c.mainTitle}}</span></span>
+<span style="text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{c.projects}}</span>
+<span style="text-align: right; display: flex; flex-direction: column"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{c.money}}</span><span style="font-size: 12px; color: {{c.moneyNoteColor}}">{{c.moneyNote}}</span></span>
+<span style="font-size: 12.5px; color: {{c.billingColor}}">{{c.billing}}</span>
+</button>
+</sc-for>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{tabPeople}}" hint-placeholder-val="{{ false }}">
+<section aria-label="People" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="min-width: 1040px">
+<div class="cap" style="display: grid; grid-template-columns: minmax(240px, 1.3fr) minmax(200px, 1fr) 130px 210px 150px; gap: 0 14px; padding: 10px 20px; background: #FAFAFA; border-bottom: 1px solid #DCDCDC; font-size: 11px; font-weight: 500; color: #666666">
+<span>Person</span><span>Company</span><span>Type</span><span>Contact</span><span>Tags</span>
+</div>
+<sc-for list="{{contacts}}" as="p" hint-placeholder-count="12">
+<button type="button" onClick="{{p.open}}" style="{{p.rowStyle}}">
+<span style="display: flex; align-items: center; gap: 12px; min-width: 0">
+<span style="{{p.avatar}}">{{p.mono}}</span>
+<span style="display: flex; flex-direction: column; min-width: 0"><span style="font-weight: 600">{{p.name}}</span><span style="font-size: 12.5px; color: #666666">{{p.title}}</span></span>
+</span>
+<span>{{p.company}}</span>
+<span><span style="{{p.typePill}}">{{p.type}}</span></span>
+<span style="display: flex; flex-direction: column; font-size: 12.5px"><span>{{p.email}}</span><span style="font-family: 'IBM Plex Mono', monospace; color: #4D4D4D">{{p.phone}}</span></span>
+<span style="display: flex; flex-wrap: wrap; gap: 4px">
+<sc-for list="{{p.tags}}" as="tg" hint-placeholder-count="2"><span style="display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border-radius: 2px; background: #EBEBEB; color: #3A3A3A; font-size: 11px; font-weight: 500">{{tg}}</span></sc-for>
+</span>
+</button>
+</sc-for>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{drawerOpen}}" hint-placeholder-val="{{ false }}">
+<aside aria-label="{{dw.aria}}" style="position: absolute; top: 28px; right: 32px; z-index: 5; width: min(440px, calc(100% - 64px)); background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; box-shadow: 0 12px 32px rgba(20, 20, 20, 0.16), 0 2px 6px rgba(20, 20, 20, 0.08)">
+<div style="display: flex; align-items: flex-start; gap: 14px; padding: 20px 22px 18px; border-bottom: 1px solid #EBEBEB">
+<span style="{{dw.badge}}">{{dw.mono}}</span>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 4px">
+<h2 style="margin: 0; font-size: 17px; font-weight: 600">{{dw.title}}</h2>
+<span style="color: #4D4D4D">{{dw.sub}}</span>
+<span><span style="{{dw.typePill}}">{{dw.type}}</span></span>
+</span>
+<button type="button" onClick="{{closeDrawer}}" aria-label="Close details" style="width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 2px; background: transparent; cursor: pointer; color: #4D4D4D">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg>
+</button>
+</div>
+<dl style="margin: 0; padding: 12px 22px 4px">
+<sc-for list="{{dw.rows}}" as="r" hint-placeholder-count="6">
+<div style="display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 12px; padding: 8px 0; border-bottom: 1px solid #EBEBEB">
+<dt class="cap" style="font-size: 11px; font-weight: 500; color: #666666; padding-top: 2px">{{r.label}}</dt>
+<dd style="margin: 0; color: {{r.color}}">{{r.value}}</dd>
+</div>
+</sc-for>
+</dl>
+<div style="padding: 14px 22px 4px">
+<div class="cap" style="font-size: 11px; font-weight: 600; color: #4D4D4D; margin-bottom: 6px">{{dw.listLabel}}</div>
+<ul style="list-style: none; margin: 0; padding: 0">
+<sc-for list="{{dw.list}}" as="l" hint-placeholder-count="3">
+<li style="display: flex; align-items: center; gap: 10px; padding: 7px 0; border-bottom: 1px solid #EBEBEB">
+<a href="{{l.href}}" style="font-weight: 500; text-decoration: none">{{l.label}}</a>
+<span style="margin-left: auto; font-size: 12.5px; color: #666666">{{l.note}}</span>
+</li>
+</sc-for>
+</ul>
+</div>
+<sc-if value="{{dw.isCompany}}" hint-placeholder-val="{{ false }}">
+<label style="display: flex; align-items: center; gap: 8px; padding: 14px 22px 0; cursor: pointer">
+<input type="checkbox" checked="{{dw.statements}}" onChange="{{dw.toggleStatements}}" style="width: 16px; height: 16px; margin: 0; accent-color: #141414">
+<span style="display: flex; flex-direction: column"><span>Send monthly statements</span><span style="font-size: 12px; color: #666666">Emailed to the billing contact on the 1st</span></span>
+</label>
+</sc-if>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; padding: 18px 22px 22px">
+<button type="button" style="height: 36px; padding: 0 14px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-weight: 600">{{dw.primary}}</button>
+<button type="button" style="height: 36px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer">Edit</button>
+</div>
+</aside>
+</sc-if>
+
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1220}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var st = Object.assign({ tab: 'companies', type: 'All', query: '', drawer: null, statements: {} }, this.state || {});
+
+    // ---------- Module bar ----------
+    var ICONS = {
+      home: 'M3 11l9-7 9 7M5 10v10h14V10',
+      projects: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+      contacts: 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M21 19v-1a4 4 0 0 0-3-3.9M15 3.2a3.5 3.5 0 0 1 0 6.6',
+      team: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1',
+      workload: 'M4 5h9M4 10h15M4 15h12M4 20h6',
+      time: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7v5l3 2',
+      documents: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h6',
+      reports: 'M3 21h18M6 21V11M11 21V5M16 21v-7M21 21v-4',
+      schedule: 'M4 4v16M4 6h7M7 10h8M10 14h7M8 18h5',
+      build: 'M3 18h18M5 18v-3a7 7 0 0 1 14 0v3M12 8V5M9 11V8.7M15 11V8.7',
+      accounting: 'M12 3v18M16 7.5c-.5-1.5-2-2.5-4-2.5-2.2 0-4 1.3-4 3s1.8 2.6 4 3 4 1.3 4 3-1.8 3-4 3c-2 0-3.5-1-4-2.5',
+      marketing: 'M3 10v4h4l6 4V6L7 10zM17 9a4 4 0 0 1 0 6M19.5 6.5a7.5 7.5 0 0 1 0 11',
+      knowledge: 'M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2zM22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z',
+      website: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M3 12h18M12 3c2.5 2.5 3.8 5.6 3.8 9s-1.3 6.5-3.8 9M12 3c-2.5 2.5-3.8 5.6-3.8 9s1.3 6.5 3.8 9',
+      hiring: 'M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 7h18v12H3zM3 12h18'
+    };
+
+    // ---------- Menu rail: wide with labels, or collapsed to icons (remembered per browser) ----------
+    var RAILMIN = (this.state && this.state.railMin != null) ? this.state.railMin : (function () { try { return window.localStorage.getItem('architrac.railMin') === '1'; } catch (e) { return false; } })();
+    function RAIL(list) {
+      return list.map(function (m) {
+        if (m.isLabel) return Object.assign({}, m, { labelText: RAILMIN ? '' : m.label,
+          labelStyle: RAILMIN ? 'display:block;height:1px;margin:10px 8px;background:#2A2A2A' : 'display:block;padding:16px 12px 6px;font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8A8A8A' });
+        var cur = !!m.current;
+        return Object.assign({}, m, {
+          showLabel: !RAILMIN, addText: RAILMIN ? '' : 'ADD',
+          addStyle: RAILMIN ? 'position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:#8A8A8A' : 'flex:0 0 auto;padding:1px 5px;border-radius:2px;background:#2A2A2A;color:#D9D9D9;font-size:9.5px;font-weight:600;letter-spacing:0.06em',
+          rowStyle: 'position:relative;display:flex;align-items:center;gap:12px;height:40px;box-sizing:border-box;border-radius:2px;text-decoration:none;white-space:nowrap;text-transform:uppercase;letter-spacing:0.08em;font-size:12px;'
+            + (RAILMIN ? 'width:44px;justify-content:center;padding:0;margin:0 auto;' : 'width:100%;padding:0 12px;')
+            + 'font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#8A8A8A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+        });
+      });
+    }
+    var RAILV = {
+      railMin: RAILMIN, railMax: !RAILMIN, railChev: RAILMIN ? 180 : 0,
+      railToggleLabel: RAILMIN ? 'Expand menu' : 'Collapse menu',
+      railToggle: function () { var v = !RAILMIN; try { window.localStorage.setItem('architrac.railMin', v ? '1' : '0'); } catch (e) {} self.setState({ railMin: v }); },
+      railNavStyle: 'flex:0 0 ' + (RAILMIN ? 64 : 216) + 'px;width:' + (RAILMIN ? 64 : 216) + 'px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;padding:14px ' + (RAILMIN ? '10px' : '12px') + ';background:#000000;color:#BDBDBD;transition:width 140ms, flex-basis 140ms',
+      railLogoStyle: 'display:flex;align-items:center;gap:10px;height:40px;margin-bottom:8px;color:#F2F2F2;text-decoration:none;' + (RAILMIN ? 'justify-content:center;' : 'padding:0 10px;'),
+      railToggleStyle: 'margin-top:auto;display:flex;align-items:center;gap:10px;height:38px;border:0;border-radius:2px;background:transparent;color:#8A8A8A;cursor:pointer;font-size:12px;font-weight:500;letter-spacing:0.04em;' + (RAILMIN ? 'justify-content:center;width:44px;margin-left:auto;margin-right:auto;' : 'width:100%;padding:0 12px;')
+    };
+    var CURRENT = 'contacts';
+    var modules = [
+      { label: 'Home', key: 'home', href: 'Home.dc.html' }, { label: 'Projects', key: 'projects', href: 'Projects.dc.html' },
+      { label: 'Contacts', key: 'contacts', href: 'Contacts.dc.html' }, { label: 'Team', key: 'team', href: 'Team.dc.html' },
+      { label: 'Time', key: 'time', href: 'Time.dc.html' },
+      { label: 'Reports', key: 'reports', href: 'Reports.dc.html' },
+      { label: 'Modules', isLabel: true },
+      { label: 'Build', key: 'build', href: 'Build.dc.html' }, { label: 'Workload', key: 'workload', href: 'Workload.dc.html' },
+      { label: 'Accounting', key: 'accounting', href: 'Accounting.dc.html' }, { label: 'Marketing', key: 'marketing', href: 'Marketing.dc.html' },
+      { label: 'Knowledge', key: 'knowledge', href: 'Knowledge.dc.html' },
+      { label: 'Website', key: 'website', href: 'Website.dc.html' }, { label: 'Hiring', key: 'hiring', href: 'Hiring.dc.html' }
+    ].map(function (m) {
+      if (m.isLabel) return { isLabel: true, isLink: false, label: m.label };
+      var cur = m.key === CURRENT;
+      return {
+        isLabel: false, isLink: true, label: m.label, icon: ICONS[m.key], addon: !!m.addon,
+        href: m.href || '#', current: cur ? 'page' : null,
+        style: 'position:relative;flex:0 0 64px;height:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:2px;text-decoration:none;font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#9A9A9A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';text-transform:uppercase;letter-spacing:0.06em;font-size:9.5px;box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+      };
+    });
+
+    // ---------- Helpers ----------
+    function money(v) { return '$' + Math.round(v).toLocaleString('en-US'); }
+    // Type tags: tinted fill + label. The label carries the meaning; color helps scanning.
+    var TYPES = {
+      Client: ['#E4EBF8', '#1E3F7A'], Consultant: ['#EFE7FA', '#5B2E9E'], Contractor: ['#FCE7DF', '#9A3412'],
+      Agency: ['#E2F1E6', '#1D6234'], Vendor: ['#EBEBEB', '#3A3A3A']
+    };
+    function typePill(t) { var c = TYPES[t]; return 'display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:2px;font-size:10.5px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;white-space:nowrap;background:' + c[0] + ';color:' + c[1]; }
+    function mono(name) { return name.replace(/[\[\]]/g, '').split(/\s+/).filter(function (w) { return /^[A-Za-z]/.test(w); }).slice(0, 2).map(function (w) { return w[0].toUpperCase(); }).join(''); }
+    function badge(t, size, round) { var c = TYPES[t]; return 'flex:0 0 ' + size + 'px;width:' + size + 'px;height:' + size + 'px;border-radius:' + (round ? '50%' : '2px') + ';display:inline-flex;align-items:center;justify-content:center;font-size:' + (size > 40 ? 15 : 12) + 'px;font-weight:700;letter-spacing:0.02em;background:' + c[0] + ';color:' + c[1]; }
+
+    // ---------- Companies (sample) ----------
+    function C(id, name, type, sub, main, mainTitle, projects, money1, note, billing, statements) { return { id: id, name: name, type: type, sub: sub, main: main, mainTitle: mainTitle, projects: projects, money: money1, note: note, billing: billing, statements: statements }; }
+    var COMPANIES = [
+      C('palmetto', 'Palmetto Medical Properties', 'Client', 'Medical developer', '[Name]', 'Owner\'s representative', [['Medical Office Building', 'Project.dc.html', 'Design Development']], 37200, 11160, 'Set · Accounts payable', true),
+      C('northside', 'Northside Storage Holdings', 'Client', 'Self-storage owner', '[Name]', 'Owner', [['Northside Self-Storage', '#', 'Construction Admin']], 86240, 32900, 'Set · Owner', true),
+      C('summerville', 'Summerville Office Park LLC', 'Client', 'Office developer', '[Name]', 'Development manager', [['Summerville Office Park, Bldg B', '#', 'Construction Documents']], 64900, 46790, 'Set · Controller', true),
+      C('coastal', 'Coastal Federal Credit Union', 'Client', 'Financial institution', '[Name]', 'Facilities director', [['Coastal Credit Union Branch', '#', 'Permitting']], 54720, 19000, 'Missing', false),
+      C('oakmont', 'Oakmont Health', 'Client', 'Health system', '[Name]', 'VP, real estate', [['Oakmont Urgent Care', '#', 'Schematic Design']], 11040, 11040, 'Set · AP department', true),
+      C('pine', 'Pine Street Hospitality', 'Client', 'Restaurant group', '[Name]', 'Owner', [['Pine Street Bistro', '#', 'Design Development']], 27510, 27510, 'Set · Owner', false),
+      C('millcreek', 'Mill Creek Pediatrics PA', 'Client', 'Medical practice', '[Name]', 'Practice administrator', [['Mill Creek Pediatrics', '#', 'Construction Admin']], 30240, 17750, 'Missing', false),
+      C('grove', 'Grove Street Coffee Co.', 'Client', 'Coffee shop', '[Name]', 'Owner', [['Grove Street Café', '#', 'Close Out']], 21340, 6600, 'Set · Owner', true),
+      C('lcg', 'Lowcountry Civil Group', 'Consultant', 'Civil engineering', '[Name], PE', 'Principal', [['Medical Office Building', 'Project.dc.html', 'Civil'], ['Oakmont Urgent Care', '#', 'Civil'], ['Riverside Retail Shell', '#', 'Civil']], 23200, 0, '—', false),
+      C('tse', 'Tidewater Structural Engineers', 'Consultant', 'Structural engineering', '[Name], PE', 'Project engineer', [['Medical Office Building', 'Project.dc.html', 'Structural'], ['Summerville Office Park, Bldg B', '#', 'Structural']], 18200, 0, '—', false),
+      C('cme', 'Coastal MEP Engineers', 'Consultant', 'MEP engineering', '[Name], PE', 'Mechanical lead', [['Medical Office Building', 'Project.dc.html', 'MEP'], ['Northside Self-Storage', '#', 'MEP']], 42300, 0, '—', false),
+      C('greenline', 'Greenline Landscape Architecture', 'Consultant', 'Landscape architecture', '[Name], PLA', 'Landscape architect', [['Medical Office Building', 'Project.dc.html', 'Landscape']], 6400, 0, '—', false),
+      C('gc', '[General contractor]', 'Contractor', 'Commercial builder', '[Name]', 'Project manager', [['Northside Self-Storage', '#', 'GC'], ['Mill Creek Pediatrics', '#', 'GC']], 0, 0, '—', false),
+      C('bldg', '[County] Building Department', 'Agency', 'Plan review and permits', '[Name]', 'Plans examiner', [['Coastal Credit Union Branch', '#', 'Permit review']], 0, 0, '—', false),
+      C('plan', '[County] Planning & Zoning', 'Agency', 'Zoning and site plan', '[Name]', 'Zoning administrator', [['Medical Office Building', 'Project.dc.html', 'Zoning letter']], 0, 0, '—', false),
+      C('print', '[Print shop]', 'Vendor', 'Printing and plotting', '[Name]', 'Account manager', [], 3800, 0, '—', false)
+    ];
+    var q = (st.query || '').toLowerCase().trim();
+    var TYPE_LIST = ['All', 'Client', 'Consultant', 'Contractor', 'Agency', 'Vendor'];
+    var typeFilters = TYPE_LIST.map(function (t) {
+      var on = st.type === t;
+      return {
+        label: t === 'All' ? 'All' : t + 's', on: on, pick: function () { self.setState({ type: t }); },
+        style: 'height:30px;padding:0 12px;border:0;border-radius:2px;cursor:pointer;text-transform:uppercase;letter-spacing:0.06em;font-size:12px;font-weight:' + (on ? '600' : '500') + ';background:' + (on ? '#FFFFFF' : 'transparent') + ';color:' + (on ? '#141414' : '#4D4D4D') + ';box-shadow:' + (on ? '0 1px 2px rgba(20,20,20,0.14)' : 'none')
+      };
+    });
+    function rowStyle(cols, sel) { return 'display:grid;width:100%;grid-template-columns:' + cols + ';gap:0 14px;align-items:center;padding:12px 20px;border:0;border-bottom:1px solid #EBEBEB;text-align:left;cursor:pointer;background:' + (sel ? '#EAF0FB' : '#FFFFFF'); }
+    var companies = COMPANIES.filter(function (c) {
+      if (st.type !== 'All' && c.type !== st.type) return false;
+      return !q || (c.name + ' ' + c.sub + ' ' + c.main).toLowerCase().indexOf(q) > -1;
+    }).map(function (c) {
+      var isClient = c.type === 'Client', isCons = c.type === 'Consultant';
+      var missing = c.billing === 'Missing';
+      return {
+        name: c.name, sub: c.sub, type: c.type, typePill: typePill(c.type), mono: mono(c.name), logo: badge(c.type, 38, false),
+        main: c.main, mainTitle: c.mainTitle, projects: c.projects.length,
+        money: c.money ? money(c.money) : '—',
+        moneyNote: isClient ? (c.note ? money(c.note) + ' open' : 'Paid up') : (isCons ? 'Fees, all projects' : (c.money ? 'Spend this year' : '')),
+        moneyNoteColor: isClient && c.note ? '#9A3412' : '#666666',
+        billing: isClient ? (missing ? '◆ No billing contact' : c.billing.replace('Set · ', '')) : '—',
+        billingColor: missing ? '#9A3412' : '#3A3A3A',
+        rowStyle: rowStyle('minmax(260px,1.5fr) 130px minmax(180px,1fr) 100px 150px 150px', st.drawer === 'co:' + c.id),
+        open: function () { self.setState({ drawer: 'co:' + c.id }); }
+      };
+    });
+
+    // ---------- People (sample) ----------
+    function K(id, co, title, designations, tags) { return { id: id, co: co, title: title, designations: designations, tags: tags }; }
+    var CONTACTS = [
+      K('k1', 'palmetto', 'Owner\'s representative', '', ['Main contact', 'Copy on letters']),
+      K('k2', 'palmetto', 'Accounts payable', '', ['Billing']),
+      K('k3', 'northside', 'Owner', '', ['Main contact', 'Billing']),
+      K('k4', 'summerville', 'Development manager', '', ['Main contact']),
+      K('k5', 'summerville', 'Controller', 'CPA', ['Billing']),
+      K('k6', 'coastal', 'Facilities director', '', ['Main contact']),
+      K('k7', 'oakmont', 'VP, real estate', '', ['Main contact']),
+      K('k8', 'millcreek', 'Practice administrator', '', ['Main contact']),
+      K('k9', 'lcg', 'Principal', 'PE', ['Main contact']),
+      K('k10', 'tse', 'Project engineer', 'PE', ['Main contact']),
+      K('k11', 'cme', 'Mechanical lead', 'PE', ['Main contact']),
+      K('k12', 'cme', 'Electrical lead', 'PE', []),
+      K('k13', 'greenline', 'Landscape architect', 'PLA', ['Main contact']),
+      K('k14', 'gc', 'Project manager', '', ['Main contact']),
+      K('k15', 'gc', 'Superintendent', '', ['Site']),
+      K('k16', 'bldg', 'Plans examiner', '', []),
+      K('k17', 'plan', 'Zoning administrator', '', [])
+    ];
+    var coById = {}; COMPANIES.forEach(function (c) { coById[c.id] = c; });
+    var contacts = CONTACTS.filter(function (k) {
+      var c = coById[k.co];
+      if (st.type !== 'All' && c.type !== st.type) return false;
+      return !q || (c.name + ' ' + k.title + ' ' + k.tags.join(' ')).toLowerCase().indexOf(q) > -1;
+    }).map(function (k) {
+      var c = coById[k.co];
+      return {
+        name: '[Name]' + (k.designations ? ', ' + k.designations : ''), title: k.title, mono: mono(c.name), avatar: badge(c.type, 36, true),
+        company: c.name, type: c.type, typePill: typePill(c.type),
+        email: '[email]@[' + c.id + '-domain]', phone: '[Phone]', tags: k.tags,
+        rowStyle: rowStyle('minmax(240px,1.3fr) minmax(200px,1fr) 130px 210px 150px', st.drawer === 'ct:' + k.id),
+        open: function () { self.setState({ drawer: 'ct:' + k.id }); }
+      };
+    });
+
+    // ---------- Drawer ----------
+    var dw = null;
+    if (st.drawer) {
+      var parts = st.drawer.split(':');
+      if (parts[0] === 'co' && st.tab === 'companies') {
+        var c = coById[parts[1]];
+        var stmts = st.statements[c.id] ?? c.statements;
+        var people = CONTACTS.filter(function (k) { return k.co === c.id; });
+        dw = {
+          aria: 'Company details', mono: mono(c.name), badge: badge(c.type, 48, false), title: c.name, sub: c.sub, type: c.type, typePill: typePill(c.type),
+          isCompany: c.type === 'Client', statements: stmts,
+          toggleStatements: function () { var s2 = Object.assign({}, st.statements); s2[c.id] = !stmts; self.setState({ statements: s2 }); },
+          rows: [
+            { label: 'Address', value: '[Street address], [City], SC', color: '#141414' },
+            { label: 'Phone', value: '[Phone]', color: '#141414' },
+            { label: 'Main contact', value: c.main + ' · ' + c.mainTitle, color: '#141414' },
+            { label: 'Billing contact', value: c.type === 'Client' ? (c.billing === 'Missing' ? 'Not set · invoices can\'t be emailed' : c.billing.replace('Set · ', '')) : '—', color: c.billing === 'Missing' ? '#9A3412' : '#141414' },
+            { label: 'Copy on letters', value: people.filter(function (k) { return k.tags.indexOf('Copy on letters') > -1; }).length ? '1 contact' : '—', color: '#141414' },
+            { label: c.type === 'Client' ? 'Billed / open' : 'Fees', value: c.money ? money(c.money) + (c.type === 'Client' ? ' billed · ' + money(c.note) + ' open' : '') : '—', color: '#141414' }
+          ],
+          listLabel: 'Projects', list: c.projects.length ? c.projects.map(function (p) { return { label: p[0], href: p[1], note: p[2] }; }) : [{ label: 'No projects yet', href: '#', note: '' }],
+          primary: c.type === 'Client' ? 'New project' : 'Add contact'
+        };
+      }
+      if (parts[0] === 'ct' && st.tab === 'people') {
+        var k = CONTACTS.filter(function (x) { return x.id === parts[1]; })[0];
+        var co = coById[k.co];
+        dw = {
+          aria: 'Contact details', mono: mono(co.name), badge: badge(co.type, 48, true),
+          title: '[Name]' + (k.designations ? ', ' + k.designations : ''), sub: k.title + ' · ' + co.name, type: co.type, typePill: typePill(co.type),
+          isCompany: false,
+          rows: [
+            { label: 'Email', value: '[email]@[' + co.id + '-domain]', color: '#141414' },
+            { label: 'Phone', value: '[Phone]', color: '#141414' },
+            { label: 'Tags', value: k.tags.length ? k.tags.join(', ') : '—', color: '#141414' },
+            { label: 'Signature', value: k.tags.indexOf('Main contact') > -1 && co.type === 'Client' ? 'On file for proposals' : '—', color: '#141414' }
+          ],
+          listLabel: 'Projects', list: co.projects.length ? co.projects.map(function (p) { return { label: p[0], href: p[1], note: p[2] }; }) : [{ label: 'No projects yet', href: '#', note: '' }],
+          primary: 'Send email'
+        };
+      }
+    }
+
+    // ---------- Header ----------
+    var clients = COMPANIES.filter(function (c) { return c.type === 'Client'; });
+    var missingBilling = clients.filter(function (c) { return c.billing === 'Missing'; }).length;
+    var kpis = [
+      { label: 'Companies', value: String(COMPANIES.length), note: clients.length + ' clients · ' + COMPANIES.filter(function (c) { return c.type === 'Consultant'; }).length + ' consultants', color: '#141414' },
+      { label: 'People', value: String(CONTACTS.length), note: 'Across all companies', color: '#141414' },
+      { label: 'Clients with open balances', value: String(clients.filter(function (c) { return c.note; }).length), note: money(clients.reduce(function (a, c) { return a + c.note; }, 0)) + ' outstanding', color: '#141414' },
+      { label: 'Missing billing contact', value: String(missingBilling), note: 'Invoices to these clients can\'t be emailed', color: missingBilling ? '#9A3412' : '#141414' }
+    ];
+    var TABS = [['companies', 'Companies', COMPANIES.length], ['people', 'People', CONTACTS.length]];
+    var tabs = TABS.map(function (t) {
+      var on = st.tab === t[0];
+      return {
+        label: t[1], count: t[2], on: on, pick: function () { self.setState({ tab: t[0], drawer: null }); },
+        style: 'display:inline-flex;align-items:center;height:50px;padding:0 12px;border:0;background:transparent;cursor:pointer;white-space:nowrap;text-transform:uppercase;letter-spacing:0.07em;font-size:12.5px;font-weight:' + (on ? '700' : '500') + ';color:' + (on ? '#141414' : '#4D4D4D') + ';box-shadow:' + (on ? 'inset 0 -3px 0 #141414' : 'none')
+      };
+    });
+    var isCo = st.tab === 'companies';
+
+    return {
+      modules: RAIL(modules), railMin: RAILV.railMin, railMax: RAILV.railMax, railChev: RAILV.railChev, railToggleLabel: RAILV.railToggleLabel, railToggle: RAILV.railToggle, railNavStyle: RAILV.railNavStyle, railLogoStyle: RAILV.railLogoStyle, railToggleStyle: RAILV.railToggleStyle, kpis: kpis, tabs: tabs,
+      tabCompanies: isCo, tabPeople: !isCo,
+      query: st.query, onQuery: function (e) { self.setState({ query: e.target.value }); },
+      searchHint: isCo ? 'Search companies' : 'Search people, titles or tags',
+      typeFilters: typeFilters,
+      resultNote: (isCo ? companies.length + ' companies' : contacts.length + ' people') + ' shown',
+      moneyHead: 'Billed / fees',
+      companies: companies, contacts: contacts,
+      drawerOpen: !!dw, dw: dw || { rows: [], list: [] }, closeDrawer: function () { self.setState({ drawer: null }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ArchiTrac — Projects</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=Barlow:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F2F2F2}
+a{color:#141414}a:hover{color:#000000}
+button{font:inherit;color:inherit}
+h1,h2,th,.cap{text-transform:uppercase;letter-spacing:0.08em}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; font-family: 'Barlow', system-ui, sans-serif; font-size: 14px; color: #141414; background: #F2F2F2">
+
+<nav aria-label="Main menu" style="{{railNavStyle}}">
+<a href="Home.dc.html" aria-label="ArchiTrac home" style="{{railLogoStyle}}">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 26px"><path d="M3 20h18"></path><path d="M5 20V9l7-5 7 5v11"></path><path d="M9 20v-6h6v6"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span style="font-size: 13px; font-weight: 700; letter-spacing: 0.16em">ARCHITRAC</span></sc-if>
+</a>
+<sc-for list="{{modules}}" as="m" hint-placeholder-count="15">
+<sc-if value="{{m.isLabel}}" hint-placeholder-val="{{ false }}">
+<span style="{{m.labelStyle}}">{{m.labelText}}</span>
+</sc-if>
+<sc-if value="{{m.isLink}}" hint-placeholder-val="{{ true }}">
+<a href="{{m.href}}" aria-current="{{m.current}}" aria-label="{{m.label}}" title="{{m.label}}" style="{{m.rowStyle}}">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 20px"><path d="{{m.icon}}"></path></svg>
+<sc-if value="{{m.showLabel}}" hint-placeholder-val="{{ true }}"><span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{m.label}}</span></sc-if>
+<sc-if value="{{m.addon}}" hint-placeholder-val="{{ false }}"><span style="{{m.addStyle}}">{{m.addText}}</span></sc-if>
+</a>
+</sc-if>
+</sc-for>
+<button type="button" onClick="{{railToggle}}" aria-label="{{railToggleLabel}}" title="{{railToggleLabel}}" style="{{railToggleStyle}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 18px; transform: rotate({{railChev}}deg)"><path d="M4 4v16"></path><path d="M15 7l-5 5 5 5"></path><path d="M10 12h10"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span>Collapse menu</span></sc-if>
+</button>
+</nav>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 10px 32px; background: #141414; color: #F2F2F2">
+<button type="button" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px 0 4px; border: 1px solid #3A3A3A; border-radius: 2px; background: transparent; color: #F2F2F2; cursor: pointer">
+<span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; background: #F2F2F2; color: #141414; font-size: 12px; font-weight: 700">F</span>
+<span style="font-weight: 600">[FIRM NAME]</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+<span class="cap" style="color: #F2F2F2; font-weight: 500">Projects</span>
+<div style="margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+<button type="button" aria-label="Notifications" style="position: relative; width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 2px; background: transparent; color: #F2F2F2; cursor: pointer">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9a6 6 0 0 1 12 0c0 6 2.5 7.5 2.5 7.5h-17S6 15 6 9"></path><path d="M10.5 20a1.8 1.8 0 0 0 3 0"></path></svg>
+<span aria-hidden="true" style="position: absolute; top: 6px; right: 7px; width: 7px; height: 7px; border-radius: 50%; background: #F08A4B"></span>
+</button>
+<a href="Settings.dc.html" aria-label="Settings" title="Settings" style="width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 2px; color: #BDBDBD"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></a>
+<span title="You" style="width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #3A3A3A; color: #FFFFFF; font-size: 11px; font-weight: 600">BM</span>
+</div>
+</header>
+
+<div style="background: #FFFFFF; border-bottom: 1px solid #DCDCDC">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px; padding: 32px 32px 28px">
+<div style="flex: 1 1 380px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">{{subtitle}}</div>
+<h1 style="margin: 10px 0 0; font-size: 30px; line-height: 1.15; font-weight: 500">Projects</h1>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" style="height: 38px; padding: 0 14px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer; font-weight: 500">Import</button>
+<a href="#" style="display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 16px; border-radius: 2px; background: #141414; color: #FFFFFF; text-decoration: none; font-weight: 600">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+New project
+</a>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); border-top: 1px solid #EBEBEB">
+<sc-for list="{{totals}}" as="t" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 20px 32px 22px; border-right: 1px solid #EBEBEB">
+<span class="cap" style="font-size: 11px; font-weight: 500; color: #3A3A3A">{{t.label}}</span>
+<span style="font-size: 26px; line-height: 1.15; font-weight: 500; font-variant-numeric: tabular-nums; color: {{t.color}}">{{t.value}}</span>
+<span style="font-size: 12.5px; color: #666666">{{t.note}}</span>
+</div>
+</sc-for>
+</div>
+
+<div role="tablist" aria-label="Project status" style="display: flex; gap: 6px; padding: 4px 22px 0; border-top: 1px solid #EBEBEB; overflow-x: auto">
+<sc-for list="{{filters}}" as="f" hint-placeholder-count="3">
+<button type="button" role="tab" aria-selected="{{f.on}}" onClick="{{f.pick}}" style="{{f.style}}">{{f.label}}<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; color: #666666; margin-left: 8px">{{f.count}}</span></button>
+</sc-for>
+</div>
+</div>
+
+<main style="flex: 1; display: flex; flex-direction: column; gap: 20px; padding: 28px 32px 32px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+<label style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; color: #666666; flex: 0 1 340px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Search projects</span>
+<input type="search" value="{{query}}" onInput="{{onQuery}}" placeholder="Search by name, number or client" style="flex: 1; min-width: 0; border: 0; outline: none; background: transparent; color: #141414; font: inherit">
+</label>
+<div style="margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 10px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer"><span style="color: #666666">Type:</span> All</button>
+<button type="button" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 10px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer"><span style="color: #666666">PM:</span> Anyone</button>
+<button type="button" onClick="{{toggleSort}}" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 10px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer"><span style="color: #666666">Sort:</span> {{sortLabel}}</button>
+</div>
+</div>
+
+<section aria-label="Project list" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="min-width: 1180px">
+<div class="cap" style="display: grid; grid-template-columns: 96px minmax(240px, 1.6fr) 120px 200px 56px 104px 150px 104px 120px; align-items: end; gap: 0 12px; height: 44px; box-sizing: border-box; padding: 0 18px 9px; border-bottom: 1px solid #DCDCDC; background: #FAFAFA; font-size: 11px; font-weight: 500; color: #666666">
+<span>No.</span>
+<span>Project / client</span>
+<span>Type</span>
+<span>Phase</span>
+<span>PM</span>
+<span style="text-align: right">Fee</span>
+<span>Billed</span>
+<span style="text-align: right">Constr. est.</span>
+<span>Health</span>
+</div>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+<div style="display: grid; grid-template-columns: 96px minmax(240px, 1.6fr) 120px 200px 56px 104px 150px 104px 120px; align-items: center; gap: 0 12px; min-height: 58px; box-sizing: border-box; padding: 8px 18px; border-bottom: 1px solid #EBEBEB">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">{{r.number}}</span>
+<span style="display: flex; flex-direction: column; min-width: 0">
+<a href="{{r.href}}" style="font-weight: 600; text-decoration: none; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.name}}</a>
+<span style="font-size: 12.5px; color: #666666; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.client}}</span>
+</span>
+<span style="display: flex; flex-direction: column">
+<span>{{r.type}}</span>
+<span style="font-size: 12.5px; color: #666666">{{r.kind}}</span>
+</span>
+<span style="display: flex; flex-direction: column; gap: 5px">
+<span aria-hidden="true" style="display: flex; gap: 2px">
+<sc-for list="{{r.steps}}" as="s" hint-placeholder-count="7">
+<span style="{{s.style}}"></span>
+</sc-for>
+</span>
+<span style="font-size: 12.5px; color: #3A3A3A">{{r.phaseText}}</span>
+</span>
+<span><span title="{{r.pmName}}" style="{{r.pmStyle}}">{{r.pm}}</span></span>
+<span style="text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{r.fee}}</span>
+<span style="display: flex; align-items: center; gap: 8px">
+<span aria-hidden="true" style="flex: 0 0 72px; display: block; height: 6px; border-radius: 1px; background: #E3E3E3; overflow: hidden"><span style="display: block; height: 100%; width: {{r.billed}}%; background: #2F5BAA"></span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #3A3A3A">{{r.billedText}}</span>
+</span>
+<span style="text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{r.est}}</span>
+<span><span style="{{r.healthStyle}}"><span aria-hidden="true" style="{{r.healthDot}}"></span>{{r.health}}</span></span>
+</div>
+</sc-for>
+<sc-if value="{{empty}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0; padding: 28px 18px; color: #666666">No projects match "{{query}}".</p>
+</sc-if>
+</div>
+</section>
+
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1120}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var st = Object.assign({ filter: 'active', query: '', sort: 'number' }, this.state || {});
+
+    // ---------- Module bar ----------
+    var ICONS = {
+      home: 'M3 11l9-7 9 7M5 10v10h14V10',
+      projects: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+      contacts: 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M21 19v-1a4 4 0 0 0-3-3.9M15 3.2a3.5 3.5 0 0 1 0 6.6',
+      team: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1',
+      workload: 'M4 5h9M4 10h15M4 15h12M4 20h6',
+      time: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7v5l3 2',
+      documents: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h6',
+      reports: 'M3 21h18M6 21V11M11 21V5M16 21v-7M21 21v-4',
+      schedule: 'M4 4v16M4 6h7M7 10h8M10 14h7M8 18h5',
+      build: 'M3 18h18M5 18v-3a7 7 0 0 1 14 0v3M12 8V5M9 11V8.7M15 11V8.7',
+      accounting: 'M12 3v18M16 7.5c-.5-1.5-2-2.5-4-2.5-2.2 0-4 1.3-4 3s1.8 2.6 4 3 4 1.3 4 3-1.8 3-4 3c-2 0-3.5-1-4-2.5',
+      marketing: 'M3 10v4h4l6 4V6L7 10zM17 9a4 4 0 0 1 0 6M19.5 6.5a7.5 7.5 0 0 1 0 11',
+      knowledge: 'M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2zM22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z',
+      website: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M3 12h18M12 3c2.5 2.5 3.8 5.6 3.8 9s-1.3 6.5-3.8 9M12 3c-2.5 2.5-3.8 5.6-3.8 9s1.3 6.5 3.8 9',
+      hiring: 'M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 7h18v12H3zM3 12h18'
+    };
+
+    // ---------- Menu rail: wide with labels, or collapsed to icons (remembered per browser) ----------
+    var RAILMIN = (this.state && this.state.railMin != null) ? this.state.railMin : (function () { try { return window.localStorage.getItem('architrac.railMin') === '1'; } catch (e) { return false; } })();
+    function RAIL(list) {
+      return list.map(function (m) {
+        if (m.isLabel) return Object.assign({}, m, { labelText: RAILMIN ? '' : m.label,
+          labelStyle: RAILMIN ? 'display:block;height:1px;margin:10px 8px;background:#2A2A2A' : 'display:block;padding:16px 12px 6px;font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8A8A8A' });
+        var cur = !!m.current;
+        return Object.assign({}, m, {
+          showLabel: !RAILMIN, addText: RAILMIN ? '' : 'ADD',
+          addStyle: RAILMIN ? 'position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:#8A8A8A' : 'flex:0 0 auto;padding:1px 5px;border-radius:2px;background:#2A2A2A;color:#D9D9D9;font-size:9.5px;font-weight:600;letter-spacing:0.06em',
+          rowStyle: 'position:relative;display:flex;align-items:center;gap:12px;height:40px;box-sizing:border-box;border-radius:2px;text-decoration:none;white-space:nowrap;text-transform:uppercase;letter-spacing:0.08em;font-size:12px;'
+            + (RAILMIN ? 'width:44px;justify-content:center;padding:0;margin:0 auto;' : 'width:100%;padding:0 12px;')
+            + 'font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#8A8A8A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+        });
+      });
+    }
+    var RAILV = {
+      railMin: RAILMIN, railMax: !RAILMIN, railChev: RAILMIN ? 180 : 0,
+      railToggleLabel: RAILMIN ? 'Expand menu' : 'Collapse menu',
+      railToggle: function () { var v = !RAILMIN; try { window.localStorage.setItem('architrac.railMin', v ? '1' : '0'); } catch (e) {} self.setState({ railMin: v }); },
+      railNavStyle: 'flex:0 0 ' + (RAILMIN ? 64 : 216) + 'px;width:' + (RAILMIN ? 64 : 216) + 'px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;padding:14px ' + (RAILMIN ? '10px' : '12px') + ';background:#000000;color:#BDBDBD;transition:width 140ms, flex-basis 140ms',
+      railLogoStyle: 'display:flex;align-items:center;gap:10px;height:40px;margin-bottom:8px;color:#F2F2F2;text-decoration:none;' + (RAILMIN ? 'justify-content:center;' : 'padding:0 10px;'),
+      railToggleStyle: 'margin-top:auto;display:flex;align-items:center;gap:10px;height:38px;border:0;border-radius:2px;background:transparent;color:#8A8A8A;cursor:pointer;font-size:12px;font-weight:500;letter-spacing:0.04em;' + (RAILMIN ? 'justify-content:center;width:44px;margin-left:auto;margin-right:auto;' : 'width:100%;padding:0 12px;')
+    };
+    var CURRENT = 'projects';
+    var modules = [
+      { label: 'Home', key: 'home', href: 'Home.dc.html' }, { label: 'Projects', key: 'projects', href: 'Projects.dc.html' },
+      { label: 'Contacts', key: 'contacts', href: 'Contacts.dc.html' }, { label: 'Team', key: 'team', href: 'Team.dc.html' },
+      { label: 'Time', key: 'time', href: 'Time.dc.html' },
+      { label: 'Reports', key: 'reports', href: 'Reports.dc.html' },
+      { label: 'Modules', isLabel: true },
+      { label: 'Build', key: 'build', href: 'Build.dc.html' }, { label: 'Workload', key: 'workload', href: 'Workload.dc.html' },
+      { label: 'Accounting', key: 'accounting', href: 'Accounting.dc.html' }, { label: 'Marketing', key: 'marketing', href: 'Marketing.dc.html' },
+      { label: 'Knowledge', key: 'knowledge', href: 'Knowledge.dc.html' },
+      { label: 'Website', key: 'website', href: 'Website.dc.html' }, { label: 'Hiring', key: 'hiring', href: 'Hiring.dc.html' }
+    ].map(function (m) {
+      if (m.isLabel) return { isLabel: true, isLink: false, label: m.label };
+      var cur = m.key === CURRENT;
+      return {
+        isLabel: false, isLink: true, label: m.label, icon: ICONS[m.key], addon: !!m.addon,
+        href: m.href || '#', current: cur ? 'page' : null,
+        style: 'position:relative;flex:0 0 64px;height:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:2px;text-decoration:none;font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#9A9A9A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';text-transform:uppercase;letter-spacing:0.06em;font-size:9.5px;box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+      };
+    });
+
+    // ---------- Data (sample) ----------
+    var PHASES = ['Pre-Design', 'Schematic Design', 'Design Development', 'Construction Documents', 'Permitting', 'Construction Admin', 'Close Out'];
+    var PM = { BM: ['#3A3A3A', 'Principal'], JR: ['#141414', 'J. R., Project manager'], KL: ['#5C5C5C', 'K. L., Designer'], AP: ['#4D4D4D', 'A. P., Interior designer'] };
+    function P(number, name, client, type, kind, status, phase, pm, fee, billed, est, health) {
+      return { number: number, name: name, client: client, type: type, kind: kind, status: status, phase: phase, pm: pm, fee: fee, billed: billed, est: est, health: health };
+    }
+    var projects = [
+      P('2026-022', 'Harbor View Dental', 'Harbor View Dental Group', 'Medical', 'Tenant upfit', 'active', 0, 'BM', 28500, 4, 640000, 'On track'),
+      P('2026-021', 'Riverside Retail Shell', 'Riverside Partners LLC', 'Retail', 'Shell building', 'active', 0, 'JR', 64000, 0, 3900000, 'On track'),
+      P('2026-017', 'Oakmont Urgent Care', 'Oakmont Health', 'Medical', 'Ground-up', 'active', 1, 'KL', 92000, 12, 3100000, 'On track'),
+      P('2026-014', 'Medical Office Building', 'Palmetto Medical Properties', 'Medical', 'Ground-up', 'active', 2, 'JR', 186000, 20, 6200000, 'At risk'),
+      P('2026-011', 'Pine Street Bistro', 'Pine Street Hospitality', 'Restaurant', 'Tenant upfit', 'active', 2, 'AP', 41000, 31, 820000, 'On track'),
+      P('2026-006', 'Summerville Office Park, Bldg B', 'Summerville Office Park LLC', 'Office', 'Shell building', 'active', 3, 'KL', 118000, 55, 4800000, 'Over budget'),
+      P('2025-038', 'Coastal Credit Union Branch', 'Coastal Federal Credit Union', 'Retail', 'Ground-up', 'active', 4, 'BM', 76000, 72, 2400000, 'On track'),
+      P('2025-031', 'Northside Self-Storage', 'Northside Storage Holdings', 'Self-storage', 'Ground-up', 'active', 5, 'JR', 98000, 88, 7600000, 'On track'),
+      P('2025-027', 'Mill Creek Pediatrics', 'Mill Creek Pediatrics PA', 'Medical', 'Tenant upfit', 'active', 5, 'AP', 36000, 84, 950000, 'On track'),
+      P('2025-019', 'Grove Street Café', 'Grove Street Coffee Co.', 'Restaurant', 'Tenant upfit', 'active', 6, 'AP', 22000, 97, 410000, 'On track'),
+      P('P-26-09', 'Bayside Physical Therapy', 'Bayside PT', 'Medical', 'Tenant upfit', 'pipeline', -1, 'BM', 31000, 0, 690000, 'Proposal sent'),
+      P('P-26-08', 'Lakeview Retail Center', 'Lakeview Development Co.', 'Retail', 'Shell building', 'pipeline', -1, 'BM', 140000, 0, 9200000, 'Proposal draft'),
+      P('2025-012', 'Ashley River Dental', 'Ashley River Dental', 'Medical', 'Tenant upfit', 'closed', 7, 'KL', 26000, 100, 590000, 'Closed'),
+      P('2025-004', 'Westside Tire & Service', 'Westside Auto Group', 'Retail', 'Ground-up', 'closed', 7, 'JR', 48000, 100, 1500000, 'Closed')
+    ];
+    projects = projects.filter(function (p) { return p.status !== 'pipeline'; }); // leads and proposals live in Marketing
+    function money(v) { return '$' + Math.round(v).toLocaleString('en-US'); }
+    function short(v) { return v >= 1000000 ? '$' + (v / 1000000).toFixed(1) + 'M' : '$' + Math.round(v / 1000) + 'k'; }
+
+    // Health: color + shape. Green circle = on track, orange diamond = at risk, red square = over budget, grey = other.
+    var HEALTH = {
+      'On track': ['#E2F1E6', '#1D6234', 'border-radius:50%;background:#1D6234'],
+      'At risk': ['#FCE7DF', '#9A3412', 'transform:rotate(45deg);background:#C2410C;width:7px;height:7px'],
+      'Over budget': ['#FBE4E1', '#B42318', 'background:#B42318'],
+      'Proposal sent': ['#E4EBF8', '#1E3F7A', 'border-radius:50%;box-shadow:inset 0 0 0 1.5px #1E3F7A'],
+      'Proposal draft': ['#EBEBEB', '#4D4D4D', 'border-radius:50%;box-shadow:inset 0 0 0 1.5px #6B6B6B'],
+      'Closed': ['#EBEBEB', '#4D4D4D', 'background:#8A8A8A']
+    };
+
+    var counts = { active: 0, closed: 0 };
+    projects.forEach(function (p) { counts[p.status]++; });
+    var q = (st.query || '').toLowerCase().trim();
+    var list = projects.filter(function (p) {
+      if (st.filter !== 'all' && p.status !== st.filter) return false;
+      if (!q) return true;
+      return (p.name + ' ' + p.client + ' ' + p.number).toLowerCase().indexOf(q) > -1;
+    });
+    if (st.sort === 'fee') list = list.slice().sort(function (a, b) { return b.fee - a.fee; });
+
+    var rows = list.map(function (p) {
+      var h = HEALTH[p.health];
+      var steps = PHASES.map(function (ph, i) {
+        var done = p.phase > i, cur = p.phase === i;
+        return { style: 'display:block;width:24px;height:6px;border-radius:1px;background:' + (cur ? '#2F5BAA' : (done ? '#A9BDE3' : '#E3E3E3')) };
+      });
+      var phaseText = p.status === 'pipeline' ? 'Pipeline · not started' : (p.status === 'closed' ? 'Closed out' : PHASES[p.phase]);
+      return {
+        number: p.number, name: p.name, client: p.client, type: p.type, kind: p.kind,
+        href: p.number === '2026-014' ? 'Project.dc.html' : p.number === '2025-031' ? 'ProjectCA.dc.html#ns' : p.number === '2025-027' ? 'ProjectCA.dc.html#mc' : '#',
+        steps: steps, phaseText: phaseText,
+        pm: p.pm, pmName: PM[p.pm][1],
+        pmStyle: 'width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#FFFFFF;background:' + PM[p.pm][0],
+        fee: money(p.fee), billed: p.billed, billedText: p.status === 'pipeline' ? '—' : p.billed + '%',
+        est: short(p.est),
+        health: p.health,
+        healthStyle: 'display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:2px;font-size:10.5px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;white-space:nowrap;background:' + h[0] + ';color:' + h[1],
+        healthDot: 'display:inline-block;flex:0 0 auto;width:8px;height:8px;box-sizing:border-box;' + h[2]
+      };
+    });
+
+    var active = projects.filter(function (p) { return p.status === 'active'; });
+    var feeSum = active.reduce(function (a, p) { return a + p.fee; }, 0);
+    var billedSum = active.reduce(function (a, p) { return a + p.fee * p.billed / 100; }, 0);
+    var flagged = active.filter(function (p) { return p.health !== 'On track'; }).length;
+
+    var filters = [['active', 'Active', counts.active], ['closed', 'Closed', counts.closed], ['all', 'All', projects.length]].map(function (f) {
+      var on = st.filter === f[0];
+      return {
+        label: f[1], count: f[2], on: on,
+        pick: function () { self.setState({ filter: f[0] }); },
+        style: 'display:inline-flex;align-items:center;height:50px;padding:0 12px;border:0;background:transparent;cursor:pointer;white-space:nowrap;text-transform:uppercase;letter-spacing:0.07em;font-size:12.5px;font-weight:' + (on ? '700' : '500') + ';color:' + (on ? '#141414' : '#4D4D4D') + ';box-shadow:' + (on ? 'inset 0 -3px 0 #141414' : 'none')
+      };
+    });
+
+    return {
+      modules: RAIL(modules), railMin: RAILV.railMin, railMax: RAILV.railMax, railChev: RAILV.railChev, railToggleLabel: RAILV.railToggleLabel, railToggle: RAILV.railToggle, railNavStyle: RAILV.railNavStyle, railLogoStyle: RAILV.railLogoStyle, railToggleStyle: RAILV.railToggleStyle, rows: rows, filters: filters, empty: rows.length === 0,
+      query: st.query,
+      onQuery: function (e) { self.setState({ query: e.target.value }); },
+      sortLabel: st.sort === 'fee' ? 'Largest fee' : 'Project number',
+      toggleSort: function () { self.setState({ sort: st.sort === 'fee' ? 'number' : 'fee' }); },
+      subtitle: counts.active + ' ACTIVE · ' + counts.closed + ' CLOSED THIS YEAR · LEADS AND PROPOSALS LIVE IN MARKETING',
+      totals: [
+        { label: 'Active fees', value: money(feeSum), note: counts.active + ' active projects', color: '#141414' },
+        { label: 'Billed to date', value: money(billedSum), note: Math.round(billedSum / feeSum * 100) + '% of active fees', color: '#141414' },
+        { label: 'Left to bill', value: money(feeSum - billedSum), note: 'On active projects', color: '#141414' },
+        { label: 'Flagged', value: String(flagged), note: 'Active projects at risk or over budget', color: '#9A3412' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,731 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Project sheet — grid and Gantt</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=Barlow:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F2F2F2}
+a{color:#141414}a:hover{color:#000000}
+button{font:inherit;color:inherit}
+h1,h2,th,.cap{text-transform:uppercase;letter-spacing:0.08em}
+.gt-row{background-image:linear-gradient(to right,#EBEBEB 1px,transparent 1px);background-size:35px 100%}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; font-family: 'Barlow', system-ui, sans-serif; font-size: 14px; color: #141414; background: #F2F2F2">
+
+<nav aria-label="Main menu" style="{{railNavStyle}}">
+<a href="Home.dc.html" aria-label="ArchiTrac home" style="{{railLogoStyle}}">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 26px"><path d="M3 20h18"></path><path d="M5 20V9l7-5 7 5v11"></path><path d="M9 20v-6h6v6"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span style="font-size: 13px; font-weight: 700; letter-spacing: 0.16em">ARCHITRAC</span></sc-if>
+</a>
+<sc-for list="{{modules}}" as="m" hint-placeholder-count="15">
+<sc-if value="{{m.isLabel}}" hint-placeholder-val="{{ false }}">
+<span style="{{m.labelStyle}}">{{m.labelText}}</span>
+</sc-if>
+<sc-if value="{{m.isLink}}" hint-placeholder-val="{{ true }}">
+<a href="{{m.href}}" aria-current="{{m.current}}" aria-label="{{m.label}}" title="{{m.label}}" style="{{m.rowStyle}}">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 20px"><path d="{{m.icon}}"></path></svg>
+<sc-if value="{{m.showLabel}}" hint-placeholder-val="{{ true }}"><span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{m.label}}</span></sc-if>
+<sc-if value="{{m.addon}}" hint-placeholder-val="{{ false }}"><span style="{{m.addStyle}}">{{m.addText}}</span></sc-if>
+</a>
+</sc-if>
+</sc-for>
+<button type="button" onClick="{{railToggle}}" aria-label="{{railToggleLabel}}" title="{{railToggleLabel}}" style="{{railToggleStyle}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 18px; transform: rotate({{railChev}}deg)"><path d="M4 4v16"></path><path d="M15 7l-5 5 5 5"></path><path d="M10 12h10"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span>Collapse menu</span></sc-if>
+</button>
+</nav>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 10px 32px; background: #141414; color: #F2F2F2">
+<button type="button" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px 0 4px; border: 1px solid #3A3A3A; border-radius: 2px; background: transparent; color: #F2F2F2; cursor: pointer">
+<span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; background: #F2F2F2; color: #141414; font-size: 12px; font-weight: 700">F</span>
+<span style="font-weight: 600">[FIRM NAME]</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+<nav aria-label="Breadcrumb" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; color: #BDBDBD">
+<a href="Projects.dc.html" style="color: #BDBDBD; text-decoration: none">Projects</a>
+<span aria-hidden="true">/</span>
+<span class="cap" style="color: #F2F2F2; font-weight: 500">Medical Office Building</span>
+</nav>
+<div style="margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+<label style="display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; border-radius: 2px; background: #2A2A2A; color: #BDBDBD">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M20 20l-3.5-3.5"></path></svg>
+<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Search this sheet</span>
+<input type="search" placeholder="Search sheet" style="width: 160px; border: 0; outline: none; background: transparent; color: #F2F2F2; font: inherit">
+</label>
+<a href="Settings.dc.html" aria-label="Settings" title="Settings" style="width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 2px; color: #BDBDBD"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></a>
+<div style="display: flex; align-items: center">
+<span title="BM" style="width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #3A3A3A; color: #FFFFFF; font-size: 11px; font-weight: 600; border: 2px solid #141414">BM</span>
+<span title="JR" style="width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #141414; color: #FFFFFF; font-size: 11px; font-weight: 600; border: 2px solid #141414; margin-left: -8px">JR</span>
+<span title="AP" style="width: 30px; height: 30px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #4D4D4D; color: #FFFFFF; font-size: 11px; font-weight: 600; border: 2px solid #141414; margin-left: -8px">AP</span>
+</div>
+<button type="button" style="height: 34px; padding: 0 14px; border: 0; border-radius: 2px; background: #F2F2F2; color: #141414; font-weight: 600; cursor: pointer">Share</button>
+</div>
+</header>
+
+<div style="background: #FFFFFF; border-bottom: 1px solid #DCDCDC">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 20px; padding: 32px 32px 28px">
+<div style="flex: 1 1 420px; min-width: 0">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">
+<span>2026-014</span><span aria-hidden="true">·</span><span>MEDICAL</span><span aria-hidden="true">·</span><span>GROUND-UP</span><span aria-hidden="true">·</span><span>20,000 SF</span>
+</div>
+<h1 style="margin: 10px 0 8px; font-size: 30px; line-height: 1.15; font-weight: 500">Medical Office Building</h1>
+<p style="margin: 0; color: #4D4D4D">Palmetto Medical Properties · [Site address]</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<span style="display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 10px; border-radius: 2px; background: #FCE7DF; color: #9A3412; font-size: 11px; font-weight: 600; letter-spacing: 0.07em; text-transform: uppercase"><span aria-hidden="true" style="display: inline-block; width: 7px; height: 7px; transform: rotate(45deg); background: #C2410C"></span>At risk</span>
+<button type="button" style="height: 36px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer; font-weight: 500">Edit project</button>
+<button type="button" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-weight: 600">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+New
+</button>
+</div>
+</div>
+
+<ol aria-label="Project phases" style="list-style: none; margin: 0; padding: 24px 32px 28px; border-top: 1px solid #EBEBEB; display: grid; grid-template-columns: repeat(7, minmax(120px, 1fr)); gap: 10px; overflow-x: auto">
+<sc-for list="{{pstepper}}" as="s" hint-placeholder-count="7">
+<li aria-current="{{s.current}}" style="display: flex; flex-direction: column; gap: 8px">
+<span aria-hidden="true" style="{{s.bar}}"></span>
+<span style="display: flex; align-items: center; gap: 6px">
+<sc-if value="{{s.done}}" hint-placeholder-val="{{ false }}">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1D6234" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>
+</sc-if>
+<span style="{{s.labelStyle}}">{{s.name}}</span>
+</span>
+<span style="font-size: 12px; color: #666666">{{s.note}}</span>
+</li>
+</sc-for>
+</ol>
+
+<div role="tablist" aria-label="Project sections" style="display: flex; gap: 6px; padding: 4px 22px 0; border-top: 1px solid #EBEBEB; overflow-x: auto">
+<sc-for list="{{ptabs}}" as="t" hint-placeholder-count="9">
+<sc-if value="{{t.isLink}}" hint-placeholder-val="{{ false }}">
+<a href="{{t.href}}" style="{{t.style}}">{{t.label}}</a>
+</sc-if>
+<sc-if value="{{t.isTab}}" hint-placeholder-val="{{ true }}">
+<button type="button" role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}</button>
+</sc-if>
+</sc-for>
+</div>
+</div>
+
+
+<main style="position: relative; flex: 1; display: flex; flex-direction: column; gap: 16px; padding: 28px 32px 32px">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow: hidden">
+
+<sc-if value="{{showGrid}}" hint-placeholder-val="{{ true }}">
+<section aria-label="Grid" style="{{gridPanelStyle}}">
+<div style="min-width: 868px">
+<div class="cap" style="display: grid; grid-template-columns: 44px 252px 64px 116px 76px 76px 48px 52px 84px 56px; align-items: end; height: 56px; box-sizing: border-box; padding-bottom: 9px; border-bottom: 1px solid #DCDCDC; background: #FAFAFA; font-size: 11px; font-weight: 500; color: #666666">
+<span></span>
+<span style="padding-left: 8px">Task name</span>
+<span>Assigned</span>
+<span>Status</span>
+<span>Start</span>
+<span>Finish</span>
+<span style="text-align: right; padding-right: 10px">Dur.</span>
+<span style="text-align: right; padding-right: 10px">Hrs</span>
+<span style="padding-left: 8px">% Done</span>
+<span>Pred.</span>
+</div>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="12">
+<div style="display: grid; grid-template-columns: 44px 252px 64px 116px 76px 76px 48px 52px 84px 56px; align-items: center; height: {{rowH}}px; box-sizing: border-box; border-bottom: 1px solid #EBEBEB; background-color: {{r.bg}}; box-shadow: {{r.rowShadow}}">
+<span style="text-align: right; padding-right: 12px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #6B6B6B">{{r.num}}</span>
+<div style="display: flex; align-items: center; min-width: 0; padding-right: 8px">
+<sc-if value="{{r.isPhase}}" hint-placeholder-val="{{ false }}">
+<button type="button" onClick="{{r.toggle}}" aria-expanded="{{r.open}}" style="display: flex; align-items: center; gap: 6px; width: 100%; height: {{rowH}}px; padding: 0 4px; border: 0; background: transparent; cursor: pointer; text-align: left; font-weight: 600; min-width: 0">
+<svg style="{{r.chevStyle}}" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+<span class="cap" style="font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.name}}</span>
+</button>
+</sc-if>
+<sc-if value="{{r.isLeaf}}" hint-placeholder-val="{{ true }}">
+<button type="button" onClick="{{r.pick}}" style="display: flex; align-items: center; gap: 8px; width: 100%; height: {{rowH}}px; padding: 0 4px 0 28px; border: 0; background: transparent; cursor: pointer; text-align: left; min-width: 0">
+<sc-if value="{{r.isMs}}" hint-placeholder-val="{{ false }}">
+<span aria-hidden="true" style="display: block; flex: 0 0 8px; width: 8px; height: 8px; transform: rotate(45deg); background: #141414"></span>
+</sc-if>
+<span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.name}}</span>
+</button>
+</sc-if>
+</div>
+<div style="display: flex; align-items: center">
+<sc-if value="{{r.hasWho}}" hint-placeholder-val="{{ true }}">
+<span style="{{r.whoStyle}}">{{r.who}}</span>
+</sc-if>
+</div>
+<div style="display: flex; align-items: center">
+<span style="{{r.pillStyle}}"><span aria-hidden="true" style="{{r.dotStyle}}"></span>{{r.status}}</span>
+</div>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px">{{r.startText}}</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px">{{r.endText}}</span>
+<span style="text-align: right; padding-right: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 12px">{{r.durText}}</span>
+<span style="text-align: right; padding-right: 10px; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: {{r.hrsColor}}">{{r.hrsText}}</span>
+<div style="display: flex; align-items: center; gap: 6px; padding: 0 8px">
+<span aria-hidden="true" style="display: block; flex: 0 0 34px; height: 5px; border-radius: 3px; background: #E3E3E3; overflow: hidden"><span style="display: block; height: 100%; width: {{r.pct}}%; background: {{accent}}"></span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #3A3A3A">{{r.pct}}%</span>
+</div>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">{{r.predText}}</span>
+</div>
+</sc-for>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{showGantt}}" hint-placeholder-val="{{ true }}">
+<section aria-label="Gantt chart" style="{{ganttPanelStyle}}">
+<div style="position: relative; width: {{tlW}}px">
+<div style="position: relative; height: 56px; box-sizing: border-box; border-bottom: 1px solid #DCDCDC; background: #FAFAFA">
+<div style="position: relative; height: 28px; box-sizing: border-box; border-bottom: 1px solid #EBEBEB">
+<sc-for list="{{months}}" as="m" hint-placeholder-count="7">
+<span style="{{m.style}}">{{m.label}}</span>
+</sc-for>
+<sc-if value="{{showToday}}" hint-placeholder-val="{{ true }}">
+<span style="position: absolute; top: 5px; left: {{todayPillX}}px; height: 18px; padding: 0 6px; border-radius: 2px; background: #C2410C; color: #FFFFFF; font-size: 11px; font-weight: 600; display: flex; align-items: center">Today</span>
+</sc-if>
+</div>
+<div style="display: flex; height: 27px">
+<sc-for list="{{weeks}}" as="w" hint-placeholder-count="28">
+<span style="{{w.style}}">{{w.label}}</span>
+</sc-for>
+</div>
+</div>
+<div style="position: relative">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="12">
+<div class="gt-row" style="position: relative; height: {{rowH}}px; box-sizing: border-box; border-bottom: 1px solid #EBEBEB; background-color: {{r.bg}}">
+<sc-if value="{{r.isPhase}}" hint-placeholder-val="{{ false }}">
+<span aria-hidden="true" style="position: absolute; display: block; left: {{r.x}}px; width: {{r.w}}px; top: {{phTop}}px; height: 6px; background: #141414"></span>
+<span aria-hidden="true" style="position: absolute; display: block; left: {{r.x}}px; top: {{capTop}}px; width: 3px; height: 12px; background: #141414"></span>
+<span aria-hidden="true" style="position: absolute; display: block; left: {{r.capR}}px; top: {{capTop}}px; width: 3px; height: 12px; background: #141414"></span>
+</sc-if>
+<sc-if value="{{r.isTask}}" hint-placeholder-val="{{ true }}">
+<button type="button" onClick="{{r.pick}}" aria-label="{{r.barLabel}}" style="position: absolute; left: {{r.x}}px; width: {{r.w}}px; top: {{barTop}}px; height: {{barH}}px; padding: 0; border: 0; border-radius: 1px; background: {{r.barBg}}; box-shadow: {{r.barRing}}; overflow: hidden; cursor: pointer"><span style="display: block; height: 100%; width: {{r.pct}}%; background: {{r.barFill}}"></span></button>
+<span style="position: absolute; left: {{r.labelX}}px; top: 0; height: 100%; display: flex; align-items: center; white-space: nowrap; font-size: 12px; color: #3A3A3A; pointer-events: none">{{r.name}}</span>
+</sc-if>
+<sc-if value="{{r.isMs}}" hint-placeholder-val="{{ false }}">
+<button type="button" onClick="{{r.pick}}" aria-label="{{r.barLabel}}" style="{{r.msStyle}}"></button>
+<span style="position: absolute; left: {{r.labelX}}px; top: 0; height: 100%; display: flex; align-items: center; white-space: nowrap; font-size: 12px; font-weight: 500; color: #141414; pointer-events: none">{{r.name}}</span>
+</sc-if>
+</div>
+</sc-for>
+<sc-if value="{{showDeps}}" hint-placeholder-val="{{ true }}">
+<svg aria-hidden="true" width="{{tlW}}" height="{{depsH}}" viewBox="0 0 {{tlW}} {{depsH}}" style="position: absolute; top: 0; left: 0; overflow: visible; pointer-events: none">
+<path d="{{depLines}}" fill="none" stroke="#8A8A8A" stroke-width="1.25" stroke-linejoin="round"></path>
+<path d="{{depHeads}}" fill="#8A8A8A" stroke="none"></path>
+<path d="{{depHiLines}}" fill="none" stroke="{{accent}}" stroke-width="2" stroke-linejoin="round"></path>
+<path d="{{depHiHeads}}" fill="{{accent}}" stroke="none"></path>
+</svg>
+</sc-if>
+<sc-if value="{{showToday}}" hint-placeholder-val="{{ true }}">
+<span aria-hidden="true" style="position: absolute; display: block; top: -27px; bottom: 0; left: {{todayX}}px; width: 2px; background: #C2410C; pointer-events: none"></span>
+</sc-if>
+</div>
+</div>
+</section>
+</sc-if>
+
+</div>
+
+<footer style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px 24px; color: #4D4D4D; font-size: 12px">
+<span><strong style="color: #141414; font-weight: 600">Selected:</strong> {{selText}}</span>
+<span style="margin-left: auto; display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="display: inline-block; width: 22px; height: 10px; border-radius: 1px; background: linear-gradient(90deg, {{accent}} 45%, #A9BDE3 45%)"></span>Task (dark = done)</span>
+<span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="display: inline-block; width: 22px; height: 10px; border-radius: 1px; background: repeating-linear-gradient(135deg, #C2410C 0 1.5px, #F6CDB9 1.5px 5px)"></span>At risk</span>
+<span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="display: inline-block; width: 22px; height: 6px; background: #141414"></span>Phase</span>
+<span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="display: inline-block; width: 9px; height: 9px; transform: rotate(45deg); background: #141414"></span>Milestone</span>
+<span style="display: inline-flex; align-items: center; gap: 6px"><svg width="22" height="10" viewBox="0 0 22 10" aria-hidden="true"><path d="M1 5H16" stroke="#8A8A8A" stroke-width="1.25"></path><path d="M15 1L21 5L15 9Z" fill="#8A8A8A"></path></svg>Dependency</span>
+<span style="font-family: 'IBM Plex Mono', monospace">{{countText}}</span>
+</footer>
+
+<sc-if value="{{showPanel}}" hint-placeholder-val="{{ true }}">
+<aside aria-label="Task details" style="position: absolute; top: 28px; right: 32px; z-index: 5; width: min(392px, calc(100% - 40px)); display: flex; flex-direction: column; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; box-shadow: 0 12px 32px rgba(28, 31, 35, 0.16), 0 2px 6px rgba(28, 31, 35, 0.08); overflow: hidden">
+
+<div style="padding: 14px 18px 16px; border-bottom: 1px solid #EBEBEB">
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #666666">Row {{sd.num}}</span>
+<button type="button" onClick="{{closePanel}}" aria-label="Close details" style="margin-left: auto; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 2px; background: transparent; cursor: pointer; color: #4D4D4D">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg>
+</button>
+</div>
+<h2 style="margin: 2px 0 12px; font-size: 18px; line-height: 1.3; font-weight: 500">{{sd.name}}</h2>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+<span style="{{sd.pillStyle}}"><span aria-hidden="true" style="{{sd.dotStyle}}"></span>{{sd.status}}</span>
+<span style="display: inline-flex; align-items: center; gap: 8px; color: #3A3A3A">
+<span style="{{sd.whoStyle}}">{{sd.who}}</span>{{sd.role}}
+</span>
+</div>
+<sc-if value="{{sd.hasLoad}}" hint-placeholder-val="{{ false }}">
+<div role="note" style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 12px; padding: 10px 12px; border-radius: 2px; background: {{sd.loadBg}}; color: {{sd.loadFg}}; font-size: 13px">
+<span aria-hidden="true" style="{{sd.loadDot}}"></span><span style="flex: 1 1 220px">{{sd.loadNote}}</span><a href="Workload.dc.html" style="color: inherit; font-weight: 600">Open Workload</a>
+</div>
+</sc-if>
+</div>
+
+<dl style="display: grid; grid-template-columns: 112px minmax(0, 1fr); gap: 10px 12px; margin: 0; padding: 16px 18px; border-bottom: 1px solid #EBEBEB">
+<dt style="color: #666666">Start</dt>
+<dd style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{sd.startText}}</dd>
+<dt style="color: #666666">Finish</dt>
+<dd style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{sd.endText}}</dd>
+<dt style="color: #666666">Duration</dt>
+<dd style="margin: 0; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{sd.durText}}</dd>
+<dt style="color: #666666">% Done</dt>
+<dd style="margin: 0; display: flex; align-items: center; gap: 8px">
+<span aria-hidden="true" style="display: block; flex: 0 0 120px; height: 6px; border-radius: 3px; background: #E3E3E3; overflow: hidden"><span style="display: block; height: 100%; width: {{sd.pct}}%; background: {{accent}}"></span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{sd.pct}}%</span>
+</dd>
+<dt style="color: #666666">Predecessors</dt>
+<dd style="margin: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px">
+<sc-for list="{{sd.preds}}" as="p" hint-placeholder-count="1">
+<button type="button" onClick="{{p.pick}}" style="padding: 0; border: 0; background: transparent; cursor: pointer; color: #141414; text-align: left; text-decoration: underline; text-underline-offset: 2px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px">{{p.num}}</span> · {{p.name}}</button>
+</sc-for>
+<sc-if value="{{sd.noPreds}}" hint-placeholder-val="{{ false }}"><span style="color: #666666">None</span></sc-if>
+</dd>
+<dt style="color: #666666">Successors</dt>
+<dd style="margin: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px">
+<sc-for list="{{sd.succs}}" as="p" hint-placeholder-count="1">
+<button type="button" onClick="{{p.pick}}" style="padding: 0; border: 0; background: transparent; cursor: pointer; color: #141414; text-align: left; text-decoration: underline; text-underline-offset: 2px"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px">{{p.num}}</span> · {{p.name}}</button>
+</sc-for>
+<sc-if value="{{sd.noSuccs}}" hint-placeholder-val="{{ false }}"><span style="color: #666666">None</span></sc-if>
+</dd>
+</dl>
+
+<div role="tablist" aria-label="Task activity" style="display: flex; gap: 4px; padding: 0 12px; border-bottom: 1px solid #EBEBEB">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+<button type="button" role="tab" aria-selected="{{t.selected}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}} <span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #666666">{{t.count}}</span></button>
+</sc-for>
+</div>
+
+<sc-if value="{{tabComments}}" hint-placeholder-val="{{ true }}">
+<div role="tabpanel" aria-label="Comments" style="display: flex; flex-direction: column">
+<div style="display: flex; flex-direction: column; gap: 14px; padding: 16px 18px">
+<sc-for list="{{sd.comments}}" as="c" hint-placeholder-count="2">
+<div style="display: flex; gap: 10px">
+<span style="{{c.whoStyle}}">{{c.who}}</span>
+<div style="min-width: 0">
+<div style="display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline"><span style="font-weight: 600">{{c.role}}</span><span style="font-size: 12px; color: #666666">{{c.when}}</span></div>
+<p style="margin: 3px 0 0; line-height: 1.45; color: #2A2A2A">{{c.text}}</p>
+</div>
+</div>
+</sc-for>
+<sc-if value="{{sd.noComments}}" hint-placeholder-val="{{ false }}"><p style="margin: 0; color: #666666">No comments on this row yet.</p></sc-if>
+</div>
+<div style="padding: 12px 18px 16px; border-top: 1px solid #EBEBEB">
+<label for="row-comment" style="display: block; margin-bottom: 6px; font-size: 12px; font-weight: 600; color: #4D4D4D">Add a comment</label>
+<textarea id="row-comment" rows="2" value="{{draft}}" onChange="{{onDraft}}" placeholder="Write a comment…" style="width: 100%; box-sizing: border-box; resize: vertical; padding: 8px 10px; border: 1px solid #D4D4D4; border-radius: 2px; font: inherit; color: #141414"></textarea>
+<div style="display: flex; justify-content: flex-end; margin-top: 8px">
+<button type="button" onClick="{{postComment}}" style="height: 34px; padding: 0 14px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; font-weight: 600; cursor: pointer">Post</button>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{tabFiles}}" hint-placeholder-val="{{ false }}">
+<div role="tabpanel" aria-label="Attachments" style="display: flex; flex-direction: column; gap: 8px; padding: 16px 18px">
+<sc-for list="{{sd.files}}" as="f" hint-placeholder-count="2">
+<a href="#" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid #DCDCDC; border-radius: 2px; color: #141414; text-decoration: none">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z"></path><path d="M14 3v5h5"></path></svg>
+<span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{f.name}}</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #666666">{{f.kind}}</span>
+</a>
+</sc-for>
+<sc-if value="{{sd.noFiles}}" hint-placeholder-val="{{ false }}"><p style="margin: 0 0 4px; color: #666666">No files attached to this row.</p></sc-if>
+<button type="button" style="align-self: flex-start; display: inline-flex; align-items: center; gap: 6px; height: 34px; padding: 0 12px; border: 1px dashed #AFAFAF; border-radius: 2px; background: #FFFFFF; cursor: pointer">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+Attach file
+</button>
+</div>
+</sc-if>
+
+<sc-if value="{{tabHistory}}" hint-placeholder-val="{{ false }}">
+<ol role="tabpanel" aria-label="History" style="list-style: none; margin: 0; padding: 16px 18px; display: flex; flex-direction: column; gap: 12px">
+<sc-for list="{{sd.history}}" as="h" hint-placeholder-count="3">
+<li style="display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 10px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #666666">{{h.when}}</span>
+<span>{{h.text}}</span>
+</li>
+</sc-for>
+</ol>
+</sc-if>
+
+</aside>
+</sc-if>
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"accent":{"editor":"color","default":"#2F5BAA","options":["#2F5BAA","#1F6B5A","#5B2E9E","#141414"]},"density":{"editor":"enum","options":["Compact","Standard","Roomy"],"default":"Standard"},"showToday":{"editor":"boolean","default":true},"$preview":{"width":1440,"height":1100}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var st = Object.assign({ view: 'split', sel: 't8', collapsed: {}, showDeps: true, panel: true, tab: 'comments', draft: '', added: {} }, this.state || {});
+    var accent = this.props.accent ?? '#2F5BAA';
+    var density = this.props.density ?? 'Standard';
+    var showToday = this.props.showToday ?? true;
+    var rowH = density === 'Compact' ? 30 : (density === 'Roomy' ? 44 : 36);
+    var DAY = 5, WEEKS = 28, MS = 86400000;
+    var start = Date.UTC(2026, 8, 21);
+    var end = start + WEEKS * 7 * MS;
+    var today = Date.UTC(2026, 9, 18);
+    var tlW = WEEKS * 7 * DAY;
+    var MONO = 'font-family:IBM Plex Mono,monospace;';
+
+    function toD(s) { var p = s.split('-').map(Number); return Date.UTC(p[0], p[1] - 1, p[2]); }
+    function dx(t) { return Math.round((t - start) / MS) * DAY; }
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+    function fmt(t) { var d = new Date(t); return pad(d.getUTCMonth() + 1) + '/' + pad(d.getUTCDate()) + '/' + String(d.getUTCFullYear()).slice(2); }
+    function workdays(a, b) { var n = 0; for (var t = a; t <= b; t += MS) { var w = new Date(t).getUTCDay(); if (w !== 0 && w !== 6) n++; } return n; }
+    var HRS = { t1: 4, t2: 40, t3: 36, t4: 70, t5: 40, t6: 2, t7: 4, t8: 105, t9: 60, t10: 60, t11: 2, t12: 160, t13: 120, t20: 30, t14: 30, t15: 2, t16: 20, t17: 30, t18: 16, t19: 2 };
+    function T(id, name, who, status, s, e, pct, pred) { return { id: id, name: name, who: who, status: status, s: toD(s), e: toD(e || s), pct: pct, pred: pred || [], ms: !e, hrs: HRS[id] || 0 }; }
+    // Weeks each person is over capacity, from Workload (all projects' schedules combined).
+    var OVER = { JR: [toD('2026-10-19'), toD('2026-11-06'), 'up to 172% (55 h of 32) the week of Oct 26'], KL: [toD('2026-10-26'), toD('2026-11-13'), 'up to 132% (45 h of 34) the week of Oct 26'] };
+    function overFor(t) { var o = OVER[t.who]; return o && t.status !== 'Complete' && !t.ms && t.s <= o[1] && t.e >= o[0] ? o : null; }
+
+    var phases = [
+      { id: 'p1', name: 'Schematic Design', tasks: [
+        T('t1', 'Project kickoff', 'BM', 'Complete', '2026-09-21', null, 100),
+        T('t2', 'Site & zoning analysis', 'JR', 'Complete', '2026-09-21', '2026-09-30', 100, ['t1']),
+        T('t3', 'Space program confirmation', 'KL', 'Complete', '2026-09-23', '2026-10-02', 100, ['t1']),
+        T('t4', 'SD floor plans', 'JR', 'Complete', '2026-09-28', '2026-10-09', 100, ['t3']),
+        T('t5', 'SD exterior elevations', 'AP', 'Complete', '2026-10-05', '2026-10-14', 100, ['t4']),
+        T('t6', 'SD owner approval', 'BM', 'Complete', '2026-10-16', null, 100, ['t5'])
+      ] },
+      { id: 'p2', name: 'Design Development', tasks: [
+        T('t7', 'MEP coordination kickoff', 'ME', 'Complete', '2026-10-19', null, 100, ['t6']),
+        T('t8', 'DD plans & sections', 'JR', 'In progress', '2026-10-19', '2026-11-06', 35, ['t6']),
+        T('t9', 'Structural coordination', 'KL', 'Not started', '2026-10-26', '2026-11-13', 0, ['t8']),
+        T('t10', 'Owner finish & FF&E selections', 'AP', 'At risk', '2026-10-15', '2026-11-20', 15, ['t5']),
+        T('t11', 'DD pricing set issued', 'BM', 'Not started', '2026-11-25', null, 0, ['t8', 't9', 't10'])
+      ] },
+      { id: 'p3', name: 'Construction Documents', tasks: [
+        T('t12', 'CD sheet set', 'JR', 'Not started', '2026-11-30', '2027-01-15', 0, ['t11']),
+        T('t13', 'Project specifications', 'KL', 'Not started', '2026-12-07', '2027-01-15', 0, ['t11']),
+        T('t20', 'Door hardware schedule', '', 'Not started', '2026-12-07', '2026-12-18', 0, ['t11']),
+        T('t14', 'QA/QC review', 'BM', 'Not started', '2027-01-18', '2027-01-22', 0, ['t12', 't13']),
+        T('t15', 'Issue for permit', 'BM', 'Not started', '2027-01-22', null, 0, ['t14'])
+      ] },
+      { id: 'p4', name: 'Permitting & Bidding', tasks: [
+        T('t16', 'Building permit review', 'AP', 'Not started', '2027-01-25', '2027-02-26', 0, ['t15']),
+        T('t17', 'Bid period', 'BM', 'Not started', '2027-02-01', '2027-02-26', 0, ['t15']),
+        T('t18', 'Bid leveling', 'KL', 'Not started', '2027-03-01', '2027-03-05', 0, ['t17']),
+        T('t19', 'Contract award', 'BM', 'Not started', '2027-03-12', null, 0, ['t16', 't18'])
+      ] }
+    ];
+
+    var people = { BM: '#3A3A3A', JR: '#141414', KL: '#5C5C5C', AP: '#4D4D4D', ME: '#6B6B6B' };
+    // Status reads by color AND shape: filled = complete, half = in progress, hollow = not started, diamond = at risk.
+    var pills = {
+      'Complete': { bg: '#E2F1E6', fg: '#1D6234', dot: 'background:#1D6234' },
+      'In progress': { bg: '#E4EBF8', fg: '#1E3F7A', dot: 'background:linear-gradient(90deg,#1E3F7A 50%,transparent 50%);box-shadow:inset 0 0 0 1.5px #1E3F7A' },
+      'Not started': { bg: '#EBEBEB', fg: '#4D4D4D', dot: 'box-shadow:inset 0 0 0 1.5px #6B6B6B' },
+      'At risk': { bg: '#FCE7DF', fg: '#9A3412', dot: 'background:#C2410C;transform:rotate(45deg);width:7px;height:7px' }
+    };
+
+    var n = 0, nums = {};
+    phases.forEach(function (p) { p.num = ++n; p.tasks.forEach(function (t) { t.num = ++n; nums[t.id] = t.num; }); });
+
+    var barH = Math.round(rowH * 0.45);
+    var barTop = Math.round((rowH - barH) / 2);
+    var phTop = Math.round((rowH - 6) / 2);
+    var capTop = Math.round((rowH - 12) / 2);
+    var msTop = Math.round((rowH - 12) / 2);
+
+    function base(id, isPhase) {
+      var sel = st.sel === id;
+      return {
+        bg: sel ? '#EAF0FB' : (isPhase ? '#F5F5F5' : '#FFFFFF'),
+        rowShadow: sel ? 'inset 3px 0 0 ' + accent : 'none',
+        pick: function () { self.setState({ sel: id, panel: true, draft: '' }); }
+      };
+    }
+    function pillFor(status) {
+      var c = pills[status];
+      return {
+        pillStyle: 'display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:2px;font-size:10.5px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;white-space:nowrap;background:' + c.bg + ';color:' + c.fg,
+        dotStyle: 'display:inline-block;flex:0 0 auto;width:8px;height:8px;border-radius:50%;box-sizing:border-box;' + c.dot
+      };
+    }
+
+    var rows = [], selText = '—', taskCount = 0, msCount = 0, pos = {};
+    phases.forEach(function (p) {
+      var ps = Math.min.apply(null, p.tasks.map(function (t) { return t.s; }));
+      var pe = Math.max.apply(null, p.tasks.map(function (t) { return t.e; }));
+      var wSum = 0, done = 0;
+      p.tasks.forEach(function (t) { if (!t.ms) { var w = workdays(t.s, t.e); wSum += w; done += w * t.pct / 100; } });
+      var ppct = wSum ? Math.round(done / wSum * 100) : 0;
+      var sts = p.tasks.map(function (t) { return t.status; });
+      var pstatus = sts.every(function (s) { return s === 'Complete'; }) ? 'Complete'
+        : (sts.indexOf('At risk') > -1 ? 'At risk'
+        : (sts.some(function (s) { return s === 'Complete' || s === 'In progress'; }) ? 'In progress' : 'Not started'));
+      var open = !st.collapsed[p.id];
+      var px = dx(ps), pw = dx(pe) + DAY - px;
+      if (st.sel === p.id) selText = p.name + ' · ' + fmt(ps) + ' → ' + fmt(pe);
+      rows.push(Object.assign(base(p.id, true), pillFor(pstatus), {
+        num: p.num, name: p.name, isPhase: true, isLeaf: false, isTask: false, isMs: false,
+        open: open,
+        chevStyle: 'flex:0 0 14px;transition:transform 120ms;transform:rotate(' + (open ? 90 : 0) + 'deg)',
+        toggle: function () { var c = Object.assign({}, st.collapsed); c[p.id] = !c[p.id]; self.setState({ collapsed: c }); },
+        hasWho: false, who: '', whoStyle: '',
+        status: pstatus, startText: fmt(ps), endText: fmt(pe), durText: workdays(ps, pe) + 'd',
+        pct: ppct, predText: '', hrsText: p.tasks.reduce(function (a, t) { return a + t.hrs; }, 0) + 'h', hrsColor: '#3A3A3A',
+        x: px, w: pw, capR: px + pw - 3
+      }));
+      p.tasks.forEach(function (t) {
+        if (t.ms) msCount++; else taskCount++;
+        if (st.sel === t.id) selText = t.name + ' · ' + (t.ms ? fmt(t.s) : fmt(t.s) + ' → ' + fmt(t.e)) + ' · ' + t.status;
+        if (!open) return;
+        var sel = st.sel === t.id;
+        var x = dx(t.s), w = dx(t.e) + DAY - x;
+        var msX = x + Math.round(DAY / 2) - 6;
+        pos[t.id] = t.ms
+          ? { i: rows.length, startX: msX + 6 - 9, endX: msX + 6 + 9 }
+          : { i: rows.length, startX: x, endX: x + w };
+        rows.push(Object.assign(base(t.id, false), pillFor(t.status), {
+          num: t.num, name: t.name, isPhase: false, isLeaf: true, isTask: !t.ms, isMs: t.ms,
+          hasWho: true, who: t.who || '+',
+          whoStyle: t.who ? 'width:26px;height:26px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#FFFFFF;background:' + (people[t.who] || '#3A3A3A') + ';box-shadow:' + (overFor(t) ? '0 0 0 2px #FFFFFF, 0 0 0 4px #C2410C' : 'none')
+            : 'width:26px;height:26px;border-radius:50%;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#9A3412;border:1.5px dashed #C2410C;background:#FFFFFF',
+          hrsText: t.ms ? '—' : t.hrs + 'h', hrsColor: overFor(t) ? '#9A3412' : '#3A3A3A',
+          status: t.status, startText: fmt(t.s), endText: fmt(t.e), durText: t.ms ? '0d' : workdays(t.s, t.e) + 'd',
+          pct: t.pct, predText: t.pred.map(function (id) { return nums[id]; }).join(', '),
+          x: x, w: w, labelX: t.ms ? msX + 20 : x + w + 8,
+          barBg: t.status === 'At risk' ? 'repeating-linear-gradient(135deg,#C2410C 0 1.5px,#F6CDB9 1.5px 5px)' : '#A9BDE3',
+          barFill: t.status === 'At risk' ? '#C2410C' : accent,
+          barRing: sel ? '0 0 0 2px #FFFFFF, 0 0 0 4px #141414' : 'none',
+          barLabel: t.name + ', ' + (t.ms ? fmt(t.s) : fmt(t.s) + ' to ' + fmt(t.e)) + ', ' + t.status,
+          msStyle: 'position:absolute;top:' + msTop + 'px;left:' + msX + 'px;width:12px;height:12px;padding:0;box-sizing:border-box;transform:rotate(45deg);cursor:pointer;border:2px solid #141414;background:' + (t.status === 'Complete' ? '#141414' : '#FFFFFF') + ';box-shadow:' + (sel ? '0 0 0 2px #FFFFFF, 0 0 0 4px ' + accent : 'none')
+        }));
+      });
+    });
+
+    var names = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    var months = [];
+    var y = new Date(start).getUTCFullYear(), mo = new Date(start).getUTCMonth();
+    for (var guard = 0; guard < 24; guard++) {
+      var m0 = Date.UTC(y, mo, 1), m1 = Date.UTC(y, mo + 1, 1);
+      if (m0 >= end) break;
+      var a = Math.max(m0, start), b = Math.min(m1, end);
+      months.push({
+        label: names[mo] + (mo === 0 ? ' ' + y : ''),
+        style: 'position:absolute;top:0;height:100%;left:' + dx(a) + 'px;width:' + (dx(b) - dx(a)) + 'px;box-sizing:border-box;display:flex;align-items:center;padding-left:8px;border-left:1px solid #DCDCDC;white-space:nowrap;overflow:hidden;font-size:11px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:#3A3A3A'
+      });
+      mo++; if (mo > 11) { mo = 0; y++; }
+    }
+
+    var weeks = [];
+    for (var i = 0; i < WEEKS; i++) {
+      var wk = start + i * 7 * MS;
+      var cur = today >= wk && today < wk + 7 * MS;
+      weeks.push({
+        label: String(new Date(wk).getUTCDate()),
+        style: 'flex:0 0 35px;width:35px;box-sizing:border-box;display:flex;align-items:center;justify-content:center;border-left:1px solid #EBEBEB;' + MONO + 'font-size:11px;color:' + (cur ? '#C2410C' : '#666666') + ';font-weight:' + (cur ? '600' : '400')
+      });
+    }
+
+    var views = [['split', 'Grid + Gantt'], ['grid', 'Grid'], ['gantt', 'Gantt']].map(function (v) {
+      var on = st.view === v[0];
+      return {
+        label: v[1], pressed: on,
+        pick: function () { self.setState({ view: v[0] }); },
+        style: 'height:30px;padding:0 12px;border:0;border-radius:2px;cursor:pointer;font-size:13px;font-weight:' + (on ? '600' : '500') + ';background:' + (on ? '#FFFFFF' : 'transparent') + ';color:' + (on ? '#141414' : '#4D4D4D') + ';box-shadow:' + (on ? '0 1px 2px rgba(28,31,35,0.14)' : 'none')
+      };
+    });
+
+    // Dependency arrows (finish-to-start): from the end of each predecessor to the start of its successor.
+    var depLines = '', depHeads = '', depHiLines = '', depHiHeads = '';
+    phases.forEach(function (p) {
+      p.tasks.forEach(function (t) {
+        t.pred.forEach(function (pid) {
+          var a = pos[pid], b = pos[t.id];
+          if (!a || !b) return; // one end is inside a collapsed phase
+          var x1 = a.endX, y1 = a.i * rowH + rowH / 2;
+          var x2 = b.startX, y2 = b.i * rowH + rowH / 2;
+          var d;
+          if (x2 - 8 >= x1 + 6) {
+            d = 'M' + x1 + ' ' + y1 + 'H' + (x1 + 6) + 'V' + y2 + 'H' + (x2 - 2);
+          } else {
+            var yTop = b.i * rowH;
+            d = 'M' + x1 + ' ' + y1 + 'H' + (x1 + 6) + 'V' + yTop + 'H' + (x2 - 10) + 'V' + y2 + 'H' + (x2 - 2);
+          }
+          var h = 'M' + (x2 - 6) + ' ' + (y2 - 4) + 'L' + x2 + ' ' + y2 + 'L' + (x2 - 6) + ' ' + (y2 + 4) + 'Z';
+          if (st.sel === pid || st.sel === t.id) { depHiLines += d; depHiHeads += h; }
+          else { depLines += d; depHeads += h; }
+        });
+      });
+    });
+    var depsOn = st.showDeps;
+
+    // Detail panel for the selected task.
+    var roles = { BM: 'Principal', JR: 'Project architect', KL: 'Designer', AP: 'Interior designer', ME: 'MEP engineer' };
+    var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    function short(t) { var d = new Date(t); return MON[d.getUTCMonth()] + ' ' + d.getUTCDate(); }
+    function avatar(who, size) { return 'flex:0 0 ' + size + 'px;width:' + size + 'px;height:' + size + 'px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#FFFFFF;background:' + (people[who] || '#3A3A3A'); }
+    var all = {}, succ = {};
+    phases.forEach(function (p) { p.tasks.forEach(function (t) { all[t.id] = t; t.pred.forEach(function (pid) { (succ[pid] = succ[pid] || []).push(t.id); }); }); });
+    function link(id) { var t = all[id]; return { num: t.num, name: t.name, pick: function () { self.setState({ sel: id, panel: true, draft: '' }); } }; }
+    var notes = {
+      t8: {
+        comments: [
+          { who: 'JR', when: 'Oct 16', text: 'Plans are about a third done. Holding sections until the structural grid is confirmed.' },
+          { who: 'BM', when: 'Oct 17', text: 'Can we pull the structural coordination start forward a few days?' }
+        ],
+        files: [{ name: 'DD floor plan – Level 1.pdf', kind: 'PDF' }, { name: 'Room data sheets.xlsx', kind: 'XLSX' }]
+      },
+      t10: {
+        comments: [{ who: 'AP', when: 'Oct 16', text: 'Owner has not picked flooring or casework finishes yet. This will hold up the DD pricing set.' }],
+        files: [{ name: 'Finish board – option A.pdf', kind: 'PDF' }]
+      }
+    };
+    var selT = all[st.sel], sd = null, tabs = [];
+    if (selT) {
+      var nt = notes[selT.id] || { comments: [], files: [] };
+      var comments = nt.comments.concat(st.added[selT.id] || []).map(function (c) {
+        return { who: c.who, role: c.who === 'You' ? 'You' : roles[c.who], when: c.when, text: c.text, whoStyle: avatar(c.who, 28) };
+      });
+      var hist = [];
+      if (selT.status === 'Complete') hist.push({ when: short(selT.e), text: 'Marked complete' });
+      if (selT.status === 'In progress') hist.push({ when: 'Oct 17', text: '% Done updated to ' + selT.pct + '%' });
+      if (selT.status === 'At risk') hist.push({ when: 'Oct 16', text: 'Status changed to At risk' });
+      if (selT.status !== 'Not started' && !selT.ms) hist.push({ when: short(selT.s), text: 'Status changed to In progress' });
+      hist.push({ when: 'Sep 14', text: 'Row added to sheet' });
+      var preds = selT.pred.map(link), succs = (succ[selT.id] || []).map(link);
+      sd = Object.assign(pillFor(selT.status), {
+        num: selT.num, name: selT.name, status: selT.status,
+        who: selT.who || '+', role: selT.who ? roles[selT.who] : 'Unassigned', whoStyle: selT.who ? avatar(selT.who, 26) : 'width:26px;height:26px;border-radius:50%;box-sizing:border-box;display:inline-flex;align-items:center;justify-content:center;color:#9A3412;border:1.5px dashed #C2410C',
+        hasLoad: !!overFor(selT) || (!selT.who && !selT.ms),
+        loadNote: !selT.who ? 'Nobody is assigned, so these ' + selT.hrs + ' hours don\'t show in anyone\'s workload.' : (overFor(selT) ? selT.who + ' is overbooked while this task runs: ' + overFor(selT)[2] + '. ' + selT.hrs + ' h planned on this task.' : ''),
+        loadBg: '#FCE7DF', loadFg: '#9A3412', loadDot: 'flex:0 0 auto;width:8px;height:8px;transform:rotate(45deg);background:#C2410C',
+        startText: fmt(selT.s), endText: fmt(selT.e), durText: selT.ms ? '0d (milestone)' : workdays(selT.s, selT.e) + ' working days',
+        pct: selT.pct,
+        preds: preds, noPreds: !preds.length, succs: succs, noSuccs: !succs.length,
+        comments: comments, noComments: !comments.length,
+        files: nt.files, noFiles: !nt.files.length,
+        history: hist
+      });
+      tabs = [['comments', 'Comments', comments.length], ['files', 'Attachments', nt.files.length], ['history', 'History', hist.length]].map(function (tb) {
+        var on = st.tab === tb[0];
+        return {
+          label: tb[1], count: tb[2], selected: on,
+          pick: function () { self.setState({ tab: tb[0] }); },
+          style: 'height:42px;padding:0 8px;text-transform:uppercase;letter-spacing:0.07em;font-size:11.5px;border:0;background:transparent;cursor:pointer;font-weight:' + (on ? '600' : '500') + ';color:' + (on ? '#141414' : '#4D4D4D') + ';box-shadow:' + (on ? 'inset 0 -2px 0 ' + accent : 'none')
+        };
+      });
+    }
+
+    // Module bar: core app first, then add-on modules. "addon" = available but not turned on for this firm.
+    var ICONS = {
+      home: 'M3 11l9-7 9 7M5 10v10h14V10',
+      projects: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+      contacts: 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M21 19v-1a4 4 0 0 0-3-3.9M15 3.2a3.5 3.5 0 0 1 0 6.6',
+      team: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1',
+      workload: 'M4 5h9M4 10h15M4 15h12M4 20h6',
+      time: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7v5l3 2',
+      documents: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h6',
+      reports: 'M3 21h18M6 21V11M11 21V5M16 21v-7M21 21v-4',
+      schedule: 'M4 4v16M4 6h7M7 10h8M10 14h7M8 18h5',
+      build: 'M3 18h18M5 18v-3a7 7 0 0 1 14 0v3M12 8V5M9 11V8.7M15 11V8.7',
+      accounting: 'M12 3v18M16 7.5c-.5-1.5-2-2.5-4-2.5-2.2 0-4 1.3-4 3s1.8 2.6 4 3 4 1.3 4 3-1.8 3-4 3c-2 0-3.5-1-4-2.5',
+      marketing: 'M3 10v4h4l6 4V6L7 10zM17 9a4 4 0 0 1 0 6M19.5 6.5a7.5 7.5 0 0 1 0 11',
+      knowledge: 'M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2zM22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z',
+      website: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M3 12h18M12 3c2.5 2.5 3.8 5.6 3.8 9s-1.3 6.5-3.8 9M12 3c-2.5 2.5-3.8 5.6-3.8 9s1.3 6.5 3.8 9',
+      hiring: 'M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 7h18v12H3zM3 12h18'
+    };
+
+    // ---------- Project header (this is the project's Schedule tab) ----------
+    var STEPS = [['Pre-Design', 'Done · Aug'], ['Schematic Design', 'Done · Oct 16'], ['Design Development', 'Now · to Nov 25'], ['Construction Documents', 'Nov 30 – Jan 22'], ['Permitting', 'Jan 25 – Feb 26'], ['Construction Admin', 'From Mar 2027'], ['Close Out', '—']];
+    var pstepper = STEPS.map(function (s2, i) {
+      var done = i < 2, cur = i === 2;
+      return { name: s2[0], note: s2[1], done: done, current: cur ? 'step' : null,
+        bar: 'display:block;height:6px;border-radius:1px;background:' + (cur ? '#2F5BAA' : (done ? '#A9BDE3' : '#E3E3E3')),
+        labelStyle: 'font-size:12px;font-weight:' + (cur ? '700' : '500') + ';letter-spacing:0.06em;text-transform:uppercase;color:' + (cur || done ? '#141414' : '#666666') };
+    });
+    var ptabs = ['Overview', 'Phases & fees', 'Team', 'Schedule', 'Build', 'Invoices', 'Documents', 'Checklist', 'Client portal', 'Code'].map(function (l) {
+      var on = l === 'Schedule';
+      return { label: l, on: on, isLink: !on, isTab: on, href: 'Project.dc.html', pick: function () {},
+        style: 'display:inline-flex;align-items:center;height:50px;padding:0 12px;border:0;background:transparent;cursor:pointer;text-decoration:none;white-space:nowrap;text-transform:uppercase;letter-spacing:0.07em;font-size:12.5px;font-weight:' + (on ? '700' : '500') + ';color:' + (on ? '#141414' : (l === 'Code' ? '#8A8A8A' : '#4D4D4D')) + ';box-shadow:' + (on ? 'inset 0 -3px 0 #141414' : 'none') };
+    });
+
+    // ---------- Menu rail: wide with labels, or collapsed to icons (remembered per browser) ----------
+    var RAILMIN = (this.state && this.state.railMin != null) ? this.state.railMin : (function () { try { return window.localStorage.getItem('architrac.railMin') === '1'; } catch (e) { return false; } })();
+    function RAIL(list) {
+      return list.map(function (m) {
+        if (m.isLabel) return Object.assign({}, m, { labelText: RAILMIN ? '' : m.label,
+          labelStyle: RAILMIN ? 'display:block;height:1px;margin:10px 8px;background:#2A2A2A' : 'display:block;padding:16px 12px 6px;font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8A8A8A' });
+        var cur = !!m.current;
+        return Object.assign({}, m, {
+          showLabel: !RAILMIN, addText: RAILMIN ? '' : 'ADD',
+          addStyle: RAILMIN ? 'position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:#8A8A8A' : 'flex:0 0 auto;padding:1px 5px;border-radius:2px;background:#2A2A2A;color:#D9D9D9;font-size:9.5px;font-weight:600;letter-spacing:0.06em',
+          rowStyle: 'position:relative;display:flex;align-items:center;gap:12px;height:40px;box-sizing:border-box;border-radius:2px;text-decoration:none;white-space:nowrap;text-transform:uppercase;letter-spacing:0.08em;font-size:12px;'
+            + (RAILMIN ? 'width:44px;justify-content:center;padding:0;margin:0 auto;' : 'width:100%;padding:0 12px;')
+            + 'font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#8A8A8A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+        });
+      });
+    }
+    var RAILV = {
+      railMin: RAILMIN, railMax: !RAILMIN, railChev: RAILMIN ? 180 : 0,
+      railToggleLabel: RAILMIN ? 'Expand menu' : 'Collapse menu',
+      railToggle: function () { var v = !RAILMIN; try { window.localStorage.setItem('architrac.railMin', v ? '1' : '0'); } catch (e) {} self.setState({ railMin: v }); },
+      railNavStyle: 'flex:0 0 ' + (RAILMIN ? 64 : 216) + 'px;width:' + (RAILMIN ? 64 : 216) + 'px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;padding:14px ' + (RAILMIN ? '10px' : '12px') + ';background:#000000;color:#BDBDBD;transition:width 140ms, flex-basis 140ms',
+      railLogoStyle: 'display:flex;align-items:center;gap:10px;height:40px;margin-bottom:8px;color:#F2F2F2;text-decoration:none;' + (RAILMIN ? 'justify-content:center;' : 'padding:0 10px;'),
+      railToggleStyle: 'margin-top:auto;display:flex;align-items:center;gap:10px;height:38px;border:0;border-radius:2px;background:transparent;color:#8A8A8A;cursor:pointer;font-size:12px;font-weight:500;letter-spacing:0.04em;' + (RAILMIN ? 'justify-content:center;width:44px;margin-left:auto;margin-right:auto;' : 'width:100%;padding:0 12px;')
+    };
+    var CURRENT = 'projects';
+    var modules = [
+      { label: 'Home', key: 'home', href: 'Home.dc.html' }, { label: 'Projects', key: 'projects', href: 'Projects.dc.html' },
+      { label: 'Contacts', key: 'contacts', href: 'Contacts.dc.html' }, { label: 'Team', key: 'team', href: 'Team.dc.html' },
+      { label: 'Time', key: 'time', href: 'Time.dc.html' },
+      { label: 'Reports', key: 'reports', href: 'Reports.dc.html' },
+      { label: 'Modules', isLabel: true },
+      { label: 'Build', key: 'build', href: 'Build.dc.html' }, { label: 'Workload', key: 'workload', href: 'Workload.dc.html' },
+      { label: 'Accounting', key: 'accounting', href: 'Accounting.dc.html' }, { label: 'Marketing', key: 'marketing', href: 'Marketing.dc.html' },
+      { label: 'Knowledge', key: 'knowledge', href: 'Knowledge.dc.html' },
+      { label: 'Website', key: 'website', href: 'Website.dc.html' }, { label: 'Hiring', key: 'hiring', href: 'Hiring.dc.html' }
+    ].map(function (m) {
+      if (m.isLabel) return { isLabel: true, isLink: false, label: m.label };
+      var cur = m.key === CURRENT;
+      return {
+        isLabel: false, isLink: true, label: m.label, icon: ICONS[m.key], addon: !!m.addon,
+        href: m.href || '#', current: cur ? 'page' : null,
+        style: 'position:relative;flex:0 0 64px;height:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:2px;text-decoration:none;font-size:11px;font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#9A9A9A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';text-transform:uppercase;letter-spacing:0.06em;font-size:9.5px;box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+      };
+    });
+
+    var todayX = dx(today) + Math.round(DAY / 2) - 1;
+    return {
+      modules: RAIL(modules), railMin: RAILV.railMin, railMax: RAILV.railMax, railChev: RAILV.railChev, railToggleLabel: RAILV.railToggleLabel, railToggle: RAILV.railToggle, railNavStyle: RAILV.railNavStyle, railLogoStyle: RAILV.railLogoStyle, railToggleStyle: RAILV.railToggleStyle,
+      showPanel: !!(st.panel && sd), sd: sd || {}, tabs: tabs, pstepper: pstepper, ptabs: ptabs,
+      tabComments: st.tab === 'comments', tabFiles: st.tab === 'files', tabHistory: st.tab === 'history',
+      closePanel: function () { self.setState({ panel: false }); },
+      draft: st.draft,
+      onDraft: function (e) { self.setState({ draft: e.target.value }); },
+      postComment: function () {
+        var text = (st.draft || '').trim();
+        if (!text || !selT) return;
+        var added = Object.assign({}, st.added);
+        added[selT.id] = (added[selT.id] || []).concat([{ who: 'You', when: 'Just now', text: text }]);
+        self.setState({ added: added, draft: '' });
+      },
+      showDeps: depsOn, depsH: rows.length * rowH,
+      depLines: depLines, depHeads: depHeads, depHiLines: depHiLines, depHiHeads: depHiHeads,
+      toggleDeps: function () { self.setState({ showDeps: !depsOn }); },
+      depsTrackStyle: 'position:relative;display:inline-block;width:28px;height:16px;border-radius:2px;transition:background 120ms;background:' + (depsOn ? accent : '#C4C4C4'),
+      depsKnobStyle: 'position:absolute;top:2px;width:12px;height:12px;border-radius:50%;background:#FFFFFF;transition:left 120ms;left:' + (depsOn ? '14px' : '2px'),
+      accent: accent, rowH: rowH, tlW: tlW, rows: rows, months: months, weeks: weeks, views: views,
+      barH: barH, barTop: barTop, phTop: phTop, capTop: capTop,
+      showToday: showToday, todayX: todayX, todayPillX: todayX - 20,
+      showGrid: st.view !== 'gantt', showGantt: st.view !== 'grid',
+      gridPanelStyle: st.view === 'split' ? 'flex:1 1 520px;max-width:818px;min-width:0;overflow-x:auto' : 'flex:1 1 100%;min-width:0;overflow-x:auto',
+      ganttPanelStyle: st.view === 'split' ? 'flex:999 1 420px;min-width:0;overflow-x:auto;border-left:1px solid #DCDCDC' : 'flex:1 1 100%;min-width:0;overflow-x:auto',
+      selText: selText,
+      countText: phases.length + ' phases · ' + taskCount + ' tasks · ' + msCount + ' milestones'
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ArchiTrac — Reports</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=Barlow:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F2F2F2}
+a{color:#141414}a:hover{color:#000000}
+button{font:inherit;color:inherit}
+h1,h2,h3,th,.cap{text-transform:uppercase;letter-spacing:0.08em}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; font-family: 'Barlow', system-ui, sans-serif; font-size: 14px; color: #141414; background: #F2F2F2">
+
+<nav aria-label="Main menu" style="{{railNavStyle}}">
+<a href="Home.dc.html" aria-label="ArchiTrac home" style="{{railLogoStyle}}">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 26px"><path d="M3 20h18"></path><path d="M5 20V9l7-5 7 5v11"></path><path d="M9 20v-6h6v6"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span style="font-size: 13px; font-weight: 700; letter-spacing: 0.16em">ARCHITRAC</span></sc-if>
+</a>
+<sc-for list="{{modules}}" as="m" hint-placeholder-count="15">
+<sc-if value="{{m.isLabel}}" hint-placeholder-val="{{ false }}">
+<span style="{{m.labelStyle}}">{{m.labelText}}</span>
+</sc-if>
+<sc-if value="{{m.isLink}}" hint-placeholder-val="{{ true }}">
+<a href="{{m.href}}" aria-current="{{m.current}}" aria-label="{{m.label}}" title="{{m.label}}" style="{{m.rowStyle}}">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 20px"><path d="{{m.icon}}"></path></svg>
+<sc-if value="{{m.showLabel}}" hint-placeholder-val="{{ true }}"><span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{m.label}}</span></sc-if>
+<sc-if value="{{m.addon}}" hint-placeholder-val="{{ false }}"><span style="{{m.addStyle}}">{{m.addText}}</span></sc-if>
+</a>
+</sc-if>
+</sc-for>
+<button type="button" onClick="{{railToggle}}" aria-label="{{railToggleLabel}}" title="{{railToggleLabel}}" style="{{railToggleStyle}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 18px; transform: rotate({{railChev}}deg)"><path d="M4 4v16"></path><path d="M15 7l-5 5 5 5"></path><path d="M10 12h10"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span>Collapse menu</span></sc-if>
+</button>
+</nav>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 10px 32px; background: #141414; color: #F2F2F2">
+<button type="button" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px 0 4px; border: 1px solid #3A3A3A; border-radius: 2px; background: transparent; color: #F2F2F2; cursor: pointer">
+<span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; background: #F2F2F2; color: #141414; font-size: 12px; font-weight: 700">F</span>
+<span style="font-weight: 600">[FIRM NAME]</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+<span class="cap" style="color: #F2F2F2; font-weight: 500">Reports</span>
+<div style="margin-left: auto; display: flex; align-items: center; gap: 12px">
+<a href="Settings.dc.html" aria-label="Settings" title="Settings" style="width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 2px; color: #BDBDBD"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></a>
+<span title="You" style="width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #3A3A3A; color: #FFFFFF; font-size: 11px; font-weight: 600">BM</span>
+</div>
+</header>
+
+<div style="background: #FFFFFF; border-bottom: 1px solid #DCDCDC">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px; padding: 32px 32px 28px">
+<div style="flex: 1 1 380px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">{{report.group}}</div>
+<h1 style="margin: 10px 0 0; font-size: 30px; line-height: 1.15; font-weight: 500">{{report.title}}</h1>
+<p style="margin: 10px 0 0; color: #4D4D4D; max-width: 640px; line-height: 1.5">{{report.desc}}</p>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+<sc-if value="{{report.usesPeriod}}" hint-placeholder-val="{{ true }}">
+<div role="group" aria-label="Period" style="display: inline-flex; gap: 2px; padding: 3px; border-radius: 2px; background: #E3E3E3">
+<sc-for list="{{periods}}" as="p" hint-placeholder-count="4">
+<button type="button" aria-pressed="{{p.on}}" onClick="{{p.pick}}" style="{{p.style}}">{{p.label}}</button>
+</sc-for>
+</div>
+</sc-if>
+<button type="button" style="height: 36px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer">Export</button>
+<button type="button" style="height: 36px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer">Schedule email</button>
+</div>
+</div>
+</div>
+
+<div style="flex: 1; display: flex; flex-wrap: wrap; align-items: flex-start">
+
+<nav aria-label="Report list" style="flex: 1 1 220px; max-width: 260px; min-width: 0; padding: 28px 0 28px 32px">
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="3">
+<div style="margin-bottom: 24px">
+<div class="cap" style="padding: 0 0 8px; font-size: 11px; font-weight: 600; color: #666666">{{g.name}}</div>
+<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{g.items}}" as="r" hint-placeholder-count="2">
+<li><button type="button" aria-current="{{r.current}}" onClick="{{r.pick}}" style="{{r.style}}">{{r.label}}</button></li>
+</sc-for>
+</ul>
+</div>
+</sc-for>
+</nav>
+
+<main style="flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 20px; padding: 28px 32px 32px">
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px">
+<sc-for list="{{report.stats}}" as="s" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 16px 18px; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<span class="cap" style="font-size: 11px; font-weight: 500; color: #3A3A3A">{{s.label}}</span>
+<span style="font-size: 24px; line-height: 1.15; font-weight: 500; font-variant-numeric: tabular-nums; color: {{s.color}}">{{s.value}}</span>
+<span style="font-size: 12.5px; color: #666666">{{s.note}}</span>
+</div>
+</sc-for>
+</div>
+
+<sc-if value="{{isForecast}}" hint-placeholder-val="{{ true }}">
+<section aria-labelledby="fc-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 18px 20px 20px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-bottom: 16px">
+<h2 id="fc-title" style="margin: 0; font-size: 13px; font-weight: 600">Fee revenue by month</h2>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #3A3A3A"><span aria-hidden="true" style="width: 12px; height: 12px; border-radius: 1px; background: #1E3F7A"></span>Backlog · signed</span>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #3A3A3A"><span aria-hidden="true" style="width: 12px; height: 12px; border-radius: 1px; background: #6F8FCB"></span>Potential · proposals out</span>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #3A3A3A"><span aria-hidden="true" style="width: 12px; height: 12px; border-radius: 1px; background: #C5D3EE"></span>Suspect · leads</span>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #3A3A3A"><span aria-hidden="true" style="width: 16px; height: 0; border-top: 2px dashed #141414"></span>Monthly target</span>
+</div>
+<div style="position: relative; display: flex; align-items: flex-end; gap: 18px; height: 260px; padding: 0 4px; border-bottom: 1px solid #C4C4C4">
+<span aria-hidden="true" style="position: absolute; left: 0; right: 0; bottom: {{fcTargetY}}px; border-top: 2px dashed #141414"></span>
+<span style="position: absolute; right: 0; bottom: {{fcTargetLabelY}}px; padding: 0 0 0 6px; background: #FFFFFF; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #3A3A3A">TARGET {{fcTarget}}</span>
+<sc-for list="{{forecast}}" as="f" hint-placeholder-count="6">
+<div style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; height: 100%">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600">{{f.totalText}}</span>
+<div role="img" aria-label="{{f.aria}}" title="{{f.aria}}" style="width: 100%; max-width: 72px; display: flex; flex-direction: column; gap: 2px">
+<span style="{{f.sStyle}}"></span>
+<span style="{{f.pStyle}}"></span>
+<span style="{{f.bStyle}}"></span>
+</div>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; gap: 18px; padding: 8px 4px 0">
+<sc-for list="{{forecast}}" as="f" hint-placeholder-count="6">
+<span class="cap" style="flex: 1; text-align: center; font-size: 11px; color: #4D4D4D">{{f.month}}</span>
+</sc-for>
+</div>
+<table style="width: 100%; margin-top: 18px; border-collapse: collapse; font-size: 13px">
+<thead>
+<tr style="text-align: right; font-size: 11px; color: #666666; background: #FAFAFA">
+<th scope="col" style="padding: 8px 10px; text-align: left; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Month</th>
+<th scope="col" style="padding: 8px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Backlog</th>
+<th scope="col" style="padding: 8px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Potential</th>
+<th scope="col" style="padding: 8px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Suspect</th>
+<th scope="col" style="padding: 8px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Total</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{forecast}}" as="f" hint-placeholder-count="6">
+<tr style="text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">
+<td style="padding: 8px 10px; text-align: left; font-family: 'Barlow', sans-serif; font-size: 13px; border-bottom: 1px solid #EBEBEB">{{f.monthLong}}</td>
+<td style="padding: 8px 10px; border-bottom: 1px solid #EBEBEB">{{f.bText}}</td>
+<td style="padding: 8px 10px; border-bottom: 1px solid #EBEBEB">{{f.pText}}</td>
+<td style="padding: 8px 10px; border-bottom: 1px solid #EBEBEB">{{f.sText}}</td>
+<td style="padding: 8px 10px; border-bottom: 1px solid #EBEBEB; font-weight: 600">{{f.totalText}}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</section>
+</sc-if>
+
+<sc-if value="{{isPnl}}" hint-placeholder-val="{{ false }}">
+<section aria-labelledby="pnl-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding: 16px 20px 12px">
+<h2 id="pnl-title" style="margin: 0; font-size: 13px; font-weight: 600">Profit by client</h2>
+<span style="font-size: 12.5px; color: #666666">Invoiced revenue less labor at cost and consultant bills · margins under 15% are flagged</span>
+</div>
+<table style="width: 100%; min-width: 980px; border-collapse: collapse">
+<thead>
+<tr style="text-align: right; font-size: 11px; color: #666666; background: #FAFAFA">
+<th scope="col" style="padding: 9px 20px; text-align: left; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Client</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Revenue</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Labor</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Consultants</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Profit</th>
+<th scope="col" style="padding: 9px 20px 9px 10px; text-align: left; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Margin</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{pnl}}" as="c" hint-placeholder-count="9">
+<tr style="text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">
+<td style="padding: 11px 20px; text-align: left; font-family: 'Barlow', sans-serif; font-size: 14px; border-bottom: 1px solid #EBEBEB"><span style="display: flex; flex-direction: column"><span style="font-weight: 500">{{c.client}}</span><span style="font-size: 12.5px; color: #666666">{{c.projects}}</span></span></td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB">{{c.revenue}}</td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB">{{c.labor}}</td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB">{{c.cons}}</td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB; font-weight: 600">{{c.profit}}</td>
+<td style="padding: 11px 20px 11px 10px; border-bottom: 1px solid #EBEBEB; text-align: left">
+<span style="display: flex; align-items: center; gap: 10px">
+<span aria-hidden="true" style="position: relative; flex: 0 0 140px; display: block; height: 8px; border-radius: 1px; background: #EBEBEB">
+<span style="{{c.barStyle}}"></span>
+<span style="position: absolute; top: -3px; bottom: -3px; left: 37.5%; width: 1px; background: #8A8A8A"></span>
+</span>
+<span style="{{c.pctStyle}}">{{c.pctText}}</span>
+</span>
+</td>
+</tr>
+</sc-for>
+<tr style="text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600">
+<td style="padding: 12px 20px; text-align: left; font-family: 'Barlow', sans-serif; font-size: 14px">Firm total</td>
+<td style="padding: 12px 10px">{{pnlTotal.revenue}}</td>
+<td style="padding: 12px 10px">{{pnlTotal.labor}}</td>
+<td style="padding: 12px 10px">{{pnlTotal.cons}}</td>
+<td style="padding: 12px 10px">{{pnlTotal.profit}}</td>
+<td style="padding: 12px 20px 12px 10px; text-align: left">{{pnlTotal.pct}}</td>
+</tr>
+</tbody>
+</table>
+<p style="margin: 0; padding: 0 20px 16px; font-size: 12px; color: #666666">The grey tick on each bar marks the firm's 30% target margin.</p>
+</section>
+</sc-if>
+
+<sc-if value="{{isUtil}}" hint-placeholder-val="{{ false }}">
+<section aria-labelledby="util-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 18px 20px 20px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-bottom: 16px">
+<h2 id="util-title" style="margin: 0; font-size: 13px; font-weight: 600">Billable hours as a share of hours worked</h2>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #3A3A3A"><span aria-hidden="true" style="width: 12px; height: 12px; border-radius: 1px; background: #2F5BAA"></span>At or above target</span>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #3A3A3A"><span aria-hidden="true" style="width: 12px; height: 12px; border-radius: 1px; background: repeating-linear-gradient(135deg, #C2410C 0 1.5px, #F6CDB9 1.5px 5px)"></span>Below target</span>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #3A3A3A"><span aria-hidden="true" style="width: 2px; height: 14px; background: #141414"></span>Personal target</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 14px">
+<sc-for list="{{util}}" as="u" hint-placeholder-count="8">
+<div style="display: grid; grid-template-columns: 200px minmax(0, 1fr) 150px; align-items: center; gap: 16px">
+<span style="display: flex; align-items: center; gap: 10px">
+<span style="{{u.avatar}}">{{u.initials}}</span>
+<span style="display: flex; flex-direction: column"><span style="font-weight: 500">{{u.initials}} · {{u.role}}</span><span style="font-size: 12px; color: #666666">{{u.hoursText}}</span></span>
+</span>
+<span role="img" aria-label="{{u.aria}}" title="{{u.aria}}" style="position: relative; display: block; height: 14px; border-radius: 1px; background: #EBEBEB">
+<span style="{{u.barStyle}}"></span>
+<span style="{{u.targetStyle}}"></span>
+</span>
+<span style="text-align: right"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; color: {{u.pctColor}}">{{u.pct}}%</span><span style="font-size: 12px; color: #666666"> / target {{u.target}}%</span></span>
+</div>
+</sc-for>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{isWork}}" hint-placeholder-val="{{ false }}">
+<section aria-labelledby="work-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 18px 20px 20px; overflow-x: auto">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-bottom: 16px">
+<h2 id="work-title" style="margin: 0; font-size: 13px; font-weight: 600">Scheduled hours · next 8 weeks</h2>
+<span style="font-size: 12.5px; color: #666666">From Schedule task assignments against a 40-hour week. Darker = busier.</span>
+</div>
+<div style="min-width: 820px">
+<div style="display: grid; grid-template-columns: 200px repeat(8, minmax(64px, 1fr)); gap: 3px; margin-bottom: 3px">
+<span></span>
+<sc-for list="{{weeks}}" as="w" hint-placeholder-count="8">
+<span class="cap" style="padding: 0 0 6px; text-align: center; font-size: 11px; color: #4D4D4D">{{w}}</span>
+</sc-for>
+</div>
+<sc-for list="{{work}}" as="p" hint-placeholder-count="8">
+<div style="display: grid; grid-template-columns: 200px repeat(8, minmax(64px, 1fr)); gap: 3px; margin-bottom: 3px">
+<span style="display: flex; align-items: center; gap: 10px"><span style="{{p.avatar}}">{{p.initials}}</span><span style="font-weight: 500">{{p.initials}} · {{p.role}}</span></span>
+<sc-for list="{{p.cells}}" as="c" hint-placeholder-count="8">
+<span title="{{c.aria}}" aria-label="{{c.aria}}" role="img" style="{{c.style}}">{{c.text}}</span>
+</sc-for>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px; margin-top: 14px; font-size: 12.5px; color: #3A3A3A">
+<span>Load:</span>
+<sc-for list="{{workKey}}" as="k" hint-placeholder-count="5">
+<span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="{{k.swatch}}"></span>{{k.label}}</span>
+</sc-for>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{isPipe}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 20px">
+<section aria-labelledby="funnel-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 18px 20px 20px">
+<h2 id="funnel-title" style="margin: 0 0 16px; font-size: 13px; font-weight: 600">Fees by stage</h2>
+<div style="display: flex; flex-direction: column; gap: 12px">
+<sc-for list="{{stages}}" as="s" hint-placeholder-count="5">
+<div style="display: grid; grid-template-columns: 170px minmax(0, 1fr) 190px; align-items: center; gap: 16px">
+<span style="display: flex; flex-direction: column"><span class="cap" style="font-size: 12px; font-weight: 600">{{s.name}}</span><span style="font-size: 12px; color: #666666">{{s.countText}}</span></span>
+<span role="img" aria-label="{{s.aria}}" title="{{s.aria}}" style="display: block; height: 18px; border-radius: 1px; background: #F5F5F5"><span style="{{s.barStyle}}"></span></span>
+<span style="text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px"><strong style="font-weight: 600">{{s.fee}}</strong><span style="color: #666666"> · weighted {{s.weighted}}</span></span>
+</div>
+</sc-for>
+</div>
+</section>
+<section aria-labelledby="pipe-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="display: flex; align-items: baseline; gap: 10px; padding: 16px 20px 12px"><h2 id="pipe-title" style="margin: 0; font-size: 13px; font-weight: 600">Opportunities</h2><a href="Marketing.dc.html" style="margin-left: auto; font-weight: 500">Manage in Marketing</a></div>
+<table style="width: 100%; min-width: 860px; border-collapse: collapse">
+<thead>
+<tr style="text-align: left; font-size: 11px; color: #666666; background: #FAFAFA">
+<th scope="col" style="padding: 9px 20px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Opportunity</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Type</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Stage</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Fee</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Chance</th>
+<th scope="col" style="padding: 9px 20px 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Next step</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{opps}}" as="o" hint-placeholder-count="7">
+<tr>
+<td style="padding: 11px 20px; border-bottom: 1px solid #EBEBEB"><span style="display: flex; flex-direction: column"><span style="font-weight: 500">{{o.name}}</span><span style="font-size: 12.5px; color: #666666">{{o.client}}</span></span></td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB">{{o.type}}</td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB"><span style="{{o.pillStyle}}"><span aria-hidden="true" style="{{o.dotStyle}}"></span>{{o.stage}}</span></td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{o.fee}}</td>
+<td style="padding: 11px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{o.chance}}</td>
+<td style="padding: 11px 20px 11px 10px; border-bottom: 1px solid #EBEBEB; font-size: 13px; color: #3A3A3A">{{o.next}}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</section>
+</div>
+</sc-if>
+
+</main>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1320}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var st = Object.assign({ report: 'forecast', period: 'ytd' }, this.state || {});
+
+    // ---------- Module bar ----------
+    var ICONS = {
+      home: 'M3 11l9-7 9 7M5 10v10h14V10',
+      projects: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+      contacts: 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M21 19v-1a4 4 0 0 0-3-3.9M15 3.2a3.5 3.5 0 0 1 0 6.6',
+      team: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1',
+      workload: 'M4 5h9M4 10h15M4 15h12M4 20h6',
+      time: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7v5l3 2',
+      documents: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h6',
+      reports: 'M3 21h18M6 21V11M11 21V5M16 21v-7M21 21v-4',
+      schedule: 'M4 4v16M4 6h7M7 10h8M10 14h7M8 18h5',
+      build: 'M3 18h18M5 18v-3a7 7 0 0 1 14 0v3M12 8V5M9 11V8.7M15 11V8.7',
+      accounting: 'M12 3v18M16 7.5c-.5-1.5-2-2.5-4-2.5-2.2 0-4 1.3-4 3s1.8 2.6 4 3 4 1.3 4 3-1.8 3-4 3c-2 0-3.5-1-4-2.5',
+      marketing: 'M3 10v4h4l6 4V6L7 10zM17 9a4 4 0 0 1 0 6M19.5 6.5a7.5 7.5 0 0 1 0 11',
+      knowledge: 'M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2zM22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z',
+      website: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M3 12h18M12 3c2.5 2.5 3.8 5.6 3.8 9s-1.3 6.5-3.8 9M12 3c-2.5 2.5-3.8 5.6-3.8 9s1.3 6.5 3.8 9',
+      hiring: 'M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 7h18v12H3zM3 12h18'
+    };
+
+    // ---------- Menu rail: wide with labels, or collapsed to icons (remembered per browser) ----------
+    var RAILMIN = (this.state && this.state.railMin != null) ? this.state.railMin : (function () { try { return window.localStorage.getItem('architrac.railMin') === '1'; } catch (e) { return false; } })();
+    function RAIL(list) {
+      return list.map(function (m) {
+        if (m.isLabel) return Object.assign({}, m, { labelText: RAILMIN ? '' : m.label,
+          labelStyle: RAILMIN ? 'display:block;height:1px;margin:10px 8px;background:#2A2A2A' : 'display:block;padding:16px 12px 6px;font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8A8A8A' });
+        var cur = !!m.current;
+        return Object.assign({}, m, {
+          showLabel: !RAILMIN, addText: RAILMIN ? '' : 'ADD',
+          addStyle: RAILMIN ? 'position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:#8A8A8A' : 'flex:0 0 auto;padding:1px 5px;border-radius:2px;background:#2A2A2A;color:#D9D9D9;font-size:9.5px;font-weight:600;letter-spacing:0.06em',
+          rowStyle: 'position:relative;display:flex;align-items:center;gap:12px;height:40px;box-sizing:border-box;border-radius:2px;text-decoration:none;white-space:nowrap;text-transform:uppercase;letter-spacing:0.08em;font-size:12px;'
+            + (RAILMIN ? 'width:44px;justify-content:center;padding:0;margin:0 auto;' : 'width:100%;padding:0 12px;')
+            + 'font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#8A8A8A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+        });
+      });
+    }
+    var RAILV = {
+      railMin: RAILMIN, railMax: !RAILMIN, railChev: RAILMIN ? 180 : 0,
+      railToggleLabel: RAILMIN ? 'Expand menu' : 'Collapse menu',
+      railToggle: function () { var v = !RAILMIN; try { window.localStorage.setItem('architrac.railMin', v ? '1' : '0'); } catch (e) {} self.setState({ railMin: v }); },
+      railNavStyle: 'flex:0 0 ' + (RAILMIN ? 64 : 216) + 'px;width:' + (RAILMIN ? 64 : 216) + 'px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;padding:14px ' + (RAILMIN ? '10px' : '12px') + ';background:#000000;color:#BDBDBD;transition:width 140ms, flex-basis 140ms',
+      railLogoStyle: 'display:flex;align-items:center;gap:10px;height:40px;margin-bottom:8px;color:#F2F2F2;text-decoration:none;' + (RAILMIN ? 'justify-content:center;' : 'padding:0 10px;'),
+      railToggleStyle: 'margin-top:auto;display:flex;align-items:center;gap:10px;height:38px;border:0;border-radius:2px;background:transparent;color:#8A8A8A;cursor:pointer;font-size:12px;font-weight:500;letter-spacing:0.04em;' + (RAILMIN ? 'justify-content:center;width:44px;margin-left:auto;margin-right:auto;' : 'width:100%;padding:0 12px;')
+    };
+    var CURRENT = 'reports';
+    var modules = [
+      { label: 'Home', key: 'home', href: 'Home.dc.html' }, { label: 'Projects', key: 'projects', href: 'Projects.dc.html' },
+      { label: 'Contacts', key: 'contacts', href: 'Contacts.dc.html' }, { label: 'Team', key: 'team', href: 'Team.dc.html' },
+      { label: 'Time', key: 'time', href: 'Time.dc.html' },
+      { label: 'Reports', key: 'reports', href: 'Reports.dc.html' },
+      { label: 'Modules', isLabel: true },
+      { label: 'Build', key: 'build', href: 'Build.dc.html' }, { label: 'Workload', key: 'workload', href: 'Workload.dc.html' },
+      { label: 'Accounting', key: 'accounting', href: 'Accounting.dc.html' }, { label: 'Marketing', key: 'marketing', href: 'Marketing.dc.html' },
+      { label: 'Knowledge', key: 'knowledge', href: 'Knowledge.dc.html' },
+      { label: 'Website', key: 'website', href: 'Website.dc.html' }, { label: 'Hiring', key: 'hiring', href: 'Hiring.dc.html' }
+    ].map(function (m) {
+      if (m.isLabel) return { isLabel: true, isLink: false, label: m.label };
+      var cur = m.key === CURRENT;
+      return {
+        isLabel: false, isLink: true, label: m.label, icon: ICONS[m.key], addon: !!m.addon,
+        href: m.href || '#', current: cur ? 'page' : null,
+        style: 'position:relative;flex:0 0 64px;height:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:2px;text-decoration:none;font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#9A9A9A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';text-transform:uppercase;letter-spacing:0.06em;font-size:9.5px;box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+      };
+    });
+
+    function money(v) { return '$' + Math.round(v).toLocaleString('en-US'); }
+    function k(v) { return '$' + Math.round(v / 1000) + 'k'; }
+    var PEOPLE = { BM: '#3A3A3A', JR: '#141414', KL: '#5C5C5C', AP: '#4D4D4D', TC: '#2A2A2A', DS: '#666666', RH: '#4D4D4D', MW: '#6B6B6B' };
+    function avatar(who) { return 'flex:0 0 28px;width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#FFFFFF;background:' + (PEOPLE[who] || '#3A3A3A'); }
+
+    // Period: scales the sample figures so the control has a visible effect.
+    var PERIODS = [['month', 'This month', 0.1], ['quarter', 'Quarter', 0.32], ['ytd', 'Year to date', 1], ['12m', 'Last 12 mo', 1.2]];
+    var factor = PERIODS.filter(function (p) { return p[0] === st.period; })[0][2];
+    var periodName = PERIODS.filter(function (p) { return p[0] === st.period; })[0][1].toLowerCase();
+
+    // ---------- Report catalog ----------
+    var REPORTS = {
+      forecast: { group: 'FINANCIAL', title: 'Revenue forecast', usesPeriod: false, desc: 'Fee revenue expected over the next six months from signed work, open proposals and early leads, based on each phase\'s scheduled dates.' },
+      pnl: { group: 'FINANCIAL', title: 'Client P&L', usesPeriod: true, desc: 'Which clients make the firm money. Revenue invoiced, the labor and consultant costs behind it, and the margin left over.' },
+      util: { group: 'PEOPLE', title: 'Utilization', usesPeriod: true, desc: 'How much of each person\'s time went to billable project work, compared with their personal target.' },
+      work: { group: 'PEOPLE', title: 'Workload', usesPeriod: false, desc: 'Who is over- or under-booked in the coming weeks, so work can be shifted before deadlines slip.' },
+      pipe: { group: 'BUSINESS DEVELOPMENT', title: 'Pipeline', usesPeriod: false, desc: 'A summary of open opportunities by stage, with fees weighted by the chance of winning them. Leads and proposals are managed in Marketing.' }
+    };
+    var GROUPS = [['Financial', ['forecast', 'pnl']], ['People', ['util', 'work']], ['Business development', ['pipe']]];
+    var groups = GROUPS.map(function (g) {
+      return {
+        name: g[0],
+        items: g[1].map(function (id) {
+          var on = st.report === id;
+          return {
+            label: REPORTS[id].title, current: on ? 'page' : null,
+            pick: function () { self.setState({ report: id }); },
+            style: 'display:block;width:100%;padding:9px 12px;border:0;border-radius:2px;text-align:left;cursor:pointer;font-size:14px;font-weight:' + (on ? '600' : '500') + ';background:' + (on ? '#FFFFFF' : 'transparent') + ';color:' + (on ? '#141414' : '#3A3A3A') + ';box-shadow:' + (on ? 'inset 3px 0 0 #141414, 0 1px 2px rgba(20,20,20,0.08)' : 'none')
+          };
+        })
+      };
+    });
+    var periods = PERIODS.map(function (p) {
+      var on = st.period === p[0];
+      return {
+        label: p[1], on: on, pick: function () { self.setState({ period: p[0] }); },
+        style: 'height:30px;padding:0 12px;border:0;border-radius:2px;cursor:pointer;font-size:12.5px;font-weight:' + (on ? '600' : '500') + ';background:' + (on ? '#FFFFFF' : 'transparent') + ';color:' + (on ? '#141414' : '#4D4D4D') + ';box-shadow:' + (on ? '0 1px 2px rgba(20,20,20,0.14)' : 'none')
+      };
+    });
+
+    // ---------- Revenue forecast (sample, $k) ----------
+    var FC = [['Nov', 'November 2026', 92, 6, 0], ['Dec', 'December 2026', 84, 12, 4], ['Jan', 'January 2027', 78, 18, 8], ['Feb', 'February 2027', 61, 24, 14], ['Mar', 'March 2027', 48, 28, 20], ['Apr', 'April 2027', 35, 30, 26]];
+    var TARGET = 95, MAXK = 120, PLOT = 220;
+    function h(v) { return Math.round(v / MAXK * PLOT); }
+    var forecast = FC.map(function (f) {
+      var tot = f[2] + f[3] + f[4];
+      function seg(v, c) { return 'display:block;width:100%;height:' + h(v) + 'px;border-radius:1px;background:' + c + (v ? '' : ';display:none'); }
+      return {
+        month: f[0], monthLong: f[1],
+        bText: money(f[2] * 1000), pText: money(f[3] * 1000), sText: money(f[4] * 1000), totalText: '$' + tot + 'k',
+        bStyle: seg(f[2], '#1E3F7A'), pStyle: seg(f[3], '#6F8FCB'), sStyle: seg(f[4], '#C5D3EE'),
+        aria: f[1] + ': backlog $' + f[2] + 'k, potential $' + f[3] + 'k, suspect $' + f[4] + 'k, total $' + tot + 'k'
+      };
+    });
+    var backlog6 = FC.reduce(function (a, f) { return a + f[2]; }, 0);
+    var belowTarget = FC.filter(function (f) { return f[2] < TARGET; }).length;
+
+    // ---------- Client P&L (sample, YTD) ----------
+    var CL = [
+      ['Northside Storage Holdings', '1 project', 86240, 49800, 12400],
+      ['Coastal Federal Credit Union', '1 project', 54720, 33100, 6200],
+      ['Westside Auto Group', '1 project · closed', 48000, 29500, 4300],
+      ['Palmetto Medical Properties', '1 project', 37200, 24900, 0],
+      ['Mill Creek Pediatrics PA', '1 project', 30240, 17900, 2100],
+      ['Grove Street Coffee Co.', '1 project', 21340, 12600, 900],
+      ['Pine Street Hospitality', '1 project', 27510, 19400, 1800],
+      ['Summerville Office Park LLC', '1 project', 64900, 51200, 8100],
+      ['Oakmont Health', '1 project', 11040, 9800, 1100]
+    ];
+    var tot = { revenue: 0, labor: 0, cons: 0 };
+    var pnl = CL.map(function (c) {
+      var rev = c[2] * factor, lab = c[3] * factor, con = c[4] * factor, prof = rev - lab - con, pct = Math.round(prof / rev * 100);
+      tot.revenue += rev; tot.labor += lab; tot.cons += con;
+      var low = pct < 15;
+      return {
+        client: c[0], projects: c[1], revenue: money(rev), labor: money(lab), cons: money(con), profit: money(prof), pct: pct, pctText: pct + '%',
+        barStyle: 'position:absolute;left:0;top:0;bottom:0;border-radius:1px;width:' + Math.min(100, pct / 80 * 100) + '%;background:' + (low ? 'repeating-linear-gradient(135deg,#C2410C 0 1.5px,#F6CDB9 1.5px 5px)' : '#2F5BAA'),
+        pctStyle: 'font-family:IBM Plex Mono,monospace;font-size:12.5px;font-weight:600;color:' + (low ? '#9A3412' : '#141414')
+      };
+    }).sort(function (a, b) { return b.pct - a.pct; });
+    var totProfit = tot.revenue - tot.labor - tot.cons;
+    var pnlTotal = { revenue: money(tot.revenue), labor: money(tot.labor), cons: money(tot.cons), profit: money(totProfit), pct: Math.round(totProfit / tot.revenue * 100) + '%' };
+    var flagged = pnl.filter(function (c) { return c.pct < 15; }).length;
+
+    // ---------- Utilization (sample) ----------
+    var UT = [['JR', 'Project manager', 84, 80], ['KL', 'Designer', 88, 85], ['TC', 'Project architect', 82, 80], ['DS', 'Designer', 79, 85], ['AP', 'Interior designer', 71, 80], ['RH', 'Designer', 86, 85], ['BM', 'Principal', 46, 50], ['MW', 'Office manager', 8, 10]];
+    var hoursEach = Math.round(1560 * factor);
+    var billSum = 0, workSum = 0;
+    var util = UT.map(function (u) {
+      var billable = Math.round(hoursEach * u[2] / 100), below = u[2] < u[3];
+      billSum += billable; workSum += hoursEach;
+      return {
+        initials: u[0], role: u[1], pct: u[2], target: u[3], avatar: avatar(u[0]),
+        hoursText: billable.toLocaleString('en-US') + ' of ' + hoursEach.toLocaleString('en-US') + ' h billable',
+        aria: u[0] + ', ' + u[1] + ': ' + u[2] + '% billable, target ' + u[3] + '%',
+        barStyle: 'position:absolute;left:0;top:0;bottom:0;border-radius:1px;width:' + u[2] + '%;background:' + (below ? 'repeating-linear-gradient(135deg,#C2410C 0 1.5px,#F6CDB9 1.5px 5px)' : '#2F5BAA'),
+        targetStyle: 'position:absolute;top:-4px;bottom:-4px;width:2px;background:#141414;left:calc(' + u[3] + '% - 1px)',
+        pctColor: below ? '#9A3412' : '#141414'
+      };
+    });
+    var under = UT.filter(function (u) { return u[2] < u[3]; }).length;
+
+    // ---------- Workload (sample hours, next 8 weeks) ----------
+    var weeks = ['Oct 19', 'Oct 26', 'Nov 2', 'Nov 9', 'Nov 16', 'Nov 23', 'Nov 30', 'Dec 7'];
+    var WL = [
+      ['JR', 'Project manager', [46, 44, 42, 40, 38, 30, 36, 40]],
+      ['KL', 'Designer', [40, 42, 44, 46, 44, 32, 40, 38]],
+      ['TC', 'Project architect', [36, 38, 40, 40, 36, 28, 34, 32]],
+      ['DS', 'Designer', [24, 28, 30, 32, 30, 22, 34, 36]],
+      ['AP', 'Interior designer', [30, 34, 36, 38, 40, 26, 22, 18]],
+      ['RH', 'Designer', [38, 40, 38, 36, 34, 26, 30, 28]],
+      ['BM', 'Principal', [20, 22, 18, 20, 22, 14, 18, 16]]
+    ];
+    // Sequential blue ramp for load; over capacity switches to orange so it stands out.
+    function cellStyle(hrs) {
+      var pct = hrs / 40;
+      var bg, fg = '#141414';
+      if (pct > 1.05) { bg = '#C2410C'; fg = '#FFFFFF'; }
+      else if (pct >= 0.9) { bg = '#1E3F7A'; fg = '#FFFFFF'; }
+      else if (pct >= 0.7) { bg = '#6F8FCB'; fg = '#FFFFFF'; }
+      else if (pct >= 0.5) { bg = '#C5D3EE'; }
+      else { bg = '#EEF2FA'; }
+      return 'display:flex;align-items:center;justify-content:center;height:36px;border-radius:1px;font-family:IBM Plex Mono,monospace;font-size:12px;font-weight:600;background:' + bg + ';color:' + fg;
+    }
+    var overCount = 0;
+    var work = WL.map(function (p) {
+      return {
+        initials: p[0], role: p[1], avatar: avatar(p[0]),
+        cells: p[2].map(function (hrs, i) { if (hrs > 42) overCount++; return { text: hrs, style: cellStyle(hrs), aria: p[0] + ', week of ' + weeks[i] + ': ' + hrs + ' hours scheduled' }; })
+      };
+    });
+    var workKey = [['Under 20 h', '#EEF2FA'], ['20–27 h', '#C5D3EE'], ['28–35 h', '#6F8FCB'], ['36–42 h', '#1E3F7A'], ['Over 42 h', '#C2410C']].map(function (x) {
+      return { label: x[0], swatch: 'display:inline-block;width:14px;height:14px;border-radius:1px;background:' + x[1] };
+    });
+
+    // ---------- Pipeline (sample) ----------
+    var PILL = {
+      lead: ['#EBEBEB', '#4D4D4D', 'border-radius:50%;box-shadow:inset 0 0 0 1.5px #6B6B6B'],
+      draft: ['#EBEBEB', '#3A3A3A', 'border-radius:50%;background:linear-gradient(90deg,#3A3A3A 50%,transparent 50%);box-shadow:inset 0 0 0 1.5px #3A3A3A'],
+      sent: ['#E4EBF8', '#1E3F7A', 'border-radius:50%;background:linear-gradient(90deg,#1E3F7A 50%,transparent 50%);box-shadow:inset 0 0 0 1.5px #1E3F7A'],
+      negotiating: ['#E4EBF8', '#1E3F7A', 'border-radius:50%;background:#1E3F7A'],
+      won: ['#E2F1E6', '#1D6234', 'border-radius:50%;background:#1D6234']
+    };
+    function pill(kind) {
+      var c = PILL[kind];
+      return { pillStyle: 'display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:2px;font-size:10.5px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;white-space:nowrap;background:' + c[0] + ';color:' + c[1], dotStyle: 'display:inline-block;flex:0 0 auto;width:8px;height:8px;box-sizing:border-box;' + c[2] };
+    }
+    var STAGES = [['lead', 'Lead', 0.1], ['draft', 'Proposal draft', 0.3], ['sent', 'Proposal sent', 0.5], ['negotiating', 'Negotiating', 0.75], ['won', 'Won this year', 1]];
+    var OPPS = [
+      ['Lakeview Retail Center', 'Lakeview Development Co.', 'Retail · shell', 'draft', 140000, 'Finish fee breakdown · Oct 23'],
+      ['Bayside Physical Therapy', 'Bayside PT', 'Medical · upfit', 'sent', 31000, 'Follow up with owner · Oct 22'],
+      ['Harbor Pointe Medical Pavilion', 'Harbor Pointe Partners', 'Medical · ground-up', 'negotiating', 210000, 'Contract review with counsel'],
+      ['Moncks Corner Retail Shell', '[Developer]', 'Retail · shell', 'lead', 38000, 'Site visit · Oct 28'],
+      ['Ladson Urgent Care', '[Health system]', 'Medical · upfit', 'lead', 52000, 'Intro call · Oct 21'],
+      ['Folly Road Taproom', '[Restaurant group]', 'Restaurant · upfit', 'sent', 46000, 'Awaiting decision · Nov 1'],
+      ['Riverside Retail Shell', 'Riverside Partners LLC', 'Retail · shell', 'won', 64000, 'Started Oct 5'],
+      ['Harbor View Dental', 'Harbor View Dental Group', 'Medical · upfit', 'won', 28500, 'Started Sep 28']
+    ];
+    var maxStage = 0;
+    var stageData = STAGES.map(function (s) {
+      var items = OPPS.filter(function (o) { return o[3] === s[0]; });
+      var fee = items.reduce(function (a, o) { return a + o[4]; }, 0);
+      maxStage = Math.max(maxStage, fee);
+      return { s: s, items: items, fee: fee };
+    });
+    var stages = stageData.map(function (x) {
+      return {
+        name: x.s[1], countText: x.items.length + (x.items.length === 1 ? ' opportunity' : ' opportunities') + ' · ' + Math.round(x.s[2] * 100) + '% chance',
+        fee: money(x.fee), weighted: money(x.fee * x.s[2]),
+        aria: x.s[1] + ': ' + money(x.fee) + ' in fees, weighted ' + money(x.fee * x.s[2]),
+        barStyle: 'display:block;height:100%;border-radius:1px;width:' + (x.fee / maxStage * 100) + '%;background:' + (x.s[0] === 'won' ? '#1D6234' : '#2F5BAA')
+      };
+    });
+    var open = OPPS.filter(function (o) { return o[3] !== 'won'; });
+    var openFee = open.reduce(function (a, o) { return a + o[4]; }, 0);
+    var weighted = open.reduce(function (a, o) { return a + o[4] * STAGES.filter(function (s) { return s[0] === o[3]; })[0][2]; }, 0);
+    var opps = OPPS.map(function (o) {
+      var s = STAGES.filter(function (x) { return x[0] === o[3]; })[0];
+      return Object.assign(pill(o[3]), { name: o[0], client: o[1], type: o[2], stage: s[1], fee: money(o[4]), chance: Math.round(s[2] * 100) + '%', next: o[5] });
+    });
+
+    // ---------- Per-report header stats ----------
+    var STATS = {
+      forecast: [
+        { label: 'Backlog · next 6 mo', value: '$' + backlog6 + 'k', note: 'Signed, unbilled fees' },
+        { label: 'November', value: '$98k', note: 'Backlog + potential · target $' + TARGET + 'k' },
+        { label: 'Months below target', value: String(belowTarget), note: 'On backlog alone · new work needed by Feb', color: '#9A3412' },
+        { label: 'Weighted pipeline', value: money(weighted), note: open.length + ' open opportunities' }
+      ],
+      pnl: [
+        { label: 'Revenue', value: money(tot.revenue), note: 'Invoiced, ' + periodName },
+        { label: 'Profit', value: money(totProfit), note: 'After labor and consultants' },
+        { label: 'Margin', value: pnlTotal.pct, note: 'Firm target 30%' },
+        { label: 'Clients flagged', value: String(flagged), note: 'Margin under 15%', color: '#9A3412' }
+      ],
+      util: [
+        { label: 'Firm utilization', value: Math.round(billSum / workSum * 100) + '%', note: 'Billable share of all hours, ' + periodName },
+        { label: 'Billable hours', value: billSum.toLocaleString('en-US'), note: 'of ' + workSum.toLocaleString('en-US') + ' worked' },
+        { label: 'Below target', value: String(under), note: 'People under their personal target', color: '#9A3412' },
+        { label: 'Target', value: '75%', note: 'Firm-wide, excluding admin' }
+      ],
+      work: [
+        { label: 'Over capacity', value: String(overCount), note: 'Person-weeks above 42 hours', color: '#9A3412' },
+        { label: 'Busiest week', value: 'Nov 9', note: 'CD push on Summerville B' },
+        { label: 'Open capacity', value: '62 h', note: 'Weeks of Oct 19–Nov 2, under 32 h booked' },
+        { label: 'Thanksgiving week', value: 'Nov 23', note: 'Lighter loads already planned' }
+      ],
+      pipe: [
+        { label: 'Open fees', value: money(openFee), note: open.length + ' opportunities' },
+        { label: 'Weighted', value: money(weighted), note: 'Fee × chance of winning' },
+        { label: 'Won this year', value: money(92500), note: '2 projects' },
+        { label: 'Win rate', value: '42%', note: 'Proposals decided in the last 12 months' }
+      ]
+    };
+
+    var report = Object.assign({}, REPORTS[st.report], { stats: STATS[st.report].map(function (s) { return Object.assign({ color: '#141414' }, s); }) });
+
+    return {
+      modules: RAIL(modules), railMin: RAILV.railMin, railMax: RAILV.railMax, railChev: RAILV.railChev, railToggleLabel: RAILV.railToggleLabel, railToggle: RAILV.railToggle, railNavStyle: RAILV.railNavStyle, railLogoStyle: RAILV.railLogoStyle, railToggleStyle: RAILV.railToggleStyle, groups: groups, periods: periods, report: report,
+      isForecast: st.report === 'forecast', isPnl: st.report === 'pnl', isUtil: st.report === 'util', isWork: st.report === 'work', isPipe: st.report === 'pipe',
+      forecast: forecast, fcTarget: '$' + TARGET + 'k', fcTargetY: h(TARGET), fcTargetLabelY: h(TARGET) + 4,
+      pnl: pnl, pnlTotal: pnlTotal,
+      util: util,
+      weeks: weeks, work: work, workKey: workKey,
+      stages: stages, opps: opps
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,678 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ArchiTrac — New proposal</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=Barlow:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F2F2F2}
+a{color:#141414}a:hover{color:#000000}
+button{font:inherit;color:inherit}
+h1,h2,h3,th,.cap{text-transform:uppercase;letter-spacing:0.08em}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; font-family: 'Barlow', system-ui, sans-serif; font-size: 14px; color: #141414; background: #F2F2F2">
+
+<nav aria-label="Main menu" style="{{railNavStyle}}">
+<a href="Home.dc.html" aria-label="ArchiTrac home" style="{{railLogoStyle}}">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 26px"><path d="M3 20h18"></path><path d="M5 20V9l7-5 7 5v11"></path><path d="M9 20v-6h6v6"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span style="font-size: 13px; font-weight: 700; letter-spacing: 0.16em">ARCHITRAC</span></sc-if>
+</a>
+<sc-for list="{{modules}}" as="m" hint-placeholder-count="15">
+<sc-if value="{{m.isLabel}}" hint-placeholder-val="{{ false }}">
+<span style="{{m.labelStyle}}">{{m.labelText}}</span>
+</sc-if>
+<sc-if value="{{m.isLink}}" hint-placeholder-val="{{ true }}">
+<a href="{{m.href}}" aria-current="{{m.current}}" aria-label="{{m.label}}" title="{{m.label}}" style="{{m.rowStyle}}">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 20px"><path d="{{m.icon}}"></path></svg>
+<sc-if value="{{m.showLabel}}" hint-placeholder-val="{{ true }}"><span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{m.label}}</span></sc-if>
+<sc-if value="{{m.addon}}" hint-placeholder-val="{{ false }}"><span style="{{m.addStyle}}">{{m.addText}}</span></sc-if>
+</a>
+</sc-if>
+</sc-for>
+<button type="button" onClick="{{railToggle}}" aria-label="{{railToggleLabel}}" title="{{railToggleLabel}}" style="{{railToggleStyle}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 18px; transform: rotate({{railChev}}deg)"><path d="M4 4v16"></path><path d="M15 7l-5 5 5 5"></path><path d="M10 12h10"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span>Collapse menu</span></sc-if>
+</button>
+</nav>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 10px 32px; background: #141414; color: #F2F2F2">
+<button type="button" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px 0 4px; border: 1px solid #3A3A3A; border-radius: 2px; background: transparent; color: #F2F2F2; cursor: pointer">
+<span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; background: #F2F2F2; color: #141414; font-size: 12px; font-weight: 700">F</span>
+<span style="font-weight: 600">[FIRM NAME]</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+<span style="color: #BDBDBD"><a href="Marketing.dc.html" style="color: #BDBDBD; text-decoration: none">Marketing</a> / </span><span class="cap" style="color: #F2F2F2; font-weight: 500">New proposal</span>
+<div style="margin-left: auto; display: flex; align-items: center; gap: 12px">
+<a href="Settings.dc.html" aria-label="Settings" title="Settings" style="width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 2px; color: #BDBDBD"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></a>
+<span title="You" style="width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #3A3A3A; color: #FFFFFF; font-size: 11px; font-weight: 600">BM</span>
+</div>
+</header>
+
+<div style="background: #FFFFFF; border-bottom: 1px solid #DCDCDC">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px; padding: 32px 32px 24px">
+<div style="flex: 1 1 420px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D"><a href="Marketing.dc.html" style="color: #4D4D4D">MARKETING</a> · NEW PROPOSAL · P-26-12</div>
+<h1 style="margin: 10px 0 6px; font-size: 30px; line-height: 1.15; font-weight: 500">{{lead.name}}</h1>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; color: #4D4D4D">
+<span style="{{statusPill}}"><span aria-hidden="true" style="{{statusDot}}"></span>{{statusText}}</span>
+<span>{{lead.client}} · {{lead.location}}</span>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<sc-if value="{{savedNote}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12.5px; color: #1D6234">{{savedNote}}</span></sc-if>
+<button type="button" onClick="{{saveDraft}}" style="height: 38px; padding: 0 14px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer; font-weight: 500">Save draft</button>
+<button type="button" onClick="{{goReview}}" style="height: 38px; padding: 0 16px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-weight: 600">{{primaryLabel}}</button>
+</div>
+</div>
+<ol aria-label="Proposal steps" style="list-style: none; margin: 0; padding: 0 22px; display: flex; gap: 6px; border-top: 1px solid #EBEBEB; overflow-x: auto">
+<sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+<li><button type="button" aria-current="{{s.current}}" onClick="{{s.pick}}" style="{{s.style}}"><span style="{{s.numStyle}}">{{s.num}}</span>{{s.label}}</button></li>
+</sc-for>
+</ol>
+</div>
+
+<main style="flex: 1; display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start; padding: 28px 32px 32px">
+<div style="flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+
+<!-- ================= 1 · PROJECT ================= -->
+<sc-if value="{{is.project}}" hint-placeholder-val="{{ true }}">
+<section aria-label="Project and client" style="display: flex; flex-direction: column; gap: 18px; padding: 22px 24px 24px; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<label style="display: flex; flex-direction: column; gap: 6px"><span class="cap" style="font-size: 11px; font-weight: 600; color: #4D4D4D">Start from a lead</span>
+<select onChange="{{pickLead}}" style="height: 40px; padding: 0 10px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; font: inherit; font-weight: 600; max-width: 460px">
+<sc-for list="{{leadOptions}}" as="o" hint-placeholder-count="3"><option value="{{o.id}}" selected="{{o.on}}">{{o.label}}</option></sc-for>
+</select>
+<span style="font-size: 12.5px; color: #666666">Client, location, type and size come from the pipeline card. The proposal moves the card to Proposal draft.</span></label>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px 20px">
+<sc-for list="{{projectFields}}" as="f" hint-placeholder-count="6">
+<label style="display: flex; flex-direction: column; gap: 6px"><span class="cap" style="font-size: 11px; font-weight: 600; color: #4D4D4D">{{f.label}}</span>
+<input value="{{f.value}}" onChange="{{f.set}}" style="height: 38px; box-sizing: border-box; padding: 0 10px; border: 1px solid #D4D4D4; border-radius: 2px; font: inherit; {{f.mono}}"></label>
+</sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px"><span class="cap" style="font-size: 11px; font-weight: 600; color: #4D4D4D">Agreement</span>
+<div role="radiogroup" aria-label="Agreement" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 8px">
+<sc-for list="{{agreements}}" as="a" hint-placeholder-count="3"><button type="button" role="radio" aria-checked="{{a.on}}" onClick="{{a.pick}}" style="{{a.style}}"><span style="font-weight: 600">{{a.label}}</span><span style="font-size: 12.5px; color: #4D4D4D">{{a.note}}</span></button></sc-for>
+</div></div>
+<label style="display: flex; flex-direction: column; gap: 6px"><span class="cap" style="font-size: 11px; font-weight: 600; color: #4D4D4D">Project description</span>
+<textarea rows="4" style="box-sizing: border-box; width: 100%; padding: 10px 12px; border: 1px solid #D4D4D4; border-radius: 2px; font: inherit; line-height: 1.55; resize: vertical">{{description}}</textarea>
+<span style="font-size: 12.5px; color: #666666">Started from your proposal template for {{lead.typeLabel}} projects. Edit freely.</span></label>
+</section>
+</sc-if>
+
+<!-- ================= 2 · SCOPE ================= -->
+<sc-if value="{{is.scope}}" hint-placeholder-val="{{ false }}">
+<section aria-label="Basic services" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<div style="padding: 16px 20px 12px; border-bottom: 1px solid #EBEBEB"><h2 style="margin: 0; font-size: 13px; font-weight: 600">Basic services · phases</h2><p style="margin: 4px 0 0; font-size: 12.5px; color: #666666">Unticking a phase removes its hours from the fee on the next step.</p></div>
+<ul style="list-style: none; margin: 0; padding: 4px 0">
+<sc-for list="{{scopePhases}}" as="p" hint-placeholder-count="6">
+<li style="display: grid; grid-template-columns: 26px minmax(0, 1fr) auto; align-items: start; gap: 10px; padding: 12px 20px; border-bottom: 1px solid #F2F2F2; opacity: {{p.opacity}}">
+<input type="checkbox" checked="{{p.on}}" onChange="{{p.toggle}}" aria-label="{{p.name}}" disabled="{{p.locked}}" style="width: 17px; height: 17px; margin-top: 2px; accent-color: #141414">
+<span style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600">{{p.name}}</span><span style="font-size: 13px; color: #4D4D4D; line-height: 1.45">{{p.desc}}</span></span>
+<sc-if value="{{p.isCa}}" hint-placeholder-val="{{ false }}"><select onChange="{{setCa}}" aria-label="Construction administration level" style="height: 32px; padding: 0 6px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; font: inherit; font-size: 13px"><sc-for list="{{caOptions}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}" selected="{{o.on}}">{{o.label}}</option></sc-for></select></sc-if>
+</li>
+</sc-for>
+</ul>
+</section>
+
+<section aria-label="Consultants" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px; padding: 16px 20px 12px; border-bottom: 1px solid #EBEBEB">
+<div style="flex: 1 1 360px"><h2 style="margin: 0; font-size: 13px; font-weight: 600">Consultants</h2><p style="margin: 4px 0 0; font-size: 12.5px; color: #666666">Enter each consultant's fee from their proposal. Until you do, an estimate based on construction cost is shown in grey. "In our fee" adds it plus your markup to the total.</p></div>
+<label style="display: inline-flex; align-items: center; gap: 8px"><span class="cap" style="font-size: 11px; font-weight: 600; color: #4D4D4D">Markup</span><input type="number" min="0" max="50" step="1" value="{{markupPct}}" onChange="{{setMarkup}}" style="width: 64px; height: 32px; box-sizing: border-box; padding: 0 8px; border: 1px solid #D4D4D4; border-radius: 2px; text-align: right; font-family: 'IBM Plex Mono', monospace">%</label>
+</div>
+<table style="width: 100%; min-width: 760px; border-collapse: collapse">
+<thead><tr style="text-align: left; font-size: 11px; color: #666666; background: #FAFAFA">
+<th scope="col" style="padding: 9px 20px; font-weight: 500; border-bottom: 1px solid #DCDCDC">Consultant</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-bottom: 1px solid #DCDCDC">Arrangement</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-bottom: 1px solid #DCDCDC">Their fee</th>
+<th scope="col" style="padding: 9px 20px 9px 10px; font-weight: 500; text-align: right; border-bottom: 1px solid #DCDCDC">In our total</th>
+</tr></thead>
+<tbody>
+<sc-for list="{{consultants}}" as="c" hint-placeholder-count="4">
+<tr>
+<td style="padding: 10px 20px; border-bottom: 1px solid #F2F2F2"><span style="display: flex; flex-direction: column"><span style="font-weight: 600">{{c.name}}</span><span style="font-size: 12px; color: {{c.basisColor}}">{{c.basis}}</span></span></td>
+<td style="padding: 10px; border-bottom: 1px solid #F2F2F2">
+<div role="radiogroup" aria-label="{{c.name}} arrangement" style="display: inline-flex; gap: 2px; padding: 3px; border-radius: 2px; background: #E3E3E3">
+<sc-for list="{{c.modes}}" as="m" hint-placeholder-count="3"><button type="button" role="radio" aria-checked="{{m.on}}" onClick="{{m.pick}}" style="{{m.style}}">{{m.label}}</button></sc-for>
+</div></td>
+<td style="padding: 10px; border-bottom: 1px solid #F2F2F2; text-align: right">
+<label style="display: inline-flex; align-items: center; gap: 4px; font-family: 'IBM Plex Mono', monospace"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{c.name}} fee</span>$<input type="number" min="0" step="100" value="{{c.fee}}" onChange="{{c.setFee}}" style="{{c.inputStyle}}"></label>
+</td>
+<td style="padding: 10px 20px 10px 10px; border-bottom: 1px solid #F2F2F2; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600; color: {{c.color}}">{{c.amount}}</td>
+</tr>
+</sc-for>
+<tr>
+<td colspan="4" style="padding: 10px 20px">
+<span style="display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px"><label style="display: inline-flex"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">New consultant discipline</span><input value="{{newCons}}" onInput="{{setNewCons}}" placeholder="Add a consultant (e.g. Geotechnical, Kitchen, Fire protection)…" style="width: 360px; max-width: 100%; height: 32px; box-sizing: border-box; padding: 0 10px; border: 1px dashed #AFAFAF; border-radius: 2px; font: inherit; font-size: 13px"></label><button type="button" onClick="{{addCons}}" style="height: 32px; padding: 0 12px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-size: 12.5px; font-weight: 600">+ Add consultant</button></span>
+</td>
+</tr>
+<tr style="background: #FAFAFA; font-weight: 600"><td colspan="3" style="padding: 11px 20px">Consultants in our fee (with {{markupPct}}% markup)</td><td style="padding: 11px 20px 11px 10px; text-align: right; font-family: 'IBM Plex Mono', monospace">{{consTotalText}}</td></tr>
+</tbody>
+</table>
+</section>
+
+<section aria-label="Optional services" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<div style="padding: 16px 20px 12px; border-bottom: 1px solid #EBEBEB"><h2 style="margin: 0; font-size: 13px; font-weight: 600">Optional services</h2><p style="margin: 4px 0 0; font-size: 12.5px; color: #666666">Listed in the proposal with a price, but not in the fee. If the client asks later, they become additional services with a price already agreed.</p></div>
+<ul style="list-style: none; margin: 0; padding: 4px 0">
+<sc-for list="{{extras}}" as="x" hint-placeholder-count="5">
+<li style="display: flex; align-items: center; gap: 10px; padding: 10px 20px; border-bottom: 1px solid #F2F2F2">
+<input type="checkbox" checked="{{x.on}}" onChange="{{x.toggle}}" aria-label="{{x.name}}" style="width: 17px; height: 17px; accent-color: #141414">
+<span style="flex: 1; font-weight: 500">{{x.name}}</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: #4D4D4D">{{x.price}}</span>
+</li>
+</sc-for>
+</ul>
+</section>
+</sc-if>
+
+<!-- ================= 3 · FEE (estimator) ================= -->
+<sc-if value="{{is.fee}}" hint-placeholder-val="{{ false }}">
+<section aria-label="Estimate settings" style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 18px 24px; padding: 16px 20px; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<div style="display: flex; flex-direction: column; gap: 6px; flex: 1 1 260px"><span class="cap" style="font-size: 11px; font-weight: 600; color: #4D4D4D">Complexity</span>
+<div role="group" aria-label="Complexity" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 2px; padding: 3px; border-radius: 2px; background: #E3E3E3">
+<sc-for list="{{complexity}}" as="c" hint-placeholder-count="3"><button type="button" aria-pressed="{{c.on}}" onClick="{{c.pick}}" style="{{c.style}}">{{c.label}}</button></sc-for>
+</div><span style="font-size: 12px; color: #666666">{{complexityNote}}</span></div>
+<label style="display: flex; flex-direction: column; gap: 6px; flex: 1 1 240px"><span class="cap" style="font-size: 11px; font-weight: 600; color: #4D4D4D">Target profit · after overhead</span>
+<span style="display: flex; align-items: center; gap: 8px"><input type="range" min="5" max="35" step="1" value="{{margin}}" onInput="{{setMargin}}" style="flex: 1; accent-color: #141414"><span style="width: 44px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-weight: 600">{{margin}}%</span></span>
+<span style="font-size: 12px; color: #666666">Rates and {{ohText}} overhead from <a href="Settings.dc.html">Settings</a></span></label>
+</section>
+
+<div role="radiogroup" aria-label="Fee options" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px">
+<sc-for list="{{options}}" as="o" hint-placeholder-count="3">
+<button type="button" role="radio" aria-checked="{{o.on}}" onClick="{{o.pick}}" style="{{o.style}}">
+<span style="display: flex; align-items: center; gap: 8px"><span class="cap" style="font-size: 11px; font-weight: 700">{{o.name}}</span><span style="margin-left: auto; font-size: 11.5px; color: #666666">{{o.basis}}</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 24px; font-weight: 600">{{o.fee}}</span>
+<span style="display: flex; flex-wrap: wrap; gap: 4px 12px; font-size: 12.5px; color: #4D4D4D"><span>{{o.hours}}</span><span>{{o.pct}} of constr.</span><span>{{o.psf}}/SF</span></span>
+</button>
+</sc-for>
+</div>
+
+<section aria-label="Architectural fee" style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px 24px; padding: 18px 20px; background: #FFFFFF; border: 2px solid #141414; border-radius: 2px">
+<label style="display: flex; flex-direction: column; gap: 6px"><span class="cap" style="font-size: 11px; font-weight: 700">Architectural fee · total</span>
+<span style="display: inline-flex; align-items: center; gap: 6px"><span style="font-family: 'IBM Plex Mono', monospace; font-weight: 600">$</span><input type="number" step="500" value="{{archFee}}" onChange="{{setFee}}" style="width: 140px; height: 40px; box-sizing: border-box; padding: 0 10px; border: 1px solid #141414; border-radius: 2px; font-family: 'IBM Plex Mono', monospace; font-size: 16px; font-weight: 600"></span></label>
+<div style="display: flex; flex-direction: column; gap: 6px"><span class="cap" style="font-size: 11px; font-weight: 700">Set every phase to</span>
+<div role="group" aria-label="Set every phase to" style="display: inline-flex; gap: 2px; padding: 3px; border-radius: 2px; background: #E3E3E3">
+<sc-for list="{{setAll}}" as="t" hint-placeholder-count="3"><button type="button" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}</button></sc-for>
+</div></div>
+<div style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 13px; color: #3A3A3A">Typing a total spreads it across phases by their hours. Or set each phase's type and amount in the table below.</span>
+<span style="font-size: 13px; font-weight: 600; color: {{feeVerdictColor}}">{{feeVerdict}}</span>
+<sc-if value="{{overridden}}" hint-placeholder-val="{{ false }}"><button type="button" onClick="{{resetFee}}" style="align-self: flex-start; padding: 0; border: 0; background: transparent; cursor: pointer; font-size: 12.5px; font-weight: 500; text-decoration: underline; text-underline-offset: 2px">Reset all phases to {{selName}}</button></sc-if>
+</div>
+</section>
+
+<section aria-labelledby="ph-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding: 14px 18px 10px"><h2 id="ph-title" style="margin: 0; font-size: 13px; font-weight: 600">Architectural fee by phase</h2><span style="font-size: 12.5px; color: #666666">Printed in the proposal. Becomes the project's phase budgets once signed.</span></div>
+<table style="width: 100%; min-width: 860px; border-collapse: collapse">
+<thead><tr style="text-align: left; font-size: 11px; color: #666666; background: #FAFAFA">
+<th scope="col" style="padding: 9px 18px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Phase</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Fee type</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Est. hours</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Amount</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">%</th>
+<th scope="col" style="padding: 9px 18px 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">What past projects tell us</th>
+</tr></thead>
+<tbody>
+<sc-for list="{{phaseRows}}" as="r" hint-placeholder-count="6">
+<tr style="opacity: {{r.opacity}}">
+<td style="padding: 10px 18px; border-bottom: 1px solid #EBEBEB; font-weight: 500">{{r.name}}</td>
+<td style="padding: 8px 10px; border-bottom: 1px solid #EBEBEB">
+<sc-if value="{{r.inc}}" hint-placeholder-val="{{ true }}"><label style="display: inline-flex"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{r.name}} fee type</span><select onChange="{{r.setType}}" style="height: 32px; padding: 0 6px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; font: inherit; font-size: 13px"><sc-for list="{{r.types}}" as="o" hint-placeholder-count="3"><option value="{{o.v}}" selected="{{o.on}}">{{o.label}}</option></sc-for></select></label></sc-if>
+</td>
+<td style="padding: 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{r.hours}}</td>
+<td style="padding: 8px 10px; border-bottom: 1px solid #EBEBEB; text-align: right">
+<sc-if value="{{r.inc}}" hint-placeholder-val="{{ true }}"><span style="display: inline-flex; flex-direction: column; align-items: flex-end; gap: 2px">
+<label style="display: inline-flex; align-items: center; gap: 4px; font-family: 'IBM Plex Mono', monospace"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{r.name}} amount</span>$<input type="number" min="0" step="100" value="{{r.amount}}" onChange="{{r.setAmount}}" style="{{r.inputStyle}}"></label>
+<span style="font-size: 11px; color: {{r.tagColor}}">{{r.tag}}</span></span></sc-if>
+</td>
+<td style="padding: 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{r.pct}}</td>
+<td style="padding: 10px 18px 10px 10px; border-bottom: 1px solid #EBEBEB; font-size: 12.5px; color: {{r.noteColor}}">{{r.note}}</td>
+</tr>
+</sc-for>
+<tr style="background: #FAFAFA; font-weight: 600"><td style="padding: 11px 18px" colspan="2">Architectural fee</td><td style="padding: 11px 10px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{phaseHours}}</td><td style="padding: 11px 10px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 13px">{{archFeeText}}</td><td style="padding: 11px 10px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">100%</td><td style="padding: 11px 18px 11px 10px; font-size: 12.5px; font-weight: 500; color: #4D4D4D">{{mixNote}}</td></tr>
+</tbody>
+</table>
+</section>
+
+<details style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<summary style="padding: 14px 18px; cursor: pointer; font-weight: 600">Comparable projects · {{compCount}} used</summary>
+<div style="overflow-x: auto; border-top: 1px solid #EBEBEB">
+<table style="width: 100%; min-width: 820px; border-collapse: collapse">
+<thead><tr style="text-align: left; font-size: 11px; color: #666666; background: #FAFAFA">
+<th scope="col" style="padding: 9px 18px; font-weight: 500; border-bottom: 1px solid #DCDCDC">Use</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-bottom: 1px solid #DCDCDC">Project</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-bottom: 1px solid #DCDCDC">Size</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-bottom: 1px solid #DCDCDC">Fee</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-bottom: 1px solid #DCDCDC">Hours · budget → actual</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-bottom: 1px solid #DCDCDC">True profit</th>
+<th scope="col" style="padding: 9px 18px 9px 10px; font-weight: 500; text-align: right; border-bottom: 1px solid #DCDCDC">Scaled</th>
+</tr></thead>
+<tbody>
+<sc-for list="{{comps}}" as="c" hint-placeholder-count="4">
+<tr style="opacity: {{c.opacity}}">
+<td style="padding: 10px 18px; border-bottom: 1px solid #EBEBEB"><input type="checkbox" checked="{{c.on}}" onChange="{{c.toggle}}" aria-label="{{c.aria}}" style="width: 16px; height: 16px; accent-color: #141414"></td>
+<td style="padding: 10px; border-bottom: 1px solid #EBEBEB"><span style="display: flex; flex-direction: column"><span style="font-weight: 600">{{c.name}}</span><span style="font-size: 12px; color: #666666">{{c.meta}}</span></span></td>
+<td style="padding: 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{c.sf}}</td>
+<td style="padding: 10px; border-bottom: 1px solid #EBEBEB; text-align: right"><span style="display: flex; flex-direction: column; align-items: flex-end"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{c.fee}}</span><span style="font-size: 11.5px; color: #666666">{{c.feePct}} · {{c.psf}}/SF</span></span></td>
+<td style="padding: 10px; border-bottom: 1px solid #EBEBEB; text-align: right"><span style="display: flex; flex-direction: column; align-items: flex-end"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{c.hours}}</span><span style="font-size: 11.5px; color: {{c.overColor}}">{{c.over}}</span></span></td>
+<td style="padding: 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600; color: {{c.marginColor}}">{{c.margin}}</td>
+<td style="padding: 10px 18px 10px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{c.scaled}}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+<p style="margin: 0; padding: 10px 18px 14px; font-size: 12.5px; color: #666666">Actual hours from timesheets on finished projects, adjusted to this size by (this size ÷ its size)<sup>0.75</sup>. Lean, Recommended and Comfortable are the low, middle and high of the scaled hours.</p>
+</div>
+</details>
+</sc-if>
+
+<!-- ================= 4 · TERMS ================= -->
+<sc-if value="{{is.terms}}" hint-placeholder-val="{{ false }}">
+<section aria-label="Payment terms" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 18px 20px 20px">
+<h2 style="margin: 0 0 4px; font-size: 13px; font-weight: 600">Billing &amp; payment</h2>
+<p style="margin: 0 0 14px; font-size: 12.5px; color: #666666">Defaults from Settings → Billing &amp; invoices. Changes here apply to this proposal only.</p>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px 20px">
+<sc-for list="{{terms}}" as="t" hint-placeholder-count="6">
+<label style="display: flex; flex-direction: column; gap: 6px"><span class="cap" style="font-size: 11px; font-weight: 600; color: #4D4D4D">{{t.k}}</span><input value="{{t.v}}" style="height: 38px; box-sizing: border-box; padding: 0 10px; border: 1px solid #D4D4D4; border-radius: 2px; font: inherit"><span style="font-size: 12px; color: #666666">{{t.note}}</span></label>
+</sc-for>
+</div>
+</section>
+<div style="display: flex; flex-wrap: wrap; gap: 16px; align-items: flex-start">
+<section aria-label="Hourly rates" style="flex: 1 1 300px; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<h2 style="margin: 0; padding: 14px 18px 10px; font-size: 13px; font-weight: 600; border-bottom: 1px solid #EBEBEB">Hourly rates for additional services</h2>
+<ul style="list-style: none; margin: 0; padding: 4px 0">
+<sc-for list="{{rates}}" as="r" hint-placeholder-count="5"><li style="display: flex; padding: 8px 18px; border-bottom: 1px solid #F2F2F2"><span>{{r.k}}</span><span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace">{{r.v}}</span></li></sc-for>
+</ul>
+<p style="margin: 0; padding: 10px 18px 14px; font-size: 12px; color: #666666">From Settings → Roles &amp; rates.</p>
+</section>
+<section aria-label="Schedule" style="flex: 1 1 340px; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<h2 style="margin: 0; padding: 14px 18px 10px; font-size: 13px; font-weight: 600; border-bottom: 1px solid #EBEBEB">Proposed schedule</h2>
+<ul style="list-style: none; margin: 0; padding: 4px 0">
+<sc-for list="{{sched}}" as="r" hint-placeholder-count="6"><li style="display: flex; gap: 10px; padding: 8px 18px; border-bottom: 1px solid #F2F2F2; opacity: {{r.opacity}}"><span>{{r.k}}</span><span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace">{{r.v}}</span></li></sc-for>
+</ul>
+<p style="margin: 0; padding: 10px 18px 14px; font-size: 12px; color: #666666">{{schedNote}}</p>
+</section>
+</div>
+<section aria-label="Exclusions" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 18px 20px 20px">
+<label style="display: flex; flex-direction: column; gap: 6px"><span class="cap" style="font-size: 11px; font-weight: 600; color: #4D4D4D">Exclusions &amp; assumptions</span>
+<textarea rows="5" style="box-sizing: border-box; width: 100%; padding: 10px 12px; border: 1px solid #D4D4D4; border-radius: 2px; font: inherit; line-height: 1.55; resize: vertical">{{exclusions}}</textarea></label>
+</section>
+</sc-if>
+
+<!-- ================= 5 · REVIEW ================= -->
+<sc-if value="{{is.review}}" hint-placeholder-val="{{ false }}">
+<sc-if value="{{sentDone}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="padding: 16px 18px; border-radius: 2px; background: #E2F1E6; color: #1D6234"><strong>Sent to {{lead.client}}.</strong> They'll review and sign in the client portal. The pipeline card moved to Proposal sent, and you'll see when they open it.</div>
+</sc-if>
+<article aria-label="Proposal preview" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 44px 52px 48px; box-shadow: 0 2px 6px rgba(20, 20, 20, 0.06)">
+<div style="display: flex; align-items: flex-start; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #141414">
+<span aria-hidden="true" style="width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #141414; font-family: 'IBM Plex Mono', monospace; font-size: 11px">LOGO</span>
+<span style="display: flex; flex-direction: column"><span style="font-weight: 700; letter-spacing: 0.1em">[FIRM NAME]</span><span style="font-size: 12px; color: #4D4D4D">[Street address] · North Charleston, SC · [Phone]</span></span>
+<span style="margin-left: auto; text-align: right"><span class="cap" style="display: block; font-size: 13px; font-weight: 700">Proposal for architectural services</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">P-26-12 · Oct 18, 2026</span></span>
+</div>
+<h2 style="margin: 22px 0 4px; font-size: 20px; font-weight: 500; text-transform: none; letter-spacing: 0">{{lead.name}}</h2>
+<p style="margin: 0 0 18px; color: #4D4D4D">Prepared for {{lead.client}} · {{lead.location}}</p>
+<h3 style="margin: 0 0 6px; font-size: 12px; font-weight: 700">Project</h3>
+<p style="margin: 0 0 16px; line-height: 1.6">{{description}}</p>
+<h3 style="margin: 0 0 6px; font-size: 12px; font-weight: 700">Scope of services</h3>
+<p style="margin: 0 0 16px; line-height: 1.6">{{scopeText}}</p>
+<h3 style="margin: 0 0 8px; font-size: 12px; font-weight: 700">Fee</h3>
+<table style="width: 100%; max-width: 560px; border-collapse: collapse; margin-bottom: 8px; font-size: 13.5px">
+<tbody>
+<sc-for list="{{docFee}}" as="r" hint-placeholder-count="8"><tr><td style="padding: 5px 0; border-bottom: 1px solid #EBEBEB; font-weight: {{r.w}}">{{r.k}}</td><td style="padding: 5px 0; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-weight: {{r.w}}">{{r.v}}</td></tr></sc-for>
+</tbody>
+</table>
+<p style="margin: 0 0 16px; font-size: 13px; color: #4D4D4D">{{feeTypeText}}</p>
+<sc-if value="{{hasExtras}}" hint-placeholder-val="{{ true }}">
+<h3 style="margin: 0 0 6px; font-size: 12px; font-weight: 700">Optional services</h3>
+<ul style="margin: 0 0 16px; padding-left: 18px; line-height: 1.6"><sc-for list="{{docExtras}}" as="x" hint-placeholder-count="3"><li>{{x}}</li></sc-for></ul>
+</sc-if>
+<h3 style="margin: 0 0 6px; font-size: 12px; font-weight: 700">Terms</h3>
+<p style="margin: 0 0 22px; line-height: 1.6">{{termsText}}</p>
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding-top: 18px; border-top: 1px solid #DCDCDC; font-size: 13px; color: #4D4D4D">
+<span>Accepted by {{lead.client}}<br><br>____________________________<br>Signature · date</span>
+<span>[Firm name]<br><br>____________________________<br>[Principal name] · date</span>
+</div>
+</article>
+</sc-if>
+</div>
+
+<!-- ================= SUMMARY ================= -->
+<aside aria-label="Proposal summary" style="flex: 1 1 280px; max-width: 320px; display: flex; flex-direction: column; gap: 14px; position: sticky; top: 16px">
+<section style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 18px 20px">
+<span class="cap" style="font-size: 11px; font-weight: 700; color: #4D4D4D">Total proposal fee</span>
+<div style="margin: 6px 0 2px; font-family: 'IBM Plex Mono', monospace; font-size: 28px; font-weight: 600">{{sum.total}}</div>
+<div style="font-size: 12.5px; color: #666666">{{sum.totalNote}}</div>
+<dl style="display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px 10px; margin: 16px 0 0; font-size: 13px">
+<sc-for list="{{sum.rows}}" as="r" hint-placeholder-count="6"><dt style="color: #4D4D4D">{{r.k}}</dt><dd style="margin: 0; text-align: right; font-family: 'IBM Plex Mono', monospace; font-weight: 600; color: {{r.color}}">{{r.v}}</dd></sc-for>
+</dl>
+</section>
+<section style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 14px 18px">
+<span class="cap" style="font-size: 11px; font-weight: 700; color: #4D4D4D">Before sending</span>
+<ul style="list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{checks}}" as="c" hint-placeholder-count="4"><li style="display: flex; align-items: flex-start; gap: 8px; font-size: 13px"><span aria-hidden="true" style="{{c.mark}}">{{c.icon}}</span><span style="color: {{c.color}}">{{c.text}}</span></li></sc-for>
+</ul>
+</section>
+</aside>
+</main>
+</div>
+</div>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1560}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var st = Object.assign({ lead: 'mc', sf: {}, cost: {}, step: 'fee', seen: { project: true, scope: true }, ph: {}, ca: 'full', cons: {}, consFee: {}, consAdded: [], newCons: '', mk: null, ex: {}, cx: 'typical', margin: 20, opt: 'rec', excl: {}, fee: null, phFee: {}, phType: {}, agr: 'firm', saved: false, status: 'draft' }, this.state || {});
+
+    // ---------- Module bar ----------
+    var ICONS = {
+      home: 'M3 11l9-7 9 7M5 10v10h14V10',
+      projects: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+      contacts: 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M21 19v-1a4 4 0 0 0-3-3.9M15 3.2a3.5 3.5 0 0 1 0 6.6',
+      team: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1',
+      workload: 'M4 5h9M4 10h15M4 15h12M4 20h6',
+      time: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7v5l3 2',
+      reports: 'M3 21h18M6 21V11M11 21V5M16 21v-7M21 21v-4',
+      schedule: 'M4 4v16M4 6h7M7 10h8M10 14h7M8 18h5',
+      build: 'M3 18h18M5 18v-3a7 7 0 0 1 14 0v3M12 8V5M9 11V8.7M15 11V8.7',
+      accounting: 'M12 3v18M16 7.5c-.5-1.5-2-2.5-4-2.5-2.2 0-4 1.3-4 3s1.8 2.6 4 3 4 1.3 4 3-1.8 3-4 3c-2 0-3.5-1-4-2.5',
+      marketing: 'M3 10v4h4l6 4V6L7 10zM17 9a4 4 0 0 1 0 6M19.5 6.5a7.5 7.5 0 0 1 0 11',
+      knowledge: 'M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2zM22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z',
+      website: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M3 12h18M12 3c2.5 2.5 3.8 5.6 3.8 9s-1.3 6.5-3.8 9M12 3c-2.5 2.5-3.8 5.6-3.8 9s1.3 6.5 3.8 9',
+      hiring: 'M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 7h18v12H3zM3 12h18'
+    };
+
+    // ---------- Menu rail: wide with labels, or collapsed to icons (remembered per browser) ----------
+    var RAILMIN = (this.state && this.state.railMin != null) ? this.state.railMin : (function () { try { return window.localStorage.getItem('architrac.railMin') === '1'; } catch (e) { return false; } })();
+    function RAIL(list) {
+      return list.map(function (m) {
+        if (m.isLabel) return Object.assign({}, m, { labelText: RAILMIN ? '' : m.label,
+          labelStyle: RAILMIN ? 'display:block;height:1px;margin:10px 8px;background:#2A2A2A' : 'display:block;padding:16px 12px 6px;font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8A8A8A' });
+        var cur = !!m.current;
+        return Object.assign({}, m, {
+          showLabel: !RAILMIN, addText: RAILMIN ? '' : 'ADD',
+          addStyle: RAILMIN ? 'position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:#8A8A8A' : 'flex:0 0 auto;padding:1px 5px;border-radius:2px;background:#2A2A2A;color:#D9D9D9;font-size:9.5px;font-weight:600;letter-spacing:0.06em',
+          rowStyle: 'position:relative;display:flex;align-items:center;gap:12px;height:40px;box-sizing:border-box;border-radius:2px;text-decoration:none;white-space:nowrap;text-transform:uppercase;letter-spacing:0.08em;font-size:12px;'
+            + (RAILMIN ? 'width:44px;justify-content:center;padding:0;margin:0 auto;' : 'width:100%;padding:0 12px;')
+            + 'font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#8A8A8A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+        });
+      });
+    }
+    var RAILV = {
+      railMin: RAILMIN, railMax: !RAILMIN, railChev: RAILMIN ? 180 : 0,
+      railToggleLabel: RAILMIN ? 'Expand menu' : 'Collapse menu',
+      railToggle: function () { var v = !RAILMIN; try { window.localStorage.setItem('architrac.railMin', v ? '1' : '0'); } catch (e) {} self.setState({ railMin: v }); },
+      railNavStyle: 'flex:0 0 ' + (RAILMIN ? 64 : 216) + 'px;width:' + (RAILMIN ? 64 : 216) + 'px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;padding:14px ' + (RAILMIN ? '10px' : '12px') + ';background:#000000;color:#BDBDBD;transition:width 140ms, flex-basis 140ms',
+      railLogoStyle: 'display:flex;align-items:center;gap:10px;height:40px;margin-bottom:8px;color:#F2F2F2;text-decoration:none;' + (RAILMIN ? 'justify-content:center;' : 'padding:0 10px;'),
+      railToggleStyle: 'margin-top:auto;display:flex;align-items:center;gap:10px;height:38px;border:0;border-radius:2px;background:transparent;color:#8A8A8A;cursor:pointer;font-size:12px;font-weight:500;letter-spacing:0.04em;' + (RAILMIN ? 'justify-content:center;width:44px;margin-left:auto;margin-right:auto;' : 'width:100%;padding:0 12px;')
+    };
+    var CURRENT = 'marketing';
+    var modules = [
+      { label: 'Home', key: 'home', href: 'Home.dc.html' }, { label: 'Projects', key: 'projects', href: 'Projects.dc.html' },
+      { label: 'Contacts', key: 'contacts', href: 'Contacts.dc.html' }, { label: 'Team', key: 'team', href: 'Team.dc.html' },
+      { label: 'Time', key: 'time', href: 'Time.dc.html' },
+      { label: 'Reports', key: 'reports', href: 'Reports.dc.html' },
+      { label: 'Modules', isLabel: true },
+      { label: 'Build', key: 'build', href: 'Build.dc.html' }, { label: 'Workload', key: 'workload', href: 'Workload.dc.html' },
+      { label: 'Accounting', key: 'accounting', href: 'Accounting.dc.html' }, { label: 'Marketing', key: 'marketing', href: 'Marketing.dc.html' },
+      { label: 'Knowledge', key: 'knowledge', href: 'Knowledge.dc.html' },
+      { label: 'Website', key: 'website', href: 'Website.dc.html' }, { label: 'Hiring', key: 'hiring', href: 'Hiring.dc.html' }
+    ].map(function (m) {
+      if (m.isLabel) return { isLabel: true, isLink: false, label: m.label };
+      var cur = m.key === CURRENT;
+      return {
+        isLabel: false, isLink: true, label: m.label, icon: ICONS[m.key], addon: !!m.addon,
+        href: m.href || '#', current: cur ? 'page' : null,
+        style: 'position:relative;flex:0 0 64px;height:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:2px;text-decoration:none;font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#9A9A9A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';text-transform:uppercase;letter-spacing:0.06em;font-size:9.5px;box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+      };
+    });
+
+
+
+
+
+
+    // ---------- Helpers ----------
+    function money(v) { return (v < 0 ? '−$' : '$') + Math.round(Math.abs(v)).toLocaleString('en-US'); }
+    function kk(v) { return v >= 1000000 ? '$' + (v / 1000000).toFixed(1) + 'M' : '$' + Math.round(v / 1000) + 'k'; }
+    function num(v) { return Math.round(v).toLocaleString('en-US'); }
+    function seg(on) { return 'height:30px;padding:0 12px;border:0;border-radius:2px;cursor:pointer;font-size:13px;white-space:nowrap;font-weight:' + (on ? '600' : '500') + ';background:' + (on ? '#FFFFFF' : 'transparent') + ';box-shadow:' + (on ? '0 1px 2px rgba(20,20,20,0.12)' : 'none'); }
+    var OH = 0.60;                                                         // from Settings
+    var MARKUP = (st.mk != null ? st.mk : 10) / 100;                        // consultant markup, default from Settings
+    var PH = ['Pre-Design', 'Schematic Design', 'Design Development', 'Construction Documents', 'Permitting', 'Construction Admin'];
+    var PHDESC = ['Program, site and code review; confirm budget and schedule.', 'Floor plans, elevations and massing for your approval.', 'Refine the design; coordinate structure and building systems; outline specifications.', 'Permit and construction drawings and specifications.', 'Submit for permit and respond to review comments.', 'Submittals, RFIs, site visits and pay application review during construction.'];
+    var RATE = [68, 62, 56, 50, 58, 64];
+    var SHARE = { shell: [0.05, 0.15, 0.20, 0.36, 0.06, 0.18], gu: [0.05, 0.15, 0.22, 0.35, 0.05, 0.18] };
+
+    // ---------- Leads (from the Marketing pipeline) ----------
+    var LEADS = {
+      mc: { name: 'Moncks Corner Retail Shell', client: '[Developer]', location: 'Moncks Corner, SC', sf: 9600, cost: 1400000, cat: 'rs', type: 'Retail', scope: 'Shell building', typeLabel: 'retail shell', source: 'Referral from broker',
+        desc: 'A single-story, multi-tenant retail shell building of about 9,600 SF on an outparcel, with storefront on the main elevation and rear service access. Tenant upfits are not included and would be proposed separately.' },
+      lu: { name: 'Ladson Urgent Care', client: '[Health system]', location: 'Ladson, SC', sf: 6500, cost: 1900000, cat: 'mg', type: 'Medical', scope: 'Ground-up', typeLabel: 'medical ground-up', source: 'Repeat client contact',
+        desc: 'A new single-story urgent care clinic of about 6,500 SF with exam rooms, imaging, a lab and covered patient drop-off, designed to the health system\'s clinic standards.' }
+    };
+    var COMPS = {
+      rs: [['Cypress Commons Retail', 2025, 24000, 4600000, 98000, 760, 'shell', [1, 1.05, 1.12, 1.08, 1.3, 1.0]],
+           ['Dorchester Commons Shell', 2023, 32000, 5800000, 118000, 1080, 'shell', [0.9, 1.0, 1.15, 1.05, 1.0, 1.1]],
+           ['Carolina Forest Retail', 2022, 16000, 3100000, 72000, 560, 'shell', [1, 0.95, 1.1, 1.02, 1.2, 0.9]],
+           ['Northwoods Outparcel Shops', 2024, 9800, 2000000, 52000, 360, 'shell', [1, 1, 1.05, 1.0, 1.1, 1.05]]],
+      mg: [['Palmetto Family Medicine', 2025, 8200, 2100000, 88000, 700, 'gu', [1, 1, 1.1, 1.05, 1, 1.1]],
+           ['Ashley Medical Arts', 2023, 22000, 6100000, 168000, 1150, 'gu', [1, 1.05, 1.12, 1.08, 1.1, 1.05]],
+           ['Summerville Medical Plaza', 2022, 30000, 8400000, 214000, 1550, 'gu', [1, 1.05, 1.18, 1.1, 1, 1.12]]]
+    };
+    var L = LEADS[st.lead];
+    var sf = st.sf[st.lead] != null ? st.sf[st.lead] : L.sf;
+    var cost = st.cost[st.lead] != null ? st.cost[st.lead] : L.cost;
+
+    // ---------- Scope ----------
+    var incPh = PH.map(function (_, i) { return i === 5 ? (st.ca === 'full' ? 1 : st.ca === 'limited' ? 0.5 : 0) : (st.ph[i] != null ? (st.ph[i] ? 1 : 0) : 1); });
+    var CONS = [['civil', 'Civil engineer', 0.010, 'owner'], ['struct', 'Structural engineer', 0.009, 'fee'], ['mep', 'MEP engineers', 0.016, 'fee'], ['land', 'Landscape architect', 0.003, 'owner']]
+      .concat(st.consAdded.map(function (c) { return [c.key, c.name, 0, 'fee']; }));
+    var consTotal = 0;
+    var consultants = CONS.map(function (c) {
+      var mode = st.cons[c[0]] || c[3], est = Math.round(cost * c[2] / 100) * 100, entered = st.consFee[c[0]] != null, fee = entered ? st.consFee[c[0]] : est, inFee = mode === 'fee';
+      if (inFee) consTotal += fee * (1 + MARKUP);
+      return { name: c[1], fee: fee,
+        basis: entered ? 'From their proposal' : (c[2] ? 'Estimate: ' + (c[2] * 100).toFixed(1) + '% of construction. Enter their fee.' : 'Enter their fee'),
+        basisColor: entered ? '#1D6234' : '#9A3412',
+        inputStyle: 'width:110px;height:32px;box-sizing:border-box;padding:0 8px;border:1px solid ' + (entered ? '#D4D4D4' : '#E8B9A3') + ';border-radius:2px;text-align:right;font-family:IBM Plex Mono,monospace;font-size:13px;color:' + (entered ? '#141414' : '#8A8A8A') + ';background:' + (mode === 'none' ? '#F5F5F5' : '#FFFFFF'),
+        setFee: function (ev) { var o = Object.assign({}, st.consFee); o[c[0]] = Math.max(0, Math.round(Number(ev.target.value) || 0)); self.setState({ consFee: o }); },
+        amount: inFee ? money(fee * (1 + MARKUP)) : (mode === 'owner' ? 'Owner direct' : 'Not needed'), color: inFee ? '#141414' : '#8A8A8A',
+        modes: [['fee', 'In our fee'], ['owner', 'Owner direct'], ['none', 'Not needed']].map(function (m) { var on = mode === m[0]; return { label: m[1], on: on ? 'true' : 'false', style: seg(on), pick: function () { var o = Object.assign({}, st.cons); o[c[0]] = m[0]; self.setState({ cons: o }); } }; }) };
+    });
+    var EXTRAS = [['rend', 'Exterior renderings', '$2,500 each', true], ['asb', 'As-built survey of existing conditions', '$0.12 / SF', false], ['leed', 'LEED or energy modeling coordination', 'Hourly', false], ['ti', 'First tenant upfit test fits', '$1,800 per tenant', true], ['sign', 'Signage and wayfinding design', 'Hourly', false]];
+    var extras = EXTRAS.map(function (x) { var on = st.ex[x[0]] != null ? st.ex[x[0]] : x[3]; return { name: x[1], price: x[2], on: on, toggle: function () { var o = Object.assign({}, st.ex); o[x[0]] = !on; self.setState({ ex: o }); } }; });
+
+    // ---------- Fee estimator ----------
+    var CX = { simple: [0.9, 'Simple', 'Repeat building type, cooperative client: −10% hours'], typical: [1, 'Typical', 'Most projects. No adjustment.'], complex: [1.15, 'Complex', 'Tight site, design review or demanding client: +15% hours'] };
+    var cx = CX[st.cx];
+    var list = COMPS[L.cat].map(function (c, i) {
+      var key = st.lead + i, on = !st.excl[key], sh = SHARE[c[6]];
+      var phA = sh.map(function (s, j) { return c[5] * s * c[7][j]; }), actual = phA.reduce(function (a, b) { return a + b; }, 0);
+      var full = phA.reduce(function (a, h, j) { return a + h * RATE[j]; }, 0) * (1 + OH);
+      return { key: key, on: on, name: c[0], year: c[1], sf: c[2], cost: c[3], fee: c[4], bud: c[5], actual: actual, phA: phA, phB: sh.map(function (s) { return c[5] * s; }), margin: (c[4] - full) / c[4], scaled: actual * Math.pow(sf / c[2], 0.75) };
+    });
+    var used = list.filter(function (c) { return c.on; }); if (!used.length) used = list;
+    var sc = used.map(function (c) { return c.scaled; }).sort(function (a, b) { return a - b; });
+    function q(p) { var x = (sc.length - 1) * p, lo = Math.floor(x), hi = Math.ceil(x); return sc[lo] + (sc[hi] - sc[lo]) * (x - lo); }
+    var share = PH.map(function (_, j) { return used.reduce(function (a, c) { return a + c.phA[j] / c.actual; }, 0) / used.length; });
+    var over = PH.map(function (_, j) { return used.reduce(function (a, c) { return a + c.phA[j] / c.phB[j]; }, 0) / used.length; });
+    function build(total) {
+      var rows = PH.map(function (n, j) { var h = total * cx[0] * share[j] * incPh[j]; return { n: n, h: h, c: h * RATE[j] * (1 + OH) }; });
+      var c = rows.reduce(function (a, r) { return a + r.c; }, 0), h = rows.reduce(function (a, r) { return a + r.h; }, 0);
+      return { rows: rows, cost: c, hours: h, fee: Math.round(c / (1 - st.margin / 100) / 500) * 500 };
+    }
+    var OPTS = [['lean', 'Lean', 'Low end', q(0.25)], ['rec', 'Recommended', 'Middle', q(0.5)], ['comf', 'Comfortable', 'High end', q(0.75)]];
+    var built = {}; OPTS.forEach(function (o) { built[o[0]] = build(o[3]); });
+    var sel = built[st.opt], selName = OPTS.filter(function (o) { return o[0] === st.opt; })[0][1];
+    var options = OPTS.map(function (o) {
+      var b = built[o[0]], on = st.opt === o[0] && st.fee == null && !Object.keys(st.phFee).length;
+      return { name: o[1], basis: o[2] + ' of comparables', fee: money(b.fee), hours: num(b.hours) + ' h', pct: (b.fee / cost * 100).toFixed(1) + '%', psf: '$' + (b.fee / sf).toFixed(2), on: on ? 'true' : 'false',
+        pick: function () { self.setState({ opt: o[0], fee: null, phFee: {} }); },
+        style: 'display:flex;flex-direction:column;align-items:stretch;gap:6px;padding:14px 16px;border-radius:2px;cursor:pointer;text-align:left;background:#FFFFFF;border:' + (on ? '2px solid #141414' : '1px solid #DCDCDC') };
+    });
+
+    // ---------- Architectural fee: per-phase type and amount ----------
+    var TYPES = [['fixed', 'Fixed fee'], ['hourly', 'Hourly'], ['nte', 'Hourly, not to exceed']];
+    var DEFTYPE = ['fixed', 'fixed', 'fixed', 'fixed', 'fixed', 'nte'];
+    var target = st.fee != null ? st.fee : sel.fee;                          // total to spread
+    var amounts = sel.rows.map(function (r, j2) {
+      if (!incPh[j2]) return 0;
+      if (st.phFee[j2] != null) return st.phFee[j2];
+      return Math.round(target * r.c / sel.cost / 100) * 100;
+    });
+    // keep the total exact: put any rounding difference into the largest phase that wasn't edited by hand
+    (function () {
+      var sum = amounts.reduce(function (a2, b2) { return a2 + b2; }, 0), free = amounts.map(function (v, j2) { return incPh[j2] && st.phFee[j2] == null ? j2 : -1; }).filter(function (j2) { return j2 >= 0; });
+      if (!free.length || Object.keys(st.phFee).length) return;
+      var big = free.reduce(function (m, j2) { return amounts[j2] > amounts[m] ? j2 : m; }, free[0]);
+      amounts[big] += Math.round(target) - sum;
+    })();
+    var archFee = amounts.reduce(function (a2, b2) { return a2 + b2; }, 0);
+    var overridden = st.fee != null || Object.keys(st.phFee).length > 0;
+    var archProfit = archFee ? (archFee - sel.cost) / archFee : 0;
+    var typeOf = function (j2) { return st.phType[j2] || DEFTYPE[j2]; };
+    var setAll = TYPES.map(function (t) { var all = PH.every(function (_, j2) { return !incPh[j2] || typeOf(j2) === t[0]; });
+      return { label: t[1], style: seg(all), pick: function () { var o = {}; PH.forEach(function (_, j2) { o[j2] = t[0]; }); self.setState({ phType: o }); } }; });
+    var setFee = function (e) { self.setState({ fee: Math.max(0, Math.round(Number(e.target.value) || 0)), phFee: {} }); };
+    var verdictColor = archProfit < 0.05 ? '#B42318' : archProfit < 0.15 ? '#9A3412' : '#1D6234';
+    var feeVerdict = 'At ' + money(archFee) + ': ' + Math.round(archProfit * 100) + '% profit after overhead' + (archProfit < 0 ? ' (a loss)' : '') + ' · ' + money(archFee - sel.cost);
+    var hourlyAmt = 0, nteAmt = 0, fixedAmt = 0;
+    var phaseRows = sel.rows.map(function (r, j2) {
+      var inc = incPh[j2] > 0, amt = amounts[j2], ov = over[j2], ty = typeOf(j2), edited = st.phFee[j2] != null;
+      if (inc) { if (ty === 'hourly') hourlyAmt += amt; else if (ty === 'nte') nteAmt += amt; else fixedAmt += amt; }
+      var suggested = Math.round(target * r.c / sel.cost / 100) * 100;
+      var note = !inc ? 'Not in this proposal' : (j2 === 5 && st.ca === 'limited' ? 'Limited CA: about half the usual hours' : (ov >= 1.1 ? 'Comparables ran ' + Math.round((ov - 1) * 100) + '% over here.' + (ty === 'fixed' ? ' Consider hourly or a cap.' : ' Hourly protects you here.') : 'Comparables landed close to budget.'));
+      return { name: r.n, inc: inc, hours: inc ? num(r.h) : '—', amount: amt,
+        tag: !inc ? '' : (edited ? 'Edited · suggested ' + money(suggested) : (ty === 'hourly' ? 'Estimate, billed as used' : ty === 'nte' ? 'Cap · billed as used' : 'From the estimate')),
+        tagColor: edited ? '#1E3F7A' : '#666666',
+        inputStyle: 'width:110px;height:32px;box-sizing:border-box;padding:0 8px;border:1px solid ' + (edited ? '#2F5BAA' : '#D4D4D4') + ';border-radius:2px;text-align:right;font-family:IBM Plex Mono,monospace;font-size:13px;font-weight:600;background:' + (edited ? '#EAF0FB' : '#FFFFFF'),
+        setAmount: function (e) { var o = Object.assign({}, st.phFee); o[j2] = Math.max(0, Math.round(Number(e.target.value) || 0)); self.setState({ phFee: o }); },
+        types: TYPES.map(function (t) { return { v: t[0], label: t[1], on: ty === t[0] }; }),
+        setType: function (e) { var o = Object.assign({}, st.phType); o[j2] = e.target.value; self.setState({ phType: o }); },
+        pct: inc && archFee ? Math.round(amt / archFee * 100) + '%' : '—', note: note, noteColor: inc && ov >= 1.1 ? '#9A3412' : '#4D4D4D', opacity: inc ? '1' : '0.45', ty: ty };
+    });
+    var mixNote = [fixedAmt ? money(fixedAmt) + ' fixed' : '', nteAmt ? money(nteAmt) + ' not to exceed' : '', hourlyAmt ? money(hourlyAmt) + ' hourly (estimate)' : ''].filter(Boolean).join(' · ');
+    var comps = list.map(function (c) {
+      var ov = c.actual / c.bud - 1;
+      return { name: c.name, meta: c.year + ' · ' + kk(c.cost) + ' construction', sf: num(c.sf) + ' SF', fee: money(c.fee), feePct: (c.fee / c.cost * 100).toFixed(1) + '%', psf: '$' + (c.fee / c.sf).toFixed(2),
+        hours: num(c.bud) + ' → ' + num(c.actual), over: (ov >= 0 ? '+' : '') + Math.round(ov * 100) + '% vs budget', overColor: ov > 0.08 ? '#9A3412' : '#666666',
+        margin: Math.round(c.margin * 100) + '%', marginColor: c.margin < 0.05 ? '#B42318' : (c.margin < 0.15 ? '#9A3412' : '#1D6234'), scaled: num(c.scaled) + ' h',
+        on: c.on, opacity: c.on ? '1' : '0.45', aria: 'Use ' + c.name, toggle: function () { var e = Object.assign({}, st.excl); e[c.key] = c.on; self.setState({ excl: e }); } };
+    });
+
+    // ---------- Totals ----------
+    var total = archFee + consTotal;
+    var phasesIncluded = PH.filter(function (_, i) { return incPh[i] > 0; });
+
+    // ---------- Terms & schedule ----------
+    var terms = [
+      { k: 'Billing', v: 'Monthly, by percent complete in each phase', note: '' },
+      { k: 'Payment terms', v: 'Net 30', note: 'Settings default' },
+      { k: 'Retainer', v: '10% on signing (' + money(total * 0.1) + ')', note: 'Applied to the first invoice' },
+      { k: 'Reimbursables', v: 'Cost × 1.10', note: 'Printing, permit fees, mileage' },
+      { k: 'Consultant markup', v: '10%', note: 'On consultants in our fee' },
+      { k: 'Proposal valid for', v: '60 days', note: '' }
+    ];
+    var rates = [['Principal', '$185 / h'], ['Project manager', '$150 / h'], ['Project architect', '$145 / h'], ['Interior designer', '$120 / h'], ['Designer', '$115 / h']].map(function (r) { return { k: r[0], v: r[1] }; });
+    var weeks = sel.rows.map(function (r, j) { return incPh[j] && j < 5 ? Math.max(1, Math.round(r.h / 55)) : 0; });
+    var sched = PH.map(function (n, j) { return { k: n, v: incPh[j] ? (j === 5 ? 'During construction' : weeks[j] + (weeks[j] === 1 ? ' week' : ' weeks')) : 'Not included', opacity: incPh[j] ? '1' : '0.45' }; });
+    var designWeeks = weeks.reduce(function (a, b) { return a + b; }, 0);
+    var exclusions = 'Tenant upfits, site surveys, geotechnical reports and testing are by the owner. Agency review time is outside our control and not counted in the schedule. Revisions after approval of a phase are additional services.';
+
+    // ---------- Review document ----------
+    var TYPELBL = { fixed: '', hourly: ' · hourly, estimated', nte: ' · hourly, not to exceed' };
+    var docFee = phaseRows.filter(function (r) { return r.inc; }).map(function (r) { return { k: r.name + TYPELBL[r.ty], v: money(r.amount), w: '400' }; });
+    docFee.push({ k: 'Architectural fee', v: money(archFee), w: '700' });
+    consultants.forEach(function (c) { if (c.amount !== 'Owner direct' && c.amount !== 'Not needed') docFee.push({ k: c.name, v: c.amount, w: '400' }); });
+    docFee.push({ k: 'Total fee', v: money(total), w: '700' });
+    var feeTypeText = [fixedAmt ? 'Fixed-fee phases are billed monthly by percent complete.' : '', nteAmt ? 'Not-to-exceed phases are billed monthly at the hourly rates below and never exceed the amount shown without written approval.' : '', hourlyAmt ? 'Hourly phases are billed monthly at the rates below; the amount shown is an estimate.' : ''].filter(Boolean).join(' ');
+    var inCons = consultants.filter(function (c) { return c.amount !== 'Owner direct' && c.amount !== 'Not needed'; }).map(function (c) { return c.name; });
+    var scopeText = 'Basic architectural services for ' + phasesIncluded.join(', ').replace('Construction Admin', st.ca === 'limited' ? 'limited Construction Administration' : 'Construction Administration') + '. ' + (inCons.length ? inCons.join(', ') + (inCons.length === 1 ? ' is' : ' are') + ' included in our fee.' : '');
+    var docExtras = extras.filter(function (x) { return x.on; }).map(function (x) { return x.name + ' · ' + x.price; });
+
+    // ---------- Steps, summary, checks ----------
+    var STEPS = [['project', 'Project'], ['scope', 'Scope'], ['fee', 'Fee'], ['terms', 'Terms'], ['review', 'Review & send']];
+    var visited = st.seen;
+    var steps = STEPS.map(function (s, i) {
+      var on = st.step === s[0], done = !on && visited[s[0]];
+      return { label: s[1], num: done ? '✓' : String(i + 1), current: on ? 'step' : null, pick: function () { var v = Object.assign({}, st.seen); v[st.step] = true; self.setState({ step: s[0], seen: v }); },
+        style: 'display:inline-flex;align-items:center;gap:8px;height:50px;padding:0 12px;border:0;background:transparent;cursor:pointer;white-space:nowrap;text-transform:uppercase;letter-spacing:0.07em;font-size:12.5px;font-weight:' + (on ? '700' : '500') + ';color:' + (on ? '#141414' : '#4D4D4D') + ';box-shadow:' + (on ? 'inset 0 -3px 0 #141414' : 'none'),
+        numStyle: 'width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;letter-spacing:0;' + (on ? 'background:#141414;color:#FFFFFF' : (done ? 'background:#1D6234;color:#FFFFFF' : 'box-shadow:inset 0 0 0 1.5px #AFAFAF;color:#4D4D4D')) };
+    });
+    var feeChecked = !!visited.fee || st.step === 'fee' || st.step === 'review';
+    var checks = [
+      [true, 'Lead and client details filled in'],
+      [phasesIncluded.length > 0, phasesIncluded.length + ' phases in scope'],
+      [feeChecked, feeChecked ? 'Fee checked against ' + used.length + ' comparable projects' : 'Check the fee against comparables'],
+      [archProfit >= 0.15, archProfit >= 0.15 ? 'Profit at or above 15%' : 'Profit is below 15%: ' + Math.round(archProfit * 100) + '%'],
+      [!!visited.terms || st.step === 'terms' || st.step === 'review', 'Terms reviewed']
+    ].map(function (c) { return { text: c[1], icon: c[0] ? '✓' : '!', color: c[0] ? '#3A3A3A' : '#9A3412', mark: 'flex:0 0 18px;width:18px;height:18px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#FFFFFF;background:' + (c[0] ? '#1D6234' : '#C2410C') }; });
+    var sum = {
+      total: money(total), totalNote: (total / cost * 100).toFixed(1) + '% of ' + kk(cost) + ' construction · $' + (total / sf).toFixed(2) + ' / SF',
+      rows: [
+        { k: 'Architectural fee', v: money(archFee), color: '#141414' },
+        { k: 'Consultants in fee', v: consTotal ? money(consTotal) : '—', color: '#141414' },
+        { k: 'Estimated hours', v: num(sel.hours), color: '#141414' },
+        { k: 'Cost to deliver', v: money(sel.cost), color: '#141414' },
+        { k: 'Profit after overhead', v: Math.round(archProfit * 100) + '%', color: verdictColor },
+        { k: 'Fee basis', v: overridden ? 'Edited' : selName, color: '#141414' }
+      ]
+    };
+    var sent = st.status === 'sent';
+    var stp = sent ? ['Sent', '#E4EBF8', '#1E3F7A', 'border-radius:50%;background:#2F5BAA'] : ['Draft', '#EBEBEB', '#4D4D4D', 'border-radius:50%;box-shadow:inset 0 0 0 1.5px #6B6B6B'];
+    var is = {}; STEPS.forEach(function (s) { is[s[0]] = st.step === s[0]; });
+    var leadOptions = Object.keys(LEADS).map(function (id) { return { id: id, label: LEADS[id].name + ' · ' + LEADS[id].client + ' · lead', on: id === st.lead }; });
+    var projectFields = [
+      { label: 'Client', value: L.client, set: function () {}, mono: '' },
+      { label: 'Location', value: L.location, set: function () {}, mono: '' },
+      { label: 'Project type', value: L.type + ' · ' + L.scope, set: function () {}, mono: '' },
+      { label: 'Size (SF)', value: sf, mono: "font-family: 'IBM Plex Mono', monospace;", set: function (e) { var o = Object.assign({}, st.sf); o[st.lead] = Math.max(500, Number(String(e.target.value).replace(/[^0-9.]/g, '')) || L.sf); self.setState({ sf: o, fee: null, phFee: {} }); } },
+      { label: 'Construction budget ($)', value: cost, mono: "font-family: 'IBM Plex Mono', monospace;", set: function (e) { var o = Object.assign({}, st.cost); o[st.lead] = Math.max(0, Number(String(e.target.value).replace(/[^0-9.]/g, '')) || L.cost); self.setState({ cost: o, fee: null, phFee: {} }); } },
+      { label: 'Lead source', value: L.source, set: function () {}, mono: '' }
+    ];
+    var agreements = [['firm', 'Firm standard', 'Your short-form agreement'], ['b101', 'AIA B101', 'Owner–architect, standard form'], ['b104', 'AIA B104', 'Abbreviated, for smaller projects']].map(function (a) { var on = st.agr === a[0]; return { label: a[1], note: a[2], on: on ? 'true' : 'false', pick: function () { self.setState({ agr: a[0] }); },
+      style: 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:12px 14px;border-radius:2px;cursor:pointer;text-align:left;background:#FFFFFF;border:' + (on ? '2px solid #141414' : '1px solid #D4D4D4') }; });
+    var scopePhases = PH.map(function (n, i) { var on = incPh[i] > 0; return { name: n, desc: PHDESC[i], on: on, isCa: i === 5, locked: i === 5, opacity: on || i === 5 ? '1' : '0.55',
+      toggle: function () { if (i === 5) return; var o = Object.assign({}, st.ph); o[i] = !on; self.setState({ ph: o }); } }; });
+
+    return {
+      modules: RAIL(modules), railMin: RAILV.railMin, railMax: RAILV.railMax, railChev: RAILV.railChev, railToggleLabel: RAILV.railToggleLabel, railToggle: RAILV.railToggle, railNavStyle: RAILV.railNavStyle, railLogoStyle: RAILV.railLogoStyle, railToggleStyle: RAILV.railToggleStyle,
+      lead: L, leadOptions: leadOptions, pickLead: function (e) { self.setState({ lead: e.target.value, fee: null, phFee: {}, consFee: {} }); },
+      statusText: stp[0], statusPill: 'display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:2px;font-size:10.5px;font-weight:600;letter-spacing:0.07em;text-transform:uppercase;background:' + stp[1] + ';color:' + stp[2], statusDot: 'display:inline-block;width:8px;height:8px;box-sizing:border-box;' + stp[3],
+      savedNote: st.saved ? 'Draft saved' : '', saveDraft: function () { self.setState({ saved: true }); },
+      primaryLabel: st.step === 'review' ? (sent ? 'Sent ✓' : 'Send for signature') : 'Next step',
+      goReview: function () { var order = STEPS.map(function (s) { return s[0]; }), i = order.indexOf(st.step), v = Object.assign({}, st.seen); v[st.step] = true; if (st.step === 'review') self.setState({ status: 'sent', seen: v }); else self.setState({ step: order[i + 1], seen: v }); },
+      steps: steps, is: is,
+      projectFields: projectFields, agreements: agreements, description: L.desc,
+      scopePhases: scopePhases, caOptions: [['full', 'Full CA'], ['limited', 'Limited CA'], ['none', 'No CA']].map(function (o) { return { v: o[0], label: o[1], on: st.ca === o[0] }; }),
+      setCa: function (e) { self.setState({ ca: e.target.value }); },
+      consultants: consultants, markupText: Math.round(MARKUP * 100) + '%', extras: extras,
+      complexity: ['simple', 'typical', 'complex'].map(function (id) { var on = st.cx === id; return { label: CX[id][1], on: on ? 'true' : 'false', style: seg(on), pick: function () { self.setState({ cx: id }); } }; }),
+      complexityNote: cx[2], margin: st.margin, setMargin: function (e) { self.setState({ margin: Number(e.target.value) }); }, ohText: Math.round(OH * 100) + '%',
+      options: options, selName: selName, archFee: archFee, archFeeText: money(archFee), setFee: setFee, setAll: setAll, mixNote: mixNote,
+      phaseHours: num(sel.rows.reduce(function (a2, r, j2) { return a2 + (incPh[j2] ? r.h : 0); }, 0)),
+      feeVerdict: feeVerdict, feeVerdictColor: verdictColor, overridden: overridden, resetFee: function () { self.setState({ fee: null, phFee: {} }); },
+      markupPct: Math.round(MARKUP * 100), setMarkup: function (e) { self.setState({ mk: Math.max(0, Number(e.target.value) || 0) }); }, consTotalText: money(consTotal),
+      newCons: st.newCons, setNewCons: function (e) { self.setState({ newCons: e.target.value }); },
+      addCons: function () { var v = (st.newCons || '').trim(); if (!v) return; self.setState({ consAdded: st.consAdded.concat([{ key: 'x' + (st.consAdded.length + 1), name: v }]), newCons: '' }); },
+      phaseRows: phaseRows, comps: comps, compCount: used.length,
+      terms: terms, rates: rates, sched: sched, schedNote: 'About ' + designWeeks + ' weeks from notice to proceed to permit submittal, based on estimated hours with the usual team. Agency review time is extra.', exclusions: exclusions,
+      docFee: docFee, feeTypeText: feeTypeText, scopeText: scopeText, docExtras: docExtras, hasExtras: docExtras.length > 0,
+      termsText: 'Retainer of 10% due on signing, applied to the first invoice. Invoices monthly, due net 30. Reimbursable expenses at cost × 1.10. Additional services at the hourly rates listed, or a fixed fee agreed in writing first. This proposal is valid for 60 days.',
+      sentDone: sent, sum: sum, checks: checks
+    };
+  }
+}
+</script>
+</body>
+</html>

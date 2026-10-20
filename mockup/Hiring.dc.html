@@ -1,0 +1,556 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ArchiTrac — Hiring</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=Barlow:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F2F2F2}
+a{color:#141414}a:hover{color:#000000}
+button{font:inherit;color:inherit}
+h1,h2,h3,th,.cap{text-transform:uppercase;letter-spacing:0.08em}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; font-family: 'Barlow', system-ui, sans-serif; font-size: 14px; color: #141414; background: #F2F2F2">
+
+<nav aria-label="Main menu" style="{{railNavStyle}}">
+<a href="Home.dc.html" aria-label="ArchiTrac home" style="{{railLogoStyle}}">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 26px"><path d="M3 20h18"></path><path d="M5 20V9l7-5 7 5v11"></path><path d="M9 20v-6h6v6"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span style="font-size: 13px; font-weight: 700; letter-spacing: 0.16em">ARCHITRAC</span></sc-if>
+</a>
+<sc-for list="{{modules}}" as="m" hint-placeholder-count="15">
+<sc-if value="{{m.isLabel}}" hint-placeholder-val="{{ false }}">
+<span style="{{m.labelStyle}}">{{m.labelText}}</span>
+</sc-if>
+<sc-if value="{{m.isLink}}" hint-placeholder-val="{{ true }}">
+<a href="{{m.href}}" aria-current="{{m.current}}" aria-label="{{m.label}}" title="{{m.label}}" style="{{m.rowStyle}}">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 20px"><path d="{{m.icon}}"></path></svg>
+<sc-if value="{{m.showLabel}}" hint-placeholder-val="{{ true }}"><span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{m.label}}</span></sc-if>
+<sc-if value="{{m.addon}}" hint-placeholder-val="{{ false }}"><span style="{{m.addStyle}}">{{m.addText}}</span></sc-if>
+</a>
+</sc-if>
+</sc-for>
+<button type="button" onClick="{{railToggle}}" aria-label="{{railToggleLabel}}" title="{{railToggleLabel}}" style="{{railToggleStyle}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 18px; transform: rotate({{railChev}}deg)"><path d="M4 4v16"></path><path d="M15 7l-5 5 5 5"></path><path d="M10 12h10"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span>Collapse menu</span></sc-if>
+</button>
+</nav>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 10px 32px; background: #141414; color: #F2F2F2">
+<button type="button" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px 0 4px; border: 1px solid #3A3A3A; border-radius: 2px; background: transparent; color: #F2F2F2; cursor: pointer">
+<span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; background: #F2F2F2; color: #141414; font-size: 12px; font-weight: 700">F</span>
+<span style="font-weight: 600">[FIRM NAME]</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+<span class="cap" style="color: #F2F2F2; font-weight: 500">Hiring</span>
+<div style="margin-left: auto; display: flex; align-items: center; gap: 12px">
+<a href="Settings.dc.html" aria-label="Settings" title="Settings" style="width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 2px; color: #BDBDBD"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></a>
+<span title="You" style="width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #3A3A3A; color: #FFFFFF; font-size: 11px; font-weight: 600">BM</span>
+</div>
+</header>
+
+<div style="background: #FFFFFF; border-bottom: 1px solid #DCDCDC">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px; padding: 32px 32px 28px">
+<div style="flex: 1 1 380px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">CANDIDATES · OPENINGS · ONBOARDING</div>
+<h1 style="margin: 10px 0 0; font-size: 30px; line-height: 1.15; font-weight: 500">Hiring</h1>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<a href="Website.dc.html" style="display: inline-flex; align-items: center; height: 38px; padding: 0 14px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; font-weight: 500; text-decoration: none">Careers page</a>
+<button type="button" style="height: 38px; padding: 0 14px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer; font-weight: 500">Add candidate</button>
+<button type="button" style="display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 16px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-weight: 600">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+New opening
+</button>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); border-top: 1px solid #EBEBEB">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+<button type="button" onClick="{{k.click}}" style="display: flex; flex-direction: column; align-items: flex-start; gap: 4px; padding: 20px 32px 22px; border: 0; border-right: 1px solid #EBEBEB; background: transparent; text-align: left; cursor: {{k.cursor}}">
+<span class="cap" style="font-size: 11px; font-weight: 500; color: #3A3A3A">{{k.label}}</span>
+<span style="font-size: 26px; line-height: 1.15; font-weight: 500; font-variant-numeric: tabular-nums; color: {{k.color}}">{{k.value}}</span>
+<span style="font-size: 12.5px; color: #666666">{{k.note}}</span>
+</button>
+</sc-for>
+</div>
+
+<div role="tablist" aria-label="Hiring sections" style="display: flex; gap: 6px; padding: 4px 22px 0; border-top: 1px solid #EBEBEB; overflow-x: auto">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+<button type="button" role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; color: #666666; margin-left: 8px">{{t.count}}</span></button>
+</sc-for>
+</div>
+</div>
+
+<main style="position: relative; flex: 1; display: flex; flex-direction: column; gap: 16px; padding: 28px 32px 32px">
+
+<!-- ================= CANDIDATES ================= -->
+<sc-if value="{{tabBoard}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+<div role="group" aria-label="Filter by opening" style="display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 2px; background: #E3E3E3">
+<sc-for list="{{openFilters}}" as="f" hint-placeholder-count="3">
+<button type="button" aria-pressed="{{f.on}}" onClick="{{f.pick}}" style="{{f.style}}">{{f.label}}<span style="margin-left: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #666666">{{f.count}}</span></button>
+</sc-for>
+</div>
+<span style="font-size: 12.5px; color: #666666">Drag a card to move a candidate. Moving someone to Hired starts their onboarding checklist.</span>
+<sc-if value="{{hasRejected}}" hint-placeholder-val="{{ false }}"><span style="margin-left: auto; font-size: 12.5px; color: #4D4D4D">{{rejectedText}}</span></sc-if>
+</div>
+<div style="overflow-x: auto; padding-bottom: 4px">
+<div style="display: grid; grid-auto-flow: column; grid-auto-columns: minmax(200px, 1fr); gap: 12px; min-width: 1260px">
+<sc-for list="{{board}}" as="col" hint-placeholder-count="6">
+<div onDragOver="{{col.allow}}" onDrop="{{col.drop}}" style="display: flex; flex-direction: column; gap: 10px; min-height: 380px; padding: 12px 10px; border-radius: 2px; background: #E6E6E6">
+<div style="display: flex; align-items: center; gap: 8px; padding: 0 2px 6px; border-bottom: 2px solid {{col.rule}}">
+<span class="cap" style="font-size: 11px; font-weight: 700">{{col.name}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #4D4D4D">{{col.count}}</span>
+</div>
+<sc-for list="{{col.cards}}" as="c" hint-placeholder-count="2">
+<button type="button" draggable="true" onDragStart="{{c.dragStart}}" onClick="{{c.open}}" style="{{c.style}}">
+<span style="display: flex; align-items: center; gap: 8px">
+<span style="{{c.avatar}}">{{c.initials}}</span>
+<span style="display: flex; flex-direction: column; min-width: 0"><span style="font-weight: 600; line-height: 1.25">{{c.name}}</span><span style="font-size: 12px; color: #666666">{{c.opening}}</span></span>
+</span>
+<span style="font-size: 12.5px; color: #3A3A3A; line-height: 1.35">{{c.current}}</span>
+<span style="display: flex; flex-wrap: wrap; gap: 4px">
+<sc-for list="{{c.tags}}" as="tg" hint-placeholder-count="2"><span style="padding: 1px 6px; border-radius: 2px; background: #F2F2F2; font-size: 11.5px; color: #3A3A3A">{{tg}}</span></sc-for>
+</span>
+<span style="display: flex; align-items: center; gap: 6px; padding-top: 8px; margin-top: 2px; border-top: 1px solid #EBEBEB; font-size: 12px; color: #4D4D4D">
+<sc-if value="{{c.hasScore}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 4px; font-family: 'IBM Plex Mono', monospace; font-weight: 600; color: #141414"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3l2.8 5.8 6.2.9-4.5 4.4 1 6.2L12 17.4 6.5 20.3l1-6.2L3 9.7l6.2-.9z"></path></svg>{{c.score}}</span></sc-if>
+<span>{{c.source}}</span>
+<span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; color: {{c.daysColor}}">{{c.days}}</span>
+</span>
+</button>
+</sc-for>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<!-- ================= OPENINGS ================= -->
+<sc-if value="{{tabOpenings}}" hint-placeholder-val="{{ false }}">
+<section aria-labelledby="open-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding: 14px 18px 10px">
+<h2 id="open-title" style="margin: 0; font-size: 13px; font-weight: 600">Openings</h2>
+<span style="font-size: 12.5px; color: #666666">Open positions appear on the website's Careers page. The role links to its rates in Settings, so you can see what the hire costs and bills.</span>
+</div>
+<table style="width: 100%; min-width: 1040px; border-collapse: collapse">
+<thead>
+<tr style="text-align: left; font-size: 11px; color: #666666; background: #FAFAFA">
+<th scope="col" style="padding: 9px 18px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Position</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Role · rates</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Salary range</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Posted to</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Candidates</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Days open</th>
+<th scope="col" style="padding: 9px 18px 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Status</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{openings}}" as="o" hint-placeholder-count="4">
+<tr>
+<td style="padding: 12px 18px; border-bottom: 1px solid #EBEBEB"><span style="display: flex; flex-direction: column"><span style="font-weight: 600">{{o.title}}</span><span style="font-size: 12.5px; color: #666666">{{o.team}} · leader {{o.leader}}</span></span></td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB"><a href="Settings.dc.html" style="display: flex; flex-direction: column; text-decoration: none"><span style="font-weight: 500; text-decoration: underline; text-underline-offset: 2px">{{o.role}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">{{o.rates}}</span></a></td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{o.salary}}</td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB"><span style="display: flex; flex-wrap: wrap; gap: 4px"><sc-for list="{{o.posted}}" as="pt" hint-placeholder-count="2"><span style="padding: 1px 6px; border-radius: 2px; background: #F2F2F2; font-size: 12px">{{pt}}</span></sc-for></span></td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{o.count}}</td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{o.days}}</td>
+<td style="padding: 12px 18px 12px 10px; border-bottom: 1px solid #EBEBEB"><span style="{{o.pill}}"><span aria-hidden="true" style="{{o.dot}}"></span>{{o.status}}</span></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</section>
+</sc-if>
+
+<!-- ================= ONBOARDING ================= -->
+<sc-if value="{{tabOnboard}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<section aria-label="New hire" style="flex: 1 1 280px; max-width: 340px; display: flex; flex-direction: column; gap: 14px; padding: 20px; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<div style="display: flex; align-items: center; gap: 12px">
+<span style="width: 48px; height: 48px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #141414; color: #FFFFFF; font-weight: 600">NB</span>
+<span style="display: flex; flex-direction: column"><span style="font-size: 17px; font-weight: 600">Noah Bennett</span><span style="color: #4D4D4D">Designer · Commercial studio</span></span>
+</div>
+<dl style="display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 8px 10px; margin: 0; font-size: 13px">
+<dt class="cap" style="font-size: 11px; font-weight: 600; color: #666666">Starts</dt><dd style="margin: 0; font-weight: 500">Mon, Oct 26</dd>
+<dt class="cap" style="font-size: 11px; font-weight: 600; color: #666666">Team leader</dt><dd style="margin: 0">TC · Commercial studio</dd>
+<dt class="cap" style="font-size: 11px; font-weight: 600; color: #666666">Role · rates</dt><dd style="margin: 0">Designer · $115 bill / $44 cost</dd>
+<dt class="cap" style="font-size: 11px; font-weight: 600; color: #666666">On Team page</dt><dd style="margin: 0"><a href="Team.dc.html">Invited, not signed in yet</a></dd>
+</dl>
+<div>
+<div style="display: flex; align-items: baseline; margin-bottom: 6px"><span class="cap" style="font-size: 11px; font-weight: 600; color: #4D4D4D">Progress</span><span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{obDone}} / {{obTotal}}</span></div>
+<span role="img" aria-label="{{obLabel}}" style="display: block; height: 8px; border-radius: 1px; background: #EBEBEB; overflow: hidden"><span style="{{obBar}}"></span></span>
+</div>
+<p style="margin: 0; font-size: 12.5px; line-height: 1.5; color: #666666">This checklist comes from the onboarding template in Settings. It started automatically when Noah moved to Hired.</p>
+</section>
+
+<section aria-label="Onboarding checklist" style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+<sc-for list="{{obGroups}}" as="g" hint-placeholder-count="3">
+<div style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<div style="display: flex; align-items: baseline; gap: 10px; padding: 14px 18px 10px; border-bottom: 1px solid #EBEBEB">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600">{{g.name}}</h2>
+<span style="font-size: 12.5px; color: #666666">{{g.when}}</span>
+<span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">{{g.progress}}</span>
+</div>
+<ul style="list-style: none; margin: 0; padding: 4px 0">
+<sc-for list="{{g.items}}" as="it" hint-placeholder-count="4">
+<li style="display: flex; align-items: center; gap: 12px; padding: 9px 18px">
+<input type="checkbox" checked="{{it.done}}" onChange="{{it.toggle}}" aria-label="{{it.text}}" style="width: 17px; height: 17px; flex: 0 0 auto; accent-color: #141414">
+<span style="flex: 1; min-width: 0; display: flex; flex-direction: column">
+<span style="{{it.textStyle}}">{{it.text}}</span>
+<sc-if value="{{it.hasNote}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12.5px; color: #666666">{{it.note}}</span></sc-if>
+</span>
+<sc-if value="{{it.hasLink}}" hint-placeholder-val="{{ false }}"><a href="{{it.href}}" style="font-size: 12.5px; font-weight: 500; white-space: nowrap">{{it.linkLabel}}</a></sc-if>
+<span style="{{it.avatar}}">{{it.owner}}</span>
+<span style="flex: 0 0 52px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: {{it.dueColor}}">{{it.due}}</span>
+</li>
+</sc-for>
+</ul>
+</div>
+</sc-for>
+</section>
+</div>
+</sc-if>
+
+<!-- ================= CANDIDATE DRAWER ================= -->
+<sc-if value="{{drawerOpen}}" hint-placeholder-val="{{ false }}">
+<aside aria-label="Candidate details" style="position: absolute; top: 28px; right: 32px; z-index: 5; width: min(460px, calc(100% - 64px)); max-height: calc(100% - 56px); overflow-y: auto; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; box-shadow: 0 12px 32px rgba(20, 20, 20, 0.16), 0 2px 6px rgba(20, 20, 20, 0.08)">
+<div style="padding: 20px 22px 18px; border-bottom: 1px solid #EBEBEB">
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">{{cd.kicker}}</span>
+<button type="button" onClick="{{closeDrawer}}" aria-label="Close details" style="margin-left: auto; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 2px; background: transparent; cursor: pointer; color: #4D4D4D">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg>
+</button>
+</div>
+<h2 style="margin: 4px 0 4px; font-size: 18px; font-weight: 600; text-transform: none; letter-spacing: 0">{{cd.name}}</h2>
+<div style="color: #4D4D4D">{{cd.current}}</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px">
+<sc-if value="{{cd.canAdvance}}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{cd.advance}}" style="height: 34px; padding: 0 14px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-weight: 600">Move to {{cd.nextStage}}</button></sc-if>
+<button type="button" style="height: 34px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer; font-weight: 500">Schedule interview</button>
+<sc-if value="{{cd.canReject}}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{cd.reject}}" style="height: 34px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; color: #B42318; cursor: pointer; font-weight: 500">Decline</button></sc-if>
+</div>
+</div>
+<dl style="display: grid; grid-template-columns: 130px minmax(0, 1fr); gap: 8px 12px; margin: 0; padding: 16px 22px; border-bottom: 1px solid #EBEBEB; font-size: 13px">
+<sc-for list="{{cd.rows}}" as="r" hint-placeholder-count="6">
+<dt class="cap" style="font-size: 11px; font-weight: 600; color: #666666; padding-top: 2px">{{r.k}}</dt><dd style="margin: 0">{{r.v}}</dd>
+</sc-for>
+</dl>
+<div style="padding: 14px 22px; border-bottom: 1px solid #EBEBEB">
+<div class="cap" style="font-size: 11px; font-weight: 600; color: #4D4D4D; margin-bottom: 8px">Files</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{cd.files}}" as="f" hint-placeholder-count="2">
+<button type="button" style="display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer"><span style="padding: 1px 5px; border-radius: 2px; background: #141414; color: #FFFFFF; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600">PDF</span>{{f}}</button>
+</sc-for>
+</div>
+</div>
+<div style="padding: 14px 22px; border-bottom: 1px solid #EBEBEB">
+<div style="display: flex; align-items: baseline; margin-bottom: 10px"><span class="cap" style="font-size: 11px; font-weight: 600; color: #4D4D4D">Interview scorecard</span><sc-if value="{{cd.hasScore}}" hint-placeholder-val="{{ false }}"><span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600">{{cd.score}} / 5 · {{cd.raters}}</span></sc-if></div>
+<sc-if value="{{cd.hasScore}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<sc-for list="{{cd.scores}}" as="s" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) 30px; align-items: center; gap: 10px; font-size: 13px">
+<span>{{s.k}}</span>
+<span role="img" aria-label="{{s.label}}" style="display: flex; gap: 3px"><sc-for list="{{s.pips}}" as="pp" hint-placeholder-count="5"><span style="{{pp}}"></span></sc-for></span>
+<span style="text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{s.v}}</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{cd.noScore}}" hint-placeholder-val="{{ true }}"><p style="margin: 0; font-size: 13px; color: #666666">Not interviewed yet. Interviewers score the same four areas so candidates can be compared fairly.</p></sc-if>
+</div>
+<div style="padding: 14px 22px 18px">
+<div class="cap" style="font-size: 11px; font-weight: 600; color: #4D4D4D; margin-bottom: 8px">Notes</div>
+<sc-for list="{{cd.notes}}" as="n" hint-placeholder-count="2">
+<div style="display: grid; grid-template-columns: 28px minmax(0, 1fr); gap: 10px; margin-bottom: 10px"><span style="{{n.avatar}}">{{n.who}}</span><span style="line-height: 1.45"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; color: #666666">{{n.date}}</span><br>{{n.text}}</span></div>
+</sc-for>
+<div style="height: 36px; display: flex; align-items: center; padding: 0 10px; border: 1px solid #D4D4D4; border-radius: 2px; color: #8A8A8A">Add a note…</div>
+</div>
+</aside>
+</sc-if>
+
+</main>
+</div>
+</div>
+</x-dc>
+
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1260}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var st = Object.assign({ tab: 'board', open: 'all', moved: {}, rejected: {}, drawer: null, ob: {} }, this.state || {});
+
+    // ---------- Module bar ----------
+    var ICONS = {
+      home: 'M3 11l9-7 9 7M5 10v10h14V10',
+      projects: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+      contacts: 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M21 19v-1a4 4 0 0 0-3-3.9M15 3.2a3.5 3.5 0 0 1 0 6.6',
+      team: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1',
+      workload: 'M4 5h9M4 10h15M4 15h12M4 20h6',
+      time: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7v5l3 2',
+      reports: 'M3 21h18M6 21V11M11 21V5M16 21v-7M21 21v-4',
+      schedule: 'M4 4v16M4 6h7M7 10h8M10 14h7M8 18h5',
+      build: 'M3 18h18M5 18v-3a7 7 0 0 1 14 0v3M12 8V5M9 11V8.7M15 11V8.7',
+      accounting: 'M12 3v18M16 7.5c-.5-1.5-2-2.5-4-2.5-2.2 0-4 1.3-4 3s1.8 2.6 4 3 4 1.3 4 3-1.8 3-4 3c-2 0-3.5-1-4-2.5',
+      marketing: 'M3 10v4h4l6 4V6L7 10zM17 9a4 4 0 0 1 0 6M19.5 6.5a7.5 7.5 0 0 1 0 11',
+      knowledge: 'M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2zM22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z',
+      website: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M3 12h18M12 3c2.5 2.5 3.8 5.6 3.8 9s-1.3 6.5-3.8 9M12 3c-2.5 2.5-3.8 5.6-3.8 9s1.3 6.5 3.8 9',
+      hiring: 'M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 7h18v12H3zM3 12h18'
+    };
+
+    // ---------- Menu rail: wide with labels, or collapsed to icons (remembered per browser) ----------
+    var RAILMIN = (this.state && this.state.railMin != null) ? this.state.railMin : (function () { try { return window.localStorage.getItem('architrac.railMin') === '1'; } catch (e) { return false; } })();
+    function RAIL(list) {
+      return list.map(function (m) {
+        if (m.isLabel) return Object.assign({}, m, { labelText: RAILMIN ? '' : m.label,
+          labelStyle: RAILMIN ? 'display:block;height:1px;margin:10px 8px;background:#2A2A2A' : 'display:block;padding:16px 12px 6px;font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8A8A8A' });
+        var cur = !!m.current;
+        return Object.assign({}, m, {
+          showLabel: !RAILMIN, addText: RAILMIN ? '' : 'ADD',
+          addStyle: RAILMIN ? 'position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:#8A8A8A' : 'flex:0 0 auto;padding:1px 5px;border-radius:2px;background:#2A2A2A;color:#D9D9D9;font-size:9.5px;font-weight:600;letter-spacing:0.06em',
+          rowStyle: 'position:relative;display:flex;align-items:center;gap:12px;height:40px;box-sizing:border-box;border-radius:2px;text-decoration:none;white-space:nowrap;text-transform:uppercase;letter-spacing:0.08em;font-size:12px;'
+            + (RAILMIN ? 'width:44px;justify-content:center;padding:0;margin:0 auto;' : 'width:100%;padding:0 12px;')
+            + 'font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#8A8A8A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+        });
+      });
+    }
+    var RAILV = {
+      railMin: RAILMIN, railMax: !RAILMIN, railChev: RAILMIN ? 180 : 0,
+      railToggleLabel: RAILMIN ? 'Expand menu' : 'Collapse menu',
+      railToggle: function () { var v = !RAILMIN; try { window.localStorage.setItem('architrac.railMin', v ? '1' : '0'); } catch (e) {} self.setState({ railMin: v }); },
+      railNavStyle: 'flex:0 0 ' + (RAILMIN ? 64 : 216) + 'px;width:' + (RAILMIN ? 64 : 216) + 'px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;padding:14px ' + (RAILMIN ? '10px' : '12px') + ';background:#000000;color:#BDBDBD;transition:width 140ms, flex-basis 140ms',
+      railLogoStyle: 'display:flex;align-items:center;gap:10px;height:40px;margin-bottom:8px;color:#F2F2F2;text-decoration:none;' + (RAILMIN ? 'justify-content:center;' : 'padding:0 10px;'),
+      railToggleStyle: 'margin-top:auto;display:flex;align-items:center;gap:10px;height:38px;border:0;border-radius:2px;background:transparent;color:#8A8A8A;cursor:pointer;font-size:12px;font-weight:500;letter-spacing:0.04em;' + (RAILMIN ? 'justify-content:center;width:44px;margin-left:auto;margin-right:auto;' : 'width:100%;padding:0 12px;')
+    };
+    var CURRENT = 'hiring';
+    var modules = [
+      { label: 'Home', key: 'home', href: 'Home.dc.html' }, { label: 'Projects', key: 'projects', href: 'Projects.dc.html' },
+      { label: 'Contacts', key: 'contacts', href: 'Contacts.dc.html' }, { label: 'Team', key: 'team', href: 'Team.dc.html' },
+      { label: 'Time', key: 'time', href: 'Time.dc.html' },
+      { label: 'Reports', key: 'reports', href: 'Reports.dc.html' },
+      { label: 'Modules', isLabel: true },
+      { label: 'Build', key: 'build', href: 'Build.dc.html' }, { label: 'Workload', key: 'workload', href: 'Workload.dc.html' },
+      { label: 'Accounting', key: 'accounting', href: 'Accounting.dc.html' }, { label: 'Marketing', key: 'marketing', href: 'Marketing.dc.html' },
+      { label: 'Knowledge', key: 'knowledge', href: 'Knowledge.dc.html' },
+      { label: 'Website', key: 'website', href: 'Website.dc.html' }, { label: 'Hiring', key: 'hiring', href: 'Hiring.dc.html' }
+    ].map(function (m) {
+      if (m.isLabel) return { isLabel: true, isLink: false, label: m.label };
+      var cur = m.key === CURRENT;
+      return {
+        isLabel: false, isLink: true, label: m.label, icon: ICONS[m.key], addon: !!m.addon,
+        href: m.href || '#', current: cur ? 'page' : null,
+        style: 'position:relative;flex:0 0 64px;height:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:2px;text-decoration:none;font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#9A9A9A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';text-transform:uppercase;letter-spacing:0.06em;font-size:9.5px;box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+      };
+    });
+
+
+    function avatar(who, size) {
+      var shade = { BM: '#3A3A3A', JR: '#141414', TC: '#2A2A2A', MW: '#5C5C5C', KL: '#4D4D4D' }[who] || '#6B6B6B';
+      return 'flex:0 0 ' + size + 'px;width:' + size + 'px;height:' + size + 'px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:' + (size < 28 ? 10 : 11) + 'px;font-weight:600;color:#FFFFFF;background:' + shade;
+    }
+
+    // ---------- Stages & candidates ----------
+    var STAGES = [
+      { id: 'applied', name: 'Applied', rule: '#C4C4C4' },
+      { id: 'screen', name: 'Phone screen', rule: '#A9BDE3' },
+      { id: 'interview', name: 'Interview', rule: '#2F5BAA' },
+      { id: 'portfolio', name: 'Portfolio review', rule: '#1E3F7A' },
+      { id: 'offer', name: 'Offer', rule: '#5B2E9E' },
+      { id: 'hired', name: 'Hired', rule: '#1D6234' }
+    ];
+    var stageIdx = {}; STAGES.forEach(function (s, i) { stageIdx[s.id] = i; });
+    var OPEN = { pa: 'Project Architect', des: 'Designer', desc: 'Designer · Commercial' };
+    function C(id, name, open, stage, current, tags, source, days, applied, extra) {
+      return Object.assign({ id: id, name: name, open: open, stage: stage, current: current, tags: tags, source: source, days: days, applied: applied }, extra || {});
+    }
+    var SC = function (a, b, c, d, who) { return { s: [a, b, c, d], who: who }; };
+    var CANDS = [
+      C('c1', 'Rachel Thompson', 'pa', 'applied', 'Project architect at a regional firm · 7 years', ['Licensed SC', 'Revit'], 'Careers page', 2, 'Oct 16', { salary: '[Expected salary]', software: 'Revit, AutoCAD, Bluebeam' }),
+      C('c2', 'Omar Haddad', 'pa', 'screen', 'Architect · 9 years, mostly healthcare', ['Licensed NC', 'Medical'], 'Referral · TC', 4, 'Oct 9', { software: 'Revit, Enscape', notes: [['TC', 'Oct 12', 'Worked with Omar on a clinic in Wilmington. Strong on CDs and coordination.']] }),
+      C('c3', 'Erin Walsh', 'pa', 'interview', 'Job captain · 5 years, retail and restaurant', ['AXP in progress', 'Revit'], 'AIA job board', 3, 'Oct 1', { score: SC(4, 4, 5, 4, 'TC, JR'), notes: [['JR', 'Oct 15', 'Great energy. Has run small upfits start to finish. Second interview Thursday.']] }),
+      C('c4', 'Ben Carver', 'pa', 'portfolio', 'Project architect · 8 years, shell buildings', ['Licensed SC, GA', 'Shell'], 'LinkedIn', 6, 'Sep 24', { score: SC(5, 4, 4, 5, 'TC, BM'), notes: [['BM', 'Oct 13', 'Portfolio review with the commercial studio Oct 20.']] }),
+      C('c5', 'Lauren Kim', 'pa', 'offer', 'Architect · 6 years, retail and office', ['Licensed SC', 'Revit'], 'Referral · SG', 2, 'Sep 18', { score: SC(5, 5, 4, 5, 'TC, BM, SG'), notes: [['BM', 'Oct 16', 'Offer sent. Waiting to hear back by Oct 23.']] }),
+      C('c6', 'Noah Bennett', 'desc', 'hired', 'Designer · 3 years, retail', ['Revit', 'SketchUp'], 'Careers page', 0, 'Aug 28', { score: SC(4, 4, 4, 5, 'TC, LP'), notes: [['MW', 'Oct 2', 'Offer accepted. Starts Oct 26.']] }),
+      C('c7', 'Maya Ortiz', 'des', 'applied', 'Recent M.Arch graduate', ['Clemson', 'Revit'], 'Careers page', 1, 'Oct 17'),
+      C('c8', 'Chris Dunn', 'des', 'applied', 'Designer · 2 years, residential', ['Revit', 'Rhino'], 'LinkedIn', 5, 'Oct 13'),
+      C('c9', 'Sam Patel', 'des', 'screen', 'Interior designer · 3 years, medical', ['NCIDQ in progress', 'Medical'], 'Careers page', 2, 'Oct 8'),
+      C('c10', 'Jordan Reyes', 'des', 'interview', 'Designer · 3 years, healthcare and office', ['Revit', 'Enscape'], 'AIA job board', 1, 'Sep 30', { score: SC(4, 4, 3, 4, 'JR, KL') }),
+      C('c11', 'Hannah Price', 'des', 'applied', 'Designer · 4 years, hospitality', ['Revit', 'Restaurant'], 'Referral · KL', 3, 'Oct 15')
+    ];
+    CANDS.forEach(function (c) {
+      c.stage = st.moved[c.id] || c.stage;
+      c.rejected = !!st.rejected[c.id];
+      if (c.score) c.avg = (c.score.s.reduce(function (a, b) { return a + b; }, 0) / 4);
+    });
+    var live = CANDS.filter(function (c) { return !c.rejected; });
+    var filterOpen = function (c) { return st.open === 'all' || c.open === st.open || (st.open === 'des' && c.open === 'desc'); };
+
+    var board = STAGES.map(function (s) {
+      var items = live.filter(function (c) { return c.stage === s.id && filterOpen(c); });
+      return {
+        name: s.name, rule: s.rule, count: items.length,
+        allow: function (e) { e.preventDefault(); },
+        drop: function (e) {
+          e.preventDefault(); var id = self.dragId; if (!id) return;
+          var mv = Object.assign({}, st.moved); mv[id] = s.id; self.dragId = null; self.setState({ moved: mv });
+        },
+        cards: items.map(function (c) {
+          var sel = st.drawer === c.id;
+          var initials = c.name.split(' ').map(function (w) { return w[0]; }).join('');
+          return {
+            name: c.name, initials: initials, opening: OPEN[c.open], current: c.current, tags: c.tags, source: c.source,
+            hasScore: !!c.avg, score: c.avg ? c.avg.toFixed(1) : '',
+            days: s.id === 'hired' ? 'Starts Oct 26' : c.days + ' d in stage', daysColor: c.days >= 6 && s.id !== 'hired' ? '#9A3412' : '#4D4D4D',
+            avatar: 'flex:0 0 30px;width:30px;height:30px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;background:#EBEBEB;color:#141414',
+            dragStart: function (e) { self.dragId = c.id; try { e.dataTransfer.setData('text/plain', c.id); e.dataTransfer.effectAllowed = 'move'; } catch (err) {} },
+            open: function () { self.setState({ drawer: c.id }); },
+            style: 'display:flex;flex-direction:column;gap:6px;width:100%;padding:12px;border-radius:2px;text-align:left;cursor:grab;background:#FFFFFF;border:' + (sel ? '2px solid #2F5BAA' : '1px solid #DCDCDC') + ';box-shadow:0 1px 2px rgba(20,20,20,0.06)'
+          };
+        })
+      };
+    });
+
+    var openFilters = [['all', 'All openings'], ['pa', 'Project Architect'], ['des', 'Designer']].map(function (f) {
+      var on = st.open === f[0];
+      var n = live.filter(function (c) { return c.stage !== 'hired' && (f[0] === 'all' || c.open === f[0]); }).length;
+      return { label: f[1], count: n, on: on ? 'true' : 'false', pick: function () { self.setState({ open: f[0] }); },
+        style: 'height:30px;padding:0 12px;border:0;border-radius:2px;cursor:pointer;font-size:13px;font-weight:' + (on ? '600' : '500') + ';background:' + (on ? '#FFFFFF' : 'transparent') + ';box-shadow:' + (on ? '0 1px 2px rgba(20,20,20,0.12)' : 'none') };
+    });
+    var rejectedN = CANDS.filter(function (c) { return c.rejected; }).length;
+
+    // ---------- Drawer ----------
+    var dc = CANDS.filter(function (c) { return c.id === st.drawer && !c.rejected; })[0];
+    var cd = null;
+    if (dc && st.tab === 'board') {
+      var si = stageIdx[dc.stage], next = STAGES[si + 1];
+      var CRIT = ['Technical / Revit', 'Design', 'Communication', 'Team fit'];
+      cd = {
+        kicker: OPEN[dc.open].toUpperCase() + ' · ' + STAGES[si].name.toUpperCase(),
+        name: dc.name, current: dc.current,
+        canAdvance: !!next, nextStage: next ? next.name : '', canReject: dc.stage !== 'hired',
+        advance: function () { var mv = Object.assign({}, st.moved); mv[dc.id] = next.id; self.setState({ moved: mv }); },
+        reject: function () { var r = Object.assign({}, st.rejected); r[dc.id] = true; self.setState({ rejected: r, drawer: null }); },
+        rows: [
+          { k: 'Applied', v: dc.applied + ' · ' + dc.source },
+          { k: 'Experience', v: dc.current },
+          { k: 'License', v: dc.tags.filter(function (t) { return /Licens|AXP|NCIDQ/.test(t); })[0] || 'Not licensed' },
+          { k: 'Software', v: dc.software || dc.tags.filter(function (t) { return /Revit|Rhino|SketchUp|Enscape/.test(t); }).join(', ') || '—' },
+          { k: 'Salary', v: dc.salary || '[Expected salary]' },
+          { k: 'Email', v: '[email]' }
+        ],
+        files: ['Resume', 'Portfolio'],
+        hasScore: !!dc.score, noScore: !dc.score,
+        score: dc.avg ? dc.avg.toFixed(1) : '', raters: dc.score ? dc.score.who : '',
+        scores: dc.score ? dc.score.s.map(function (v, i) {
+          var pips = [1, 2, 3, 4, 5].map(function (n) { return 'width:22px;height:8px;border-radius:1px;background:' + (n <= v ? '#2F5BAA' : '#EBEBEB'); });
+          return { k: CRIT[i], v: v, pips: pips, label: CRIT[i] + ': ' + v + ' of 5' };
+        }) : [],
+        notes: (dc.notes || []).map(function (n) { return { who: n[0], date: n[1], text: n[2], avatar: avatar(n[0], 26) }; })
+      };
+    }
+
+    // ---------- Openings ----------
+    var OPENINGS = [
+      { title: 'Project Architect', team: 'Commercial studio', leader: 'TC', role: 'Project architect', rates: '$145 bill · $58 cost', salary: '[Range]', posted: ['Careers page', 'LinkedIn', 'AIA'], key: 'pa', days: 28, status: 'open' },
+      { title: 'Designer', team: 'Medical studio', leader: 'JR', role: 'Designer', rates: '$115 bill · $44 cost', salary: '[Range]', posted: ['Careers page', 'AIA', 'Clemson'], key: 'des', days: 19, status: 'open' },
+      { title: 'Designer', team: 'Commercial studio', leader: 'TC', role: 'Designer', rates: '$115 bill · $44 cost', salary: '[Range]', posted: ['Careers page'], key: 'desc', days: 38, status: 'filled' },
+      { title: 'Summer intern 2027', team: 'Medical studio', leader: 'JR', role: 'Intern', rates: '$75 bill · $24 cost', salary: '[Hourly]', posted: [], key: 'int', days: 0, status: 'draft' }
+    ];
+    var PST = {
+      open: ['Open', '#E4EBF8', '#1E3F7A', 'background:#2F5BAA'],
+      filled: ['Filled', '#E2F1E6', '#1D6234', 'background:#1D6234'],
+      draft: ['Draft', '#EBEBEB', '#4D4D4D', 'box-shadow:inset 0 0 0 1.5px #6B6B6B']
+    };
+    var openings = OPENINGS.map(function (o) {
+      var p = PST[o.status];
+      var n = CANDS.filter(function (c) { return c.open === o.key && !c.rejected; }).length;
+      return {
+        title: o.title, team: o.team, leader: o.leader, role: o.role, rates: o.rates, salary: o.salary,
+        posted: o.posted.length ? o.posted : ['Not posted'], count: o.status === 'filled' ? '1 hired' : String(n),
+        days: o.status === 'draft' ? '—' : (o.status === 'filled' ? o.days + ' to fill' : String(o.days)),
+        status: p[0],
+        pill: 'display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:2px;font-size:10.5px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;white-space:nowrap;background:' + p[1] + ';color:' + p[2],
+        dot: 'display:inline-block;width:8px;height:8px;border-radius:50%;box-sizing:border-box;' + p[3]
+      };
+    });
+
+    // ---------- Onboarding ----------
+    var OB = [
+      { name: 'Before day one', when: 'By Fri, Oct 23', items: [
+        ['offer', 'Offer letter signed', 'MW', 'Oct 2', true],
+        ['refs', 'References checked', 'MW', 'Oct 5', true],
+        ['team', 'Added to ArchiTrac with role and team', 'MW', 'Oct 6', true, 'Invite sent. Shows as Invited on the Team page.', 'Team.dc.html', 'Team'],
+        ['email', 'Create email and software accounts', 'BM', 'Oct 21', false],
+        ['laptop', 'Laptop, monitors and Revit license ready', 'BM', 'Oct 23', false],
+        ['desk', 'Desk set up, keys and alarm code', 'MW', 'Oct 23', false]
+      ] },
+      { name: 'First week', when: 'Oct 26 – 30', items: [
+        ['standards', 'Read office standards', 'TC', 'Oct 27', false, 'Sheet numbering, Revit setup checklist', 'Knowledge.dc.html', 'Knowledgebase'],
+        ['bep', 'BIM execution plan walkthrough', 'TC', 'Oct 28', false],
+        ['time', 'Timesheet training and first week logged', 'JR', 'Oct 30', false, 'Time goes to TC, then a principal', 'Time.dc.html', 'Time'],
+        ['lunch', 'Team lunch', 'BM', 'Oct 26', false]
+      ] },
+      { name: 'First 90 days', when: 'Through Jan 22', items: [
+        ['d30', '30-day check-in', 'TC', 'Nov 25', false],
+        ['d60', '60-day check-in', 'TC', 'Dec 23', false],
+        ['d90', '90-day review', 'BM', 'Jan 22', false, 'Confirms role and rate in Settings']
+      ] }
+    ];
+    var obDone = 0, obTotal = 0;
+    var obGroups = OB.map(function (g) {
+      var gd = 0;
+      var items = g.items.map(function (it) {
+        var done = st.ob[it[0]] ?? it[4];
+        if (done) { obDone++; gd++; } obTotal++;
+        var late = !done && (it[3] === 'Oct 21' || it[3] === 'Oct 23');
+        return {
+          text: it[1], owner: it[2], due: it[3], done: done, avatar: avatar(it[2], 24),
+          hasNote: !!it[5], note: it[5] || '', hasLink: !!it[6], href: it[6] || '#', linkLabel: it[7] || '',
+          dueColor: late ? '#9A3412' : '#4D4D4D',
+          textStyle: done ? 'color:#666666;text-decoration:line-through' : 'font-weight:500',
+          toggle: function () { var o = Object.assign({}, st.ob); o[it[0]] = !done; self.setState({ ob: o }); }
+        };
+      });
+      return { name: g.name, when: g.when, items: items, progress: gd + ' / ' + items.length };
+    });
+
+    // ---------- Header ----------
+    var activeN = live.filter(function (c) { return c.stage !== 'hired'; }).length;
+    var interviewN = live.filter(function (c) { return c.stage === 'interview' || c.stage === 'portfolio'; }).length;
+    var kpis = [
+      { label: 'Open positions', value: '2', note: 'Project Architect · Designer', color: '#141414', cursor: 'pointer', click: function () { self.setState({ tab: 'openings', drawer: null }); } },
+      { label: 'Active candidates', value: String(activeN), note: live.filter(function (c) { return c.stage === 'applied'; }).length + ' new applications to screen', color: '#141414', cursor: 'pointer', click: function () { self.setState({ tab: 'board', open: 'all' }); } },
+      { label: 'Interviewing', value: String(interviewN), note: 'Erin Walsh Thu · Ben Carver Tue', color: '#2F5BAA', cursor: 'default', click: function () {} },
+      { label: 'Starting soon', value: 'Oct 26', note: 'Noah Bennett · ' + obDone + ' of ' + obTotal + ' onboarding tasks done', color: '#141414', cursor: 'pointer', click: function () { self.setState({ tab: 'onboard', drawer: null }); } }
+    ];
+    var TABS = [['board', 'Candidates', activeN], ['openings', 'Openings', OPENINGS.length], ['onboard', 'Onboarding', '1']];
+    var tabs = TABS.map(function (t) {
+      var on = st.tab === t[0];
+      return {
+        label: t[1], count: t[2], on: on, pick: function () { self.setState({ tab: t[0], drawer: null }); },
+        style: 'display:inline-flex;align-items:center;height:50px;padding:0 12px;border:0;background:transparent;cursor:pointer;white-space:nowrap;text-transform:uppercase;letter-spacing:0.07em;font-size:12.5px;font-weight:' + (on ? '700' : '500') + ';color:' + (on ? '#141414' : '#4D4D4D') + ';box-shadow:' + (on ? 'inset 0 -3px 0 #141414' : 'none')
+      };
+    });
+
+    return {
+      modules: RAIL(modules), railMin: RAILV.railMin, railMax: RAILV.railMax, railChev: RAILV.railChev, railToggleLabel: RAILV.railToggleLabel, railToggle: RAILV.railToggle, railNavStyle: RAILV.railNavStyle, railLogoStyle: RAILV.railLogoStyle, railToggleStyle: RAILV.railToggleStyle, kpis: kpis, tabs: tabs,
+      tabBoard: st.tab === 'board', tabOpenings: st.tab === 'openings', tabOnboard: st.tab === 'onboard',
+      board: board, openFilters: openFilters,
+      hasRejected: rejectedN > 0, rejectedText: rejectedN + ' declined · a polite email was sent',
+      drawerOpen: !!cd, cd: cd || { rows: [], files: [], scores: [], notes: [] }, closeDrawer: function () { self.setState({ drawer: null }); },
+      openings: openings,
+      obGroups: obGroups, obDone: obDone, obTotal: obTotal,
+      obLabel: obDone + ' of ' + obTotal + ' onboarding tasks done',
+      obBar: 'display:block;height:100%;width:' + Math.round(obDone / obTotal * 100) + '%;background:#1D6234'
+    };
+  }
+}
+</script>
+</body>
+</html>

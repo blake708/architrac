@@ -1,0 +1,770 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ArchiTrac — Settings</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=Barlow:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F2F2F2}
+a{color:#141414}a:hover{color:#000000}
+button{font:inherit;color:inherit}
+h1,h2,h3,th,.cap{text-transform:uppercase;letter-spacing:0.08em}
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.fld{display:flex;flex-direction:column;gap:6px}
+.lbl{font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:#4D4D4D}
+.inp{height:38px;box-sizing:border-box;padding:0 10px;border:1px solid #D4D4D4;border-radius:2px;background:#FFFFFF;font:inherit;color:#141414}
+.hint{font-size:12.5px;color:#666666}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; font-family: 'Barlow', system-ui, sans-serif; font-size: 14px; color: #141414; background: #F2F2F2">
+
+<nav aria-label="Main menu" style="{{railNavStyle}}">
+<a href="Home.dc.html" aria-label="ArchiTrac home" style="{{railLogoStyle}}">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 26px"><path d="M3 20h18"></path><path d="M5 20V9l7-5 7 5v11"></path><path d="M9 20v-6h6v6"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span style="font-size: 13px; font-weight: 700; letter-spacing: 0.16em">ARCHITRAC</span></sc-if>
+</a>
+<sc-for list="{{modules}}" as="m" hint-placeholder-count="15">
+<sc-if value="{{m.isLabel}}" hint-placeholder-val="{{ false }}">
+<span style="{{m.labelStyle}}">{{m.labelText}}</span>
+</sc-if>
+<sc-if value="{{m.isLink}}" hint-placeholder-val="{{ true }}">
+<a href="{{m.href}}" aria-current="{{m.current}}" aria-label="{{m.label}}" title="{{m.label}}" style="{{m.rowStyle}}">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 20px"><path d="{{m.icon}}"></path></svg>
+<sc-if value="{{m.showLabel}}" hint-placeholder-val="{{ true }}"><span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{m.label}}</span></sc-if>
+<sc-if value="{{m.addon}}" hint-placeholder-val="{{ false }}"><span style="{{m.addStyle}}">{{m.addText}}</span></sc-if>
+</a>
+</sc-if>
+</sc-for>
+<button type="button" onClick="{{railToggle}}" aria-label="{{railToggleLabel}}" title="{{railToggleLabel}}" style="{{railToggleStyle}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 18px; transform: rotate({{railChev}}deg)"><path d="M4 4v16"></path><path d="M15 7l-5 5 5 5"></path><path d="M10 12h10"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span>Collapse menu</span></sc-if>
+</button>
+</nav>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 10px 32px; background: #141414; color: #F2F2F2">
+<button type="button" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px 0 4px; border: 1px solid #3A3A3A; border-radius: 2px; background: transparent; color: #F2F2F2; cursor: pointer">
+<span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; background: #F2F2F2; color: #141414; font-size: 12px; font-weight: 700">F</span>
+<span style="font-weight: 600">[FIRM NAME]</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+<span class="cap" style="color: #F2F2F2; font-weight: 500">Settings</span>
+<div style="margin-left: auto; display: flex; align-items: center; gap: 12px">
+<a href="Settings.dc.html" aria-label="Settings" aria-current="page" title="Settings" style="width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 2px; background: #2A2A2A; color: #FFFFFF; box-shadow: inset 0 -2px 0 #FFFFFF">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg>
+</a>
+<span title="You" style="width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #3A3A3A; color: #FFFFFF; font-size: 11px; font-weight: 600">BM</span>
+</div>
+</header>
+
+<div style="background: #FFFFFF; border-bottom: 1px solid #DCDCDC">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px; padding: 32px 32px 28px">
+<div style="flex: 1 1 380px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">{{section.group}} · FIRM ADMINS ONLY</div>
+<h1 style="margin: 10px 0 0; font-size: 30px; line-height: 1.15; font-weight: 500">{{section.title}}</h1>
+<p style="margin: 10px 0 0; max-width: 680px; line-height: 1.5; color: #4D4D4D">{{section.desc}}</p>
+</div>
+<div style="display: flex; align-items: center; gap: 10px">
+<sc-if value="{{dirty}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12.5px; color: #9A3412">Unsaved changes</span></sc-if>
+<sc-if value="{{saved}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: #1D6234"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"></path></svg>Saved</span></sc-if>
+<button type="button" onClick="{{save}}" style="{{saveStyle}}">Save changes</button>
+</div>
+</div>
+</div>
+
+<div style="flex: 1; display: flex; flex-wrap: wrap; align-items: flex-start">
+
+<nav aria-label="Settings sections" style="flex: 1 1 220px; max-width: 260px; min-width: 0; padding: 28px 0 28px 32px">
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="4">
+<div style="margin-bottom: 22px">
+<div class="cap" style="padding: 0 0 8px; font-size: 11px; font-weight: 600; color: #666666">{{g.name}}</div>
+<ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{g.items}}" as="r" hint-placeholder-count="2">
+<li><button type="button" aria-current="{{r.current}}" onClick="{{r.pick}}" style="{{r.style}}">{{r.label}}</button></li>
+</sc-for>
+</ul>
+</div>
+</sc-for>
+</nav>
+
+<main style="flex: 999 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 20px; padding: 28px 32px 32px">
+
+<sc-if value="{{is.firm}}" hint-placeholder-val="{{ true }}">
+<section aria-label="Firm profile" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 22px 24px 24px">
+<div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+<div style="display: flex; flex-direction: column; align-items: center; gap: 10px">
+<span aria-hidden="true" style="width: 120px; height: 120px; display: flex; align-items: center; justify-content: center; border: 1px dashed #AFAFAF; border-radius: 2px; background: repeating-linear-gradient(135deg, #F5F5F5 0 8px, #FFFFFF 8px 10px); font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">LOGO</span>
+<button type="button" style="height: 32px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer">Upload logo</button>
+</div>
+<div style="flex: 1 1 420px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px 20px">
+<sc-for list="{{firmFields}}" as="f" hint-placeholder-count="8">
+<label class="fld"><span class="lbl">{{f.label}}</span><input class="inp" value="{{f.value}}" onInput="{{f.set}}"><span class="hint">{{f.hint}}</span></label>
+</sc-for>
+</div>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{is.templates}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<section aria-label="Document types" style="flex: 1 1 260px; max-width: 320px; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<h2 style="margin: 0; padding: 14px 18px 10px; font-size: 13px; font-weight: 600; border-bottom: 1px solid #EBEBEB">Templates</h2>
+<ul style="list-style: none; margin: 0; padding: 6px 0">
+<sc-for list="{{templates}}" as="t" hint-placeholder-count="6">
+<li><button type="button" onClick="{{t.pick}}" aria-current="{{t.current}}" style="{{t.style}}"><span style="font-weight: 500">{{t.name}}</span><span style="font-size: 12px; color: #666666">{{t.note}}</span></button></li>
+</sc-for>
+</ul>
+</section>
+<section aria-label="Template preview" style="flex: 999 1 460px; min-width: 0; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+<span class="cap" style="font-size: 12px; font-weight: 600">{{tpl.name}}</span>
+<span style="font-size: 12.5px; color: #666666">Fields in [brackets] fill in from the project and contacts.</span>
+<button type="button" style="margin-left: auto; height: 32px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer">Upload Word template</button>
+</div>
+<div style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 40px 48px 44px; box-shadow: 0 2px 6px rgba(20, 20, 20, 0.06)">
+<div style="display: flex; align-items: flex-start; gap: 16px; padding-bottom: 14px; border-bottom: 2px solid #141414">
+<span aria-hidden="true" style="width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #141414; font-family: 'IBM Plex Mono', monospace; font-size: 11px">LOGO</span>
+<span style="display: flex; flex-direction: column"><span style="font-weight: 700; letter-spacing: 0.1em">[FIRM NAME]</span><span style="font-size: 12px; color: #4D4D4D">{{letterhead}}</span></span>
+<span class="cap" style="margin-left: auto; font-size: 13px; font-weight: 700">{{tpl.heading}}</span>
+</div>
+<dl style="display: grid; grid-template-columns: 120px minmax(0, 1fr); gap: 6px 12px; margin: 18px 0; font-size: 13px">
+<sc-for list="{{tpl.meta}}" as="m" hint-placeholder-count="4">
+<dt class="cap" style="font-size: 11px; font-weight: 600; color: #4D4D4D; padding-top: 2px">{{m.k}}</dt><dd style="margin: 0">{{m.v}}</dd>
+</sc-for>
+</dl>
+<label class="fld"><span class="lbl">Default body text</span>
+<textarea rows="7" onInput="{{setTplBody}}" style="box-sizing: border-box; width: 100%; padding: 10px 12px; border: 1px solid #D4D4D4; border-radius: 2px; font: inherit; line-height: 1.55; resize: vertical">{{tpl.body}}</textarea></label>
+</div>
+</section>
+</div>
+</sc-if>
+
+<sc-if value="{{is.phases}}" hint-placeholder-val="{{ false }}">
+<section aria-label="Default phases" style="max-width: 960px; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding: 16px 20px 12px">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600">Default phases &amp; fee split</h2>
+<span style="font-size: 12.5px; color: #666666">New projects and proposals start with these. Each can be changed per project.</span>
+</div>
+<table style="width: 100%; min-width: 720px; border-collapse: collapse">
+<thead>
+<tr style="text-align: left; font-size: 11px; color: #666666; background: #FAFAFA">
+<th scope="col" style="padding: 9px 20px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Phase</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Abbrev.</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">% of fee</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Share</th>
+<th scope="col" style="padding: 9px 20px 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Checklist items</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{phases}}" as="p" hint-placeholder-count="7">
+<tr>
+<td style="padding: 10px 20px; border-bottom: 1px solid #EBEBEB; font-weight: 500">{{p.name}}</td>
+<td style="padding: 10px; border-bottom: 1px solid #EBEBEB; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{p.abbr}}</td>
+<td style="padding: 10px; border-bottom: 1px solid #EBEBEB; text-align: right">
+<label style="display: inline-flex; align-items: center; gap: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{p.name}} percent of fee</span><input type="number" min="0" max="100" step="1" value="{{p.pct}}" onChange="{{p.set}}" style="width: 60px; height: 32px; box-sizing: border-box; padding: 0 8px; border: 1px solid #D4D4D4; border-radius: 2px; text-align: right; font: inherit">%</label>
+</td>
+<td style="padding: 10px; border-bottom: 1px solid #EBEBEB"><span aria-hidden="true" style="display: block; width: 180px; height: 8px; border-radius: 1px; background: #EBEBEB; overflow: hidden"><span style="{{p.bar}}"></span></span></td>
+<td style="padding: 10px 20px 10px 10px; border-bottom: 1px solid #EBEBEB; text-align: right"><button type="button" style="padding: 0; border: 0; background: transparent; cursor: pointer; font-weight: 500; text-decoration: underline; text-underline-offset: 2px">{{p.checklist}} items</button></td>
+</tr>
+</sc-for>
+<tr style="font-weight: 600">
+<td style="padding: 12px 20px" colspan="2">Total</td>
+<td style="padding: 12px 10px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 13px; color: {{phaseTotalColor}}">{{phaseTotal}}%</td>
+<td style="padding: 12px 10px; font-size: 13px; color: {{phaseTotalColor}}">{{phaseTotalNote}}</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</section>
+</sc-if>
+
+<sc-if value="{{is.rates}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 16px; max-width: 1040px">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<sc-for list="{{rateKpis}}" as="k" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 16px 20px 18px; border-right: 1px solid #EBEBEB">
+<span class="lbl">{{k.label}}</span>
+<span style="font-size: 22px; font-weight: 500; font-variant-numeric: tabular-nums">{{k.value}}</span>
+<span class="hint">{{k.note}}</span>
+</div>
+</sc-for>
+</div>
+<section aria-labelledby="rates-title" style="max-width: 1040px; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding: 16px 20px 12px">
+<h2 id="rates-title" style="margin: 0; font-size: 13px; font-weight: 600">Roles &amp; hourly rates</h2>
+<span style="font-size: 12.5px; color: #666666">Bill rate is what clients pay on hourly work. Cost rate is salary plus burden, used for profit and P&amp;L. Changes apply to time logged from the effective date.</span>
+</div>
+<table style="width: 100%; min-width: 820px; border-collapse: collapse">
+<thead>
+<tr style="text-align: left; font-size: 11px; color: #666666; background: #FAFAFA">
+<th scope="col" style="padding: 9px 20px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Role</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">People</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Bill rate / h</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Cost rate / h</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Multiplier</th>
+<th scope="col" style="padding: 9px 20px 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Effective</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{rates}}" as="r" hint-placeholder-count="8">
+<tr>
+<td style="padding: 10px 20px; border-bottom: 1px solid #EBEBEB"><span style="display: flex; flex-direction: column"><span style="font-weight: 500">{{r.role}}</span><span style="font-size: 12px; color: #666666">{{r.note}}</span></span></td>
+<td style="padding: 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">{{r.count}}</td>
+<td style="padding: 10px; border-bottom: 1px solid #EBEBEB; text-align: right">
+<sc-if value="{{r.billable}}" hint-placeholder-val="{{ true }}">
+<label style="display: inline-flex; align-items: center; gap: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">$<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{r.role}} bill rate</span><input type="number" min="0" step="5" value="{{r.rate}}" onChange="{{r.setRate}}" style="width: 70px; height: 32px; box-sizing: border-box; padding: 0 8px; border: 1px solid #D4D4D4; border-radius: 2px; text-align: right; font: inherit"></label>
+</sc-if>
+<sc-if value="{{r.notBillable}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12.5px; color: #666666">Not billable</span></sc-if>
+</td>
+<td style="padding: 10px; border-bottom: 1px solid #EBEBEB; text-align: right">
+<label style="display: inline-flex; align-items: center; gap: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px">$<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{r.role}} cost rate</span><input type="number" min="0" step="1" value="{{r.cost}}" onChange="{{r.setCost}}" style="width: 70px; height: 32px; box-sizing: border-box; padding: 0 8px; border: 1px solid #D4D4D4; border-radius: 2px; text-align: right; font: inherit"></label>
+</td>
+<td style="padding: 10px; border-bottom: 1px solid #EBEBEB; text-align: right"><span style="{{r.multStyle}}">{{r.mult}}</span></td>
+<td style="padding: 10px 20px 10px 10px; border-bottom: 1px solid #EBEBEB; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; color: #4D4D4D">Jan 1, 2026</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 12px 20px 16px">
+<span style="font-size: 12.5px; color: #666666">Multipliers under 2.5× are flagged. Most firms target 2.8–3.2× on billable roles to cover overhead and profit. People are assigned a role on the <a href="Team.dc.html">Team</a> page.</span>
+<button type="button" style="margin-left: auto; height: 32px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer; font-weight: 500">+ Add role</button>
+</div>
+</section>
+<section aria-labelledby="oh-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 18px 20px 20px">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin-bottom: 14px">
+<h2 id="oh-title" style="margin: 0; font-size: 13px; font-weight: 600">Overhead rate</h2>
+<span style="font-size: 12.5px; color: #666666">The office costs that aren't billed to any project: rent, software, insurance, admin staff, marketing time. Used to show true profit on projects and in Reports.</span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 24px; align-items: flex-start">
+<div style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 14px">
+<label class="fld"><span class="lbl">Overhead rate</span>
+<span style="display: inline-flex; align-items: center; gap: 8px"><input type="number" min="0" max="300" step="1" value="{{oh.rate}}" onChange="{{oh.setRate}}" class="inp" style="width: 96px; text-align: right; font-family: 'IBM Plex Mono', monospace">
+<span style="font-family: 'IBM Plex Mono', monospace">% of labor cost</span></span>
+<span class="hint">For every $1 spent on project labor, the firm spends {{oh.perDollar}} on overhead.</span></label>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px">
+<div style="padding: 12px 14px; border-radius: 2px; background: #FAFAFA; border: 1px solid #EBEBEB"><span class="lbl">Breakeven multiplier</span><div style="margin-top: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 18px; font-weight: 600">{{oh.breakeven}}</div><span class="hint">Bill rate ÷ cost rate below this loses money</span></div>
+<div style="padding: 12px 14px; border-radius: 2px; background: #FAFAFA; border: 1px solid #EBEBEB"><span class="lbl">Example · Designer</span><div style="margin-top: 4px; font-family: 'IBM Plex Mono', monospace; font-size: 18px; font-weight: 600">{{oh.example}}</div><span class="hint">{{oh.exampleNote}}</span></div>
+</div>
+</div>
+<div style="flex: 1 1 320px; padding: 14px 16px; border-radius: 2px; border: 1px dashed #C4C4C4">
+<div class="lbl" style="margin-bottom: 10px">Work it out from last year</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px">
+<label class="fld"><span class="lbl" style="font-weight: 500; text-transform: none; letter-spacing: 0">Overhead expenses</span><input class="inp" value="{{oh.expText}}" onChange="{{oh.setExp}}" style="font-family: 'IBM Plex Mono', monospace"></label>
+<label class="fld"><span class="lbl" style="font-weight: 500; text-transform: none; letter-spacing: 0">Labor cost on projects</span><input class="inp" value="{{oh.laborText}}" onChange="{{oh.setLabor}}" style="font-family: 'IBM Plex Mono', monospace"></label>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-top: 12px">
+<span style="font-family: 'IBM Plex Mono', monospace">{{oh.expText}} ÷ {{oh.laborText}} = <strong>{{oh.calc}}%</strong></span>
+<button type="button" onClick="{{oh.useCalc}}" style="margin-left: auto; height: 32px; padding: 0 12px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-weight: 600">Use {{oh.calc}}%</button>
+</div>
+<p class="hint" style="margin: 10px 0 0">Your accountant's profit &amp; loss statement has both numbers. Count only time billed to projects as labor; admin and marketing time is overhead. With QuickBooks connected, ArchiTrac fills these in.</p>
+</div>
+</div>
+</section>
+</div>
+</sc-if>
+
+<sc-if value="{{is.time}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 16px; max-width: 960px">
+<section aria-label="Timesheet rules" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 20px 24px 24px">
+<h2 style="margin: 0 0 16px; font-size: 13px; font-weight: 600">Timesheets</h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px 20px">
+<label class="fld"><span class="lbl">Week starts</span><select class="inp"><option>Monday</option><option>Sunday</option></select></label>
+<label class="fld"><span class="lbl">Due</span><select class="inp"><option>Monday 9:00 AM (following week)</option><option>Friday 5:00 PM</option></select></label>
+<label class="fld"><span class="lbl">Smallest increment</span><select class="inp"><option>0.25 hour</option><option>0.5 hour</option><option>0.1 hour</option></select></label>
+<label class="fld"><span class="lbl">Reminder</span><select class="inp"><option>Friday 3:00 PM, then Monday 8:00 AM</option><option>Monday 8:00 AM only</option></select></label>
+</div>
+</section>
+<section aria-label="Timesheet phases and activities" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 20px 24px 24px">
+<h2 style="margin: 0 0 6px; font-size: 13px; font-weight: 600">Timesheet phases &amp; activities</h2>
+<p class="hint" style="margin: 0 0 18px">Every timesheet row needs a phase and an activity. Project phases come from each project's Phases &amp; fees. Overhead phases, their activities and leave types are set here, so they match how your firm works.</p>
+
+<div style="display: flex; flex-direction: column; gap: 8px; padding-bottom: 18px; border-bottom: 1px solid #EBEBEB">
+<div style="display: flex; align-items: baseline; gap: 10px"><span class="lbl">Project activities</span><span class="hint">Used on every project, in any phase</span></div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px">
+<sc-for list="{{tsProject.chips}}" as="c" hint-placeholder-count="12"><span style="display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 4px 0 10px; border: 1px solid #DCDCDC; border-radius: 2px; background: #FAFAFA; font-size: 13px">{{c.label}}<button type="button" onClick="{{c.remove}}" aria-label="{{c.aria}}" style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 2px; background: transparent; cursor: pointer; color: #8A8A8A"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></button></span></sc-for>
+<span style="display: inline-flex; align-items: center; gap: 4px"><label style="display: inline-flex"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{tsProject.addAria}}</span><input value="{{tsProject.draft}}" onInput="{{tsProject.setDraft}}" placeholder="{{tsProject.placeholder}}" style="width: 170px; height: 28px; box-sizing: border-box; padding: 0 8px; border: 1px dashed #AFAFAF; border-radius: 2px; font: inherit; font-size: 13px"></label><button type="button" onClick="{{tsProject.add}}" style="height: 28px; padding: 0 10px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-size: 12.5px; font-weight: 600">Add</button></span>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 18px 0; border-bottom: 1px solid #EBEBEB">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px"><span class="lbl">Overhead phases</span><span class="hint">Non-billable time. Each phase has its own activities, and the timesheet only shows the activities for the phase picked.</span></div>
+<sc-for list="{{tsOverhead}}" as="g" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: minmax(180px, 230px) minmax(0, 1fr) auto; align-items: start; gap: 12px; padding: 12px 14px; border: 1px solid #EBEBEB; border-radius: 2px; background: #FCFCFC">
+<label style="display: flex; flex-direction: column; gap: 4px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Overhead phase name</span><input value="{{g.name}}" onInput="{{g.rename}}" style="height: 32px; box-sizing: border-box; padding: 0 10px; border: 1px solid #D4D4D4; border-radius: 2px; font: inherit; font-weight: 600"><span class="hint">{{g.count}}</span></label>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px">
+<sc-for list="{{g.chips}}" as="c" hint-placeholder-count="3"><span style="display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 4px 0 10px; border: 1px solid #DCDCDC; border-radius: 2px; background: #FAFAFA; font-size: 13px">{{c.label}}<button type="button" onClick="{{c.remove}}" aria-label="{{c.aria}}" style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 2px; background: transparent; cursor: pointer; color: #8A8A8A"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></button></span></sc-for>
+<span style="display: inline-flex; align-items: center; gap: 4px"><label style="display: inline-flex"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{g.addAria}}</span><input value="{{g.draft}}" onInput="{{g.setDraft}}" placeholder="{{g.placeholder}}" style="width: 170px; height: 28px; box-sizing: border-box; padding: 0 8px; border: 1px dashed #AFAFAF; border-radius: 2px; font: inherit; font-size: 13px"></label><button type="button" onClick="{{g.add}}" style="height: 28px; padding: 0 10px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-size: 12.5px; font-weight: 600">Add</button></span>
+</div>
+<button type="button" onClick="{{g.removePhase}}" aria-label="{{g.removeAria}}" style="height: 30px; padding: 0 10px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer; font-size: 12.5px; color: #B42318">Remove</button>
+</div>
+</sc-for>
+<div style="display: flex; align-items: center; gap: 6px"><span style="display: inline-flex; align-items: center; gap: 4px"><label style="display: inline-flex"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{tsNewPhase.addAria}}</span><input value="{{tsNewPhase.draft}}" onInput="{{tsNewPhase.setDraft}}" placeholder="{{tsNewPhase.placeholder}}" style="width: 170px; height: 28px; box-sizing: border-box; padding: 0 8px; border: 1px dashed #AFAFAF; border-radius: 2px; font: inherit; font-size: 13px"></label><button type="button" onClick="{{tsNewPhase.add}}" style="height: 28px; padding: 0 10px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-size: 12.5px; font-weight: 600">Add</button></span></div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px; padding-top: 18px">
+<div style="display: flex; align-items: baseline; gap: 10px"><span class="lbl">Leave types</span><span class="hint">Shown under PTO. Holidays are set by the firm calendar.</span></div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px">
+<sc-for list="{{tsLeave.chips}}" as="c" hint-placeholder-count="3"><span style="display: inline-flex; align-items: center; gap: 4px; height: 28px; padding: 0 4px 0 10px; border: 1px solid #DCDCDC; border-radius: 2px; background: #FAFAFA; font-size: 13px">{{c.label}}<button type="button" onClick="{{c.remove}}" aria-label="{{c.aria}}" style="width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 2px; background: transparent; cursor: pointer; color: #8A8A8A"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg></button></span></sc-for>
+<span style="display: inline-flex; align-items: center; gap: 4px"><label style="display: inline-flex"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">{{tsLeave.addAria}}</span><input value="{{tsLeave.draft}}" onInput="{{tsLeave.setDraft}}" placeholder="{{tsLeave.placeholder}}" style="width: 170px; height: 28px; box-sizing: border-box; padding: 0 8px; border: 1px dashed #AFAFAF; border-radius: 2px; font: inherit; font-size: 13px"></label><button type="button" onClick="{{tsLeave.add}}" style="height: 28px; padding: 0 10px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-size: 12.5px; font-weight: 600">Add</button></span>
+</div>
+</div>
+</section>
+<section aria-label="Approval route" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 20px 24px 24px">
+<h2 style="margin: 0 0 6px; font-size: 13px; font-weight: 600">Approval route</h2>
+<p class="hint" style="margin: 0 0 16px">Team leaders come from each person's team on the Team page.</p>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 16px; font-size: 13px">
+<span style="padding: 6px 12px; border-radius: 2px; background: #EBEBEB">Submitted</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A8A8A" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+<span style="padding: 6px 12px; border-radius: 2px; background: #E4EBF8; color: #1E3F7A">Team leader</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A8A8A" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+<span style="padding: 6px 12px; border-radius: 2px; background: #E2F1E6; color: #1D6234">Principal</span>
+</div>
+<div style="display: flex; flex-direction: column; gap: 12px">
+<sc-for list="{{timeToggles}}" as="t" hint-placeholder-count="4">
+<label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer">
+<button type="button" role="switch" aria-checked="{{t.on}}" onClick="{{t.toggle}}" style="{{t.track}}"><span style="{{t.knob}}"></span></button>
+<span style="display: flex; flex-direction: column"><span style="font-weight: 500">{{t.label}}</span><span class="hint">{{t.note}}</span></span>
+</label>
+</sc-for>
+</div>
+</section>
+</div>
+</sc-if>
+
+<sc-if value="{{is.billing}}" hint-placeholder-val="{{ false }}">
+<section aria-label="Billing and invoices" style="max-width: 960px; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 20px 24px 24px">
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px 20px">
+<sc-for list="{{billFields}}" as="f" hint-placeholder-count="8">
+<label class="fld"><span class="lbl">{{f.label}}</span><input class="inp" value="{{f.value}}" onInput="{{f.set}}"><span class="hint">{{f.hint}}</span></label>
+</sc-for>
+</div>
+<div style="margin-top: 20px; padding: 14px 16px; border-radius: 2px; background: #FAFAFA; border: 1px solid #EBEBEB">
+<span class="lbl">Next invoice number</span>
+<div style="margin-top: 6px; font-family: 'IBM Plex Mono', monospace; font-size: 18px; font-weight: 600">{{nextInvoice}}</div>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{is.integrations}}" hint-placeholder-val="{{ false }}">
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px">
+<sc-for list="{{integrations}}" as="i" hint-placeholder-count="6">
+<section aria-label="{{i.name}}" style="display: flex; flex-direction: column; gap: 10px; padding: 18px 20px; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<div style="display: flex; align-items: center; gap: 12px">
+<span aria-hidden="true" style="width: 40px; height: 40px; display: inline-flex; align-items: center; justify-content: center; border-radius: 2px; background: #EBEBEB; font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600">{{i.mono}}</span>
+<span style="display: flex; flex-direction: column"><span style="font-weight: 600">{{i.name}}</span><span class="hint">{{i.kind}}</span></span>
+</div>
+<p style="margin: 0; line-height: 1.5; color: #3A3A3A">{{i.desc}}</p>
+<div style="display: flex; align-items: center; gap: 10px; margin-top: auto">
+<span style="{{i.pill}}"><span aria-hidden="true" style="{{i.dot}}"></span>{{i.status}}</span>
+<button type="button" onClick="{{i.toggle}}" style="{{i.btnStyle}}">{{i.btn}}</button>
+</div>
+</section>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{is.modules}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 16px; max-width: 1040px">
+<section aria-label="Plan" style="display: flex; flex-wrap: wrap; align-items: center; gap: 20px; padding: 20px 24px; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<span style="display: flex; flex-direction: column; gap: 4px"><span class="lbl">Plan</span><span style="font-size: 20px; font-weight: 600">ArchiTrac Core</span><span class="hint">Projects, Contacts, Team, Time, Reports · 14 seats</span></span>
+<span style="display: flex; flex-direction: column; gap: 4px"><span class="lbl">Modules on</span><span style="font-size: 20px; font-weight: 600">{{modulesOn}} of {{modulesTotal}}</span><span class="hint">Billed monthly per seat</span></span>
+<span style="display: flex; flex-direction: column; gap: 4px"><span class="lbl">Monthly total</span><span style="font-size: 20px; font-weight: 600">[Price]</span><span class="hint">Pricing not set yet</span></span>
+<button type="button" style="margin-left: auto; height: 36px; padding: 0 14px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer">Billing history</button>
+</section>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px">
+<sc-for list="{{moduleCards}}" as="m" hint-placeholder-count="7">
+<section aria-label="{{m.name}} module" style="display: flex; flex-direction: column; gap: 10px; padding: 18px 20px; background: #FFFFFF; border: 1px solid {{m.border}}; border-radius: 2px">
+<div style="display: flex; align-items: center; gap: 12px">
+<span aria-hidden="true" style="{{m.iconBox}}"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"><path d="{{m.icon}}"></path></svg></span>
+<span style="display: flex; flex-direction: column"><span class="cap" style="font-size: 13px; font-weight: 700">{{m.name}}</span><span class="hint">{{m.price}}</span></span>
+<button type="button" role="switch" aria-checked="{{m.on}}" aria-label="{{m.aria}}" onClick="{{m.toggle}}" style="{{m.track}}"><span style="{{m.knob}}"></span></button>
+</div>
+<p style="margin: 0; line-height: 1.5; color: #3A3A3A">{{m.desc}}</p>
+</section>
+</sc-for>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{is.security}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 16px; max-width: 960px">
+<section aria-label="Sign-in" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 20px 24px 24px">
+<h2 style="margin: 0 0 16px; font-size: 13px; font-weight: 600">Sign-in &amp; access</h2>
+<div style="display: flex; flex-direction: column; gap: 12px">
+<sc-for list="{{secToggles}}" as="t" hint-placeholder-count="4">
+<label style="display: flex; align-items: flex-start; gap: 12px; cursor: pointer">
+<button type="button" role="switch" aria-checked="{{t.on}}" onClick="{{t.toggle}}" style="{{t.track}}"><span style="{{t.knob}}"></span></button>
+<span style="display: flex; flex-direction: column"><span style="font-weight: 500">{{t.label}}</span><span class="hint">{{t.note}}</span></span>
+</label>
+</sc-for>
+</div>
+</section>
+<section aria-label="Your data" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 20px 24px 24px">
+<h2 style="margin: 0 0 6px; font-size: 13px; font-weight: 600">Your data</h2>
+<p class="hint" style="margin: 0 0 14px">Your firm owns its data. Export everything at any time, in formats other software can open.</p>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" style="height: 36px; padding: 0 14px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-weight: 600">Export all data (CSV + files)</button>
+<button type="button" style="height: 36px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer">View audit log</button>
+</div>
+</section>
+</div>
+</sc-if>
+
+</main>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1200}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var st = Object.assign({ sec: 'firm', edits: {}, tpl: 'letter', tplBody: {}, phasePct: {}, rateEdits: {}, toggles: {}, mods: {}, conn: {}, ts: null, tsDraft: {}, dirty: false, saved: false }, this.state || {});
+    function edit(patch) { self.setState(Object.assign({ dirty: true, saved: false }, patch)); }
+
+    // ---------- Module bar ----------
+    var ICONS = {
+      home: 'M3 11l9-7 9 7M5 10v10h14V10',
+      projects: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+      contacts: 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M21 19v-1a4 4 0 0 0-3-3.9M15 3.2a3.5 3.5 0 0 1 0 6.6',
+      team: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1',
+      workload: 'M4 5h9M4 10h15M4 15h12M4 20h6',
+      time: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7v5l3 2',
+      reports: 'M3 21h18M6 21V11M11 21V5M16 21v-7M21 21v-4',
+      schedule: 'M4 4v16M4 6h7M7 10h8M10 14h7M8 18h5',
+      build: 'M3 18h18M5 18v-3a7 7 0 0 1 14 0v3M12 8V5M9 11V8.7M15 11V8.7',
+      accounting: 'M12 3v18M16 7.5c-.5-1.5-2-2.5-4-2.5-2.2 0-4 1.3-4 3s1.8 2.6 4 3 4 1.3 4 3-1.8 3-4 3c-2 0-3.5-1-4-2.5',
+      marketing: 'M3 10v4h4l6 4V6L7 10zM17 9a4 4 0 0 1 0 6M19.5 6.5a7.5 7.5 0 0 1 0 11',
+      knowledge: 'M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2zM22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z',
+      website: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M3 12h18M12 3c2.5 2.5 3.8 5.6 3.8 9s-1.3 6.5-3.8 9M12 3c-2.5 2.5-3.8 5.6-3.8 9s1.3 6.5 3.8 9',
+      hiring: 'M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 7h18v12H3zM3 12h18',
+      code: 'M4 4h16v16H4zM4 10h16M10 10v10'
+    };
+
+    // ---------- Modules & plan (drives the module bar on this page) ----------
+    var MODS = [
+      { key: 'schedule', name: 'Schedule', on: true, href: 'Main.dc.html', desc: 'A Grid + Gantt schedule on every project, with hours per task. Powers Workload in the main menu.' },
+      { key: 'build', name: 'Build', on: true, href: 'Build.dc.html', desc: 'Construction administration: RFIs, submittals, field reports and pay applications.' },
+      { key: 'workload', name: 'Workload', on: true, href: 'Workload.dc.html', desc: 'See who is busy across every project, from the hours planned in each project schedule. Add tentative work from the pipeline to test new projects. Uses Schedule.' },
+      { key: 'accounting', name: 'Accounting', on: true, href: 'Accounting.dc.html', desc: 'Invoicing, billing runs, payables, receipts and QuickBooks sync.' },
+      { key: 'marketing', name: 'Marketing', on: true, href: 'Marketing.dc.html', desc: 'Pipeline, proposals with e-signature, and the project library.' },
+      { key: 'knowledge', name: 'Knowledge', on: true, href: 'Knowledge.dc.html', desc: 'Office standards, lessons learned, code and jurisdiction notes, and the details and product library.' },
+      { key: 'code', name: 'Code', on: false, href: '#', desc: 'Building code analysis per project: area, height, stories and occupant load.' },
+      { key: 'website', name: 'Website', on: true, href: 'Website.dc.html', desc: 'Publish your portfolio straight from the project library.' },
+      { key: 'hiring', name: 'Hiring', on: true, href: 'Hiring.dc.html', desc: 'Job postings, candidates and interview notes.' }
+    ];
+    function modOn(m) { return st.mods[m.key] ?? m.on; }
+    function sw(on) {
+      return {
+        track: 'position:relative;flex:0 0 40px;width:40px;height:22px;margin-left:auto;padding:0;border:0;border-radius:11px;cursor:pointer;transition:background 120ms;background:' + (on ? '#141414' : '#C4C4C4'),
+        knob: 'position:absolute;top:3px;width:16px;height:16px;border-radius:50%;background:#FFFFFF;transition:left 120ms;left:' + (on ? '21px' : '3px')
+      };
+    }
+
+    // ---------- Menu rail: wide with labels, or collapsed to icons (remembered per browser) ----------
+    var RAILMIN = (this.state && this.state.railMin != null) ? this.state.railMin : (function () { try { return window.localStorage.getItem('architrac.railMin') === '1'; } catch (e) { return false; } })();
+    function RAIL(list) {
+      return list.map(function (m) {
+        if (m.isLabel) return Object.assign({}, m, { labelText: RAILMIN ? '' : m.label,
+          labelStyle: RAILMIN ? 'display:block;height:1px;margin:10px 8px;background:#2A2A2A' : 'display:block;padding:16px 12px 6px;font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8A8A8A' });
+        var cur = !!m.current;
+        return Object.assign({}, m, {
+          showLabel: !RAILMIN, addText: RAILMIN ? '' : 'ADD',
+          addStyle: RAILMIN ? 'position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:#8A8A8A' : 'flex:0 0 auto;padding:1px 5px;border-radius:2px;background:#2A2A2A;color:#D9D9D9;font-size:9.5px;font-weight:600;letter-spacing:0.06em',
+          rowStyle: 'position:relative;display:flex;align-items:center;gap:12px;height:40px;box-sizing:border-box;border-radius:2px;text-decoration:none;white-space:nowrap;text-transform:uppercase;letter-spacing:0.08em;font-size:12px;'
+            + (RAILMIN ? 'width:44px;justify-content:center;padding:0;margin:0 auto;' : 'width:100%;padding:0 12px;')
+            + 'font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#8A8A8A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+        });
+      });
+    }
+    var RAILV = {
+      railMin: RAILMIN, railMax: !RAILMIN, railChev: RAILMIN ? 180 : 0,
+      railToggleLabel: RAILMIN ? 'Expand menu' : 'Collapse menu',
+      railToggle: function () { var v = !RAILMIN; try { window.localStorage.setItem('architrac.railMin', v ? '1' : '0'); } catch (e) {} self.setState({ railMin: v }); },
+      railNavStyle: 'flex:0 0 ' + (RAILMIN ? 64 : 216) + 'px;width:' + (RAILMIN ? 64 : 216) + 'px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;padding:14px ' + (RAILMIN ? '10px' : '12px') + ';background:#000000;color:#BDBDBD;transition:width 140ms, flex-basis 140ms',
+      railLogoStyle: 'display:flex;align-items:center;gap:10px;height:40px;margin-bottom:8px;color:#F2F2F2;text-decoration:none;' + (RAILMIN ? 'justify-content:center;' : 'padding:0 10px;'),
+      railToggleStyle: 'margin-top:auto;display:flex;align-items:center;gap:10px;height:38px;border:0;border-radius:2px;background:transparent;color:#8A8A8A;cursor:pointer;font-size:12px;font-weight:500;letter-spacing:0.04em;' + (RAILMIN ? 'justify-content:center;width:44px;margin-left:auto;margin-right:auto;' : 'width:100%;padding:0 12px;')
+    };
+    var core = [['Home', 'home', 'Home.dc.html'], ['Projects', 'projects', 'Projects.dc.html'], ['Contacts', 'contacts', 'Contacts.dc.html'], ['Team', 'team', 'Team.dc.html'], ['Time', 'time', 'Time.dc.html'], ['Reports', 'reports', 'Reports.dc.html']];
+    function railItem(label, key, href, addon) {
+      return {
+        isLabel: false, isLink: true, label: label, icon: ICONS[key], addon: addon, href: href || '#',
+        style: 'position:relative;flex:0 0 64px;height:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:2px;text-decoration:none;font-weight:500;color:' + (addon ? '#9A9A9A' : '#C4C4C4') + ';background:transparent;text-transform:uppercase;letter-spacing:0.06em;font-size:9.5px'
+      };
+    }
+    var modules = core.map(function (c) { return railItem(c[0], c[1], c[2], false); })
+      .concat([{ isLabel: true, isLink: false, label: 'Modules' }])
+      .concat(MODS.filter(function (m) { return m.key !== 'code' && m.key !== 'schedule'; }).map(function (m) { return railItem(m.name, m.key, m.href, !modOn(m)); }));
+    var moduleCards = MODS.map(function (m) {
+      var on = modOn(m), s = sw(on);
+      return {
+        name: m.name, desc: m.desc, icon: ICONS[m.key], on: on, track: s.track, knob: s.knob,
+        aria: (on ? 'Turn off ' : 'Turn on ') + m.name,
+        price: on ? 'On · [Price] per seat / month' : 'Off · [Price] per seat / month',
+        border: on ? '#141414' : '#DCDCDC',
+        iconBox: 'width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border-radius:2px;background:' + (on ? '#141414' : '#EBEBEB') + ';color:' + (on ? '#FFFFFF' : '#4D4D4D'),
+        toggle: function () { var m2 = Object.assign({}, st.mods); m2[m.key] = !on; edit({ mods: m2 }); }
+      };
+    });
+
+    // ---------- Sections ----------
+    var SECTIONS = {
+      firm: { group: 'FIRM', title: 'Firm profile', desc: 'Your firm\'s name, address and license details. These appear on letterhead, invoices, proposals and the client portal.' },
+      templates: { group: 'FIRM', title: 'Letterhead & templates', desc: 'The standard documents every project uses. Projects create documents from these, so everyone sends the same format.' },
+      phases: { group: 'WORK', title: 'Phases & fees', desc: 'The phases every new project starts with, how the fee splits across them, and each phase\'s checklist.' },
+      rates: { group: 'WORK', title: 'Roles & rates', desc: 'Each role\'s bill rate (what clients pay on hourly work) and cost rate (salary plus burden), plus the firm\'s overhead rate. Used by Time, Accounting, Reports and project profit.' },
+      time: { group: 'WORK', title: 'Time & approvals', desc: 'When timesheets are due, how hours are entered, and who approves them.' },
+      billing: { group: 'MONEY', title: 'Billing & invoices', desc: 'Defaults for invoices, payment terms, reminders and pass-through costs.' },
+      integrations: { group: 'MONEY', title: 'Integrations', desc: 'Connect ArchiTrac to your accounting, payments, email and calendar.' },
+      modules: { group: 'ACCOUNT', title: 'Modules & plan', desc: 'Turn modules on or off for the whole firm. A module that\'s off still shows in the menu with an Add prompt.' },
+      security: { group: 'ACCOUNT', title: 'Security & data', desc: 'How people sign in, and your firm\'s data.' }
+    };
+    var GROUPS = [['Firm', ['firm', 'templates']], ['Work', ['phases', 'rates', 'time']], ['Money', ['billing', 'integrations']], ['Account', ['modules', 'security']]];
+    var groups = GROUPS.map(function (g) {
+      return {
+        name: g[0], items: g[1].map(function (id) {
+          var on = st.sec === id;
+          return {
+            label: SECTIONS[id].title, current: on ? 'page' : null, pick: function () { self.setState({ sec: id }); },
+            style: 'display:block;width:100%;padding:9px 12px;border:0;border-radius:2px;text-align:left;cursor:pointer;font-size:14px;font-weight:' + (on ? '600' : '500') + ';background:' + (on ? '#FFFFFF' : 'transparent') + ';color:' + (on ? '#141414' : '#3A3A3A') + ';box-shadow:' + (on ? 'inset 3px 0 0 #141414, 0 1px 2px rgba(20,20,20,0.08)' : 'none')
+          };
+        })
+      };
+    });
+    var is = {}; Object.keys(SECTIONS).forEach(function (k) { is[k] = st.sec === k; });
+
+    function fields(list) {
+      return list.map(function (f) {
+        var v = st.edits[f[0]] ?? f[2];
+        return { label: f[1], value: v, hint: f[3] || '', set: function (e) { var ed = Object.assign({}, st.edits); ed[f[0]] = e.target.value; edit({ edits: ed }); } };
+      });
+    }
+
+    // ---------- Firm profile ----------
+    var firmFields = fields([
+      ['name', 'Firm name', '[Firm name]', 'Legal name for invoices and contracts'],
+      ['dba', 'Display name', '[Firm name]', 'Shown in the app and on letterhead'],
+      ['address', 'Address', '[Street address]', ''],
+      ['city', 'City, state, ZIP', '[City], SC [ZIP]', ''],
+      ['phone', 'Main phone', '[Phone]', ''],
+      ['web', 'Website', '[firm-domain].com', ''],
+      ['license', 'Firm license / COA number', '[License number]', 'Printed on drawings and proposals'],
+      ['tz', 'Time zone', 'Eastern (America/New_York)', 'Used for due dates and reminders'],
+      ['fy', 'Fiscal year starts', 'January', 'Used by Reports']
+    ]);
+    var letterhead = (st.edits.address ?? '[Street address]') + ' · ' + (st.edits.city ?? '[City], SC [ZIP]') + ' · ' + (st.edits.phone ?? '[Phone]');
+
+    // ---------- Templates ----------
+    var TPL = [
+      { id: 'letter', name: 'Letter', note: 'General correspondence', heading: 'Letter', meta: [['Date', '[Date]'], ['To', '[Recipient] · [Company]'], ['Project', '[Project number] · [Project name]'], ['Re', '[Subject]']], body: 'Dear [Recipient first name],\n\n[Body]\n\nPlease contact me with any questions.\n\nSincerely,\n[Sender name]\n[Sender title]' },
+      { id: 'agenda', name: 'Meeting agenda', note: 'Sent before a meeting', heading: 'Meeting agenda', meta: [['Date / time', '[Date] · [Time]'], ['Location', '[Location or video link]'], ['Project', '[Project number] · [Project name]'], ['Attendees', '[Attendees]']], body: '1. Introductions and purpose\n2. Schedule review\n3. Open items from last meeting\n4. Design review: [Topic]\n5. Decisions needed\n6. Next steps and next meeting' },
+      { id: 'minutes', name: 'Meeting minutes', note: 'Numbered per project', heading: 'Meeting minutes [No.]', meta: [['Date', '[Date]'], ['Project', '[Project number] · [Project name]'], ['Attendees', '[Attendees]'], ['Copy', '[Copy list]']], body: 'These minutes record our understanding of the discussion. Please send corrections within five business days or they will stand as written.\n\n[Item] · [Discussion] · [Action] · [Owner] · [Due]' },
+      { id: 'addendum', name: 'Addendum', note: 'Bidding changes', heading: 'Addendum [No.]', meta: [['Date', '[Date]'], ['Project', '[Project number] · [Project name]'], ['Bid date', '[Bid date]'], ['To', 'All plan holders']], body: 'This addendum forms part of the contract documents and modifies them as follows. Acknowledge receipt on the bid form.\n\n[Changes by sheet and specification section]' },
+      { id: 'cr', name: 'Construction revision', note: 'Changes during construction', heading: 'Construction revision [No.]', meta: [['Date', '[Date]'], ['Project', '[Project number] · [Project name]'], ['To', '[Contractor]'], ['Action', '[Proceed / Price and hold]']], body: '[Description of the change, referenced sheets and details]' },
+      { id: 'as', name: 'Additional services', note: 'Fee changes for added scope', heading: 'Notice of additional services [No.]', meta: [['Date', '[Date]'], ['Project', '[Project number] · [Project name]'], ['To', '[Client contact]'], ['Fee', '[Fixed fee or hourly not-to-exceed]']], body: 'The following services are outside our original agreement. With your approval we will proceed and bill as described.\n\n[Scope of additional services]\n\nApproved by: ____________________  Date: __________' }
+    ];
+    var curTpl = TPL.filter(function (t) { return t.id === st.tpl; })[0];
+    var templates = TPL.map(function (t) {
+      var on = t.id === st.tpl;
+      return {
+        name: t.name, note: t.note, current: on ? 'true' : null, pick: function () { self.setState({ tpl: t.id }); },
+        style: 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;padding:10px 18px;border:0;text-align:left;cursor:pointer;background:' + (on ? '#F5F5F5' : '#FFFFFF') + ';box-shadow:' + (on ? 'inset 3px 0 0 #141414' : 'none')
+      };
+    });
+    var tpl = { name: curTpl.name, heading: curTpl.heading, meta: curTpl.meta.map(function (m) { return { k: m[0], v: m[1] }; }), body: st.tplBody[curTpl.id] ?? curTpl.body };
+
+    // ---------- Phases ----------
+    var PH = [['Pre-Design', 'PD', 5, 6], ['Schematic Design', 'SD', 15, 8], ['Design Development', 'DD', 25, 6], ['Construction Documents', 'CD', 35, 12], ['Permitting', 'PRM', 5, 5], ['Construction Admin', 'CA', 15, 9], ['Close Out', 'CO', 0, 7]];
+    var phaseTotal = 0;
+    var phases = PH.map(function (p) {
+      var pct = st.phasePct[p[1]] ?? p[2];
+      phaseTotal += pct;
+      return {
+        name: p[0], abbr: p[1], pct: pct, checklist: p[3],
+        bar: 'display:block;height:100%;width:' + Math.min(100, pct / 40 * 100) + '%;background:#2F5BAA',
+        set: function (e) { var pp = Object.assign({}, st.phasePct); pp[p[1]] = Math.max(0, Math.min(100, Number(e.target.value) || 0)); edit({ phasePct: pp }); }
+      };
+    });
+
+
+    // ---------- Roles & rates ----------
+    var ROLES = [
+      { id: 'principal', role: 'Principal', rate: 185, cost: 95, note: 'Owners and partners', count: 1 },
+      { id: 'pm', role: 'Project manager', rate: 150, cost: 62, note: 'Runs projects and leads a team', count: 1 },
+      { id: 'pa', role: 'Project architect', rate: 145, cost: 58, note: 'Licensed, technical lead', count: 2 },
+      { id: 'designer', role: 'Designer', rate: 115, cost: 44, note: 'Production and design', count: 6 },
+      { id: 'interior', role: 'Interior designer', rate: 120, cost: 52, note: 'Finishes, FF&E', count: 1 },
+      { id: 'intern', role: 'Intern', rate: 75, cost: 24, note: 'Part-time', count: 1 },
+      { id: 'ops', role: 'Office manager', rate: 0, cost: 38, note: 'Overhead', count: 1 },
+      { id: 'books', role: 'Bookkeeper', rate: 0, cost: 40, note: 'Overhead · part-time', count: 1 }
+    ];
+    var multSum = 0, multN = 0, lowCount = 0, rateSum = 0, rateN = 0;
+    var rates = ROLES.map(function (r) {
+      var e = st.rateEdits[r.id] || {};
+      var v = { rate: e.rate != null ? e.rate : r.rate, cost: e.cost != null ? e.cost : r.cost };
+      var mult = v.rate && v.cost ? v.rate / v.cost : 0;
+      if (mult) { multSum += mult * r.count; multN += r.count; rateSum += v.rate * r.count; rateN += r.count; }
+      var low = mult && mult < 2.5;
+      if (low) lowCount++;
+      return {
+        role: r.role, note: r.note, count: r.count, rate: v.rate, cost: v.cost, billable: !!r.rate, notBillable: !r.rate,
+        mult: mult ? mult.toFixed(2) + '×' : '—',
+        multStyle: 'display:inline-flex;align-items:center;height:24px;padding:0 8px;border-radius:2px;font-family:IBM Plex Mono,monospace;font-size:12.5px;font-weight:600;background:' + (low ? '#FCE7DF' : (mult ? '#E2F1E6' : 'transparent')) + ';color:' + (low ? '#9A3412' : (mult ? '#1D6234' : '#666666')),
+        setRate: function (ev) { var ed = Object.assign({}, st.rateEdits); ed[r.id] = Object.assign({}, ed[r.id], { rate: Number(ev.target.value) || 0 }); edit({ rateEdits: ed }); },
+        setCost: function (ev) { var ed = Object.assign({}, st.rateEdits); ed[r.id] = Object.assign({}, ed[r.id], { cost: Number(ev.target.value) || 0 }); edit({ rateEdits: ed }); }
+      };
+    });
+
+    // ---------- Overhead ----------
+    function money(v) { return '$' + Math.round(v).toLocaleString('en-US'); }
+    var ohRate = st.ohRate != null ? st.ohRate : 60;
+    var ohExp = st.ohExp != null ? st.ohExp : 612000, ohLabor = st.ohLabor != null ? st.ohLabor : 1020000;
+    var ohCalc = ohLabor ? Math.round(ohExp / ohLabor * 100) : 0;
+    function num(v) { return Number(String(v).replace(/[^0-9.]/g, '')) || 0; }
+    var dCost = (st.rateEdits.designer && st.rateEdits.designer.cost != null) ? st.rateEdits.designer.cost : 44;
+    var oh = {
+      rate: ohRate, perDollar: '$' + (ohRate / 100).toFixed(2),
+      breakeven: (1 + ohRate / 100).toFixed(2) + '×',
+      example: '$' + (dCost * (1 + ohRate / 100)).toFixed(2) + ' / h',
+      exampleNote: '$' + dCost + ' labor + $' + (dCost * ohRate / 100).toFixed(2) + ' overhead = true cost of an hour',
+      expText: money(ohExp), laborText: money(ohLabor), calc: ohCalc,
+      setRate: function (e) { edit({ ohRate: Math.max(0, num(e.target.value)) }); },
+      setExp: function (e) { edit({ ohExp: num(e.target.value) }); },
+      setLabor: function (e) { edit({ ohLabor: num(e.target.value) }); },
+      useCalc: function () { edit({ ohRate: ohCalc }); }
+    };
+    var rateKpis = [
+      { label: 'Blended bill rate', value: '$' + Math.round(rateN ? rateSum / rateN : 0) + ' / h', note: 'Average across billable staff' },
+      { label: 'Avg. multiplier', value: (multN ? multSum / multN : 0).toFixed(2) + '×', note: 'Bill rate ÷ cost rate' },
+      { label: 'Roles flagged', value: String(lowCount), note: lowCount ? 'Multiplier under 2.5×' : 'All roles at 2.5× or higher' },
+      { label: 'Breakeven', value: (1 + ohRate / 100).toFixed(2) + '×', note: 'Covers labor + ' + ohRate + '% overhead, no profit' }
+    ];
+
+    // ---------- Toggles (time + security) ----------
+    function toggles(list) {
+      return list.map(function (t) {
+        var on = st.toggles[t[0]] ?? t[2], s = sw(on);
+        return { label: t[1], note: t[3], on: on, track: s.track.replace('margin-left:auto;', 'margin-top:2px;'), knob: s.knob, toggle: function () { var tg = Object.assign({}, st.toggles); tg[t[0]] = !on; edit({ toggles: tg }); } };
+      });
+    }
+
+    // ---------- Timesheet phases & activities (firm-editable) ----------
+    var TS = st.ts || {
+      project: ['Design', 'Drawings & production', 'Coordination', 'Meetings', 'Code & research', 'Specifications', 'Project management', 'QA/QC review', 'Permit & agency review', 'Site visit', 'Submittals & RFIs', 'Pay app review', 'Travel'],
+      overhead: [
+        { name: 'Marketing', acts: ['Proposals', 'Client development', 'Website & social', 'Interviews & presentations'] },
+        { name: 'Administration', acts: ['Admin & IT', 'Accounting & billing', 'Office management'] },
+        { name: 'Professional development', acts: ['Training & CE', 'Licensing exams', 'Conferences'] },
+        { name: 'Firm standards', acts: ['Standards & templates', 'Revit library', 'Knowledgebase'] }
+      ],
+      leave: ['Vacation', 'Sick', 'Personal']
+    };
+    function tsSave(next) { edit({ ts: next }); }
+    function clone() { return JSON.parse(JSON.stringify(TS)); }
+    function draftOf(k) { return st.tsDraft[k] || ''; }
+    function setDraftFn(k) { return function (e) { var d = Object.assign({}, st.tsDraft); d[k] = e.target.value; self.setState({ tsDraft: d }); }; }
+    function clearDraft(k) { var d = Object.assign({}, st.tsDraft); d[k] = ''; return d; }
+    function chipList(arr, onRemove, what) { return arr.map(function (lbl, i) { return { label: lbl, aria: 'Remove ' + lbl + (what ? ' from ' + what : ''), remove: function () { onRemove(i); } }; }); }
+    function simpleList(key, placeholder) {
+      return {
+        chips: chipList(TS[key], function (i) { var n = clone(); n[key].splice(i, 1); tsSave(n); }),
+        draft: draftOf(key), setDraft: setDraftFn(key), placeholder: placeholder, addAria: 'New ' + key + ' item',
+        add: function () { var v = draftOf(key).trim(); if (!v) return; var n = clone(); if (n[key].indexOf(v) < 0) n[key].push(v); edit({ ts: n, tsDraft: clearDraft(key) }); }
+      };
+    }
+    var tsProject = simpleList('project', 'New activity…');
+    var tsLeave = simpleList('leave', 'New leave type…');
+    var tsOverhead = TS.overhead.map(function (g, gi) {
+      var k = 'oh' + gi;
+      return {
+        name: g.name, count: g.acts.length + (g.acts.length === 1 ? ' activity' : ' activities'),
+        rename: function (e) { var n = clone(); n.overhead[gi].name = e.target.value; tsSave(n); },
+        chips: chipList(g.acts, function (i) { var n = clone(); n.overhead[gi].acts.splice(i, 1); tsSave(n); }, g.name),
+        draft: draftOf(k), setDraft: setDraftFn(k), placeholder: 'New activity…', addAria: 'New activity for ' + g.name,
+        add: function () { var v = draftOf(k).trim(); if (!v) return; var n = clone(); if (n.overhead[gi].acts.indexOf(v) < 0) n.overhead[gi].acts.push(v); edit({ ts: n, tsDraft: clearDraft(k) }); },
+        removePhase: function () { var n = clone(); n.overhead.splice(gi, 1); tsSave(n); }, removeAria: 'Remove overhead phase ' + g.name
+      };
+    });
+    var tsNewPhase = { draft: draftOf('newPhase'), setDraft: setDraftFn('newPhase'), placeholder: 'New overhead phase…', addAria: 'New overhead phase',
+      add: function () { var v = draftOf('newPhase').trim(); if (!v) return; var n = clone(); n.overhead.push({ name: v, acts: [] }); edit({ ts: n, tsDraft: clearDraft('newPhase') }); } };
+    var timeToggles = toggles([
+      ['leaderStep', 'Team leader reviews first', true, 'Then a principal gives final approval. Leaders\' own timesheets go straight to a principal.'],
+      ['lock', 'Lock time once approved', true, 'Approved hours can only be changed by a principal, with a note.'],
+      ['short', 'Warn when a week is under target', true, 'People see a warning before submitting fewer hours than their weekly target.'],
+      ['notes', 'Require a note on non-billable time', false, 'Helps explain overhead hours in utilization reports.']
+    ]);
+    var secToggles = toggles([
+      ['twofa', 'Require two-step sign-in', true, 'Everyone signs in with a code from an authenticator app.'],
+      ['sso', 'Sign in with Google or Microsoft', true, 'Uses your existing work accounts. New people need an invite either way.'],
+      ['client', 'Client portal', true, 'Clients log in to see their project, approve, sign and pay. Set what each client sees on the project\'s Client portal tab.'],
+      ['timeout', 'Sign out after 8 hours idle', true, '']
+    ]);
+
+    // ---------- Billing ----------
+    var billFields = fields([
+      ['prefix', 'Invoice number format', '{YYYY}-{###}', 'Example: 2026-128'],
+      ['terms', 'Payment terms', 'Net 30', ''],
+      ['remind', 'Reminders', '7 days late, then every 14 days', 'Sent to the billing contact'],
+      ['markup', 'Consultant markup', '1.10×', 'Applied to consultant bills passed through'],
+      ['reimb', 'Reimbursable markup', '1.10×', 'Printing, permit fees, mileage'],
+      ['cc', 'Card payment fee', '3%', 'Added when a client pays by card'],
+      ['retainer', 'Default retainer', '10% on signing', 'Applied to the first invoice'],
+      ['statements', 'Monthly statements', 'On the 1st', 'For clients with statements turned on'],
+      ['cutoff', 'Billing cutoff', 'Last day of the month', 'Used by the Ready to bill run']
+    ]);
+    var fmtv = st.edits.prefix ?? '{YYYY}-{###}';
+    var nextInvoice = fmtv.replace('{YYYY}', '2026').replace('{YY}', '26').replace('{###}', '128').replace('{##}', '28');
+
+    // ---------- Integrations ----------
+    var INT = [
+      { id: 'qbo', mono: 'QB', name: 'QuickBooks Online', kind: 'Accounting', desc: 'Invoices, payments and vendor bills sync to your books. Last sync 6 minutes ago.', on: true },
+      { id: 'stripe', mono: 'ST', name: 'Stripe', kind: 'Payments', desc: 'Clients pay invoices by card or bank transfer from the emailed link.', on: true },
+      { id: 'plaid', mono: 'PL', name: 'Bank feed (Plaid)', kind: 'Banking', desc: 'Matches deposits to client receipts automatically.', on: true },
+      { id: 'mail', mono: 'EM', name: 'Email sending', kind: 'Email', desc: 'Invoices, reminders and documents send from your firm\'s domain.', on: true },
+      { id: 'cal', mono: 'CA', name: 'Google / Microsoft calendar', kind: 'Calendar', desc: 'Milestones and meetings appear on each person\'s calendar.', on: false },
+      { id: 'drive', mono: 'FS', name: 'File storage', kind: 'Files', desc: 'Link project folders in Google Drive, OneDrive or Dropbox.', on: false }
+    ];
+    var integrations = INT.map(function (i) {
+      var on = st.conn[i.id] ?? i.on;
+      return {
+        mono: i.mono, name: i.name, kind: i.kind, desc: i.desc,
+        status: on ? 'Connected' : 'Not connected',
+        pill: 'display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:2px;font-size:10.5px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;background:' + (on ? '#E2F1E6' : '#EBEBEB') + ';color:' + (on ? '#1D6234' : '#4D4D4D'),
+        dot: 'display:inline-block;width:8px;height:8px;border-radius:50%;box-sizing:border-box;' + (on ? 'background:#1D6234' : 'box-shadow:inset 0 0 0 1.5px #6B6B6B'),
+        btn: on ? 'Disconnect' : 'Connect',
+        btnStyle: 'margin-left:auto;height:32px;padding:0 12px;border-radius:2px;cursor:pointer;font-weight:' + (on ? '500' : '600') + ';border:' + (on ? '1px solid #D4D4D4' : '0') + ';background:' + (on ? '#FFFFFF' : '#141414') + ';color:' + (on ? '#141414' : '#FFFFFF'),
+        toggle: function () { var c = Object.assign({}, st.conn); c[i.id] = !on; edit({ conn: c }); }
+      };
+    });
+
+    return {
+      modules: RAIL(modules), railMin: RAILV.railMin, railMax: RAILV.railMax, railChev: RAILV.railChev, railToggleLabel: RAILV.railToggleLabel, railToggle: RAILV.railToggle, railNavStyle: RAILV.railNavStyle, railLogoStyle: RAILV.railLogoStyle, railToggleStyle: RAILV.railToggleStyle, groups: groups, section: SECTIONS[st.sec], is: is,
+      dirty: st.dirty, saved: st.saved,
+      save: function () { if (st.dirty) self.setState({ dirty: false, saved: true }); },
+      saveStyle: 'height:38px;padding:0 16px;border:0;border-radius:2px;font-weight:600;cursor:' + (st.dirty ? 'pointer' : 'default') + ';background:' + (st.dirty ? '#141414' : '#C4C4C4') + ';color:#FFFFFF',
+      firmFields: firmFields, letterhead: letterhead,
+      templates: templates, tpl: tpl,
+      setTplBody: function (e) { var b = Object.assign({}, st.tplBody); b[curTpl.id] = e.target.value; edit({ tplBody: b }); },
+      phases: phases, phaseTotal: phaseTotal,
+      phaseTotalColor: phaseTotal === 100 ? '#1D6234' : '#9A3412',
+      phaseTotalNote: phaseTotal === 100 ? 'Adds up to the full fee' : (phaseTotal < 100 ? (100 - phaseTotal) + '% of the fee is unassigned' : (phaseTotal - 100) + '% over the full fee'),
+      rates: rates, rateKpis: rateKpis, oh: oh,
+      timeToggles: timeToggles, secToggles: secToggles,
+      tsProject: tsProject, tsLeave: tsLeave, tsOverhead: tsOverhead, tsNewPhase: tsNewPhase,
+      billFields: billFields, nextInvoice: nextInvoice,
+      integrations: integrations,
+      moduleCards: moduleCards, modulesOn: MODS.filter(modOn).length, modulesTotal: MODS.length
+    };
+  }
+}
+</script>
+</body>
+</html>

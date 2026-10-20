@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ArchiTrac — Marketing</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=Barlow:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F2F2F2}
+a{color:#141414}a:hover{color:#000000}
+button{font:inherit;color:inherit}
+h1,h2,h3,th,.cap{text-transform:uppercase;letter-spacing:0.08em}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; font-family: 'Barlow', system-ui, sans-serif; font-size: 14px; color: #141414; background: #F2F2F2">
+
+<nav aria-label="Main menu" style="{{railNavStyle}}">
+<a href="Home.dc.html" aria-label="ArchiTrac home" style="{{railLogoStyle}}">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 26px"><path d="M3 20h18"></path><path d="M5 20V9l7-5 7 5v11"></path><path d="M9 20v-6h6v6"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span style="font-size: 13px; font-weight: 700; letter-spacing: 0.16em">ARCHITRAC</span></sc-if>
+</a>
+<sc-for list="{{modules}}" as="m" hint-placeholder-count="15">
+<sc-if value="{{m.isLabel}}" hint-placeholder-val="{{ false }}">
+<span style="{{m.labelStyle}}">{{m.labelText}}</span>
+</sc-if>
+<sc-if value="{{m.isLink}}" hint-placeholder-val="{{ true }}">
+<a href="{{m.href}}" aria-current="{{m.current}}" aria-label="{{m.label}}" title="{{m.label}}" style="{{m.rowStyle}}">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 20px"><path d="{{m.icon}}"></path></svg>
+<sc-if value="{{m.showLabel}}" hint-placeholder-val="{{ true }}"><span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{m.label}}</span></sc-if>
+<sc-if value="{{m.addon}}" hint-placeholder-val="{{ false }}"><span style="{{m.addStyle}}">{{m.addText}}</span></sc-if>
+</a>
+</sc-if>
+</sc-for>
+<button type="button" onClick="{{railToggle}}" aria-label="{{railToggleLabel}}" title="{{railToggleLabel}}" style="{{railToggleStyle}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 18px; transform: rotate({{railChev}}deg)"><path d="M4 4v16"></path><path d="M15 7l-5 5 5 5"></path><path d="M10 12h10"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span>Collapse menu</span></sc-if>
+</button>
+</nav>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 10px 32px; background: #141414; color: #F2F2F2">
+<button type="button" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px 0 4px; border: 1px solid #3A3A3A; border-radius: 2px; background: transparent; color: #F2F2F2; cursor: pointer">
+<span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; background: #F2F2F2; color: #141414; font-size: 12px; font-weight: 700">F</span>
+<span style="font-weight: 600">[FIRM NAME]</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+<span class="cap" style="color: #F2F2F2; font-weight: 500">Marketing</span>
+<div style="margin-left: auto; display: flex; align-items: center; gap: 12px">
+<a href="Settings.dc.html" aria-label="Settings" title="Settings" style="width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 2px; color: #BDBDBD"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></a>
+<span title="You" style="width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #3A3A3A; color: #FFFFFF; font-size: 11px; font-weight: 600">BM</span>
+</div>
+</header>
+
+<div style="background: #FFFFFF; border-bottom: 1px solid #DCDCDC">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px; padding: 32px 32px 28px">
+<div style="flex: 1 1 380px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">PIPELINE · PROPOSALS · PROJECT LIBRARY</div>
+<h1 style="margin: 10px 0 0; font-size: 30px; line-height: 1.15; font-weight: 500">Marketing</h1>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" style="height: 38px; padding: 0 14px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer; font-weight: 500">New lead</button>
+<a href="Proposal.dc.html" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; height: 38px; padding: 0 16px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; font-weight: 600">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+New proposal
+</a>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); border-top: 1px solid #EBEBEB">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="5">
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 20px 32px 22px; border-right: 1px solid #EBEBEB">
+<span class="cap" style="font-size: 11px; font-weight: 500; color: #3A3A3A">{{k.label}}</span>
+<span style="font-size: 26px; line-height: 1.15; font-weight: 500; font-variant-numeric: tabular-nums">{{k.value}}</span>
+<span style="font-size: 12.5px; color: #666666">{{k.note}}</span>
+</div>
+</sc-for>
+</div>
+
+<div role="tablist" aria-label="Marketing sections" style="display: flex; gap: 6px; padding: 4px 22px 0; border-top: 1px solid #EBEBEB; overflow-x: auto">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+<button type="button" role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; color: #666666; margin-left: 8px">{{t.count}}</span></button>
+</sc-for>
+</div>
+</div>
+
+<main style="position: relative; flex: 1; display: flex; flex-direction: column; gap: 20px; padding: 28px 32px 32px">
+
+<sc-if value="{{tabPipe}}" hint-placeholder-val="{{ true }}">
+<section aria-label="Pipeline board" style="display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px">
+<span style="font-size: 12.5px; color: #666666">Drag a card to change its stage. Weighted value = fee × chance of winning at that stage.</span>
+</div>
+<div style="overflow-x: auto; padding-bottom: 4px">
+<div style="display: grid; grid-auto-flow: column; grid-auto-columns: minmax(210px, 1fr); gap: 12px; min-width: 1320px">
+<sc-for list="{{board}}" as="col" hint-placeholder-count="6">
+<div onDragOver="{{col.allow}}" onDrop="{{col.drop}}" style="display: flex; flex-direction: column; gap: 10px; min-height: 360px; padding: 12px 10px; border-radius: 2px; background: #E6E6E6">
+<div style="display: flex; flex-direction: column; gap: 2px; padding: 0 2px 6px; border-bottom: 2px solid {{col.rule}}">
+<span style="display: flex; align-items: center; gap: 8px"><span class="cap" style="font-size: 11px; font-weight: 700">{{col.name}}</span><span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #4D4D4D">{{col.count}}</span><span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: #4D4D4D">{{col.chance}}</span></span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #141414">{{col.fee}} <span style="color: #666666">· wtd {{col.weighted}}</span></span>
+</div>
+<sc-for list="{{col.cards}}" as="c" hint-placeholder-count="2">
+<button type="button" draggable="true" onDragStart="{{c.dragStart}}" onClick="{{c.open}}" style="{{c.style}}">
+<span style="font-weight: 600; line-height: 1.3">{{c.name}}</span>
+<span style="font-size: 12.5px; color: #666666">{{c.client}}</span>
+<span style="display: flex; align-items: center; gap: 8px; margin-top: 4px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600">{{c.fee}}</span>
+<span style="font-size: 12px; color: #666666">{{c.type}}</span>
+<span style="{{c.avatar}}">{{c.owner}}</span>
+</span>
+<span style="display: flex; align-items: center; gap: 6px; padding-top: 8px; margin-top: 2px; border-top: 1px solid #EBEBEB; font-size: 12.5px; color: #3A3A3A">
+<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+{{c.next}}
+</span>
+</button>
+</sc-for>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{tabProps}}" hint-placeholder-val="{{ false }}">
+<section aria-labelledby="props-title" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; padding: 16px 20px 12px">
+<h2 id="props-title" style="margin: 0; font-size: 13px; font-weight: 600">Proposals</h2>
+<span style="font-size: 12.5px; color: #666666">Sent for e-signature. A signed proposal becomes a project with its phases and fees already set up.</span>
+</div>
+<table style="width: 100%; min-width: 1000px; border-collapse: collapse">
+<thead>
+<tr style="text-align: left; font-size: 11px; color: #666666; background: #FAFAFA">
+<th scope="col" style="padding: 9px 20px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">No.</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Project / client</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Agreement</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; text-align: right; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Fee</th>
+<th scope="col" style="padding: 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Status</th>
+<th scope="col" style="padding: 9px 20px 9px 10px; font-weight: 500; border-top: 1px solid #DCDCDC; border-bottom: 1px solid #DCDCDC">Activity</th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{proposals}}" as="p" hint-placeholder-count="7">
+<tr style="background: {{p.bg}}">
+<td style="padding: 12px 20px; border-bottom: 1px solid #EBEBEB"><button type="button" onClick="{{p.open}}" style="padding: 0; border: 0; background: transparent; cursor: pointer; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600; text-decoration: underline; text-underline-offset: 2px">{{p.number}}</button></td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB"><span style="display: flex; flex-direction: column"><span style="font-weight: 500">{{p.name}}</span><span style="font-size: 12.5px; color: #666666">{{p.client}}</span></span></td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB; font-size: 13px">{{p.agreement}}</td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12.5px; font-weight: 600">{{p.fee}}</td>
+<td style="padding: 12px 10px; border-bottom: 1px solid #EBEBEB"><span style="{{p.pillStyle}}"><span aria-hidden="true" style="{{p.dotStyle}}"></span>{{p.status}}</span></td>
+<td style="padding: 12px 20px 12px 10px; border-bottom: 1px solid #EBEBEB; font-size: 13px; color: #3A3A3A">{{p.activity}}</td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</section>
+</sc-if>
+
+<sc-if value="{{tabLib}}" hint-placeholder-val="{{ false }}">
+<section aria-label="Project library" style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+<div role="group" aria-label="Project type" style="display: inline-flex; flex-wrap: wrap; gap: 2px; padding: 3px; border-radius: 2px; background: #E3E3E3">
+<sc-for list="{{typeFilters}}" as="f" hint-placeholder-count="6">
+<button type="button" aria-pressed="{{f.on}}" onClick="{{f.pick}}" style="{{f.style}}">{{f.label}}</button>
+</sc-for>
+</div>
+<label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer">
+<input type="checkbox" checked="{{readyOnly}}" onChange="{{toggleReady}}" style="width: 18px; height: 18px; margin: 0; accent-color: #141414">
+Ready to feature only
+</label>
+<span style="margin-left: auto; font-size: 12.5px; color: #666666">{{libSummary}}</span>
+<button type="button" aria-expanded="{{addOpen}}" onClick="{{toggleAdd}}" style="display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 14px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-weight: 600">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14"></path><path d="M5 12h14"></path></svg>
+Add project
+</button>
+</div>
+<sc-if value="{{addOpen}}" hint-placeholder-val="{{ false }}">
+<div style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; padding: 16px 20px">
+<div style="display: flex; align-items: baseline; gap: 10px; margin-bottom: 10px">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600">Mark a project for marketing</h2>
+<span style="font-size: 12.5px; color: #666666">Projects can also be marked from their own page.</span>
+</div>
+<sc-if value="{{hasUnmarked}}" hint-placeholder-val="{{ true }}">
+<ul style="list-style: none; margin: 0; padding: 0">
+<sc-for list="{{unmarkedList}}" as="u" hint-placeholder-count="3">
+<li style="display: flex; align-items: center; gap: 12px; padding: 10px 0; border-top: 1px solid #EBEBEB">
+<span style="display: flex; flex-direction: column"><span style="font-weight: 500">{{u.name}}</span><span style="font-size: 12.5px; color: #666666">{{u.meta}}</span></span>
+<button type="button" onClick="{{u.add}}" style="margin-left: auto; height: 32px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer; font-weight: 500">Add to library</button>
+</li>
+</sc-for>
+</ul>
+</sc-if>
+<sc-if value="{{noUnmarked}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0; color: #666666">Every project is already in the library.</p>
+</sc-if>
+</div>
+</sc-if>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px">
+<sc-for list="{{library}}" as="l" hint-placeholder-count="8">
+<button type="button" onClick="{{l.open}}" style="display: flex; flex-direction: column; padding: 0; border: 1px solid #DCDCDC; border-radius: 2px; background: #FFFFFF; text-align: left; cursor: pointer; overflow: hidden; box-shadow: {{l.ring}}">
+<span aria-hidden="true" style="{{l.photoStyle}}">
+<span style="{{l.photoLabelStyle}}">{{l.photoLabel}}</span>
+</span>
+<span style="display: flex; flex-direction: column; gap: 4px; padding: 14px 16px 16px">
+<span class="cap" style="font-size: 10.5px; font-weight: 600; color: #4D4D4D">{{l.type}} · {{l.year}}</span>
+<span style="font-size: 16px; font-weight: 600; line-height: 1.25">{{l.name}}</span>
+<span style="font-size: 12.5px; color: #666666">{{l.facts}}</span>
+<span style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px">
+<sc-for list="{{l.checks}}" as="c" hint-placeholder-count="3">
+<span style="{{c.style}}"><span aria-hidden="true">{{c.mark}}</span>{{c.label}}</span>
+</sc-for>
+</span>
+</span>
+</button>
+</sc-for>
+</div>
+<sc-if value="{{libEmpty}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0; color: #666666">No projects match these filters.</p>
+</sc-if>
+</section>
+</sc-if>
+
+<sc-if value="{{drawerOpen}}" hint-placeholder-val="{{ false }}">
+<aside aria-label="{{drawer.aria}}" style="position: absolute; top: 28px; right: 32px; z-index: 5; width: min(440px, calc(100% - 64px)); background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; box-shadow: 0 12px 32px rgba(20, 20, 20, 0.16), 0 2px 6px rgba(20, 20, 20, 0.08)">
+<div style="padding: 20px 22px 18px; border-bottom: 1px solid #EBEBEB">
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">{{drawer.kicker}}</span>
+<button type="button" onClick="{{closeDrawer}}" aria-label="Close details" style="margin-left: auto; width: 32px; height: 32px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 2px; background: transparent; cursor: pointer; color: #4D4D4D">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg>
+</button>
+</div>
+<h2 style="margin: 4px 0 6px; font-size: 17px; font-weight: 600">{{drawer.title}}</h2>
+<div style="color: #4D4D4D">{{drawer.sub}}</div>
+<sc-if value="{{drawer.hasPill}}" hint-placeholder-val="{{ false }}">
+<div style="margin-top: 12px"><span style="{{drawer.pillStyle}}"><span aria-hidden="true" style="{{drawer.dotStyle}}"></span>{{drawer.status}}</span></div>
+</sc-if>
+</div>
+<sc-if value="{{drawer.hasText}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 16px 22px 4px">
+<div class="cap" style="font-size: 11px; font-weight: 600; color: #4D4D4D; margin-bottom: 6px">{{drawer.textLabel}}</div>
+<p style="margin: 0; line-height: 1.55; color: #2A2A2A">{{drawer.text}}</p>
+</div>
+</sc-if>
+<dl style="margin: 0; padding: 12px 22px 4px">
+<sc-for list="{{drawer.rows}}" as="r" hint-placeholder-count="5">
+<div style="display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 12px; padding: 8px 0; border-bottom: 1px solid #EBEBEB">
+<dt class="cap" style="font-size: 11px; font-weight: 500; color: #666666; padding-top: 2px">{{r.label}}</dt>
+<dd style="margin: 0">{{r.value}}</dd>
+</div>
+</sc-for>
+</dl>
+<sc-if value="{{drawer.hasChannels}}" hint-placeholder-val="{{ false }}">
+<fieldset style="margin: 0; padding: 14px 22px 4px; border: 0">
+<legend class="cap" style="padding: 0 0 8px; font-size: 11px; font-weight: 600; color: #4D4D4D">Featured on</legend>
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px">
+<sc-for list="{{drawer.channels}}" as="ch" hint-placeholder-count="6">
+<label style="display: inline-flex; align-items: center; gap: 8px; cursor: pointer">
+<input type="checkbox" checked="{{ch.on}}" onChange="{{ch.toggle}}" style="width: 16px; height: 16px; margin: 0; accent-color: #141414">
+{{ch.label}}
+</label>
+</sc-for>
+</div>
+</fieldset>
+</sc-if>
+<div style="display: flex; flex-wrap: wrap; gap: 8px; padding: 18px 22px 22px">
+<button type="button" style="height: 36px; padding: 0 14px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-weight: 600">{{drawer.primary}}</button>
+<button type="button" style="height: 36px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer">{{drawer.secondary}}</button>
+</div>
+</aside>
+</sc-if>
+
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1240}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var st = Object.assign({ tab: 'pipe', moved: {}, drawer: null, type: 'All', ready: false, channels: {}, marked: {}, addOpen: false }, this.state || {});
+
+    // ---------- Module bar ----------
+    var ICONS = {
+      home: 'M3 11l9-7 9 7M5 10v10h14V10',
+      projects: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+      contacts: 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M21 19v-1a4 4 0 0 0-3-3.9M15 3.2a3.5 3.5 0 0 1 0 6.6',
+      team: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1',
+      workload: 'M4 5h9M4 10h15M4 15h12M4 20h6',
+      time: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7v5l3 2',
+      documents: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h6',
+      reports: 'M3 21h18M6 21V11M11 21V5M16 21v-7M21 21v-4',
+      schedule: 'M4 4v16M4 6h7M7 10h8M10 14h7M8 18h5',
+      build: 'M3 18h18M5 18v-3a7 7 0 0 1 14 0v3M12 8V5M9 11V8.7M15 11V8.7',
+      accounting: 'M12 3v18M16 7.5c-.5-1.5-2-2.5-4-2.5-2.2 0-4 1.3-4 3s1.8 2.6 4 3 4 1.3 4 3-1.8 3-4 3c-2 0-3.5-1-4-2.5',
+      marketing: 'M3 10v4h4l6 4V6L7 10zM17 9a4 4 0 0 1 0 6M19.5 6.5a7.5 7.5 0 0 1 0 11',
+      knowledge: 'M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2zM22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z',
+      website: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M3 12h18M12 3c2.5 2.5 3.8 5.6 3.8 9s-1.3 6.5-3.8 9M12 3c-2.5 2.5-3.8 5.6-3.8 9s1.3 6.5 3.8 9',
+      hiring: 'M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 7h18v12H3zM3 12h18'
+    };
+
+    // ---------- Menu rail: wide with labels, or collapsed to icons (remembered per browser) ----------
+    var RAILMIN = (this.state && this.state.railMin != null) ? this.state.railMin : (function () { try { return window.localStorage.getItem('architrac.railMin') === '1'; } catch (e) { return false; } })();
+    function RAIL(list) {
+      return list.map(function (m) {
+        if (m.isLabel) return Object.assign({}, m, { labelText: RAILMIN ? '' : m.label,
+          labelStyle: RAILMIN ? 'display:block;height:1px;margin:10px 8px;background:#2A2A2A' : 'display:block;padding:16px 12px 6px;font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8A8A8A' });
+        var cur = !!m.current;
+        return Object.assign({}, m, {
+          showLabel: !RAILMIN, addText: RAILMIN ? '' : 'ADD',
+          addStyle: RAILMIN ? 'position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:#8A8A8A' : 'flex:0 0 auto;padding:1px 5px;border-radius:2px;background:#2A2A2A;color:#D9D9D9;font-size:9.5px;font-weight:600;letter-spacing:0.06em',
+          rowStyle: 'position:relative;display:flex;align-items:center;gap:12px;height:40px;box-sizing:border-box;border-radius:2px;text-decoration:none;white-space:nowrap;text-transform:uppercase;letter-spacing:0.08em;font-size:12px;'
+            + (RAILMIN ? 'width:44px;justify-content:center;padding:0;margin:0 auto;' : 'width:100%;padding:0 12px;')
+            + 'font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#8A8A8A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+        });
+      });
+    }
+    var RAILV = {
+      railMin: RAILMIN, railMax: !RAILMIN, railChev: RAILMIN ? 180 : 0,
+      railToggleLabel: RAILMIN ? 'Expand menu' : 'Collapse menu',
+      railToggle: function () { var v = !RAILMIN; try { window.localStorage.setItem('architrac.railMin', v ? '1' : '0'); } catch (e) {} self.setState({ railMin: v }); },
+      railNavStyle: 'flex:0 0 ' + (RAILMIN ? 64 : 216) + 'px;width:' + (RAILMIN ? 64 : 216) + 'px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;padding:14px ' + (RAILMIN ? '10px' : '12px') + ';background:#000000;color:#BDBDBD;transition:width 140ms, flex-basis 140ms',
+      railLogoStyle: 'display:flex;align-items:center;gap:10px;height:40px;margin-bottom:8px;color:#F2F2F2;text-decoration:none;' + (RAILMIN ? 'justify-content:center;' : 'padding:0 10px;'),
+      railToggleStyle: 'margin-top:auto;display:flex;align-items:center;gap:10px;height:38px;border:0;border-radius:2px;background:transparent;color:#8A8A8A;cursor:pointer;font-size:12px;font-weight:500;letter-spacing:0.04em;' + (RAILMIN ? 'justify-content:center;width:44px;margin-left:auto;margin-right:auto;' : 'width:100%;padding:0 12px;')
+    };
+    var CURRENT = 'marketing';
+    var modules = [
+      { label: 'Home', key: 'home', href: 'Home.dc.html' }, { label: 'Projects', key: 'projects', href: 'Projects.dc.html' },
+      { label: 'Contacts', key: 'contacts', href: 'Contacts.dc.html' }, { label: 'Team', key: 'team', href: 'Team.dc.html' },
+      { label: 'Time', key: 'time', href: 'Time.dc.html' },
+      { label: 'Reports', key: 'reports', href: 'Reports.dc.html' },
+      { label: 'Modules', isLabel: true },
+      { label: 'Build', key: 'build', href: 'Build.dc.html' }, { label: 'Workload', key: 'workload', href: 'Workload.dc.html' },
+      { label: 'Accounting', key: 'accounting', href: 'Accounting.dc.html' }, { label: 'Marketing', key: 'marketing', href: 'Marketing.dc.html' },
+      { label: 'Knowledge', key: 'knowledge', href: 'Knowledge.dc.html' },
+      { label: 'Website', key: 'website', href: 'Website.dc.html' }, { label: 'Hiring', key: 'hiring', href: 'Hiring.dc.html' }
+    ].map(function (m) {
+      if (m.isLabel) return { isLabel: true, isLink: false, label: m.label };
+      var cur = m.key === CURRENT;
+      return {
+        isLabel: false, isLink: true, label: m.label, icon: ICONS[m.key], addon: !!m.addon,
+        href: m.href || '#', current: cur ? 'page' : null,
+        style: 'position:relative;flex:0 0 64px;height:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:2px;text-decoration:none;font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#9A9A9A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';text-transform:uppercase;letter-spacing:0.06em;font-size:9.5px;box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+      };
+    });
+
+    // ---------- Helpers ----------
+    function money(v) { return '$' + Math.round(v).toLocaleString('en-US'); }
+    function kfmt(v) { return '$' + Math.round(v / 1000) + 'k'; }
+    var PEOPLE = { BM: '#3A3A3A', JR: '#141414', KL: '#5C5C5C', AP: '#4D4D4D' };
+    function avatar(who, size) { return 'margin-left:auto;flex:0 0 ' + size + 'px;width:' + size + 'px;height:' + size + 'px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;color:#FFFFFF;background:' + (PEOPLE[who] || '#3A3A3A'); }
+    var PILL = {
+      waiting: ['#EBEBEB', '#4D4D4D', 'border-radius:50%;box-shadow:inset 0 0 0 1.5px #6B6B6B'],
+      underway: ['#E4EBF8', '#1E3F7A', 'border-radius:50%;background:linear-gradient(90deg,#1E3F7A 50%,transparent 50%);box-shadow:inset 0 0 0 1.5px #1E3F7A'],
+      strong: ['#E4EBF8', '#1E3F7A', 'border-radius:50%;background:#1E3F7A'],
+      done: ['#E2F1E6', '#1D6234', 'border-radius:50%;background:#1D6234'],
+      lost: ['#EBEBEB', '#4D4D4D', 'background:#8A8A8A'],
+      attention: ['#FCE7DF', '#9A3412', 'transform:rotate(45deg);background:#C2410C;width:7px;height:7px']
+    };
+    function pill(kind) {
+      var c = PILL[kind];
+      return { pillStyle: 'display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:2px;font-size:10.5px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;white-space:nowrap;background:' + c[0] + ';color:' + c[1], dotStyle: 'display:inline-block;flex:0 0 auto;width:8px;height:8px;box-sizing:border-box;' + c[2] };
+    }
+
+    // ---------- Pipeline (sample; matches the Reports summary) ----------
+    var STAGES = [
+      { id: 'lead', name: 'Lead', chance: 0.1, rule: '#C4C4C4' },
+      { id: 'draft', name: 'Proposal draft', chance: 0.3, rule: '#8A8A8A' },
+      { id: 'sent', name: 'Proposal sent', chance: 0.5, rule: '#6F8FCB' },
+      { id: 'neg', name: 'Negotiating', chance: 0.75, rule: '#1E3F7A' },
+      { id: 'won', name: 'Won', chance: 1, rule: '#1D6234' },
+      { id: 'lost', name: 'Lost', chance: 0, rule: '#4D4D4D' }
+    ];
+    function O(id, name, client, type, stage, fee, owner, next, extra) { return Object.assign({ id: id, name: name, client: client, type: type, stage: stage, fee: fee, owner: owner, next: next }, extra || {}); }
+    var opps = [
+      O('o1', 'Moncks Corner Retail Shell', '[Developer]', 'Retail', 'lead', 38000, 'BM', 'Site visit · Oct 28', { source: 'Referral from broker', sf: '9,600 SF', cost: '$1.4M est.', location: 'Moncks Corner, SC' }),
+      O('o2', 'Ladson Urgent Care', '[Health system]', 'Medical', 'lead', 52000, 'BM', 'Intro call · Oct 21', { source: 'Repeat client contact', sf: '6,500 SF', cost: '$1.9M est.', location: 'Ladson, SC' }),
+      O('o3', 'Lakeview Retail Center', 'Lakeview Development Co.', 'Retail', 'draft', 140000, 'BM', 'Finish fee breakdown · Oct 23', { source: 'RFQ shortlist', sf: '42,000 SF', cost: '$9.2M est.', location: '[City], SC', proposal: 'p8' }),
+      O('o4', 'Bayside Physical Therapy', 'Bayside PT', 'Medical', 'sent', 31000, 'JR', 'Follow up with owner · Oct 22', { source: 'Website inquiry', sf: '2,900 SF', cost: '$690k est.', location: '[City], SC', proposal: 'p9' }),
+      O('o5', 'Folly Road Taproom', '[Restaurant group]', 'Restaurant', 'sent', 46000, 'AP', 'Decision expected · Nov 1', { source: 'Contractor referral', sf: '5,400 SF', cost: '$1.3M est.', location: '[City], SC', proposal: 'p10' }),
+      O('o6', 'Harbor Pointe Medical Pavilion', 'Harbor Pointe Partners', 'Medical', 'neg', 210000, 'BM', 'Contract review with counsel', { source: 'Repeat client', sf: '38,000 SF', cost: '$12.4M est.', location: '[City], SC', proposal: 'p11' }),
+      O('o7', 'Riverside Retail Shell', 'Riverside Partners LLC', 'Retail', 'won', 64000, 'JR', 'Now project 2026-021', { source: 'Repeat client', sf: '18,500 SF', cost: '$3.9M est.', location: '[City], SC', proposal: 'p7' }),
+      O('o8', 'Harbor View Dental', 'Harbor View Dental Group', 'Medical', 'won', 28500, 'BM', 'Now project 2026-022', { source: 'Website inquiry', sf: '3,200 SF', cost: '$640k est.', location: '[City], SC', proposal: 'p4' }),
+      O('o9', 'Summerville Dental', '[Dental practice]', 'Medical', 'lost', 24000, 'BM', 'Lost on fee · Sep 22', { source: 'Website inquiry', sf: '2,600 SF', cost: '$520k est.', location: 'Summerville, SC', proposal: 'p5' })
+    ];
+    opps.forEach(function (o) { if (st.moved[o.id]) o.stage = st.moved[o.id]; });
+    var stageOf = {}; STAGES.forEach(function (s) { stageOf[s.id] = s; });
+    var board = STAGES.map(function (s) {
+      var items = opps.filter(function (o) { return o.stage === s.id; });
+      var fee = items.reduce(function (a, o) { return a + o.fee; }, 0);
+      return {
+        name: s.name, count: items.length, rule: s.rule,
+        chance: s.id === 'won' || s.id === 'lost' ? '' : Math.round(s.chance * 100) + '%',
+        fee: kfmt(fee), weighted: kfmt(fee * s.chance),
+        allow: function (e) { e.preventDefault(); },
+        drop: function (e) {
+          e.preventDefault(); var id = self.dragId; if (!id) return;
+          var mv = Object.assign({}, st.moved); mv[id] = s.id; self.dragId = null; self.setState({ moved: mv });
+        },
+        cards: items.map(function (o) {
+          var sel = st.drawer === 'opp:' + o.id;
+          return {
+            name: o.name, client: o.client, type: o.type, fee: kfmt(o.fee), owner: o.owner, next: o.next, avatar: avatar(o.owner, 24),
+            open: function () { self.setState({ drawer: 'opp:' + o.id }); },
+            dragStart: function (e) { self.dragId = o.id; try { e.dataTransfer.setData('text/plain', o.id); e.dataTransfer.effectAllowed = 'move'; } catch (err) {} },
+            style: 'display:flex;flex-direction:column;gap:2px;padding:12px 12px 10px;border:1px solid #DCDCDC;border-radius:2px;background:#FFFFFF;text-align:left;cursor:grab;box-shadow:' + (sel ? '0 0 0 2px #141414' : '0 1px 2px rgba(20,20,20,0.06)') + (o.stage === 'lost' ? ';opacity:0.7' : '')
+          };
+        })
+      };
+    });
+    var open = opps.filter(function (o) { return o.stage !== 'won' && o.stage !== 'lost'; });
+    var openFee = open.reduce(function (a, o) { return a + o.fee; }, 0);
+    var weighted = open.reduce(function (a, o) { return a + o.fee * stageOf[o.stage].chance; }, 0);
+
+    // ---------- Proposals (sample) ----------
+    var PROPS = [
+      { id: 'p11', number: 'P-26-11', name: 'Harbor Pointe Medical Pavilion', client: 'Harbor Pointe Partners', agreement: 'AIA B101', fee: 210000, kind: 'strong', status: 'Negotiating', activity: 'Owner counsel marking up terms · Oct 15' },
+      { id: 'p10', number: 'P-26-10', name: 'Folly Road Taproom', client: '[Restaurant group]', agreement: 'Firm standard', fee: 46000, kind: 'underway', status: 'Viewed 3×', activity: 'Last opened Oct 17, 9:42 pm' },
+      { id: 'p9', number: 'P-26-09', name: 'Bayside Physical Therapy', client: 'Bayside PT', agreement: 'Firm standard', fee: 31000, kind: 'underway', status: 'Sent', activity: 'Sent Oct 8 · opened once' },
+      { id: 'p8', number: 'P-26-08', name: 'Lakeview Retail Center', client: 'Lakeview Development Co.', agreement: 'AIA B101', fee: 140000, kind: 'waiting', status: 'Draft', activity: 'Fee breakdown due Oct 23' },
+      { id: 'p7', number: 'P-26-07', name: 'Riverside Retail Shell', client: 'Riverside Partners LLC', agreement: 'Firm standard', fee: 64000, kind: 'done', status: 'Signed', activity: 'Signed Oct 3 · became project 2026-021' },
+      { id: 'p4', number: 'P-26-04', name: 'Harbor View Dental', client: 'Harbor View Dental Group', agreement: 'Firm standard', fee: 28500, kind: 'done', status: 'Signed', activity: 'Signed Sep 26 · became project 2026-022' },
+      { id: 'p5', number: 'P-26-05', name: 'Summerville Dental', client: '[Dental practice]', agreement: 'Firm standard', fee: 24000, kind: 'lost', status: 'Declined', activity: 'Declined Sep 22 · went with a lower fee' }
+    ];
+    var proposals = PROPS.map(function (p) {
+      return Object.assign(pill(p.kind), {
+        number: p.number, name: p.name, client: p.client, agreement: p.agreement, fee: money(p.fee), status: p.status, activity: p.activity,
+        bg: st.drawer === 'prop:' + p.id ? '#EAF0FB' : '#FFFFFF',
+        open: function () { self.setState({ drawer: 'prop:' + p.id }); }
+      });
+    });
+    var propsOut = PROPS.filter(function (p) { return p.status !== 'Signed' && p.status !== 'Declined' && p.status !== 'Draft'; });
+
+    // ---------- Project library (sample) ----------
+    function L(id, name, type, year, sf, cost, photos, edited, desc, ch, extra) {
+      return Object.assign({ id: id, name: name, type: type, year: year, sf: sf, cost: cost, photos: photos, edited: edited, desc: desc, ch: ch }, extra || {});
+    }
+    var LIB_ALL = [
+      L('l1', 'Grove Street Café', 'Restaurant', '2026', '1,900 SF', '$410k', 18, true, true, ['web', 'ig', 'ppt'], { client: 'Grove Street Coffee Co.', scope: 'Tenant upfit', text: 'A neighborhood coffee bar carved out of a former dry cleaner. Exposed roof framing, a single long walnut bar and a north-facing storefront bring daylight deep into a narrow bay.' }),
+      L('l2', 'Ashley River Dental', 'Medical', '2026', '3,400 SF', '$590k', 22, true, true, ['web', 'ppt'], { client: 'Ashley River Dental', scope: 'Tenant upfit', text: 'Eight operatories organized around a central sterilization core, with a calm, daylit waiting room that sits apart from the clinical corridor.' }),
+      L('l3', 'Westside Tire & Service', 'Retail', '2026', '6,800 SF', '$1.5M', 14, false, false, [], { client: 'Westside Auto Group', scope: 'Ground-up' }),
+      L('l4', 'Palmetto Family Medicine', 'Medical', '2025', '8,200 SF', '$2.1M', 30, true, true, ['web', 'ig', 'fb', 'ppt'], { client: '[Client name]', scope: 'Ground-up', award: '[Award name] · 2025', text: 'A single-story clinic with a covered drop-off, separate well and sick waiting, and a staff courtyard that gives every exam pod a view.' }),
+      L('l5', 'Cypress Commons Retail', 'Retail', '2025', '24,000 SF', '$4.6M', 16, true, true, ['web', 'ppt'], { client: '[Client name]', scope: 'Shell building', text: 'A five-bay retail shell with a brick and steel storefront system designed so each tenant can claim its own identity without fighting the whole.' }),
+      L('l6', 'Oak Terrace Office', 'Office', '2024', '18,000 SF', '$4.0M', 25, true, true, ['web', 'ig', 'houzz', 'ppt'], { client: '[Client name]', scope: 'Shell + upfit', text: 'Two-story speculative office with a central stair hall and deep porches on the west face that shade the glass and double as outdoor meeting space.' }),
+      L('l7', 'Sweetgrass Kitchen', 'Restaurant', '2024', '3,600 SF', '$980k', 20, true, true, ['web', 'ig', 'fb', 'pin'], { client: '[Client name]', scope: 'Tenant upfit', text: 'A 120-seat restaurant where the open kitchen is the room\'s centerpiece, framed by reclaimed heart pine and a long banquette.' }),
+      L('l8', 'Market Street Storage', 'Self-storage', '2024', '82,000 SF', '$6.8M', 12, true, false, ['ppt'], { client: '[Client name]', scope: 'Ground-up' }),
+      L('l9', 'Northside Self-Storage', 'Self-storage', '2026', '96,000 SF', '$7.6M', 9, false, false, [], { client: 'Northside Storage Holdings', scope: 'Ground-up', status: 'Under construction', unmarked: true }),
+      L('l10', 'Mill Creek Pediatrics', 'Medical', '2026', '5,200 SF', '$950k', 0, false, false, [], { client: 'Mill Creek Pediatrics PA', scope: 'Tenant upfit', status: 'Under construction', unmarked: true }),
+      L('l11', 'Coastal Credit Union Branch', 'Retail', '2027', '4,800 SF', '$2.4M', 4, true, false, [], { client: 'Coastal Federal Credit Union', scope: 'Ground-up', status: 'Renderings only' }),
+      L('l12', 'Medical Office Building', 'Medical', '2027', '20,000 SF', '$6.2M', 0, false, false, [], { client: 'Palmetto Medical Properties', scope: 'Ground-up', status: 'In design', unmarked: true })
+    ];
+    // Only projects someone has marked for marketing are in the library.
+    function isMarked(l) { return st.marked[l.id] ?? !l.unmarked; }
+    var LIB = LIB_ALL.filter(isMarked);
+    var unmarkedList = LIB_ALL.filter(function (l) { return !isMarked(l); }).map(function (l) {
+      return {
+        name: l.name, meta: l.type + ' · ' + (l.status || 'Completed ' + l.year),
+        add: function () { var m = Object.assign({}, st.marked); m[l.id] = true; self.setState({ marked: m }); }
+      };
+    });
+    var CHANNELS = [['web', 'Website'], ['ig', 'Instagram'], ['fb', 'Facebook'], ['houzz', 'Houzz'], ['pin', 'Pinterest'], ['ppt', 'Portfolio deck']];
+    function isReady(l) { return l.photos > 0 && l.edited && l.desc; }
+    var TYPES = ['All', 'Medical', 'Retail', 'Restaurant', 'Office', 'Self-storage'];
+    var typeFilters = TYPES.map(function (t) {
+      var on = st.type === t;
+      return {
+        label: t, on: on, pick: function () { self.setState({ type: t }); },
+        style: 'height:30px;padding:0 12px;border:0;border-radius:2px;cursor:pointer;text-transform:uppercase;letter-spacing:0.06em;font-size:12px;font-weight:' + (on ? '600' : '500') + ';background:' + (on ? '#FFFFFF' : 'transparent') + ';color:' + (on ? '#141414' : '#4D4D4D') + ';box-shadow:' + (on ? '0 1px 2px rgba(20,20,20,0.14)' : 'none')
+      };
+    });
+    // Photo placeholder: a drafting-style hatch with the photo count. Real photos replace it.
+    var TYPE_TINT = { Medical: '#E4EBF8', Retail: '#F3E9DF', Restaurant: '#F6E3DA', Office: '#E6EDE8', 'Self-storage': '#ECE9F3' };
+    function chk(ok, label) {
+      return { mark: ok ? '✓ ' : '○ ', label: label, style: 'display:inline-flex;align-items:center;height:20px;padding:0 6px;border-radius:2px;font-size:11px;font-weight:500;letter-spacing:0.04em;background:' + (ok ? '#E2F1E6' : '#F5F5F5') + ';color:' + (ok ? '#1D6234' : '#666666') };
+    }
+    var shownLib = LIB.filter(function (l) { return (st.type === 'All' || l.type === st.type) && (!st.ready || isReady(l)); });
+    var library = shownLib.map(function (l) {
+      var sel = st.drawer === 'lib:' + l.id;
+      return {
+        name: l.name, type: l.type, year: l.status ? l.status : 'Completed ' + l.year,
+        facts: [l.scope, l.sf, l.cost].join(' · '),
+        photoLabel: l.photos ? l.photos + ' photos' + (l.edited ? '' : ' · unedited') : 'No photos yet',
+        photoStyle: 'position:relative;display:block;height:150px;background:repeating-linear-gradient(135deg,' + (TYPE_TINT[l.type] || '#EBEBEB') + ' 0 10px,#FFFFFF 10px 12px);border-bottom:1px solid #DCDCDC',
+        photoLabelStyle: 'position:absolute;left:12px;bottom:10px;padding:3px 8px;border-radius:2px;background:' + (l.photos ? '#141414' : '#FFFFFF') + ';color:' + (l.photos ? '#FFFFFF' : '#4D4D4D') + ';border:1px solid ' + (l.photos ? '#141414' : '#D4D4D4') + ';font-family:IBM Plex Mono,monospace;font-size:11px',
+        checks: [chk(l.photos > 0 && l.edited, 'Photos'), chk(l.desc, 'Description'), chk(l.ch.length > 0, 'Featured')],
+        ring: sel ? '0 0 0 2px #141414' : 'none',
+        open: function () { self.setState({ drawer: 'lib:' + l.id }); }
+      };
+    });
+    var readyCount = LIB.filter(isReady).length;
+    var needPhotos = LIB.filter(function (l) { return !l.status && (l.photos === 0 || !l.edited); }).length;
+
+    // ---------- Drawer ----------
+    var drawer = null;
+    if (st.drawer) {
+      var parts = st.drawer.split(':'), kind = parts[0], id = parts[1];
+      if (kind === 'opp' && st.tab === 'pipe') {
+        var o = opps.filter(function (x) { return x.id === id; })[0];
+        var s = stageOf[o.stage];
+        drawer = Object.assign(pill(o.stage === 'won' ? 'done' : (o.stage === 'lost' ? 'lost' : (o.stage === 'neg' ? 'strong' : (o.stage === 'lead' ? 'waiting' : 'underway')))), {
+          aria: 'Opportunity details', kicker: 'OPPORTUNITY', title: o.name, sub: o.client, hasPill: true, status: s.name,
+          hasText: false, hasChannels: false,
+          rows: [
+            { label: 'Fee', value: money(o.fee) + (s.id === 'won' || s.id === 'lost' ? '' : ' · weighted ' + money(o.fee * s.chance)) },
+            { label: 'Type', value: o.type }, { label: 'Size / cost', value: o.sf + ' · ' + o.cost },
+            { label: 'Location', value: o.location }, { label: 'Source', value: o.source },
+            { label: 'Owner', value: o.owner }, { label: 'Next step', value: o.next }
+          ],
+          primary: o.proposal ? 'Open proposal' : 'Create proposal', secondary: 'Log activity'
+        });
+      }
+      if (kind === 'prop' && st.tab === 'props') {
+        var p = PROPS.filter(function (x) { return x.id === id; })[0];
+        drawer = Object.assign(pill(p.kind), {
+          aria: 'Proposal details', kicker: 'PROPOSAL ' + p.number, title: p.name, sub: p.client + ' · ' + money(p.fee), hasPill: true, status: p.status,
+          hasText: false, hasChannels: false,
+          rows: [
+            { label: 'Agreement', value: p.agreement },
+            { label: 'Sections', value: 'Project description · Services included · Services excluded · Owner responsibilities · Fee & phases · Terms' },
+            { label: 'Fee by phase', value: 'Pre-Design 5% · SD 15% · DD 25% · CD 35% · Permitting 5% · CA 15%' },
+            { label: 'Prepayment', value: '10% retainer on signing, applied to the first invoice' },
+            { label: 'E-signature', value: p.status === 'Signed' ? 'Signed by [Signer name] · consent and IP recorded' : (p.status === 'Draft' ? 'Not sent yet' : 'Awaiting client signature') },
+            { label: 'Activity', value: p.activity }
+          ],
+          primary: p.status === 'Draft' ? 'Finish & send' : (p.status === 'Signed' ? 'Open project' : 'Send reminder'), secondary: 'Preview PDF'
+        });
+      }
+      if (kind === 'lib' && st.tab === 'lib') {
+        var l = LIB.filter(function (x) { return x.id === id; })[0];
+        var chState = st.channels[l.id] || {};
+        drawer = {
+          aria: 'Project marketing details', kicker: (l.type + ' · ' + (l.status || 'Completed ' + l.year)).toUpperCase(), title: l.name, sub: l.client, hasPill: false,
+          hasText: true, textLabel: 'Marketing description',
+          text: l.text || 'No description yet. Write one here, or generate a first draft from the project\'s scope, size and type.',
+          rows: [
+            { label: 'Scope', value: l.scope }, { label: 'Size / cost', value: l.sf + ' · ' + l.cost },
+            { label: 'Photos', value: l.photos ? l.photos + ' photos' + (l.edited ? ', edited' : ', need editing') : 'None yet · schedule a shoot at completion' },
+            { label: 'Awards', value: l.award || '—' }
+          ],
+          hasChannels: true,
+          channels: CHANNELS.map(function (c) {
+            var on = chState[c[0]] ?? (l.ch.indexOf(c[0]) > -1);
+            return { label: c[1], on: on, toggle: function () { var all = Object.assign({}, st.channels); var mine = Object.assign({}, chState); mine[c[0]] = !on; all[l.id] = mine; self.setState({ channels: all }); } };
+          }),
+          primary: 'Add to a proposal', secondary: 'Copy description'
+        };
+      }
+    }
+
+    // ---------- Header ----------
+    var kpis = [
+      { label: 'Open pipeline', value: money(openFee), note: open.length + ' opportunities' },
+      { label: 'Weighted', value: money(weighted), note: 'Fee × chance of winning' },
+      { label: 'Proposals out', value: String(propsOut.length), note: money(propsOut.reduce(function (a, p) { return a + p.fee; }, 0)) + ' awaiting a decision' },
+      { label: 'Win rate', value: '42%', note: 'Decided proposals, last 12 months' },
+      { label: 'Ready to feature', value: readyCount + ' of ' + LIB.length, note: needPhotos + ' completed projects need photos' }
+    ];
+    var TABS = [['pipe', 'Pipeline', opps.length], ['props', 'Proposals', PROPS.length], ['lib', 'Project library', LIB.length]];
+    var tabs = TABS.map(function (t) {
+      var on = st.tab === t[0];
+      return {
+        label: t[1], count: t[2], on: on,
+        pick: function () { self.setState({ tab: t[0], drawer: null }); },
+        style: 'display:inline-flex;align-items:center;height:50px;padding:0 12px;border:0;background:transparent;cursor:pointer;white-space:nowrap;text-transform:uppercase;letter-spacing:0.07em;font-size:12.5px;font-weight:' + (on ? '700' : '500') + ';color:' + (on ? '#141414' : '#4D4D4D') + ';box-shadow:' + (on ? 'inset 0 -3px 0 #141414' : 'none')
+      };
+    });
+
+    return {
+      modules: RAIL(modules), railMin: RAILV.railMin, railMax: RAILV.railMax, railChev: RAILV.railChev, railToggleLabel: RAILV.railToggleLabel, railToggle: RAILV.railToggle, railNavStyle: RAILV.railNavStyle, railLogoStyle: RAILV.railLogoStyle, railToggleStyle: RAILV.railToggleStyle, kpis: kpis, tabs: tabs,
+      tabPipe: st.tab === 'pipe', tabProps: st.tab === 'props', tabLib: st.tab === 'lib',
+      board: board, proposals: proposals,
+      typeFilters: typeFilters, readyOnly: st.ready, toggleReady: function () { self.setState({ ready: !st.ready }); },
+      library: library, libEmpty: library.length === 0,
+      libSummary: library.length + ' shown · ' + readyCount + ' ready to feature · only projects marked for marketing',
+      addOpen: st.addOpen, toggleAdd: function () { self.setState({ addOpen: !st.addOpen }); },
+      unmarkedList: unmarkedList, hasUnmarked: unmarkedList.length > 0, noUnmarked: unmarkedList.length === 0,
+      drawerOpen: !!drawer, drawer: drawer || { rows: [], channels: [] },
+      closeDrawer: function () { self.setState({ drawer: null }); }
+    };
+  }
+}
+</script>
+</body>
+</html>

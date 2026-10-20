@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>ArchiTrac — Time</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&amp;family=Barlow:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#F2F2F2}
+a{color:#141414}a:hover{color:#000000}
+button{font:inherit;color:inherit}
+h1,h2,h3,th,.cap{text-transform:uppercase;letter-spacing:0.08em}
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-outer-spin-button,input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; font-family: 'Barlow', system-ui, sans-serif; font-size: 14px; color: #141414; background: #F2F2F2">
+
+<nav aria-label="Main menu" style="{{railNavStyle}}">
+<a href="Home.dc.html" aria-label="ArchiTrac home" style="{{railLogoStyle}}">
+<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 26px"><path d="M3 20h18"></path><path d="M5 20V9l7-5 7 5v11"></path><path d="M9 20v-6h6v6"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span style="font-size: 13px; font-weight: 700; letter-spacing: 0.16em">ARCHITRAC</span></sc-if>
+</a>
+<sc-for list="{{modules}}" as="m" hint-placeholder-count="15">
+<sc-if value="{{m.isLabel}}" hint-placeholder-val="{{ false }}">
+<span style="{{m.labelStyle}}">{{m.labelText}}</span>
+</sc-if>
+<sc-if value="{{m.isLink}}" hint-placeholder-val="{{ true }}">
+<a href="{{m.href}}" aria-current="{{m.current}}" aria-label="{{m.label}}" title="{{m.label}}" style="{{m.rowStyle}}">
+<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 20px"><path d="{{m.icon}}"></path></svg>
+<sc-if value="{{m.showLabel}}" hint-placeholder-val="{{ true }}"><span style="flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{m.label}}</span></sc-if>
+<sc-if value="{{m.addon}}" hint-placeholder-val="{{ false }}"><span style="{{m.addStyle}}">{{m.addText}}</span></sc-if>
+</a>
+</sc-if>
+</sc-for>
+<button type="button" onClick="{{railToggle}}" aria-label="{{railToggleLabel}}" title="{{railToggleLabel}}" style="{{railToggleStyle}}">
+<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex: 0 0 18px; transform: rotate({{railChev}}deg)"><path d="M4 4v16"></path><path d="M15 7l-5 5 5 5"></path><path d="M10 12h10"></path></svg>
+<sc-if value="{{railMax}}" hint-placeholder-val="{{ true }}"><span>Collapse menu</span></sc-if>
+</button>
+</nav>
+
+<div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 10px 32px; background: #141414; color: #F2F2F2">
+<button type="button" style="display: flex; align-items: center; gap: 10px; height: 36px; padding: 0 10px 0 4px; border: 1px solid #3A3A3A; border-radius: 2px; background: transparent; color: #F2F2F2; cursor: pointer">
+<span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 2px; display: inline-flex; align-items: center; justify-content: center; background: #F2F2F2; color: #141414; font-size: 12px; font-weight: 700">F</span>
+<span style="font-weight: 600">[FIRM NAME]</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"></path></svg>
+</button>
+<span class="cap" style="color: #F2F2F2; font-weight: 500">Time</span>
+<div style="margin-left: auto; display: flex; align-items: center; gap: 12px">
+<a href="Settings.dc.html" aria-label="Settings" title="Settings" style="width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center; border-radius: 2px; color: #BDBDBD"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"></path></svg></a>
+<span title="You" style="width: 32px; height: 32px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; background: #3A3A3A; color: #FFFFFF; font-size: 11px; font-weight: 600">BM</span>
+</div>
+</header>
+
+<div style="background: #FFFFFF; border-bottom: 1px solid #DCDCDC">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 20px; padding: 32px 32px 28px">
+<div style="flex: 1 1 380px">
+<div style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">WEEK OF OCT 12 – OCT 18, 2026 · DUE MON OCT 19, 9:00 AM</div>
+<h1 style="margin: 10px 0 0; font-size: 30px; line-height: 1.15; font-weight: 500">Time</h1>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<button type="button" aria-label="Previous week" style="width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"></path></svg>
+</button>
+<span style="display: inline-flex; align-items: center; height: 38px; padding: 0 14px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; font-weight: 600">This week</span>
+<button type="button" aria-label="Next week" style="width: 38px; height: 38px; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"></path></svg>
+</button>
+</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); border-top: 1px solid #EBEBEB">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="4">
+<div style="display: flex; flex-direction: column; gap: 4px; padding: 20px 32px 22px; border-right: 1px solid #EBEBEB">
+<span class="cap" style="font-size: 11px; font-weight: 500; color: #3A3A3A">{{k.label}}</span>
+<span style="font-size: 26px; line-height: 1.15; font-weight: 500; font-variant-numeric: tabular-nums; color: {{k.color}}">{{k.value}}</span>
+<span style="font-size: 12.5px; color: #666666">{{k.note}}</span>
+</div>
+</sc-for>
+</div>
+
+<div role="tablist" aria-label="Time sections" style="display: flex; gap: 6px; padding: 4px 22px 0; border-top: 1px solid #EBEBEB; overflow-x: auto">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+<button type="button" role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="{{t.style}}">{{t.label}}<span style="font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 500; color: #666666; margin-left: 8px">{{t.count}}</span></button>
+</sc-for>
+</div>
+</div>
+
+<main style="flex: 1; display: flex; flex-direction: column; gap: 20px; padding: 28px 32px 32px">
+
+<sc-if value="{{tabMine}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+<span style="{{statusPill}}"><span aria-hidden="true" style="{{statusDot}}"></span>{{statusText}}</span>
+<span style="font-size: 12.5px; color: #666666">{{statusNote}}</span>
+<div style="margin-left: auto; display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" style="height: 36px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer">Copy last week</button>
+<button type="button" onClick="{{addRow}}" style="height: 36px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer">Add row</button>
+</div>
+</div>
+
+<section aria-label="Weekly timesheet" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<table style="width: 100%; min-width: 960px; border-collapse: collapse; table-layout: fixed">
+<thead>
+<tr style="font-size: 11px; color: #666666; background: #FAFAFA">
+<th scope="col" style="padding: 10px 20px; text-align: left; font-weight: 500; border-bottom: 1px solid #DCDCDC">Project · phase · activity</th>
+<th scope="col" style="width: 104px; padding: 10px 8px; text-align: left; font-weight: 500; border-bottom: 1px solid #DCDCDC">Billing</th>
+<sc-for list="{{days}}" as="d" hint-placeholder-count="7">
+<th scope="col" style="{{d.headStyle}}"><span style="display: block">{{d.dow}}</span><span style="display: block; font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 400; letter-spacing: 0; text-transform: none">{{d.date}}</span></th>
+</sc-for>
+<th scope="col" style="width: 76px; padding: 10px 12px; text-align: right; font-weight: 500; border-bottom: 1px solid #DCDCDC">Total</th>
+<th scope="col" style="width: 44px; padding: 10px 16px 10px 0; border-bottom: 1px solid #DCDCDC"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Remove</span></th>
+</tr>
+</thead>
+<tbody>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="5">
+<tr>
+<td style="padding: 10px 20px; border-bottom: 1px solid #EBEBEB">
+<sc-if value="{{r.isNew}}" hint-placeholder-val="{{ false }}">
+<label style="display: flex; flex-direction: column; gap: 4px">
+<span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Project for new row</span>
+<select onChange="{{r.pickProject}}" style="height: 34px; padding: 0 8px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; font: inherit">
+<sc-for list="{{projectOptions}}" as="o" hint-placeholder-count="6">
+<option value="{{o.value}}">{{o.label}}</option>
+</sc-for>
+</select>
+</label>
+</sc-if>
+<sc-if value="{{r.isSet}}" hint-placeholder-val="{{ true }}">
+<span style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-weight: 600"><span style="font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 500; color: #4D4D4D; margin-right: 6px">{{r.number}}</span>{{r.project}}</span>
+<sc-if value="{{r.editable}}" hint-placeholder-val="{{ true }}">
+<span style="display: flex; flex-wrap: nowrap; gap: 6px">
+<label style="display: flex; flex: 1 1 450px; max-width: 450px; min-width: 150px"><span class="sr-only" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Phase for {{r.project}}</span>
+<select onChange="{{r.setPhase}}" style="{{r.phaseStyle}}"><sc-for list="{{r.phaseOptions}}" as="o" hint-placeholder-count="4"><option value="{{o.value}}" selected="{{o.on}}" disabled="{{o.off}}">{{o.label}}</option></sc-for></select></label>
+<label style="display: flex; flex: 1 1 300px; max-width: 300px; min-width: 120px"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">Activity for {{r.project}}</span>
+<select onChange="{{r.setActivity}}" style="{{r.activityStyle}}"><sc-for list="{{r.activityOptions}}" as="o" hint-placeholder-count="8"><option value="{{o.value}}" selected="{{o.on}}">{{o.label}}</option></sc-for></select></label>
+</span>
+</sc-if>
+<sc-if value="{{r.readOnly}}" hint-placeholder-val="{{ false }}">
+<span style="font-size: 12.5px; color: #666666">{{r.phase}} · {{r.activity}}</span>
+</sc-if>
+</span>
+</sc-if>
+</td>
+<td style="padding: 10px 8px; border-bottom: 1px solid #EBEBEB">
+<button type="button" onClick="{{r.toggleBill}}" aria-label="{{r.billAria}}" style="{{r.billStyle}}"><span aria-hidden="true" style="{{r.billDot}}"></span>{{r.billText}}</button>
+</td>
+<sc-for list="{{r.cells}}" as="c" hint-placeholder-count="7">
+<td style="{{c.tdStyle}}">
+<input type="number" min="0" max="24" step="0.25" inputmode="decimal" aria-label="{{c.aria}}" value="{{c.value}}" onChange="{{c.set}}" readOnly="{{locked}}" placeholder="—" style="{{c.inputStyle}}">
+</td>
+</sc-for>
+<td style="padding: 10px 12px; border-bottom: 1px solid #EBEBEB; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600">{{r.total}}</td>
+<td style="padding: 10px 16px 10px 0; border-bottom: 1px solid #EBEBEB; text-align: right">
+<button type="button" onClick="{{r.remove}}" aria-label="{{r.removeAria}}" style="width: 30px; height: 30px; display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 2px; background: transparent; cursor: pointer; color: #8A8A8A">
+<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12"></path><path d="M18 6L6 18"></path></svg>
+</button>
+</td>
+</tr>
+</sc-for>
+<tr style="background: #FAFAFA">
+<td style="padding: 12px 20px; font-weight: 600" colspan="2">Day total</td>
+<sc-for list="{{dayTotals}}" as="t" hint-placeholder-count="7">
+<td style="{{t.style}}">{{t.text}}</td>
+</sc-for>
+<td style="padding: 12px; text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 700">{{weekTotal}}</td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 16px; padding: 18px 20px; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<div style="flex: 1 1 360px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; gap: 10px">
+<span class="cap" style="font-size: 12px; font-weight: 600">Week total</span>
+<span style="font-family: 'IBM Plex Mono', monospace; font-size: 14px; font-weight: 600">{{weekTotal}} / 40 h</span>
+<span style="font-size: 12.5px; color: #666666">{{billableNote}}</span>
+</div>
+<span role="img" aria-label="{{weekAria}}" style="position: relative; display: block; height: 10px; border-radius: 1px; background: #EBEBEB; overflow: hidden">
+<span style="{{billBar}}"></span>
+<span style="{{nonBillBar}}"></span>
+</span>
+<div style="display: flex; flex-wrap: wrap; gap: 16px; font-size: 12px; color: #4D4D4D">
+<span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 12px; height: 8px; background: #2F5BAA"></span>Billable</span>
+<span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 12px; height: 8px; background: #A9BDE3"></span>Non-billable</span>
+</div>
+<sc-if value="{{hasMissing}}" hint-placeholder-val="{{ false }}">
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #9A3412"><span aria-hidden="true" style="width: 8px; height: 8px; transform: rotate(45deg); background: #C2410C"></span>{{missingText}}</span>
+</sc-if>
+<span style="font-size: 12.5px; color: #4D4D4D; line-height: 1.5"><span class="cap" style="font-size: 10.5px; font-weight: 700; color: #3A3A3A; margin-right: 6px">Feeds project snapshots</span>{{phaseSummary}}</span>
+<sc-if value="{{short}}" hint-placeholder-val="{{ true }}">
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 500; color: #9A3412">
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4"></path><path d="M12 17h.01"></path><path d="M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"></path></svg>
+{{shortText}}
+</span>
+</sc-if>
+</div>
+<button type="button" onClick="{{submit}}" style="{{submitStyle}}">{{submitLabel}}</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{tabTeam}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 14px; padding: 16px 20px; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<span class="cap" style="font-size: 11px; font-weight: 600; color: #4D4D4D">Approval route</span>
+<span style="display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 13px">
+<span style="padding: 4px 10px; border-radius: 2px; background: #EBEBEB">1 · Submitted</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A8A8A" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+<span style="padding: 4px 10px; border-radius: 2px; background: #E4EBF8; color: #1E3F7A">2 · Team leader reviews</span>
+<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8A8A8A" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg>
+<span style="padding: 4px 10px; border-radius: 2px; background: #E2F1E6; color: #1D6234">3 · Principal approves</span>
+</span>
+<span style="font-size: 12.5px; color: #666666">Team leaders' own timesheets go straight to a principal.</span>
+<button type="button" onClick="{{approveClean}}" style="margin-left: auto; height: 34px; padding: 0 14px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-weight: 600">{{approveCleanLabel}}</button>
+</div>
+
+<sc-for list="{{teams}}" as="tm" hint-placeholder-count="3">
+<section aria-label="{{tm.aria}}" style="background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px; overflow-x: auto">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 20px; border-bottom: 1px solid #DCDCDC">
+<h2 style="margin: 0; font-size: 13px; font-weight: 600">{{tm.name}}</h2>
+<span style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; color: #3A3A3A"><span style="{{tm.leaderAvatar}}">{{tm.leader}}</span>Team leader · {{tm.leader}}</span>
+<span style="margin-left: auto; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: #4D4D4D">{{tm.summary}}</span>
+</div>
+<div style="min-width: 980px">
+<div class="cap" style="display: grid; grid-template-columns: 230px 120px 70px 76px minmax(150px, 1fr) 150px 190px; gap: 0 12px; padding: 8px 20px; background: #FAFAFA; border-bottom: 1px solid #EBEBEB; font-size: 11px; font-weight: 500; color: #666666">
+<span>Person</span><span>Mon–Fri</span><span style="text-align: right">Total</span><span style="text-align: right">Billable</span><span>Flag</span><span>Team leader</span><span>Principal</span>
+</div>
+<sc-for list="{{tm.people}}" as="p" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: 230px 120px 70px 76px minmax(150px, 1fr) 150px 190px; align-items: center; gap: 0 12px; padding: 10px 20px; border-bottom: 1px solid #EBEBEB">
+<span style="display: flex; align-items: center; gap: 10px"><span style="{{p.avatar}}">{{p.initials}}</span><span style="display: flex; flex-direction: column"><span style="font-weight: 500">{{p.initials}} · {{p.role}}</span><span style="font-size: 12px; color: #666666">Target {{p.target}} h</span></span></span>
+<span role="img" aria-label="{{p.daysAria}}" style="display: flex; align-items: flex-end; gap: 3px; height: 26px">
+<sc-for list="{{p.bars}}" as="bb" hint-placeholder-count="5"><span style="{{bb}}"></span></sc-for>
+</span>
+<span style="text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600">{{p.total}}</span>
+<span style="text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 13px">{{p.billable}}</span>
+<span style="font-size: 13px; color: {{p.flagColor}}">{{p.flag}}</span>
+<span><span style="{{p.leadPill}}"><span aria-hidden="true" style="{{p.leadDot}}"></span>{{p.leadText}}</span></span>
+<span style="display: flex; align-items: center; gap: 6px">
+<sc-if value="{{p.canApprove}}" hint-placeholder-val="{{ false }}">
+<button type="button" onClick="{{p.approve}}" style="height: 30px; padding: 0 12px; border: 0; border-radius: 2px; background: #141414; color: #FFFFFF; cursor: pointer; font-weight: 600; font-size: 13px">Approve</button>
+<button type="button" style="height: 30px; padding: 0 10px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer; font-size: 13px">Return</button>
+</sc-if>
+<sc-if value="{{p.canRemind}}" hint-placeholder-val="{{ false }}">
+<button type="button" onClick="{{p.remind}}" style="height: 30px; padding: 0 12px; border: 1px solid #D4D4D4; border-radius: 2px; background: #FFFFFF; cursor: pointer; font-size: 13px">{{p.remindLabel}}</button>
+</sc-if>
+<sc-if value="{{p.showPill}}" hint-placeholder-val="{{ true }}">
+<span style="{{p.prinPill}}"><span aria-hidden="true" style="{{p.prinDot}}"></span>{{p.prinText}}</span>
+</sc-if>
+</span>
+</div>
+</sc-for>
+</div>
+</section>
+</sc-for>
+</div>
+</sc-if>
+
+<sc-if value="{{tabHistory}}" hint-placeholder-val="{{ false }}">
+<section aria-labelledby="hist-title" style="max-width: 880px; background: #FFFFFF; border: 1px solid #DCDCDC; border-radius: 2px">
+<h2 id="hist-title" style="margin: 0; padding: 16px 20px 12px; font-size: 13px; font-weight: 600; border-bottom: 1px solid #EBEBEB">Your past timesheets</h2>
+<ul style="list-style: none; margin: 0; padding: 0">
+<sc-for list="{{history}}" as="h" hint-placeholder-count="6">
+<li style="display: grid; grid-template-columns: 150px minmax(0, 1fr) 80px 120px; align-items: center; gap: 16px; padding: 12px 20px; border-bottom: 1px solid #EBEBEB">
+<span style="font-weight: 500">{{h.week}}</span>
+<span role="img" aria-label="{{h.aria}}" style="position: relative; display: block; height: 8px; border-radius: 1px; background: #EBEBEB; overflow: hidden"><span style="{{h.billBar}}"></span><span style="{{h.nonBar}}"></span></span>
+<span style="text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 13px; font-weight: 600">{{h.total}} h</span>
+<span><span style="{{h.pillStyle}}"><span aria-hidden="true" style="{{h.dotStyle}}"></span>{{h.status}}</span></span>
+</li>
+</sc-for>
+</ul>
+</section>
+</sc-if>
+
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+  renderVals() {
+    var self = this;
+    var st = Object.assign({ tab: 'mine', edits: {}, bill: {}, removed: {}, added: [], status: 'draft', approved: {}, reminded: {}, pa: {} }, this.state || {});
+
+    // ---------- Module bar ----------
+    var ICONS = {
+      home: 'M3 11l9-7 9 7M5 10v10h14V10',
+      projects: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+      contacts: 'M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M21 19v-1a4 4 0 0 0-3-3.9M15 3.2a3.5 3.5 0 0 1 0 6.6',
+      team: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1',
+      workload: 'M4 5h9M4 10h15M4 15h12M4 20h6',
+      time: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7v5l3 2',
+      documents: 'M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8zM14 3v5h5M9 13h6M9 17h6',
+      reports: 'M3 21h18M6 21V11M11 21V5M16 21v-7M21 21v-4',
+      schedule: 'M4 4v16M4 6h7M7 10h8M10 14h7M8 18h5',
+      build: 'M3 18h18M5 18v-3a7 7 0 0 1 14 0v3M12 8V5M9 11V8.7M15 11V8.7',
+      accounting: 'M12 3v18M16 7.5c-.5-1.5-2-2.5-4-2.5-2.2 0-4 1.3-4 3s1.8 2.6 4 3 4 1.3 4 3-1.8 3-4 3c-2 0-3.5-1-4-2.5',
+      marketing: 'M3 10v4h4l6 4V6L7 10zM17 9a4 4 0 0 1 0 6M19.5 6.5a7.5 7.5 0 0 1 0 11',
+      knowledge: 'M2 5h6a4 4 0 0 1 4 4v11a3 3 0 0 0-3-3H2zM22 5h-6a4 4 0 0 0-4 4v11a3 3 0 0 1 3-3h7z',
+      website: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M3 12h18M12 3c2.5 2.5 3.8 5.6 3.8 9s-1.3 6.5-3.8 9M12 3c-2.5 2.5-3.8 5.6-3.8 9s1.3 6.5 3.8 9',
+      hiring: 'M9 7V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2M3 7h18v12H3zM3 12h18'
+    };
+
+    // ---------- Menu rail: wide with labels, or collapsed to icons (remembered per browser) ----------
+    var RAILMIN = (this.state && this.state.railMin != null) ? this.state.railMin : (function () { try { return window.localStorage.getItem('architrac.railMin') === '1'; } catch (e) { return false; } })();
+    function RAIL(list) {
+      return list.map(function (m) {
+        if (m.isLabel) return Object.assign({}, m, { labelText: RAILMIN ? '' : m.label,
+          labelStyle: RAILMIN ? 'display:block;height:1px;margin:10px 8px;background:#2A2A2A' : 'display:block;padding:16px 12px 6px;font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:#8A8A8A' });
+        var cur = !!m.current;
+        return Object.assign({}, m, {
+          showLabel: !RAILMIN, addText: RAILMIN ? '' : 'ADD',
+          addStyle: RAILMIN ? 'position:absolute;top:7px;right:7px;width:6px;height:6px;border-radius:50%;background:#8A8A8A' : 'flex:0 0 auto;padding:1px 5px;border-radius:2px;background:#2A2A2A;color:#D9D9D9;font-size:9.5px;font-weight:600;letter-spacing:0.06em',
+          rowStyle: 'position:relative;display:flex;align-items:center;gap:12px;height:40px;box-sizing:border-box;border-radius:2px;text-decoration:none;white-space:nowrap;text-transform:uppercase;letter-spacing:0.08em;font-size:12px;'
+            + (RAILMIN ? 'width:44px;justify-content:center;padding:0;margin:0 auto;' : 'width:100%;padding:0 12px;')
+            + 'font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#8A8A8A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+        });
+      });
+    }
+    var RAILV = {
+      railMin: RAILMIN, railMax: !RAILMIN, railChev: RAILMIN ? 180 : 0,
+      railToggleLabel: RAILMIN ? 'Expand menu' : 'Collapse menu',
+      railToggle: function () { var v = !RAILMIN; try { window.localStorage.setItem('architrac.railMin', v ? '1' : '0'); } catch (e) {} self.setState({ railMin: v }); },
+      railNavStyle: 'flex:0 0 ' + (RAILMIN ? 64 : 216) + 'px;width:' + (RAILMIN ? 64 : 216) + 'px;box-sizing:border-box;display:flex;flex-direction:column;gap:2px;padding:14px ' + (RAILMIN ? '10px' : '12px') + ';background:#000000;color:#BDBDBD;transition:width 140ms, flex-basis 140ms',
+      railLogoStyle: 'display:flex;align-items:center;gap:10px;height:40px;margin-bottom:8px;color:#F2F2F2;text-decoration:none;' + (RAILMIN ? 'justify-content:center;' : 'padding:0 10px;'),
+      railToggleStyle: 'margin-top:auto;display:flex;align-items:center;gap:10px;height:38px;border:0;border-radius:2px;background:transparent;color:#8A8A8A;cursor:pointer;font-size:12px;font-weight:500;letter-spacing:0.04em;' + (RAILMIN ? 'justify-content:center;width:44px;margin-left:auto;margin-right:auto;' : 'width:100%;padding:0 12px;')
+    };
+    var CURRENT = 'time';
+    var modules = [
+      { label: 'Home', key: 'home', href: 'Home.dc.html' }, { label: 'Projects', key: 'projects', href: 'Projects.dc.html' },
+      { label: 'Contacts', key: 'contacts', href: 'Contacts.dc.html' }, { label: 'Team', key: 'team', href: 'Team.dc.html' },
+      { label: 'Time', key: 'time', href: 'Time.dc.html' },
+      { label: 'Reports', key: 'reports', href: 'Reports.dc.html' },
+      { label: 'Modules', isLabel: true },
+      { label: 'Build', key: 'build', href: 'Build.dc.html' }, { label: 'Workload', key: 'workload', href: 'Workload.dc.html' },
+      { label: 'Accounting', key: 'accounting', href: 'Accounting.dc.html' }, { label: 'Marketing', key: 'marketing', href: 'Marketing.dc.html' },
+      { label: 'Knowledge', key: 'knowledge', href: 'Knowledge.dc.html' },
+      { label: 'Website', key: 'website', href: 'Website.dc.html' }, { label: 'Hiring', key: 'hiring', href: 'Hiring.dc.html' }
+    ].map(function (m) {
+      if (m.isLabel) return { isLabel: true, isLink: false, label: m.label };
+      var cur = m.key === CURRENT;
+      return {
+        isLabel: false, isLink: true, label: m.label, icon: ICONS[m.key], addon: !!m.addon,
+        href: m.href || '#', current: cur ? 'page' : null,
+        style: 'position:relative;flex:0 0 64px;height:56px;box-sizing:border-box;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;border-radius:2px;text-decoration:none;font-weight:' + (cur ? '600' : '500') + ';color:' + (cur ? '#FFFFFF' : (m.addon ? '#9A9A9A' : '#C4C4C4')) + ';background:' + (cur ? '#2A2A2A' : 'transparent') + ';text-transform:uppercase;letter-spacing:0.06em;font-size:9.5px;box-shadow:' + (cur ? 'inset 2px 0 0 #FFFFFF' : 'none')
+      };
+    });
+
+    // ---------- Helpers ----------
+    function fmt(n) { return (Math.round(n * 100) / 100).toString(); }
+    var PILL = {
+      draft: ['#EBEBEB', '#4D4D4D', 'border-radius:50%;box-shadow:inset 0 0 0 1.5px #6B6B6B'],
+      submitted: ['#E4EBF8', '#1E3F7A', 'border-radius:50%;background:linear-gradient(90deg,#1E3F7A 50%,transparent 50%);box-shadow:inset 0 0 0 1.5px #1E3F7A'],
+      approved: ['#E2F1E6', '#1D6234', 'border-radius:50%;background:#1D6234'],
+      missing: ['#FCE7DF', '#9A3412', 'transform:rotate(45deg);background:#C2410C;width:7px;height:7px']
+    };
+    function pill(kind) {
+      var c = PILL[kind];
+      return { pillStyle: 'display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:2px;font-size:10.5px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;white-space:nowrap;background:' + c[0] + ';color:' + c[1], dotStyle: 'display:inline-block;flex:0 0 auto;width:8px;height:8px;box-sizing:border-box;' + c[2] };
+    }
+    var PEOPLE = { JR: '#141414', KL: '#5C5C5C', TC: '#2A2A2A', DS: '#666666', AP: '#4D4D4D', RH: '#4D4D4D', MW: '#6B6B6B', SG: '#3A3A3A', LP: '#5C5C5C', CF: '#666666', EW: '#4D4D4D', NB: '#3A3A3A', OK: '#5C5C5C' };
+    function avatar(who) { return 'flex:0 0 28px;width:28px;height:28px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#FFFFFF;background:' + (PEOPLE[who] || '#3A3A3A'); }
+
+    // ---------- My timesheet (sample: week of Oct 12) ----------
+    var DAYS = [['Mon', 'Oct 12'], ['Tue', 'Oct 13'], ['Wed', 'Oct 14'], ['Thu', 'Oct 15'], ['Fri', 'Oct 16'], ['Sat', 'Oct 17'], ['Sun', 'Oct 18']];
+    var BASE = [
+      { id: 'r1', number: '2026-014', project: 'Medical Office Building', phase: 'Design Development', activity: 'Meetings', billable: true, h: [2, 1.5, 2, 1, 0, 0, 0] },
+      { id: 'r2', number: '2026-006', project: 'Summerville Office Park, Bldg B', phase: 'Construction Documents', activity: 'QA/QC review', billable: true, h: [3, 2, 3, 2, 1, 0, 0] },
+      { id: 'r3', number: '2025-038', project: 'Coastal Credit Union Branch', phase: 'Permitting', activity: 'Permit & agency review', billable: true, h: [1, 2, 1, 1, 0, 0, 0] },
+      { id: 'r4', number: '2025-031', project: 'Northside Self-Storage', phase: 'Construction Admin', activity: 'Site visit', billable: true, h: [1, 2, 1, 1, 0.5, 0, 0] },
+      { id: 'r5', number: 'OH', project: 'Overhead', phase: 'Marketing', activity: 'Proposals', billable: false, h: [1, 0, 1, 1, 1.5, 0, 0] }
+    ];
+    var OPTIONS = [
+      ['', 'Choose a project…'],
+      ['2026-014|Medical Office Building|Design Development', '2026-014 · Medical Office Building'],
+      ['2026-017|Oakmont Urgent Care|Schematic Design', '2026-017 · Oakmont Urgent Care'],
+      ['2026-011|Pine Street Bistro|Design Development', '2026-011 · Pine Street Bistro'],
+      ['2025-027|Mill Creek Pediatrics|Construction Admin', '2025-027 · Mill Creek Pediatrics'],
+      ['PTO|Paid time off|Leave', 'PTO · Paid time off'],
+      ['HOL|Holiday|Leave', 'HOL · Holiday']
+    ];
+    var projectOptions = OPTIONS.map(function (o) { return { value: o[0], label: o[1] }; });
+    // Phases come from each project's Phases & fees (closed phases can't take time). Activities are the firm list in Settings.
+    var PHASES = {
+      '2026-014': [['Schematic Design', 'closed'], ['Design Development', 'current'], ['Construction Documents', ''], ['AS-01 · Site lighting photometrics', 'extra']],
+      '2026-006': [['Design Development', 'closed'], ['Construction Documents', 'current'], ['Permitting', '']],
+      '2025-038': [['Construction Documents', 'closed'], ['Permitting', 'current'], ['Construction Admin', '']],
+      '2025-031': [['Permitting', 'closed'], ['Construction Admin', 'current'], ['Close Out', '']],
+      '2026-017': [['Pre-Design', 'closed'], ['Schematic Design', 'current'], ['Design Development', '']],
+      '2026-011': [['Schematic Design', 'closed'], ['Design Development', 'current'], ['Construction Documents', '']],
+      '2025-027': [['Construction Admin', 'current'], ['Close Out', '']],
+      // Overhead phases and their activities are set in Settings → Time & approvals.
+      'OH': [['Marketing', ''], ['Administration', ''], ['Professional development', ''], ['Firm standards', '']],
+      'PTO': [['Leave', 'current']], 'HOL': [['Leave', 'current']]
+    };
+    var ACTS = {
+      project: ['Design', 'Drawings & production', 'Coordination', 'Meetings', 'Code & research', 'Specifications', 'Project management', 'QA/QC review', 'Permit & agency review', 'Site visit', 'Submittals & RFIs', 'Pay app review', 'Travel'],
+      OH: { 'Marketing': ['Proposals', 'Client development', 'Website & social', 'Interviews & presentations'], 'Administration': ['Admin & IT', 'Accounting & billing', 'Office management'], 'Professional development': ['Training & CE', 'Licensing exams', 'Conferences'], 'Firm standards': ['Standards & templates', 'Revit library', 'Knowledgebase'] },
+      PTO: ['Vacation', 'Sick', 'Personal'], HOL: ['Holiday']
+    };
+    function actsFor(num, phase) { if (num === 'OH') return ACTS.OH[phase] || []; return ACTS[num] || ACTS.project; }
+    var missingRows = 0, byPhase = {};
+    var locked = st.status !== 'draft';
+    var allRows = BASE.concat(st.added).filter(function (r) { return !st.removed[r.id]; });
+    var dayTot = [0, 0, 0, 0, 0, 0, 0], week = 0, billH = 0;
+    var rows = allRows.map(function (r) {
+      var billable = st.bill[r.id] ?? r.billable;
+      var hours = r.h.map(function (v, i) { var k = r.id + ':' + i; return st.edits[k] != null ? st.edits[k] : v; });
+      var tot = 0;
+      var cells = hours.map(function (v, i) {
+        var n = Number(v) || 0; tot += n; dayTot[i] += n;
+        var weekend = i >= 5;
+        return {
+          value: n ? fmt(n) : '',
+          aria: (r.project || 'New row') + ', ' + DAYS[i][0] + ' ' + DAYS[i][1] + ', hours',
+          set: function (e) { var ed = Object.assign({}, st.edits); ed[r.id + ':' + i] = Math.max(0, Math.min(24, Number(e.target.value) || 0)); self.setState({ edits: ed }); },
+          tdStyle: 'padding:8px 2px;border-bottom:1px solid #EBEBEB;text-align:center;background:' + (weekend ? '#FAFAFA' : '#FFFFFF'),
+          inputStyle: 'width:52px;height:34px;box-sizing:border-box;padding:0 6px;border:1px solid ' + (locked ? 'transparent' : '#D4D4D4') + ';border-radius:2px;background:' + (locked ? 'transparent' : '#FFFFFF') + ';text-align:center;font-family:IBM Plex Mono,monospace;font-size:13px;color:#141414'
+        };
+      });
+      week += tot; if (billable) billH += tot;
+      var isSet = !!r.project;
+      var pa = st.pa[r.id] || {}, phase = pa.phase != null ? pa.phase : r.phase, activity = pa.activity != null ? pa.activity : r.activity;
+      if (isSet && (!phase || !activity)) missingRows++;
+      if (isSet && phase && tot) { var key = (r.number === 'OH' || r.number === 'PTO' || r.number === 'HOL' ? r.project : r.project.split(',')[0]) + ' · ' + phase; byPhase[key] = (byPhase[key] || 0) + tot; }
+      var SEL = 'height:30px;box-sizing:border-box;padding:0 6px;border-radius:2px;background:#FFFFFF;font:inherit;font-size:12.5px;max-width:100%;';
+      var phaseOptions = [{ value: '', label: 'Phase…', on: !phase, off: false }].concat((PHASES[r.number] || []).map(function (ph) {
+        return { value: ph[0], on: ph[0] === phase, off: ph[1] === 'closed', label: ph[0] + (ph[1] === 'current' ? ' · current' : ph[1] === 'closed' ? ' · closed' : ph[1] === 'extra' ? ' · additional service' : '') };
+      }));
+      var activityOptions = [{ value: '', label: r.number === 'OH' && !phase ? 'Pick a phase first' : 'Activity…', on: !activity }].concat(actsFor(r.number, phase).map(function (a) { return { value: a, label: a, on: a === activity }; }));
+      function setPA(field) { return function (e) { var o = Object.assign({}, st.pa); o[r.id] = Object.assign({}, o[r.id] || {}); o[r.id][field] = e.target.value; if (field === 'phase' && r.number === 'OH' && actsFor('OH', e.target.value).indexOf(activity) < 0) o[r.id].activity = ''; self.setState({ pa: o }); }; }
+      return {
+        isNew: !isSet, isSet: isSet, number: r.number, project: r.project, phase: phase || '—', activity: activity || '—',
+        editable: isSet && !locked, readOnly: isSet && locked,
+        phaseOptions: phaseOptions, activityOptions: activityOptions, setPhase: setPA('phase'), setActivity: setPA('activity'),
+        phaseStyle: SEL + 'width:100%;border:1px solid ' + (phase ? '#D4D4D4' : '#C2410C') + ';color:' + (phase ? '#141414' : '#9A3412'),
+        activityStyle: SEL + 'width:100%;border:1px solid ' + (activity ? '#D4D4D4' : '#C2410C') + ';color:' + (activity ? '#141414' : '#9A3412'),
+        cells: cells, total: fmt(tot),
+        billText: billable ? 'Billable' : 'Non-bill.',
+        billAria: (billable ? 'Billable' : 'Non-billable') + ', select to change',
+        billStyle: 'display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 8px;border:0;border-radius:2px;cursor:' + (locked ? 'default' : 'pointer') + ';font-size:10.5px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;background:' + (billable ? '#E4EBF8' : '#EBEBEB') + ';color:' + (billable ? '#1E3F7A' : '#4D4D4D'),
+        billDot: 'display:inline-block;width:8px;height:8px;border-radius:50%;box-sizing:border-box;' + (billable ? 'background:#2F5BAA' : 'box-shadow:inset 0 0 0 1.5px #6B6B6B'),
+        toggleBill: function () { if (locked) return; var b = Object.assign({}, st.bill); b[r.id] = !billable; self.setState({ bill: b }); },
+        remove: function () { if (locked) return; var rm = Object.assign({}, st.removed); rm[r.id] = true; self.setState({ removed: rm }); },
+        removeAria: 'Remove row ' + (r.project || 'new row'),
+        pickProject: function (e) {
+          var v = e.target.value; if (!v) return; var p = v.split('|');
+          var added = st.added.map(function (a) { return a.id === r.id ? Object.assign({}, a, { number: p[0], project: p[1], phase: p[2], activity: p[0] === 'HOL' ? 'Holiday' : '', billable: !(p[0] === 'PTO' || p[0] === 'HOL') }) : a; });
+          self.setState({ added: added });
+        }
+      };
+    });
+    var days = DAYS.map(function (d, i) {
+      return { dow: d[0], date: d[1], headStyle: 'width:58px;padding:10px 2px;text-align:center;font-weight:600;border-bottom:1px solid #DCDCDC;background:' + (i >= 5 ? '#F5F5F5' : '#FAFAFA') };
+    });
+    var dayTotals = dayTot.map(function (t, i) {
+      var under = i < 5 && t < 8;
+      return { text: fmt(t), style: 'padding:12px 2px;text-align:center;font-family:IBM Plex Mono,monospace;font-size:13px;font-weight:600;color:' + (under ? '#9A3412' : '#141414') + (under ? ';box-shadow:inset 0 -3px 0 #C2410C' : '') };
+    });
+    var short = week < 40;
+    var billPct = week ? Math.round(billH / week * 100) : 0;
+    var STATUS = { draft: ['draft', 'Draft', 'Not submitted yet. Due Mon Oct 19 at 9:00 AM. Route: your team leader, then a principal.'], submitted: ['submitted', 'With team leader', 'Sent to your team leader for review, then a principal approves. You can recall it until your leader acts.'] };
+    var stt = STATUS[st.status];
+    var sp = pill(stt[0]);
+
+    // ---------- Team approvals (sample: week of Oct 12) ----------
+    // Step 1: the person's team leader reviews. Step 2: a principal gives final approval.
+    // stage: missing (not submitted) | leader (waiting on team leader) | principal (leader approved, waiting on a principal) | approved
+    function T(initials, role, target, days, billPct, stage) { return { initials: initials, role: role, target: target, days: days, billPct: billPct, stage: stage }; }
+    var TEAMS = [
+      { name: 'Medical studio', leader: 'JR', people: [
+        T('JR', 'Project manager · team leader', 40, [9, 8.5, 8, 8, 8], 88, 'principal'),
+        T('KL', 'Designer', 40, [8, 8, 8, 8, 8], 92, 'principal'),
+        T('DS', 'Designer', 40, [8, 8, 8, 8, 6], 79, 'leader'),
+        T('AP', 'Interior designer', 40, [8, 8, 8, 8, 8], 71, 'principal'),
+        T('EW', 'Intern · part-time', 24, [6, 6, 6, 6, 0], 75, 'principal')
+      ] },
+      { name: 'Commercial studio', leader: 'TC', people: [
+        T('TC', 'Project architect · team leader', 40, [8.5, 8.5, 8.5, 8.5, 8], 85, 'principal'),
+        T('SG', 'Project architect', 40, [10, 9, 9, 9, 9], 90, 'leader'),
+        T('LP', 'Designer', 40, [8, 8, 8, 8, 8], 87, 'principal'),
+        T('RH', 'Designer', 40, [8, 8, 8, 8, 8], 90, 'approved'),
+        T('CF', 'Designer', 40, [8, 8, 7, 0, 0], 82, 'missing'),
+        T('NB', 'Designer', 40, [8, 8, 0, 0, 0], 85, 'missing')
+      ] },
+      { name: 'Operations', leader: 'MW', people: [
+        T('MW', 'Office manager · team leader', 40, [8, 8, 8, 8, 8], 8, 'approved'),
+        T('OK', 'Bookkeeper', 24, [6, 0, 6, 6, 6], 0, 'approved')
+      ] }
+    ];
+    function stepPill(bg, fg, dot, text) {
+      return { pill: 'display:inline-flex;align-items:center;gap:6px;height:22px;padding:0 8px;border-radius:2px;font-size:10.5px;font-weight:500;letter-spacing:0.07em;text-transform:uppercase;white-space:nowrap;background:' + bg + ';color:' + fg, dot: 'display:inline-block;flex:0 0 auto;width:8px;height:8px;box-sizing:border-box;' + dot, text: text };
+    }
+    var waiting = 0, clean = [], missingCount = 0;
+    var teams = TEAMS.map(function (tm) {
+      var withLeader = 0, withYou = 0;
+      var people = tm.people.map(function (p) {
+        var total = p.days.reduce(function (a, b) { return a + b; }, 0);
+        var stage = st.approved[p.initials] ? 'approved' : p.stage;
+        var isLeader = p.initials === tm.leader;
+        var flag = '—', flagColor = '#8A8A8A';
+        if (stage === 'missing') { flag = 'Not submitted · ' + fmt(total) + ' h so far'; flagColor = '#9A3412'; missingCount++; }
+        else if (total > 44) { flag = 'Over 44 h'; flagColor = '#9A3412'; }
+        else if (total < p.target) { flag = fmt(p.target - total) + ' h under target'; flagColor = '#9A3412'; }
+        if (stage === 'leader') withLeader++;
+        if (stage === 'principal') { waiting++; withYou++; if (flag === '—') clean.push(p.initials); }
+        var lead = isLeader ? stepPill('#F5F5F5', '#666666', 'border-radius:50%;box-shadow:inset 0 0 0 1.5px #8A8A8A', 'Skips · is leader')
+          : stage === 'missing' ? stepPill('#EBEBEB', '#4D4D4D', 'border-radius:50%;box-shadow:inset 0 0 0 1.5px #6B6B6B', 'Not submitted')
+          : stage === 'leader' ? stepPill('#FCE7DF', '#9A3412', 'transform:rotate(45deg);background:#C2410C;width:7px;height:7px', 'With ' + tm.leader)
+          : stepPill('#E2F1E6', '#1D6234', 'border-radius:50%;background:#1D6234', 'Approved · ' + tm.leader);
+        var prin = stage === 'approved' ? stepPill('#E2F1E6', '#1D6234', 'border-radius:50%;background:#1D6234', 'Approved')
+          : stepPill('#EBEBEB', '#666666', 'border-radius:50%;box-shadow:inset 0 0 0 1.5px #8A8A8A', stage === 'leader' ? 'Waits for leader' : 'Not ready');
+        var reminded = !!st.reminded[p.initials];
+        return {
+          initials: p.initials, role: p.role, target: p.target, avatar: avatar(p.initials),
+          total: fmt(total), billable: p.billPct + '%', flag: flag, flagColor: flagColor,
+          bars: p.days.map(function (h) { return 'display:block;width:10px;border-radius:1px 1px 0 0;height:' + Math.max(2, Math.round(h / 10 * 26)) + 'px;background:' + (h === 0 ? '#E3E3E3' : (h > 9 ? '#C2410C' : '#2F5BAA')); }),
+          daysAria: 'Mon to Fri: ' + p.days.join(', ') + ' hours',
+          leadPill: lead.pill, leadDot: lead.dot, leadText: lead.text,
+          prinPill: prin.pill, prinDot: prin.dot, prinText: prin.text,
+          canApprove: stage === 'principal',
+          canRemind: stage === 'missing' || stage === 'leader',
+          showPill: stage === 'approved' || stage === 'missing',
+          remindLabel: reminded ? 'Reminder sent' : (stage === 'leader' ? 'Nudge ' + tm.leader : 'Send reminder'),
+          approve: function () { var ap = Object.assign({}, st.approved); ap[p.initials] = true; self.setState({ approved: ap }); },
+          remind: function () { var r = Object.assign({}, st.reminded); r[p.initials] = true; self.setState({ reminded: r }); }
+        };
+      });
+      return {
+        name: tm.name, leader: tm.leader, leaderAvatar: avatar(tm.leader).replace('28px', '24px').replace('28px', '24px').replace('28px', '24px'),
+        aria: tm.name + ' timesheets', people: people,
+        summary: withYou + ' ready for you · ' + withLeader + ' with ' + tm.leader
+      };
+    });
+
+    // ---------- History (sample) ----------
+    var HIST = [['Oct 5 – 11', 41, 0.87], ['Sep 28 – Oct 4', 40, 0.84], ['Sep 21 – 27', 38, 0.82], ['Sep 14 – 20', 42.5, 0.88], ['Sep 7 – 13', 32, 0.8], ['Aug 31 – Sep 6', 40, 0.85]];
+    var history = HIST.map(function (h) {
+      var b = Math.round(h[1] * h[2] * 2) / 2;
+      return Object.assign(pill('approved'), {
+        week: h[0], total: fmt(h[1]), status: 'Approved',
+        aria: h[1] + ' hours, ' + Math.round(h[2] * 100) + '% billable',
+        billBar: 'position:absolute;left:0;top:0;bottom:0;width:' + (b / 45 * 100) + '%;background:#2F5BAA',
+        nonBar: 'position:absolute;top:0;bottom:0;left:' + (b / 45 * 100) + '%;width:' + ((h[1] - b) / 45 * 100) + '%;background:#A9BDE3'
+      });
+    });
+    history[4].total = '32 (Labor Day)';
+
+    // ---------- Header ----------
+    var kpis = [
+      { label: 'This week', value: fmt(week) + ' h', note: short ? fmt(40 - week) + ' h short of 40' : 'Target met', color: short ? '#9A3412' : '#141414' },
+      { label: 'Billable', value: billPct + '%', note: fmt(billH) + ' billable hours · target 50% for principals', color: '#141414' },
+      { label: 'Ready for you', value: String(waiting), note: 'Leader-approved timesheets awaiting final approval', color: '#141414' },
+      { label: 'Not submitted', value: String(missingCount), note: 'Team members, week of Oct 12', color: missingCount ? '#9A3412' : '#141414' }
+    ];
+    var TABS = [['mine', 'My timesheet', ''], ['team', 'Approvals', waiting], ['history', 'History', HIST.length]];
+    var tabs = TABS.map(function (t) {
+      var on = st.tab === t[0];
+      return {
+        label: t[1], count: t[2], on: on, pick: function () { self.setState({ tab: t[0] }); },
+        style: 'display:inline-flex;align-items:center;height:50px;padding:0 12px;border:0;background:transparent;cursor:pointer;white-space:nowrap;text-transform:uppercase;letter-spacing:0.07em;font-size:12.5px;font-weight:' + (on ? '700' : '500') + ';color:' + (on ? '#141414' : '#4D4D4D') + ';box-shadow:' + (on ? 'inset 0 -3px 0 #141414' : 'none')
+      };
+    });
+
+    return {
+      modules: RAIL(modules), railMin: RAILV.railMin, railMax: RAILV.railMax, railChev: RAILV.railChev, railToggleLabel: RAILV.railToggleLabel, railToggle: RAILV.railToggle, railNavStyle: RAILV.railNavStyle, railLogoStyle: RAILV.railLogoStyle, railToggleStyle: RAILV.railToggleStyle, kpis: kpis, tabs: tabs,
+      tabMine: st.tab === 'mine', tabTeam: st.tab === 'team', tabHistory: st.tab === 'history',
+      days: days, rows: rows, dayTotals: dayTotals, weekTotal: fmt(week), locked: locked, projectOptions: projectOptions,
+      addRow: function () { if (locked) return; var id = 'n' + (st.added.length + 1); self.setState({ added: st.added.concat([{ id: id, number: '', project: '', phase: '', activity: '', billable: true, h: [0, 0, 0, 0, 0, 0, 0] }]) }); },
+      statusPill: sp.pillStyle, statusDot: sp.dotStyle, statusText: stt[1], statusNote: stt[2],
+      billableNote: fmt(billH) + ' billable · ' + fmt(week - billH) + ' non-billable · ' + billPct + '% billable',
+      weekAria: fmt(week) + ' of 40 hours, ' + fmt(billH) + ' billable',
+      billBar: 'position:absolute;left:0;top:0;bottom:0;width:' + Math.min(100, billH / 40 * 100) + '%;background:#2F5BAA',
+      nonBillBar: 'position:absolute;top:0;bottom:0;left:' + Math.min(100, billH / 40 * 100) + '%;width:' + Math.max(0, Math.min(100, week / 40 * 100) - Math.min(100, billH / 40 * 100)) + '%;background:#A9BDE3',
+      short: short && st.status === 'draft',
+      shortText: fmt(40 - week) + ' hours short of 40. Add the missing time, or log PTO or a holiday before submitting.',
+      submitLabel: st.status === 'draft' ? 'Submit for approval' : 'Recall timesheet',
+      submitStyle: 'height:40px;padding:0 18px;border:' + (st.status === 'draft' ? '0' : '1px solid #D4D4D4') + ';border-radius:2px;font-weight:600;cursor:' + (st.status === 'draft' && missingRows ? 'not-allowed' : 'pointer') + ';background:' + (st.status === 'draft' ? (missingRows ? '#C4C4C4' : '#141414') : '#FFFFFF') + ';color:' + (st.status === 'draft' ? '#FFFFFF' : '#141414'),
+      submit: function () { if (st.status === 'draft' && missingRows) return; self.setState({ status: st.status === 'draft' ? 'submitted' : 'draft' }); },
+      hasMissing: missingRows > 0 && st.status === 'draft',
+      missingText: missingRows + (missingRows === 1 ? ' row needs' : ' rows need') + ' a phase and an activity before you can submit.',
+      phaseSummary: Object.keys(byPhase).map(function (k) { return k + ' ' + fmt(byPhase[k]) + ' h'; }).join(' · ') || 'Nothing yet',
+      teams: teams,
+      approveCleanLabel: clean.length ? 'Approve ' + clean.length + ' leader-approved, no flags' : 'All clean timesheets approved',
+      approveClean: function () { var a = Object.assign({}, st.approved); clean.forEach(function (i) { a[i] = true; }); self.setState({ approved: a }); },
+      history: history
+    };
+  }
+}
+</script>
+</body>
+</html>
