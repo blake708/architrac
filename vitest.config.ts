@@ -8,7 +8,9 @@ export default defineConfig({
   test: {
     environment: "node",
     include: ["src/**/*.test.{ts,tsx}"],
-    // No unit tests exist yet; the first ones arrive in milestone 0.2.
-    passWithNoTests: true,
+    setupFiles: ["./vitest.setup.ts"],
+    // Database tests (*.db.test.ts) talk to Neon over the network.
+    testTimeout: 30_000,
+    hookTimeout: 60_000,
   },
 });

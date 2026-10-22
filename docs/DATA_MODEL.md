@@ -77,6 +77,17 @@ One row per firm.
 ### teams
 | id | firm_id | name | leader_membership_id | sort_order |
 
+### Release 0 implementation notes (milestone 0.2)
+- Schema lives in `src/db/schema/` (`firms.ts`, `people.ts` = users + memberships + teams, `activity-log.ts`, `enums.ts`). Migrations in `src/db/migrations/`.
+- Added per the global rules: `created_at`/`updated_at` on every table; `archived_at` on firms, users, memberships, teams; `created_by` on memberships and teams. `activity_log` is append-only (`created_at` only).
+- **Row-level security:** memberships, firm_settings, teams, activity_log (ENABLE + FORCE, keyed on `firm_id`); firms (ENABLE, keyed on `id`; not FORCEd so the owner-run lookup below works). Outside `withFirm` these tables return no rows.
+- **users** has no `firm_id` and no RLS (a person can belong to several firms). Reach users through memberships. Revisit in 0.3.
+- **Same-firm foreign keys:** `memberships (firm_id, team_id) → teams (firm_id, id)` and `teams (firm_id, leader_membership_id) → memberships (firm_id, id)`. Plain FKs ignore RLS; these stop a row pointing at another firm's row. Use the same pattern for every new firm-to-firm link.
+- `memberships.firm_role_id` has no FK until `firm_roles` exists (1.1).
+- `firm_id_for_clerk_org(text) → uuid`: security-definer function, the only cross-firm lookup; maps Clerk's active org to a firm id before `withFirm`.
+- The app role (`architrac_app`) has SELECT/INSERT/UPDATE only. No DELETE, so "no hard deletes" is enforced by the database.
+- Defaults: `firm_settings.modules_enabled` = `{}` (new firms start with no add-ons), `next_invoice_number` = 1, `invoice_prefix` = `''`. The TMG seed sets its own values.
+
 ---
 
 ## Release 1 — Run TMG
