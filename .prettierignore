@@ -1,0 +1,14 @@
+# Hand-written reference material: keep as-is.
+docs/
+mockup/
+seed/
+*.md
+src/styles/tokens.css
+
+# Generated
+.next/
+coverage/
+playwright-report/
+test-results/
+pnpm-lock.yaml
+next-env.d.ts

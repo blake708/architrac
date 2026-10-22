@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Next.js build output
+.next/
+out/
+next-env.d.ts
+*.tsbuildinfo
+
+# Secrets: never commit
+.env*.local
+.env
+
+# Tests
+coverage/
+test-results/
+playwright-report/
+blob-report/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
