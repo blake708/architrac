@@ -14,7 +14,12 @@
 create role architrac_app with login password 'CHANGE_ME'
   nosuperuser nocreatedb nocreaterole noinherit nobypassrls;
 
-grant connect on database architrac to architrac_app;
+-- Works whatever the database is called (Neon's default is neondb).
+do $$
+begin
+  execute format('grant connect on database %I to architrac_app', current_database());
+end
+$$;
 grant usage on schema public to architrac_app;
 
 -- Tables that already exist (none on a fresh project, but safe to re-run).
