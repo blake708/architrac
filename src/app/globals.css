@@ -1,0 +1,12 @@
+@import "tailwindcss";
+@import "../styles/tokens.css";
+
+/*
+  next/font gives fonts generated internal names, so the plain "Barlow" and
+  "IBM Plex Mono" names in tokens.css would not match. These lines point the
+  font tokens at the CSS variables that layout.tsx sets.
+*/
+@theme inline {
+  --font-sans: var(--font-barlow), system-ui, sans-serif;
+  --font-mono: var(--font-plex-mono), ui-monospace, monospace;
+}
