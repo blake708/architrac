@@ -14,15 +14,18 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "db:generate": "node -e \"console.log('db:generate is not set up yet (milestone 0.2)')\"",
-    "db:migrate": "node -e \"console.log('db:migrate is not set up yet (milestone 0.2)')\"",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
     "db:seed": "node -e \"console.log('db:seed is not set up yet (milestone 0.2)')\"",
-    "db:studio": "node -e \"console.log('db:studio is not set up yet (milestone 0.2)')\""
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@neondatabase/serverless": "^1.2.0",
+    "drizzle-orm": "^0.45.4",
     "next": "^16.4.2",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@playwright/test": "^1.64.1",
@@ -30,6 +33,7 @@
     "@types/node": "^26.6.5",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
+    "drizzle-kit": "^0.31.11",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.4.2",
     "eslint-config-prettier": "^10.1.8",
