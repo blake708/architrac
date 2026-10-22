@@ -8,7 +8,8 @@
 --   * No DELETE: rows are archived (archived_at), never deleted.
 --
 -- Before running: replace CHANGE_ME with a password you generate locally:
---   node -e "console.log(require('crypto').randomBytes(24).toString('base64url'))"
+--   node -e "console.log('Ax9-'+require('crypto').randomBytes(36).toString('base64url')+'_k7Q')"
+-- (Neon rejects passwords without a mix of letters, numbers and symbols.)
 -- Do not save the real password in this file.
 
 create role architrac_app with login password 'CHANGE_ME'
