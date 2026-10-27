@@ -135,13 +135,33 @@ Open `docs/PROMPTS.md`. Every milestone has a prompt to paste. This is the loop 
 |---|---|---|
 | **0.1 Setup** | `pnpm dev` shows "ArchiTrac" in Barlow at localhost:3000 | If `pnpm` isn't found, redo step 4 |
 | **0.2 Database** | The cross-firm test passes; you can see tables in `pnpm db:studio` | Keep the two Neon connection strings (app and owner) straight. Never paste them in chat or commit them; they go in `.env.local` only |
-| **0.3 Auth** | You can sign up, create a firm, sign out and back in; visiting `/home` signed out redirects to sign-in | The Clerk webhook needs a public URL locally. Claude will set up a tunnel or explain how to test it |
+| **0.3 Auth** | You can sign up, create a firm, sign out and back in; visiting `/app` signed out redirects to sign-in | Follow "Setting up Clerk" below. The webhook needs a public URL, so it's connected in 0.7; local sign-up works without it |
 | **0.4 UI kit** | `/dev/ui` shows every component looking like the mockup | Compare side by side with the mockup in another browser window |
 | **0.5 App shell** | Menu rail, collapse toggle, and dark header match `Home.dc.html` | Add-on modules hide when turned off in settings |
 | **0.6 Settings** | You can invite a second email address and give it a role | Use a personal email to test the invite |
 | **0.7 Deploy** | The app runs at a vercel.app address and every pull request shows green checks | Production keys go in Vercel's settings, not in files |
 
 **Release 0 is done** when a test firm can sign up, invite a user, and see an empty, styled app at a live address, with all checks green.
+
+### Setting up Clerk (milestone 0.3)
+
+Clerk's dashboard moves things around now and then. If a label below doesn't match, look for the closest one, or screenshot the page for Claude.
+
+1. **Create the app.** Go to dashboard.clerk.com → **Create application**. Name it `ArchiTrac (dev)`. Under sign-in options, turn on **Email** (Google is optional). Click **Create application**.
+2. **Copy the keys.** Open **API keys** in the left menu. Copy the **Publishable key** and **Secret key** into `.env.local` as `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY` and `CLERK_SECRET_KEY`. Also copy the two `NEXT_PUBLIC_CLERK_SIGN_IN_URL` / `NEXT_PUBLIC_CLERK_SIGN_UP_URL` lines from `.env.example`. Never paste keys in chat.
+3. **Ask for names.** **Configure → User & authentication**: turn on **First and last name** and make them **required**. (The app uses them for initials.)
+4. **Turn on Organizations.** **Configure → Organizations** (or **Organizations settings**) → **Enable organizations**. Then:
+   - **Membership**: choose **Membership optional** (personal accounts allowed). *Important:* "Membership required" makes Clerk show its own create-organization screen instead of ArchiTrac's create-firm page.
+   - **Allow users to create organizations**: on.
+   - **Default role for creators**: **Admin**.
+5. **Invite-only sign-up** (decided for the pilot). **Configure → Restrictions** → **Sign-up mode: Restricted**. Then add yourself: **Users → Create user** with your email (or **Invite**). Anyone not added this way can't sign up.
+6. **Try it.** Run `pnpm dev` and open http://localhost:3000/app. You should land on sign-in. Sign in, create your firm, and you'll see its name on the temporary home page.
+7. **Webhook (do this in 0.7, once the app has a public address).** **Configure → Webhooks → Add endpoint**:
+   - URL: `https://<your-app-address>/api/webhooks/clerk`
+   - Events: `user.created`, `user.updated`, `organizationMembership.created`, `organizationMembership.deleted`
+   - Click **Create**, then copy the **Signing secret** (starts `whsec_`) into `CLERK_WEBHOOK_SIGNING_SECRET` (in Vercel for production).
+
+   Until then everything still works locally: creating a firm saves your user and owner rows directly, and signing in fills in anything the webhook would have.
 
 ---
 
