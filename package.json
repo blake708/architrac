@@ -20,6 +20,7 @@
     "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
+    "@clerk/nextjs": "^7.9.20",
     "@neon/config": "^1.9.3",
     "@neon/env": "^1.6.4",
     "@neondatabase/serverless": "^1.2.0",
@@ -27,6 +28,7 @@
     "next": "^16.4.2",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
+    "svix": "^2.9.0",
     "zod": "^4.6.7"
   },
   "devDependencies": {
