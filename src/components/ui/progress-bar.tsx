@@ -2,14 +2,8 @@ import { progressStatus } from "@/lib/calc/progress";
 import type { ProgressTone } from "@/lib/calc/progress";
 import { cn } from "@/lib/cn";
 
-// Within budget the fill shows the tone. Once over, the budget part goes back
-// to blue and the overrun is hatched red, so the excess stands out.
-const fills: Record<ProgressTone, string> = {
-  normal: "bg-blue",
-  warning: "bg-orange",
-  over: "bg-blue",
-};
-
+// The fill is always blue. Approaching budget shows only in the percent text;
+// over budget adds a red hatched overrun after the fill.
 const percentText: Record<ProgressTone, string> = {
   normal: "text-ink-2",
   warning: "text-orange",
@@ -31,7 +25,7 @@ type ProgressBarProps = {
   className?: string;
 };
 
-/** 6px bar: blue normally, orange at 90%+, hatched red overrun past 100%. */
+/** 10px blue bar; orange percent at 90%+; hatched red overrun past 100%. */
 export function ProgressBar({
   value,
   max,
@@ -46,10 +40,10 @@ export function ProgressBar({
         role="img"
         aria-label={`${label}: ${percent}%`}
         data-tone={tone}
-        className="flex h-1.5 min-w-12 flex-1 overflow-hidden rounded-[1px] bg-line-soft"
+        className="flex h-2.5 min-w-12 flex-1 overflow-hidden rounded-[1px] bg-line-soft"
       >
         <span
-          className={cn("block h-full", fills[tone])}
+          className="block h-full bg-blue"
           style={{ width: `${fillWidth}%` }}
         />
         {overWidth > 0 && (

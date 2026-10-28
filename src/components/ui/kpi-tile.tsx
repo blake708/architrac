@@ -39,7 +39,7 @@ export function KpiTile({
       <span className="cap text-2xs font-medium text-ink-2">{label}</span>
       <span
         className={cn(
-          "num text-2xl leading-[1.15] font-medium",
+          "text-2xl leading-[1.15] font-medium tabular-nums",
           toneText[tone],
         )}
       >

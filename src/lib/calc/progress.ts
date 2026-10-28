@@ -1,6 +1,6 @@
 /**
  * Progress bar status (e.g. hours used vs budget), from DESIGN_SYSTEM.md:
- * blue while normal, orange at 90% or more, red once over 100%.
+ * "warning" at 90% or more, "over" once past 100%.
  *
  * When over budget the bar is rescaled so its full width is the amount used:
  * the budget part is a solid fill and the overrun is a hatched segment after it.
