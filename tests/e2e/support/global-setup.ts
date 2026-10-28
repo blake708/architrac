@@ -13,6 +13,12 @@ import { FIRMS, type FirmKey, PEOPLE } from "./people";
 // Clerk's webhook doesn't reach a laptop, so the database rows are written
 // here directly instead of waiting for it.
 
+/** Who creates each test firm in Clerk: Olive, unless the firm says otherwise. */
+function creatorOf(firm: FirmKey): string {
+  const f = FIRMS[firm] as { createdBy?: string };
+  return f.createdBy ?? "owner";
+}
+
 export default async function globalSetup() {
   await clerkSetup();
   await cleanE2eData();
@@ -55,7 +61,7 @@ export default async function globalSetup() {
     ][]) {
       const org = await clerk.organizations.createOrganization({
         name: f.name,
-        createdBy: clerkUserIds.owner,
+        createdBy: clerkUserIds[creatorOf(key)],
       });
       orgIds[key] = org.id;
       const slug = `e2e-${key}-${randomBytes(3).toString("hex")}`;
@@ -79,8 +85,8 @@ export default async function globalSetup() {
         role: string;
         active?: boolean;
       }[]) {
-        // The owner created both orgs, so Clerk already has them as admin.
-        if (key !== "owner") {
+        // Whoever created the org is already its Clerk admin.
+        if (key !== creatorOf(m.firm)) {
           await clerk.organizations.createOrganizationMembership({
             organizationId: orgIds[m.firm],
             userId: clerkUserIds[key],

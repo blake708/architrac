@@ -13,3 +13,11 @@ export const employmentType = pgEnum("employment_type", [
   "part_time",
   "contract",
 ]);
+
+/** Where an invitation is (settings-firm spec, business rule 8). */
+export const invitationStatus = pgEnum("invitation_status", [
+  "pending",
+  "accepted",
+  "revoked",
+  "expired",
+]);

@@ -2,6 +2,7 @@ import { and, eq } from "drizzle-orm";
 import { firms, memberships } from "@/db/schema";
 import { findFirmIdByClerkOrg, withFirm } from "@/db/tenant";
 import type { FirmSession } from "@/lib/auth/session";
+import { firmDisplayName } from "@/lib/settings/firm-profile";
 import { listClerkOrganizationIds } from "@/server/auth/clerk";
 
 // The firm switcher's list (app-shell spec, "Firm switcher menu list"):
@@ -46,7 +47,11 @@ export async function listMyFirmsCore(
       if (!firmId) return null;
       return withFirm(firmId, async (db) => {
         const [row] = await db
-          .select({ name: firms.name, logoUrl: firms.logoUrl })
+          .select({
+            name: firms.name,
+            displayName: firms.displayName,
+            logoUrl: firms.logoUrl,
+          })
           .from(firms)
           .innerJoin(memberships, eq(memberships.firmId, firms.id))
           .where(
@@ -57,10 +62,9 @@ export async function listMyFirmsCore(
             ),
           );
         if (!row) return null;
-        // Firm display names arrive in 0.6 (settings-firm spec).
         return {
           clerkOrgId,
-          name: row.name,
+          name: firmDisplayName(row),
           logoUrl: row.logoUrl,
           current: firmId === currentFirmId,
         };

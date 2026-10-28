@@ -55,7 +55,7 @@ Item order (icons are the SVG paths in `Settings.dc.html` → `ICONS`; copy them
 | 12 | Website | website | `/app/website` | `'website'` enabled |
 | 13 | Hiring | hiring | `/app/hiring` | `'hiring'` enabled |
 
-The module keys `schedule` and `code` (Settings → Modules & plan) never get a rail item.
+The module key `code` (Settings → Modules & plan) never gets a rail item; it shows up inside projects. Schedule is not a module (built into Projects; decided 0.6).
 
 **Modules that are off** (decided by Blake, 0.5): hidden from project managers and staff. Owners and admins (`can(membership, 'modules.manage')`) still see them, after the modules that are on would be, in the same order: text `#8A8A8A`, an "ADD" badge (9.5px/600, bg `#2A2A2A`, text `#D9D9D9`, padding 1px 5px) at the right; collapsed, a 6px `#8A8A8A` dot at the item's top-right instead. `aria-label` = "Build (turned off)". The link still goes to the module's route, which shows `<ModuleOff>` with the "Turn on in Settings" button.
 
@@ -109,7 +109,7 @@ Put the two placeholders behind constants in `src/lib/features.ts`: `FEATURES = 
    - Signed in, no active Clerk org: if the user belongs to ≥1 Clerk org → `/onboarding/choose-firm`, which calls `setActive` on the first by firm name and continues to `/app`; if none → `/onboarding/create-firm`. (Built in 0.3. Preferring the most recently used firm can come with the firm switcher in 0.5.)
    - Signed in, org active, but no `memberships` row yet → run `ensureMembership()` (rule 7) once; if it still finds none → `/onboarding/create-firm`.
    - Membership `active = false` → redirect to `/onboarding/access-off` (outside the shell, so no rail), which shows "Your access to [Firm] has been turned off. Ask an owner or admin if this is a mistake." with only the Sign out button. A redirect is used instead of rendering inside the layout so no page data loads for a deactivated member.
-3. **Module visibility.** `isModuleOn(settings, key) = settings.modules_enabled.includes(key)`. For project managers and staff the rail shows a module item only if on; owners and admins also see off modules, dimmed with "ADD" (see Layout §1). The "Modules" label shows only if at least one module item is shown. Worked example (TMG seed `{schedule,build,workload,accounting,marketing,knowledge,website,hiring}`): rail shows 6 core + label + 7 modules = 14 rows. If Blake turns off Hiring, Hiring disappears after save, with no reload of the whole app needed (`router.refresh()`).
+3. **Module visibility.** `isModuleOn(settings, key) = settings.modules_enabled.includes(key)`. For project managers and staff the rail shows a module item only if on; owners and admins also see off modules, dimmed with "ADD" (see Layout §1). The "Modules" label shows only if at least one module item is shown. Worked example (TMG seed `{build,workload,accounting,marketing,knowledge,website,hiring}`): rail shows 6 core + label + 7 modules = 14 rows. If Blake turns off Hiring, Hiring disappears after save, with no reload of the whole app needed (`router.refresh()`).
 4. **Module route guard.** Each module page calls `requireModule(key)`. If off → render `<ModuleOff module="Build">`: H1 "Build is turned off", text "Build isn't turned on for [Firm].", and for owner/admin a button "Turn on in Settings" → `/app/settings/modules`; others see "Ask an owner or admin to turn it on." HTTP status 200, rail unchanged.
 5. **Current item.** `/app` is current only on exact match. Any other item is current when `pathname === route || pathname.startsWith(route + '/')`.
 6. **Create firm** (server action `createFirm`), in this order:
@@ -153,7 +153,7 @@ Put the two placeholders behind constants in `src/lib/features.ts`: `FEATURES = 
 - [x] Given the DB insert fails during create-firm, then the Clerk org is deleted and no `firms` row exists.
 - [x] Given `modules_enabled = '{}'` and I am staff, when the shell renders, then the rail shows exactly Home, Projects, Contacts, Team, Time, Reports and no "Modules" label.
 - [x] Given `modules_enabled = '{}'` and I am an admin, when the shell renders, then the rail shows the 6 core items, the "Modules" label and all 7 modules, each marked "ADD".
-- [x] Given `modules_enabled = '{schedule,build,workload,accounting,marketing,knowledge,website,hiring}'`, when the shell renders, then the rail shows 6 core items, the "Modules" label, then Build, Workload, Accounting, Marketing, Knowledge, Website, Hiring in that order, and no Schedule or Code item.
+- [x] Given `modules_enabled = '{build,workload,accounting,marketing,knowledge,website,hiring}'`, when the shell renders, then the rail shows 6 core items, the "Modules" label, then Build, Workload, Accounting, Marketing, Knowledge, Website, Hiring in that order, and no Code item.
 - [x] Given Build is off, when I open `/app/build`, then I see "Build is turned off" and, as staff, no "Turn on in Settings" button.
 - [x] Given Build is off and I am an admin, when I open `/app/build`, then I see a "Turn on in Settings" link to `/app/settings/modules`.
 - [x] Given the rail is expanded, when I click "Collapse menu", then the rail is 64px wide, labels are hidden, the toggle's aria-label is "Expand menu", and cookie `architrac_rail_min=1` is set.
@@ -175,7 +175,7 @@ Put the two placeholders behind constants in `src/lib/features.ts`: `FEATURES = 
 2. **Rail preference across devices:** cookie/localStorage is per browser. If it should follow the person to every device: *Data model addition needed: `users.preferences jsonb` (e.g. `{ "railMin": true }`).*
 3. ~~**Open sign-up**~~ **Decided (0.3):** Clerk sign-up mode is **Invite only** (called "Restricted" on older Clerk screens) until Release 1 ships. Setup steps in `docs/GETTING_STARTED.md` → Setting up Clerk.
 4. **Rail order of core items:** confirm Reports stays in core (the Settings plan card lists "Projects, Contacts, Team, Time, Reports" as Core, which matches).
-5. Data model additions this spec depends on (defined in settings-firm spec): `firms.display_name`, `invitations` table, `schedule` and `code` as valid `modules_enabled` keys.
+5. Data model additions this spec depends on (defined in settings-firm spec): `firms.display_name`, `invitations` table, `code` as a valid `modules_enabled` key (Schedule is not a module; decided 0.6).
 
 ## Implementation notes (0.5)
 - **Page title:** the header works out the title from the page's address (`titleForPath` in `src/lib/shell/nav.ts`), so it's right on first paint. `<PageTitle title parent>` exists for the breadcrumb look; pages whose title comes from data (a project's name, Release 1) will pass it through a header slot when they're built.

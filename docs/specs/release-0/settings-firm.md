@@ -64,7 +64,7 @@ Inside the app shell. Header page title: "Settings". Settings gear in header is 
 **4. Modules & plan** (column, gap 16px, max-width 1040px):
 - **Plan card** (white, padding 20px 24px, `flex-wrap` gap 20px): three stat blocks, each label (11px/600 uppercase) + value (20px/600) + hint (12.5px):
   - "Plan" / "ArchiTrac Core" / "Projects, Contacts, Team, Time, Reports · {seats} seats"
-  - "Modules on" / "{on} of 9" / "Billed monthly per seat"
+  - "Modules on" / "{on} of 8" / "Billed monthly per seat"
   - "Monthly total" / "[Price]" / "Pricing not set yet"
   - Right: "Billing history" button — **not rendered** in Release 0.
 - **Module cards**: grid `repeat(auto-fill, minmax(300px, 1fr))`, gap 16px. One card per module in the order of the seed table below. Card: white, padding 18px 20px, border 1px `#141414` when on / `#DCDCDC` when off. Header row: 40px icon box (on: bg `#141414` icon white; off: bg `#EBEBEB` icon `#4D4D4D`), name (13px/700 uppercase), price line under name ("On · [Price] per seat / month" or "Off · [Price] per seat / month"), switch on the right. Description paragraph below (line-height 1.5, `#3A3A3A`).
@@ -83,7 +83,7 @@ Inside the app shell. Header page title: "Settings". Settings gear in header is 
 | Firm profile fields | `firms.*` per table above | |
 | Logo | `firms.logo_url` | |
 | Seats | `count(memberships) where firm_id = me and active` | TMG seed: 14 |
-| Modules on | count of the 9 module keys present in `firm_settings.modules_enabled` | TMG seed: 8 of 9 |
+| Modules on | count of the 8 module keys present in `firm_settings.modules_enabled` | TMG seed: 7 of 8 |
 | Module card on/off | `'<key>' = any(firm_settings.modules_enabled)` | |
 | People rows | `memberships` ⨝ `users` (`first_name`, `last_name`, `email`, `initials`), `memberships.title`, `.app_role`, `.active` | Status: `active` → Active, else Off |
 | Invitation rows | `invitations` * where `status in ('pending','expired')` | `invited_at` formatted "Oct 20" |
@@ -105,8 +105,8 @@ Inside the app shell. Header page title: "Settings". Settings gear in header is 
 
 ## Business rules
 1. **Settings guard.** Every settings route and server action calls `requireRole(['owner','admin'])`.
-2. **Module keys** (constant `MODULE_KEYS` in `src/lib/modules.ts`, order = card order): `schedule, build, workload, accounting, marketing, knowledge, code, website, hiring` → 9 total. Rail modules are these minus `schedule` and `code`.
-3. **Modules on count** = `MODULE_KEYS.filter(k => modules_enabled.includes(k)).length`. Example, TMG seed (all but `code`): 8 → "8 of 9".
+2. **Module keys** (constant `MODULE_KEYS` in `src/lib/modules.ts`, order = card order): `build, workload, accounting, marketing, knowledge, code, website, hiring` → 8 total. Rail modules are these minus `code` (Code shows up inside projects instead of the menu). Schedule is not a module: it is a built-in part of Projects (decided by Blake, 0.6).
+3. **Modules on count** = `MODULE_KEYS.filter(k => modules_enabled.includes(k)).length`. Example, TMG seed (all but `code`): 7 → "7 of 8".
 4. **Save model.** Firm profile and Modules are one form each; nothing is written until Save changes. After save: dirty = false, "Saved" shows. If the server returns errors, dirty stays true and nothing is written (all-or-nothing).
 5. **Normalization examples:** phone "843.555.0100" → `(843) 555-0100`; website "https://www.TMG-Arch.com/" → `www.tmg-arch.com`; display name "" → `null` (app falls back to `name`).
 6. **App roles** (labels and help text used in the role select and hint):
@@ -142,33 +142,34 @@ Inside the app shell. Header page title: "Settings". Settings gear in header is 
 - Team page's fine-grained permissions (Principal, Approve team time, Accounting access, Firm admin checkboxes) — Release 1 Team spec.
 
 ## Acceptance tests
-- [ ] Given I am an owner, when I open `/app/settings`, then I am redirected to `/app/settings/firm` and "Firm profile" is current in the section nav.
-- [ ] Given I am a project manager, when I open `/app/settings/modules`, then I see "You don't have access to this page", and calling `updateModules` directly returns a permission error.
-- [ ] Given the Firm profile is clean, then Save changes is disabled; when I type in Main phone, then "Unsaved changes" shows and Save is enabled.
-- [ ] Given I enter phone "843.555.0100" and website "https://www.TMG-Arch.com/", when I save, then `firms.phone = '(843) 555-0100'`, `firms.website = 'www.tmg-arch.com'`, and "Saved" shows.
-- [ ] Given I clear Firm name, when I save, then I see "Firm name is required", focus is on Firm name, and `firms.name` is unchanged.
-- [ ] Given I enter ZIP "2940", when I save, then I see "Enter a 5-digit ZIP" and nothing is saved.
-- [ ] Given I change Display name to "TMG", when I save, then the header firm switcher shows "TMG", the Clerk org name is "TMG", and one `activity_log` row has `changes.display_name.after = 'TMG'`.
-- [ ] Given I have unsaved changes, when I click "Modules & plan" in the section nav, then I am asked "Discard unsaved changes?" and cancelling keeps me on Firm profile.
-- [ ] Given the TMG seed, when I open Modules & plan, then 9 cards show in order Schedule, Build, Workload, Accounting, Marketing, Knowledge, Code, Website, Hiring, Code is off, and the plan card says "8 of 9" and "14 seats".
-- [ ] Given Hiring is on, when I switch it off and save, then `modules_enabled` no longer contains `hiring`, the Hiring rail item disappears without a full reload, and the card border is `#DCDCDC`.
-- [ ] Given I toggle Code on and then off again, then the form is still dirty until saved (mockup behavior), and saving writes the same array as before.
-- [ ] Given I am an admin, when I open the Role select in the invite form, then it lists Admin, Project manager, Staff and not Owner.
-- [ ] Given I invite "new.designer@example.com" as Staff with title "Designer", then an `invitations` row (pending, staff, Designer) exists, Clerk received an invitation, and an "Invited" row shows in the table.
-- [ ] Given "kl@tmg.example" is an active member, when I invite that email, then I see "kl@tmg.example is already a member" and no invitation is created.
-- [ ] Given a pending invitation for staff, when the invitee signs up through the link, then a `memberships` row with `app_role = 'staff'` and title "Designer" exists and the invitation is `accepted`.
-- [ ] Given a pending invitation, when I click Revoke, then the Clerk invitation is revoked, the row disappears, and `invitations.status = 'revoked'`.
-- [ ] Given I am an admin, when I view an owner's row, then the role is plain text and there is no Actions menu.
-- [ ] Given I am the only active owner, then my own row has no role select and no Deactivate; and if another owner tries to demote me while I'm the last owner, they see "{Firm} needs at least one owner."
-- [ ] Given I deactivate JR, then `memberships.active = false` for JR, JR's Clerk org membership is removed, JR's status pill reads "Off", and JR's time entries still exist.
-- [ ] Given firm A and firm B, when an admin of firm A requests firm B's people list via the server action with firm B's id, then no rows are returned (RLS).
-- [ ] Given a 375px viewport, then the section nav stacks above Main and the people table scrolls horizontally inside its card without page scroll.
+- [x] Given I am an owner, when I open `/app/settings`, then I am redirected to `/app/settings/firm` and "Firm profile" is current in the section nav.
+- [x] Given I am a project manager, when I open `/app/settings/modules`, then I see "You don't have access to this page", and calling `updateModules` directly returns a permission error.
+- [x] Given the Firm profile is clean, then Save changes is disabled; when I type in Main phone, then "Unsaved changes" shows and Save is enabled.
+- [x] Given I enter phone "843.555.0100" and website "https://www.TMG-Arch.com/", when I save, then `firms.phone = '(843) 555-0100'`, `firms.website = 'www.tmg-arch.com'`, and "Saved" shows.
+- [x] Given I clear Firm name, when I save, then I see "Firm name is required", focus is on Firm name, and `firms.name` is unchanged.
+- [x] Given I enter ZIP "2940", when I save, then I see "Enter a 5-digit ZIP" and nothing is saved.
+- [x] Given I change Display name to "TMG", when I save, then the header firm switcher shows "TMG", the Clerk org name is "TMG", and one `activity_log` row has `changes.display_name.after = 'TMG'`.
+- [x] Given I have unsaved changes, when I click "Modules & plan" in the section nav, then I am asked "Discard unsaved changes?" and cancelling keeps me on Firm profile.
+- [x] Given the TMG seed, when I open Modules & plan, then 8 cards show in order Build, Workload, Accounting, Marketing, Knowledge, Code, Website, Hiring, Code is off, there is no Schedule card, and the plan card says "7 of 8" and "14 seats". *(0.6: tested on a test firm (4 seats); `pnpm db:seed` isn't built yet, so the TMG numbers are checked in unit tests.)*
+- [x] Given Hiring is on, when I switch it off and save, then `modules_enabled` no longer contains `hiring`, the Hiring rail item disappears without a full reload (for owners and admins it turns dimmed with "ADD" instead, per the 0.5 decision), and the card border is `#DCDCDC`.
+- [x] Given I toggle Code on and then off again, then the form is still dirty until saved (mockup behavior), and saving writes the same array as before.
+- [x] Given I am an admin, when I open the Role select in the invite form, then it lists Admin, Project manager, Staff and not Owner.
+- [x] Given I invite "new.designer@example.com" as Staff with title "Designer", then an `invitations` row (pending, staff, Designer) exists, Clerk received an invitation, and an "Invited" row shows in the table.
+- [x] Given "kl@tmg.example" is an active member, when I invite that email, then I see "kl@tmg.example is already a member" and no invitation is created.
+- [x] Given a pending invitation for staff, when the invitee signs up through the link, then a `memberships` row with `app_role = 'staff'` and title "Designer" exists and the invitation is `accepted`.
+- [x] Given a pending invitation, when I click Revoke, then the Clerk invitation is revoked, the row disappears, and `invitations.status = 'revoked'`.
+- [x] Given I am an admin, when I view an owner's row, then the role is plain text and there is no Actions menu.
+- [x] Given I am the only active owner, then my own row has no role select and no Deactivate; and if another owner tries to demote me while I'm the last owner, they see "{Firm} needs at least one owner."
+- [x] Given I deactivate JR, then `memberships.active = false` for JR, JR's Clerk org membership is removed, JR's status pill reads "Off", and JR's time entries still exist. *(0.6: time entries arrive in Release 1; the test checks the membership row is kept, not archived.)*
+- [x] Given firm A and firm B, when an admin of firm A requests firm B's people list via the server action with firm B's id, then no rows are returned (RLS).
+- [x] Given a 375px viewport, then the section nav stacks above Main and the people table scrolls horizontally inside its card without page scroll.
 
 ## Open questions
-1. *Data model addition needed:* `firms.display_name text null`, `address_line1`, `address_line2`, `city`, `state` (2-letter), `postal_code`, `phone`, `website`, `license_number` (all `text null`). Same address column names as `companies` for consistency.
-2. *Data model addition needed:* `invitations` table — `id`, `firm_id`, `email citext`, `app_role app_role`, `title text null`, `firm_role_id uuid null`, `status enum invitation_status ('pending','accepted','revoked','expired')`, `clerk_invitation_id text`, `invited_by uuid → users`, `invited_at timestamptz`, `accepted_at timestamptz null`, `membership_id uuid null`; partial unique index on (`firm_id`, `email`) where `status = 'pending'`; RLS policy + cross-firm test like every firm-owned table. **Conflict:** `release-1/team.md` proposes instead putting invite state on `memberships` (`status`, `invited_email`, nullable `user_id`). Pick one before Release 0 is built; this spec recommends the separate table so `memberships.user_id` stays required. Needed because Clerk has no app role and the person has no `users` row until they accept.
-3. *Data model addition needed:* `firm_settings.modules_enabled` valid keys must include `schedule` and `code` (mockup has 9 modules; DATA_MODEL lists 7). Default for a **new** firm: this spec uses `'{}'` (nothing on) vs DATA_MODEL's all-7 default — pick one. TMG seed = `{schedule,build,workload,accounting,marketing,knowledge,website,hiring}` (mockup: all on except Code).
-4. Mockup says Workload "Uses Schedule". Should turning Workload on force Schedule on (and block turning Schedule off while Workload is on)? This spec does not enforce it.
+1. ~~Firm profile columns~~ **Done (0.6):** see DATA_MODEL `firms`. ~~`firms.display_name text null`, `address_line1`, `address_line2`, `city`, `state` (2-letter), `postal_code`, `phone`, `website`, `license_number` (all `text null`). Same address column names as `companies` for consistency.~~
+2. ~~Invitations~~ **Decided and done (0.6):** separate `invitations` table (DATA_MODEL). ~~`invitations` table — `id`, `firm_id`, `email citext`, `app_role app_role`, `title text null`, `firm_role_id uuid null`, `status enum invitation_status ('pending','accepted','revoked','expired')`, `clerk_invitation_id text`, `invited_by uuid → users`, `invited_at timestamptz`, `accepted_at timestamptz null`, `membership_id uuid null`; partial unique index on (`firm_id`, `email`) where `status = 'pending'`; RLS policy + cross-firm test like every firm-owned table. **Conflict:** `release-1/team.md` proposes instead putting invite state on `memberships` (`status`, `invited_email`, nullable `user_id`). Pick one before Release 0 is built; this spec recommends the separate table so `memberships.user_id` stays required. Needed because Clerk has no app role and the person has no `users` row until they accept.~~
+3. ~~Module keys~~ **Decided (Blake, 0.6):** Schedule is a built-in part of Projects, not a module (the mockup's Schedule card is dropped). Code is an add-on module with no menu item; it shows up inside projects. Valid keys: the 7 rail add-ons + `code` = 8. New firms start with `'{}'`. TMG seed = all except `code`.
+4. ~~Workload "Uses Schedule"~~ Moot: Schedule is always available as part of Projects.
 5. Should admins be allowed to turn modules on/off once modules are billed per seat, or owner only? Spec: both, until pricing exists.
 6. Logo storage provider (Vercel Blob, S3, Cloudflare R2) — needed before "Upload logo" is enabled.
 7. Fine-grained Team permissions (mockup Team drawer: Principal, Approve team time, Accounting access, Firm admin) don't map 1:1 to `app_role`. Decide in the Release 1 Team spec whether these become extra membership flags.
+8. **Expired invitations (0.6):** Clerk sends no webhook when an invitation expires (30 days), so rows stay "Invited" after Clerk has expired them. Resend still works (it creates a fresh Clerk invitation). Options: a daily job that asks Clerk for expired invitations, or checking Clerk when the Users page loads. Not built yet.

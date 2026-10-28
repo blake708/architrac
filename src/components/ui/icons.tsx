@@ -44,6 +44,23 @@ export function ChevronDownIcon(props: SVGProps<SVGSVGElement>) {
   );
 }
 
+export function CheckIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon strokeWidth="2.5" {...props}>
+      <path d="M5 12l5 5 9-10" />
+    </Icon>
+  );
+}
+
+/** "⋯" for row action menus. */
+export function MoreIcon(props: SVGProps<SVGSVGElement>) {
+  return (
+    <Icon {...props}>
+      <path d="M5 12h.01M12 12h.01M19 12h.01" strokeWidth="3" />
+    </Icon>
+  );
+}
+
 export function SearchIcon(props: SVGProps<SVGSVGElement>) {
   return (
     <Icon {...props}>

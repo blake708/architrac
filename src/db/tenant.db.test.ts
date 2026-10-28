@@ -3,7 +3,14 @@ import type { Pool } from "@neondatabase/serverless";
 import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { closeDb, getDb } from "./client";
-import { activityLog, firmSettings, firms, memberships, teams } from "./schema";
+import {
+  activityLog,
+  firmSettings,
+  firms,
+  invitations,
+  memberships,
+  teams,
+} from "./schema";
 import { type TenantDb, withFirm } from "./tenant";
 import {
   createOwnerPool,
@@ -177,6 +184,32 @@ const cases: TableCase[] = [
         entityType: "team",
         entityId: B.teamId,
         action: "created",
+      }),
+  },
+  {
+    table: "invitations",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: invitations.firmId })
+        .from(invitations)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) =>
+      db
+        .update(invitations)
+        .set({ title: "hacked" })
+        .where(eq(invitations.id, B.invitationId))
+        .returning(),
+    readB: (db) =>
+      db
+        .select({ v: invitations.title })
+        .from(invitations)
+        .where(eq(invitations.id, B.invitationId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db.insert(invitations).values({
+        firmId: B.firmId,
+        email: `sneaky-${randomUUID()}@example.com`,
+        appRole: "owner",
       }),
   },
 ];

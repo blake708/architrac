@@ -17,12 +17,10 @@ export const RAIL_MODULE_KEYS = [
 ] as const;
 export type RailModuleKey = (typeof RAIL_MODULE_KEYS)[number];
 
-/**
- * Every valid `firm_settings.modules_enabled` key. `schedule` and `code` are
- * switched on in Settings but never get a rail item.
- */
-export const MODULE_KEYS = ["schedule", ...RAIL_MODULE_KEYS, "code"] as const;
-export type ModuleKey = (typeof MODULE_KEYS)[number];
+// Every valid module key is in src/lib/modules.ts. `code` is a module with no
+// rail item: it shows up inside projects.
+export type { ModuleKey } from "@/lib/modules";
+import type { ModuleKey } from "@/lib/modules";
 
 export type NavKey = CoreKey | RailModuleKey;
 
