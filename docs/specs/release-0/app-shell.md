@@ -169,6 +169,6 @@ Put the two placeholders behind constants in `src/lib/features.ts`: `FEATURES = 
 ## Open questions
 1. **Modules that are off:** you asked for them hidden; the mockup (`RAIL()` + Settings copy "A module that's off still shows in the menu with an Add prompt") shows them dimmed with an "ADD" badge as an upsell. This spec hides them. Confirm, or switch to the mockup's behavior.
 2. **Rail preference across devices:** cookie/localStorage is per browser. If it should follow the person to every device: *Data model addition needed: `users.preferences jsonb` (e.g. `{ "railMin": true }`).*
-3. ~~**Open sign-up**~~ **Decided (0.3):** Clerk sign-up mode is **Restricted** (invite-only) until Release 1 ships. Setup steps in `docs/GETTING_STARTED.md` → Setting up Clerk.
+3. ~~**Open sign-up**~~ **Decided (0.3):** Clerk sign-up mode is **Invite only** (called "Restricted" on older Clerk screens) until Release 1 ships. Setup steps in `docs/GETTING_STARTED.md` → Setting up Clerk.
 4. **Rail order of core items:** confirm Reports stays in core (the Settings plan card lists "Projects, Contacts, Team, Time, Reports" as Core, which matches).
 5. Data model additions this spec depends on (defined in settings-firm spec): `firms.display_name`, `invitations` table, `schedule` and `code` as valid `modules_enabled` keys.

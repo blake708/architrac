@@ -154,7 +154,7 @@ Clerk's dashboard moves things around now and then. If a label below doesn't mat
    - **Membership**: choose **Membership optional** (personal accounts allowed). *Important:* "Membership required" makes Clerk show its own create-organization screen instead of ArchiTrac's create-firm page.
    - **Allow users to create organizations**: on.
    - **Default role for creators**: **Admin**.
-5. **Invite-only sign-up** (decided for the pilot). **Configure → Restrictions** → **Sign-up mode: Restricted**. Then add yourself: **Users → Create user** with your email (or **Invite**). Anyone not added this way can't sign up.
+5. **Invite-only sign-up** (decided for the pilot). **Configure → Restrictions** → **Sign-up mode: Invite only** (older Clerk screens call this "Restricted"). Then add yourself: **Users → Create user** with your email (or **Invite**). Anyone not added this way can't sign up.
 6. **Try it.** Run `pnpm dev` and open http://localhost:3000/app. You should land on sign-in. Sign in, create your firm, and you'll see its name on the temporary home page.
 7. **Webhook (do this in 0.7, once the app has a public address).** **Configure → Webhooks → Add endpoint**:
    - URL: `https://<your-app-address>/api/webhooks/clerk`
