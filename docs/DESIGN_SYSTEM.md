@@ -35,10 +35,10 @@ Badges use the tint as background and the strong color as text (e.g. green-tint 
 | **Input / Select / Textarea** | Height 38px, white, 1px line-input border, 2px radius, 0 10px padding; focus ring 2px blue. Label above in 12px muted uppercase caption. Error text 12px red below. |
 | **Table** | Header row surface-2, 11px uppercase muted, 1px line bottom border; body 13px; numeric columns right-aligned in mono; row divider line-soft; hover row surface-2. |
 | **Card** | White, 1px line border, 2px radius, 20px padding; header with uppercase title and optional actions on the right. |
-| **KPI tile** | Card with caption label, 26px mono value, optional delta/status line. |
+| **KPI tile** | Card with caption label, 26px Barlow value (tabular figures, as in the mockup), optional delta/status line. |
 | **Tabs** | Underline style: 13px uppercase, active tab ink with 2px bottom border, inactive muted. |
 | **Badge** | 11px uppercase, 2px radius, 2px 6px padding, tint background + strong text. |
-| **Progress bar** | 6px high, line-soft track, fill blue (normal), orange (≥ 90%), red (> 100%). Used for hours vs budget. |
+| **Progress bar** | 10px high, line-soft track, blue fill. At ≥ 90% the percent text turns orange (fill stays blue). Over 100% the bar is rescaled to the amount used: blue up to the budget, then a red hatched segment for the overrun, and red percent text. Used for hours vs budget. |
 | **Avatar** | Circle, initials 11px weight 600, ink-2 background, white text. |
 | **Dialog / Drawer** | Radix Dialog; white, 2px radius, header with uppercase title, footer right-aligned actions. |
 | **Empty state** | Centered in card: 1-line title, 1-line help text, one primary action. |
