@@ -1,13 +1,28 @@
 "use server";
 
 import { auth } from "@clerk/nextjs/server";
-import { getSession } from "@/lib/auth/session";
+import { APP_ROLES, requireRole } from "@/lib/auth/permissions";
+import { getSession, requireSession } from "@/lib/auth/session";
 import {
   createClerkOrganization,
   deleteClerkOrganization,
+  listClerkOrganizationIds,
   loadClerkUser,
 } from "@/server/auth/clerk";
 import { type CreateFirmResult, createFirmCore } from "./create-firm";
+import { type MyFirm, listMyFirmsCore } from "./my-firms";
+
+/**
+ * Server action for the firm switcher: the firms I can switch to.
+ * Permission: any active member (every role).
+ */
+export async function listMyFirms(): Promise<MyFirm[]> {
+  const { firm, user, membership } = await requireSession();
+  requireRole(membership, ...APP_ROLES);
+  return listMyFirmsCore(user.id, firm.id, {
+    listClerkOrgIds: () => listClerkOrganizationIds(user.clerkUserId),
+  });
+}
 
 /**
  * Server action for /onboarding/create-firm.
