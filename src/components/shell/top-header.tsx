@@ -1,5 +1,6 @@
 import { ROLE_LABELS, can } from "@/lib/auth/permissions";
 import type { FirmSession } from "@/lib/auth/session";
+import { listMyFirms } from "@/server/firms/my-firms";
 import { AccountMenu } from "./account-menu";
 import { FirmSwitcher } from "./firm-switcher";
 import { CurrentPageTitle, SettingsGear } from "./header-links";
@@ -8,17 +9,19 @@ import { MobileMenuButton } from "./shell-frame";
 /**
  * The dark bar across the top (app-shell spec, layout section 3).
  * Runs on the server, so the Settings gear is left out of the page entirely
- * for people who can't use it.
+ * for people who can't use it, and the firm switcher knows how many firms
+ * there are (one firm: just the name, no menu).
  */
-export function TopHeader({ session }: { session: FirmSession }) {
+export async function TopHeader({ session }: { session: FirmSession }) {
   const { firm, user, membership } = session;
+  const firms = await listMyFirms(session);
   const name = `${user.firstName} ${user.lastName}`.trim() || user.email;
 
   return (
     <header className="flex flex-wrap items-center gap-4 bg-chrome px-4 py-2.5 text-chrome-text md:px-page-x">
       <MobileMenuButton />
       {/* Firm display names arrive in 0.6 (settings-firm spec). */}
-      <FirmSwitcher name={firm.name} logoUrl={firm.logoUrl} />
+      <FirmSwitcher name={firm.name} logoUrl={firm.logoUrl} firms={firms} />
       <CurrentPageTitle />
       <div className="ml-auto flex flex-wrap items-center gap-3">
         {/* The search box (FEATURES.globalSearch) and notifications bell

@@ -62,7 +62,7 @@ The module keys `schedule` and `code` (Settings → Modules & plan) never get a 
 **2. Right column**: `flex:1 1 0; min-width:0; flex-direction:column`, containing the header then the page.
 
 **3. Top header** (`<TopHeader>`, `<header>`): background `#141414`, text `#F2F2F2`, padding 10px 32px, `display:flex; flex-wrap:wrap; align-items:center; gap:16px`. Left to right:
-- **Firm switcher** (`<FirmSwitcher>`): button 36px tall, padding 0 10px 0 4px, border 1px `#3A3A3A`. Contains a 28px tile (background `#F2F2F2`, text `#141414`, 12px/700) showing the first letter of the firm's display name (or `<img>` of `firms.logo_url` if set), the firm display name (600), and a 14px chevron. Click opens a menu (see Actions).
+- **Firm switcher** (`<FirmSwitcher>`): button 36px tall, padding 0 10px 0 4px, border 1px `#3A3A3A`. Contains a 28px tile (background `#F2F2F2`, text `#141414`, 12px/700) showing the first letter of the firm's display name (or `<img>` of `firms.logo_url` if set), the firm display name (600), and a 14px chevron. Click opens a menu (see Actions). **Only when I'm an active member of two or more firms** (decided by Blake, 0.5); with one firm, the tile and name show as plain text with no border, chevron or menu.
 - **Page title** (`<PageTitle>`): uppercase, weight 500, letter-spacing .08em. Optional breadcrumb parent before it: parent link in `#BDBDBD` followed by " / " (mockup `Proposal.dc.html`). Each page passes `title` and optional `parent={label, href}`.
 - **Right cluster** (`margin-left:auto`, gap 12px):
   - Global search (34px, bg `#2A2A2A`, 200px input, placeholder "Search everything") — **placeholder: NOT rendered in Release 0.**
@@ -133,7 +133,7 @@ Put the two placeholders behind constants in `src/lib/features.ts`: `FEATURES = 
 
 ## States
 - **Empty state:** new firm with no modules → for staff and PMs the rail has 6 core items and no "Modules" label; owners and admins see the label and all 7 modules marked "ADD". Core pages in Release 0 render `<ComingSoon title="Projects" release="1">` ("Projects arrives in Release 1.").
-- **Loading state:** `loading.tsx` inside the shell shows a page-header skeleton (grey bars `#EBEBEB`) while rail and header stay put. The firm switcher menu shows "Loading firms…" while fetching.
+- **Loading state:** `loading.tsx` inside the shell shows a page-header skeleton (grey bars `#EBEBEB`) while rail and header stay put. The firm list is loaded on the server with the page, so the switcher has no loading state.
 - **Error state:** `error.tsx` inside the shell: H1 "Something went wrong", text "Try again. If it keeps happening, send Blake this code: {digest}.", button "Try again" (`reset()`). Create-firm errors show inline above the button: "We couldn't create your firm. Nothing was saved. Try again."
 - **Permission-denied state:** `<AccessDenied>` inside the shell: H1 "You don't have access to this page", text "Ask an owner or admin of [Firm] if you need it.", link "Go to Home". **404:** `src/app/(app)/app/not-found.tsx` inside the shell: H1 "Page not found", text "This page doesn't exist or was moved.", link "Go to Home". Outside `/app`, root `not-found.tsx` with logo only and link to `/`.
 
@@ -162,6 +162,7 @@ Put the two placeholders behind constants in `src/lib/features.ts`: `FEATURES = 
 - [x] Given I am staff, then the Settings gear is not rendered, and when I open `/app/settings/firm`, then I see "You don't have access to this page".
 - [x] Given I am an owner on `/app/settings/firm`, then the gear has `aria-current="page"`.
 - [x] Given Release 0 feature flags, then no search input and no notifications button are in the header.
+- [x] Given I belong to only one firm, then the header shows the firm name and no switcher button or menu.
 - [x] Given I belong to two firms, when I pick the second in the firm switcher, then the header shows the second firm's name and the rail reflects that firm's `modules_enabled`.
 - [x] Given my membership has `active = false`, when I open `/app`, then I see "Your access to [Firm] has been turned off" and no rail items.
 - [x] Given a viewport of 375px, then the rail is hidden, a menu button is shown, and opening it shows the drawer; pressing Esc closes it and focus returns to the menu button.
@@ -178,7 +179,7 @@ Put the two placeholders behind constants in `src/lib/features.ts`: `FEATURES = 
 
 ## Implementation notes (0.5)
 - **Page title:** the header works out the title from the page's address (`titleForPath` in `src/lib/shell/nav.ts`), so it's right on first paint. `<PageTitle title parent>` exists for the breadcrumb look; pages whose title comes from data (a project's name, Release 1) will pass it through a header slot when they're built.
-- **Firm switcher list:** row-level security only allows one firm at a time, so the list asks Clerk which organizations the person is in, then checks each firm's membership through `withFirm()` (`src/server/firms/my-firms.ts`). No cross-firm database function was added.
+- **Firm switcher list:** row-level security only allows one firm at a time, so the list asks Clerk which organizations the person is in, then checks each firm's membership through `withFirm()` (`src/server/firms/my-firms.ts`). The header loads this list on the server with each page, so it knows whether to show the switcher at all. No cross-firm database function was added.
 - **Firm name:** shows `firms.name` until `firms.display_name` arrives in 0.6.
 - **Module route guard:** module pages render `<ModulePage moduleKey>` (`src/components/shell/module-page.tsx`), which does the `isModuleOn` check described as `requireModule` above.
 - **Unknown `/app` addresses:** a catch-all route (`src/app/(app)/app/[...missing]`) sends them to the in-shell not-found page.

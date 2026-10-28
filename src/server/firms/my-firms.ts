@@ -1,6 +1,8 @@
 import { and, eq } from "drizzle-orm";
 import { firms, memberships } from "@/db/schema";
 import { findFirmIdByClerkOrg, withFirm } from "@/db/tenant";
+import type { FirmSession } from "@/lib/auth/session";
+import { listClerkOrganizationIds } from "@/server/auth/clerk";
 
 // The firm switcher's list (app-shell spec, "Firm switcher menu list"):
 // firms where I have an active membership, sorted by name.
@@ -20,6 +22,16 @@ export type MyFirmsDeps = {
   /** Clerk organization ids this person belongs to. */
   listClerkOrgIds: () => Promise<string[]>;
 };
+
+/**
+ * The signed-in person's firms, for the header (server code only). Loaded
+ * when the page is drawn so the header knows whether to offer a switcher.
+ */
+export function listMyFirms({ firm, user }: FirmSession): Promise<MyFirm[]> {
+  return listMyFirmsCore(user.id, firm.id, {
+    listClerkOrgIds: () => listClerkOrganizationIds(user.clerkUserId),
+  });
+}
 
 export async function listMyFirmsCore(
   userId: string,

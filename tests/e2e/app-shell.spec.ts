@@ -188,6 +188,17 @@ test.describe("header", () => {
     ).toHaveCount(0);
   });
 
+  test("in only one firm: the firm name shows with no switcher menu", async ({
+    page,
+  }) => {
+    await signInAs(page, "staff");
+    const header = page.getByRole("banner");
+    await expect(page.getByTestId("firm-name")).toHaveText(FIRMS.beta.name);
+    await expect(
+      header.getByRole("button", { name: FIRMS.beta.name }),
+    ).toHaveCount(0);
+  });
+
   test("account menu shows name, email and role", async ({ page }) => {
     await signInAs(page, "admin");
     await page.getByRole("button", { name: "Account menu" }).click();
