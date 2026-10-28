@@ -12,7 +12,7 @@
 -- (Neon rejects passwords without a mix of letters, numbers and symbols.)
 -- Do not save the real password in this file.
 
-create role architrac_app with login password 'Ax9-GI2925vlwFluieq6pvwphZPYWLPfoPLDIQlXH8htGvgQQm3b_k7Q'
+create role architrac_app with login password 'CHANGE_ME'
   nosuperuser nocreatedb nocreaterole noinherit nobypassrls;
 
 -- Works whatever the database is called (Neon's default is neondb).
