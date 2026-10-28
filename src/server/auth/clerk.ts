@@ -66,3 +66,72 @@ export async function deleteClerkOrganization(
   const client = await clerkClient();
   await client.organizations.deleteOrganization(clerkOrgId);
 }
+
+// --- Settings → Firm profile and Users & access (milestone 0.6) ---
+
+/** The Clerk calls the settings actions make. Tests pass a fake instead. */
+export type SettingsClerk = {
+  /** Rename the org (Clerk uses it in invitation emails). */
+  renameOrg(clerkOrgId: string, name: string): Promise<void>;
+  /** Send an invitation email. Returns Clerk's invitation id. */
+  createInvitation(p: {
+    clerkOrgId: string;
+    email: string;
+    role: "org:admin" | "org:member";
+    inviterClerkUserId: string;
+  }): Promise<string>;
+  revokeInvitation(p: {
+    clerkOrgId: string;
+    invitationId: string;
+    requestingClerkUserId: string;
+  }): Promise<void>;
+  setMemberRole(p: {
+    clerkOrgId: string;
+    clerkUserId: string;
+    role: "org:admin" | "org:member";
+  }): Promise<void>;
+  /** Remove someone from the org, so they can't sign in to this firm. */
+  removeMember(p: { clerkOrgId: string; clerkUserId: string }): Promise<void>;
+};
+
+export const settingsClerk: SettingsClerk = {
+  async renameOrg(clerkOrgId, name) {
+    const client = await clerkClient();
+    await client.organizations.updateOrganization(clerkOrgId, { name });
+  },
+  async createInvitation({ clerkOrgId, email, role, inviterClerkUserId }) {
+    const client = await clerkClient();
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const invitation = await client.organizations.createOrganizationInvitation({
+      organizationId: clerkOrgId,
+      emailAddress: email,
+      role,
+      inviterUserId: inviterClerkUserId,
+      redirectUrl: `${appUrl}/sign-up`,
+    });
+    return invitation.id;
+  },
+  async revokeInvitation({ clerkOrgId, invitationId, requestingClerkUserId }) {
+    const client = await clerkClient();
+    await client.organizations.revokeOrganizationInvitation({
+      organizationId: clerkOrgId,
+      invitationId,
+      requestingUserId: requestingClerkUserId,
+    });
+  },
+  async setMemberRole({ clerkOrgId, clerkUserId, role }) {
+    const client = await clerkClient();
+    await client.organizations.updateOrganizationMembership({
+      organizationId: clerkOrgId,
+      userId: clerkUserId,
+      role,
+    });
+  },
+  async removeMember({ clerkOrgId, clerkUserId }) {
+    const client = await clerkClient();
+    await client.organizations.deleteOrganizationMembership({
+      organizationId: clerkOrgId,
+      userId: clerkUserId,
+    });
+  },
+};

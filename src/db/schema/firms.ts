@@ -18,7 +18,23 @@ export const firms = pgTable(
     name: text("name").notNull(),
     slug: text("slug").notNull().unique(),
     clerkOrgId: text("clerk_org_id").notNull().unique(),
+    /** Shown in the app and on letterhead. Null = use name. */
+    displayName: text("display_name"),
     logoUrl: text("logo_url"),
+    // Firm profile (settings-firm spec). Same address names as companies.
+    addressLine1: text("address_line1"),
+    addressLine2: text("address_line2"),
+    city: text("city"),
+    /** 2-letter state code. */
+    state: text("state"),
+    postalCode: text("postal_code"),
+    /** Stored formatted: (843) 555-0100 */
+    phone: text("phone"),
+    email: text("email"),
+    /** Stored lowercase without https:// or a trailing slash. */
+    website: text("website"),
+    /** Firm license / certificate of authorization (COA) number. */
+    licenseNumber: text("license_number"),
     timezone: text("timezone").notNull().default("America/New_York"),
     fiscalYearStartMonth: smallint("fiscal_year_start_month")
       .notNull()

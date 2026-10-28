@@ -6,9 +6,8 @@
 
 export const E2E_PREFIX = "E2E ";
 
-/** Every module that gets a rail item, plus schedule (TMG's seed list). */
+/** Every module that gets a rail item (TMG's seed list: all but Code). */
 export const ALL_MODULES = [
-  "schedule",
   "build",
   "workload",
   "accounting",

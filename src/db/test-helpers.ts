@@ -20,7 +20,7 @@ export function createOwnerPool() {
 }
 
 /** Run SQL as the owner with one firm selected (works whether or not the owner bypasses RLS). */
-async function asFirm<T>(
+export async function asFirm<T>(
   pool: Pool,
   firmId: string,
   fn: (c: PoolClient) => Promise<T>,
@@ -48,6 +48,7 @@ export type TestFirm = {
   membershipId: string;
   teamId: string;
   activityLogId: string;
+  invitationId: string;
 };
 
 /** Create a firm with one user, membership, team, firm_settings row and activity_log row. */
@@ -97,7 +98,12 @@ export async function createTestFirm(
       "insert into activity_log (firm_id, actor_user_id, entity_type, entity_id, action) values ($1, $2, 'team', $3, 'created') returning id",
       [firmId, userId, teamId],
     );
+    const invite = await c.query<{ id: string }>(
+      "insert into invitations (firm_id, email, app_role, title, invited_by) values ($1, $2, 'staff', 'Designer', $3) returning id",
+      [firmId, `invitee-${suffix}@example.com`, userId],
+    );
     return {
+      invitationId: invite.rows[0].id,
       label,
       firmId,
       clerkOrgId,
@@ -117,6 +123,7 @@ export async function removeTestFirm(pool: Pool, firm: TestFirm) {
       [firm.firmId],
     );
     await c.query("delete from activity_log where firm_id = $1", [firm.firmId]);
+    await c.query("delete from invitations where firm_id = $1", [firm.firmId]);
     await c.query("delete from memberships where firm_id = $1", [firm.firmId]);
     await c.query("delete from teams where firm_id = $1", [firm.firmId]);
     await c.query("delete from firm_settings where firm_id = $1", [
@@ -131,6 +138,7 @@ export async function removeTestFirm(pool: Pool, firm: TestFirm) {
 export async function removeFirmById(pool: Pool, firmId: string) {
   await asFirm(pool, firmId, async (c) => {
     await c.query("delete from activity_log where firm_id = $1", [firmId]);
+    await c.query("delete from invitations where firm_id = $1", [firmId]);
     await c.query("delete from memberships where firm_id = $1", [firmId]);
     await c.query("delete from firm_settings where firm_id = $1", [firmId]);
   });
@@ -140,4 +148,49 @@ export async function removeFirmById(pool: Pool, firmId: string) {
 /** Remove a user row by Clerk id. Remove their memberships first. */
 export async function removeUserByClerkId(pool: Pool, clerkUserId: string) {
   await pool.query("delete from users where clerk_user_id = $1", [clerkUserId]);
+}
+
+export type TestMember = {
+  userId: string;
+  clerkUserId: string;
+  email: string;
+  membershipId: string;
+};
+
+/**
+ * Add a person to a test firm. Remove with removeTestUsers after the firm's
+ * memberships are gone (removeTestFirm does that).
+ */
+export async function addTestMember(
+  pool: Pool,
+  firm: TestFirm,
+  p: {
+    firstName: string;
+    lastName: string;
+    role: "owner" | "admin" | "project_manager" | "staff";
+    active?: boolean;
+    title?: string;
+  },
+): Promise<TestMember> {
+  const suffix = randomUUID().slice(0, 8);
+  const clerkUserId = `user_test_${suffix}`;
+  const email = `${p.firstName.toLowerCase()}-${suffix}@example.com`;
+  const user = await pool.query<{ id: string }>(
+    "insert into users (clerk_user_id, email, first_name, last_name, initials) values ($1, $2, $3, $4, $5) returning id",
+    [clerkUserId, email, p.firstName, p.lastName, p.firstName[0] + p.lastName[0]],
+  );
+  const userId = user.rows[0].id;
+  const membershipId = await asFirm(pool, firm.firmId, async (c) => {
+    const m = await c.query<{ id: string }>(
+      "insert into memberships (firm_id, user_id, app_role, active, title) values ($1, $2, $3, $4, $5) returning id",
+      [firm.firmId, userId, p.role, p.active ?? true, p.title ?? null],
+    );
+    return m.rows[0].id;
+  });
+  return { userId, clerkUserId, email, membershipId };
+}
+
+/** Remove user rows made by addTestMember (or by the code under test). */
+export async function removeTestUsers(pool: Pool, userIds: string[]) {
+  await pool.query("delete from users where id = any($1::uuid[])", [userIds]);
 }

@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import { isCurrent, isModuleOn, railEntries, titleForPath } from "./nav";
 
 const TMG = [
-  "schedule",
   "build",
   "workload",
   "accounting",
