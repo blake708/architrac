@@ -137,7 +137,7 @@ Open `docs/PROMPTS.md`. Every milestone has a prompt to paste. This is the loop 
 | **0.2 Database** | The cross-firm test passes; you can see tables in `pnpm db:studio` | Keep the two Neon connection strings (app and owner) straight. Never paste them in chat or commit them; they go in `.env.local` only |
 | **0.3 Auth** | You can sign up, create a firm, sign out and back in; visiting `/app` signed out redirects to sign-in | Follow "Setting up Clerk" below. The webhook needs a public URL, so it's connected in 0.7; local sign-up works without it |
 | **0.4 UI kit** | `/dev/ui` shows every component looking like the mockup | Compare side by side with the mockup in another browser window |
-| **0.5 App shell** | Menu rail, collapse toggle, and dark header match `Home.dc.html` | Add-on modules hide when turned off in settings |
+| **0.5 App shell** | Menu rail, collapse toggle, and dark header match `Home.dc.html`; `pnpm test:e2e` passes | Modules that are off are hidden from staff and PMs, and shown dimmed with "ADD" to owners and admins. Browser tests create throwaway users in your Clerk dev instance (see "Browser tests" below) |
 | **0.6 Settings** | You can invite a second email address and give it a role | Use a personal email to test the invite |
 | **0.7 Deploy** | The app runs at a vercel.app address and every pull request shows green checks | Production keys go in Vercel's settings, not in files |
 
@@ -162,6 +162,15 @@ Clerk's dashboard moves things around now and then. If a label below doesn't mat
    - Click **Create**, then copy the **Signing secret** (starts `whsec_`) into `CLERK_WEBHOOK_SIGNING_SECRET` (in Vercel for production).
 
    Until then everything still works locally: creating a firm saves your user and owner rows directly, and signing in fills in anything the webhook would have.
+
+### Browser tests (milestone 0.5)
+
+`pnpm test:e2e` signs in as test people using Clerk's official testing kit (`@clerk/testing`). Before the tests it creates five throwaway users (emails like `architrac-e2e-owner+clerk_test@example.com`) and two firms whose names start with `E2E `, in your **Clerk development instance** and your dev database. Afterwards it deletes them. If a run is interrupted, the next run cleans up first.
+
+- It needs `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `CLERK_SECRET_KEY` and `DATABASE_URL_OWNER` in `.env.local`.
+- It refuses to run with a production Clerk key (anything not starting `sk_test_`).
+- `+clerk_test` emails are Clerk's test addresses: no real email is sent.
+- The setup lives in `tests/e2e/support/`.
 
 ---
 

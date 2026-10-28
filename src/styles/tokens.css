@@ -39,6 +39,13 @@
   --color-chrome-text: #F2F2F2;
   --color-chrome-muted: #BDBDBD;
 
+  /* Menu rail (left) */
+  --color-rail: #000000;         /* rail background */
+  --color-rail-item: #C4C4C4;    /* rail item text and icon */
+  --color-rail-dim: #8A8A8A;     /* group label, collapse toggle, modules that are off */
+  --color-rail-badge: #D9D9D9;   /* "ADD" badge text */
+  --color-scrim: rgba(0, 0, 0, 0.4); /* behind the mobile menu drawer */
+
   /* ---------- Accents (meaning, not decoration) ---------- */
   --color-blue: #2F5BAA;         /* info, links in data, "current" */
   --color-blue-strong: #1E3F7A;
@@ -66,7 +73,7 @@
   --spacing-card: 20px;          /* card padding */
   --height-control: 38px;        /* buttons, inputs, selects */
   --height-control-sm: 34px;     /* header controls */
-  --width-rail: 232px;           /* menu rail expanded */
+  --width-rail: 216px;           /* menu rail expanded */
   --width-rail-min: 64px;        /* menu rail collapsed */
 }
 

@@ -46,7 +46,7 @@ Item order (icons are the SVG paths in `Settings.dc.html` → `ICONS`; copy them
 | 4 | Team | team | `/app/team` | always |
 | 5 | Time | time | `/app/time` | always |
 | 6 | Reports | reports | `/app/reports` | always |
-| — | "Modules" group label | | | at least one module below is shown |
+| — | "Modules" group label | | | at least one module item below is shown |
 | 7 | Build | build | `/app/build` | `'build' = any(firm_settings.modules_enabled)` |
 | 8 | Workload | workload | `/app/workload` | `'workload'` enabled |
 | 9 | Accounting | accounting | `/app/accounting` | `'accounting'` enabled |
@@ -57,10 +57,12 @@ Item order (icons are the SVG paths in `Settings.dc.html` → `ICONS`; copy them
 
 The module keys `schedule` and `code` (Settings → Modules & plan) never get a rail item.
 
+**Modules that are off** (decided by Blake, 0.5): hidden from project managers and staff. Owners and admins (`can(membership, 'modules.manage')`) still see them, after the modules that are on would be, in the same order: text `#8A8A8A`, an "ADD" badge (9.5px/600, bg `#2A2A2A`, text `#D9D9D9`, padding 1px 5px) at the right; collapsed, a 6px `#8A8A8A` dot at the item's top-right instead. `aria-label` = "Build (turned off)". The link still goes to the module's route, which shows `<ModuleOff>` with the "Turn on in Settings" button.
+
 **2. Right column**: `flex:1 1 0; min-width:0; flex-direction:column`, containing the header then the page.
 
 **3. Top header** (`<TopHeader>`, `<header>`): background `#141414`, text `#F2F2F2`, padding 10px 32px, `display:flex; flex-wrap:wrap; align-items:center; gap:16px`. Left to right:
-- **Firm switcher** (`<FirmSwitcher>`): button 36px tall, padding 0 10px 0 4px, border 1px `#3A3A3A`. Contains a 28px tile (background `#F2F2F2`, text `#141414`, 12px/700) showing the first letter of the firm's display name (or `<img>` of `firms.logo_url` if set), the firm display name (600), and a 14px chevron. Click opens a menu (see Actions).
+- **Firm switcher** (`<FirmSwitcher>`): button 36px tall, padding 0 10px 0 4px, border 1px `#3A3A3A`. Contains a 28px tile (background `#F2F2F2`, text `#141414`, 12px/700) showing the first letter of the firm's display name (or `<img>` of `firms.logo_url` if set), the firm display name (600), and a 14px chevron. Click opens a menu (see Actions). **Only when I'm an active member of two or more firms** (decided by Blake, 0.5); with one firm, the tile and name show as plain text with no border, chevron or menu.
 - **Page title** (`<PageTitle>`): uppercase, weight 500, letter-spacing .08em. Optional breadcrumb parent before it: parent link in `#BDBDBD` followed by " / " (mockup `Proposal.dc.html`). Each page passes `title` and optional `parent={label, href}`.
 - **Right cluster** (`margin-left:auto`, gap 12px):
   - Global search (34px, bg `#2A2A2A`, 200px input, placeholder "Search everything") — **placeholder: NOT rendered in Release 0.**
@@ -107,7 +109,7 @@ Put the two placeholders behind constants in `src/lib/features.ts`: `FEATURES = 
    - Signed in, no active Clerk org: if the user belongs to ≥1 Clerk org → `/onboarding/choose-firm`, which calls `setActive` on the first by firm name and continues to `/app`; if none → `/onboarding/create-firm`. (Built in 0.3. Preferring the most recently used firm can come with the firm switcher in 0.5.)
    - Signed in, org active, but no `memberships` row yet → run `ensureMembership()` (rule 7) once; if it still finds none → `/onboarding/create-firm`.
    - Membership `active = false` → redirect to `/onboarding/access-off` (outside the shell, so no rail), which shows "Your access to [Firm] has been turned off. Ask an owner or admin if this is a mistake." with only the Sign out button. A redirect is used instead of rendering inside the layout so no page data loads for a deactivated member.
-3. **Module visibility.** `isModuleOn(settings, key) = settings.modules_enabled.includes(key)`. Rail shows a module item only if on. The "Modules" label shows only if at least one of the 7 rail modules is on. Worked example (TMG seed `{schedule,build,workload,accounting,marketing,knowledge,website,hiring}`): rail shows 6 core + label + 7 modules = 14 rows. If Blake turns off Hiring, Hiring disappears after save, with no reload of the whole app needed (`router.refresh()`).
+3. **Module visibility.** `isModuleOn(settings, key) = settings.modules_enabled.includes(key)`. For project managers and staff the rail shows a module item only if on; owners and admins also see off modules, dimmed with "ADD" (see Layout §1). The "Modules" label shows only if at least one module item is shown. Worked example (TMG seed `{schedule,build,workload,accounting,marketing,knowledge,website,hiring}`): rail shows 6 core + label + 7 modules = 14 rows. If Blake turns off Hiring, Hiring disappears after save, with no reload of the whole app needed (`router.refresh()`).
 4. **Module route guard.** Each module page calls `requireModule(key)`. If off → render `<ModuleOff module="Build">`: H1 "Build is turned off", text "Build isn't turned on for [Firm].", and for owner/admin a button "Turn on in Settings" → `/app/settings/modules`; others see "Ask an owner or admin to turn it on." HTTP status 200, rail unchanged.
 5. **Current item.** `/app` is current only on exact match. Any other item is current when `pathname === route || pathname.startsWith(route + '/')`.
 6. **Create firm** (server action `createFirm`), in this order:
@@ -130,8 +132,8 @@ Put the two placeholders behind constants in `src/lib/features.ts`: `FEATURES = 
 10. **Permissions helper.** `can(membership, action)` in `src/lib/auth/permissions.ts`. Release 0 actions: `settings.view`, `settings.edit`, `users.manage`, `modules.manage` → owner/admin. `users.manage_owners` → owner only. Every page and server action checks on the server; hiding UI is not security.
 
 ## States
-- **Empty state:** new firm with no modules → rail has 6 core items and no "Modules" label. Core pages in Release 0 render `<ComingSoon title="Projects" release="1">` ("Projects arrives in Release 1.").
-- **Loading state:** `loading.tsx` inside the shell shows a page-header skeleton (grey bars `#EBEBEB`) while rail and header stay put. The firm switcher menu shows "Loading firms…" while fetching.
+- **Empty state:** new firm with no modules → for staff and PMs the rail has 6 core items and no "Modules" label; owners and admins see the label and all 7 modules marked "ADD". Core pages in Release 0 render `<ComingSoon title="Projects" release="1">` ("Projects arrives in Release 1.").
+- **Loading state:** `loading.tsx` inside the shell shows a page-header skeleton (grey bars `#EBEBEB`) while rail and header stay put. The firm list is loaded on the server with the page, so the switcher has no loading state.
 - **Error state:** `error.tsx` inside the shell: H1 "Something went wrong", text "Try again. If it keeps happening, send Blake this code: {digest}.", button "Try again" (`reset()`). Create-firm errors show inline above the button: "We couldn't create your firm. Nothing was saved. Try again."
 - **Permission-denied state:** `<AccessDenied>` inside the shell: H1 "You don't have access to this page", text "Ask an owner or admin of [Firm] if you need it.", link "Go to Home". **404:** `src/app/(app)/app/not-found.tsx` inside the shell: H1 "Page not found", text "This page doesn't exist or was moved.", link "Go to Home". Outside `/app`, root `not-found.tsx` with logo only and link to `/`.
 
@@ -144,31 +146,41 @@ Put the two placeholders behind constants in `src/lib/features.ts`: `FEATURES = 
 - Logo upload (tile uses initial letter) — see settings-firm spec.
 
 ## Acceptance tests
-- [ ] Given I am signed out, when I open `/app/projects`, then I am redirected to `/sign-in?redirect_url=%2Fapp%2Fprojects`.
-- [ ] Given I signed up and have no firm, when I land on `/app`, then I am redirected to `/onboarding/create-firm`.
-- [ ] Given I am on create-firm, when I submit "The Middleton Group" with timezone America/New_York and January, then a `firms` row, a `firm_settings` row with `overhead_rate_bp = 6000` and `modules_enabled = '{}'`, and a `memberships` row with `app_role = 'owner'` exist, and I land on `/app`.
-- [ ] Given I submit create-firm with name "A", then I see "Firm name must be 2–120 characters" and no Clerk org is created.
-- [ ] Given the DB insert fails during create-firm, then the Clerk org is deleted and no `firms` row exists.
-- [ ] Given `modules_enabled = '{}'`, when the shell renders, then the rail shows exactly Home, Projects, Contacts, Team, Time, Reports and no "Modules" label.
-- [ ] Given `modules_enabled = '{schedule,build,workload,accounting,marketing,knowledge,website,hiring}'`, when the shell renders, then the rail shows 6 core items, the "Modules" label, then Build, Workload, Accounting, Marketing, Knowledge, Website, Hiring in that order, and no Schedule or Code item.
-- [ ] Given Build is off, when I open `/app/build`, then I see "Build is turned off" and, as staff, no "Turn on in Settings" button.
-- [ ] Given Build is off and I am an admin, when I open `/app/build`, then I see a "Turn on in Settings" link to `/app/settings/modules`.
-- [ ] Given the rail is expanded, when I click "Collapse menu", then the rail is 64px wide, labels are hidden, the toggle's aria-label is "Expand menu", and cookie `architrac_rail_min=1` is set.
-- [ ] Given cookie `architrac_rail_min=1`, when I load any `/app` page, then the server-rendered HTML already has the 64px rail (no flash of the wide rail).
-- [ ] Given I am on `/app/projects/123`, then the Projects item has `aria-current="page"` and Home does not.
-- [ ] Given I am staff, then the Settings gear is not rendered, and when I open `/app/settings/firm`, then I see "You don't have access to this page".
-- [ ] Given I am an owner on `/app/settings/firm`, then the gear has `aria-current="page"`.
-- [ ] Given Release 0 feature flags, then no search input and no notifications button are in the header.
-- [ ] Given I belong to two firms, when I pick the second in the firm switcher, then the header shows the second firm's name and the rail reflects that firm's `modules_enabled`.
-- [ ] Given my membership has `active = false`, when I open `/app`, then I see "Your access to [Firm] has been turned off" and no rail items.
-- [ ] Given a viewport of 375px, then the rail is hidden, a menu button is shown, and opening it shows the drawer; pressing Esc closes it and focus returns to the menu button.
-- [ ] Given I open `/app/does-not-exist`, then I see "Page not found" inside the shell with a link to Home.
-- [ ] Given the Clerk webhook `organizationMembership.created` is delivered twice for the same user, then exactly one `memberships` row exists.
-- [ ] Given a webhook request with a bad Svix signature, then the endpoint returns 400 and writes nothing.
+- [x] Given I am signed out, when I open `/app/projects`, then I am redirected to `/sign-in?redirect_url=%2Fapp%2Fprojects`.
+- [x] Given I signed up and have no firm, when I land on `/app`, then I am redirected to `/onboarding/create-firm`.
+- [x] Given I am on create-firm, when I submit "The Middleton Group" with timezone America/New_York and January, then a `firms` row, a `firm_settings` row with `overhead_rate_bp = 6000` and `modules_enabled = '{}'`, and a `memberships` row with `app_role = 'owner'` exist, and I land on `/app`.
+- [x] Given I submit create-firm with name "A", then I see "Firm name must be 2–120 characters" and no Clerk org is created.
+- [x] Given the DB insert fails during create-firm, then the Clerk org is deleted and no `firms` row exists.
+- [x] Given `modules_enabled = '{}'` and I am staff, when the shell renders, then the rail shows exactly Home, Projects, Contacts, Team, Time, Reports and no "Modules" label.
+- [x] Given `modules_enabled = '{}'` and I am an admin, when the shell renders, then the rail shows the 6 core items, the "Modules" label and all 7 modules, each marked "ADD".
+- [x] Given `modules_enabled = '{schedule,build,workload,accounting,marketing,knowledge,website,hiring}'`, when the shell renders, then the rail shows 6 core items, the "Modules" label, then Build, Workload, Accounting, Marketing, Knowledge, Website, Hiring in that order, and no Schedule or Code item.
+- [x] Given Build is off, when I open `/app/build`, then I see "Build is turned off" and, as staff, no "Turn on in Settings" button.
+- [x] Given Build is off and I am an admin, when I open `/app/build`, then I see a "Turn on in Settings" link to `/app/settings/modules`.
+- [x] Given the rail is expanded, when I click "Collapse menu", then the rail is 64px wide, labels are hidden, the toggle's aria-label is "Expand menu", and cookie `architrac_rail_min=1` is set.
+- [x] Given cookie `architrac_rail_min=1`, when I load any `/app` page, then the server-rendered HTML already has the 64px rail (no flash of the wide rail).
+- [x] Given I am on `/app/projects/123`, then the Projects item has `aria-current="page"` and Home does not.
+- [x] Given I am staff, then the Settings gear is not rendered, and when I open `/app/settings/firm`, then I see "You don't have access to this page".
+- [x] Given I am an owner on `/app/settings/firm`, then the gear has `aria-current="page"`.
+- [x] Given Release 0 feature flags, then no search input and no notifications button are in the header.
+- [x] Given I belong to only one firm, then the header shows the firm name and no switcher button or menu.
+- [x] Given I belong to two firms, when I pick the second in the firm switcher, then the header shows the second firm's name and the rail reflects that firm's `modules_enabled`.
+- [x] Given my membership has `active = false`, when I open `/app`, then I see "Your access to [Firm] has been turned off" and no rail items.
+- [x] Given a viewport of 375px, then the rail is hidden, a menu button is shown, and opening it shows the drawer; pressing Esc closes it and focus returns to the menu button.
+- [x] Given I open `/app/does-not-exist`, then I see "Page not found" inside the shell with a link to Home.
+- [x] Given the Clerk webhook `organizationMembership.created` is delivered twice for the same user, then exactly one `memberships` row exists.
+- [x] Given a webhook request with a bad Svix signature, then the endpoint returns 400 and writes nothing.
 
 ## Open questions
-1. **Modules that are off:** you asked for them hidden; the mockup (`RAIL()` + Settings copy "A module that's off still shows in the menu with an Add prompt") shows them dimmed with an "ADD" badge as an upsell. This spec hides them. Confirm, or switch to the mockup's behavior.
+1. ~~**Modules that are off**~~ **Decided (0.5):** hidden from project managers and staff; shown dimmed with an "ADD" badge to owners and admins (who can turn them on). See Layout §1 and rule 3.
 2. **Rail preference across devices:** cookie/localStorage is per browser. If it should follow the person to every device: *Data model addition needed: `users.preferences jsonb` (e.g. `{ "railMin": true }`).*
 3. ~~**Open sign-up**~~ **Decided (0.3):** Clerk sign-up mode is **Invite only** (called "Restricted" on older Clerk screens) until Release 1 ships. Setup steps in `docs/GETTING_STARTED.md` → Setting up Clerk.
 4. **Rail order of core items:** confirm Reports stays in core (the Settings plan card lists "Projects, Contacts, Team, Time, Reports" as Core, which matches).
 5. Data model additions this spec depends on (defined in settings-firm spec): `firms.display_name`, `invitations` table, `schedule` and `code` as valid `modules_enabled` keys.
+
+## Implementation notes (0.5)
+- **Page title:** the header works out the title from the page's address (`titleForPath` in `src/lib/shell/nav.ts`), so it's right on first paint. `<PageTitle title parent>` exists for the breadcrumb look; pages whose title comes from data (a project's name, Release 1) will pass it through a header slot when they're built.
+- **Firm switcher list:** row-level security only allows one firm at a time, so the list asks Clerk which organizations the person is in, then checks each firm's membership through `withFirm()` (`src/server/firms/my-firms.ts`). The header loads this list on the server with each page, so it knows whether to show the switcher at all. No cross-firm database function was added.
+- **Firm name:** shows `firms.name` until `firms.display_name` arrives in 0.6.
+- **Module route guard:** module pages render `<ModulePage moduleKey>` (`src/components/shell/module-page.tsx`), which does the `isModuleOn` check described as `requireModule` above.
+- **Unknown `/app` addresses:** a catch-all route (`src/app/(app)/app/[...missing]`) sends them to the in-shell not-found page.
+- **Tests:** Vitest `src/lib/shell/nav.test.ts`, `src/server/firms/my-firms.db.test.ts`; Playwright `tests/e2e/app-shell.spec.ts` (signs in with `@clerk/testing`, see GETTING_STARTED → Browser tests). Create-firm rows, rollback and the webhook tests are the 0.3 Vitest tests in `src/server`.

@@ -35,6 +35,18 @@ export async function hasAnyClerkOrganization(
   return list.totalCount > 0;
 }
 
+/** Ids of every Clerk organization (firm) this user belongs to. */
+export async function listClerkOrganizationIds(
+  clerkUserId: string,
+): Promise<string[]> {
+  const client = await clerkClient();
+  const list = await client.users.getOrganizationMembershipList({
+    userId: clerkUserId,
+    limit: 100,
+  });
+  return list.data.map((m) => m.organization.id);
+}
+
 /** Create a Clerk organization with this user as its admin. Returns its id. */
 export async function createClerkOrganization(
   name: string,
