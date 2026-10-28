@@ -1,27 +1,20 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import { NextResponse } from "next/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
 
 // Runs before every request (Next.js 16 calls this file "proxy"; it used to be
-// "middleware"). Signed-out visitors to the app or onboarding pages are sent
-// to sign-in, with the page they wanted saved in redirect_url.
+// "middleware"). It lets Clerk read the session so `auth()` works in pages,
+// layouts and server actions.
 //
-// This is only the first gate. Every page and server action still checks the
-// session and role on the server (src/lib/auth).
-
-const isProtected = createRouteMatcher(["/app(.*)", "/onboarding(.*)"]);
-
-export default clerkMiddleware(async (auth, req) => {
-  if (!isProtected(req)) return;
-
-  const { userId } = await auth();
-  if (!userId) {
-    const signIn = new URL("/sign-in", req.url);
-    signIn.searchParams.set(
-      "redirect_url",
-      req.nextUrl.pathname + req.nextUrl.search,
-    );
-    return NextResponse.redirect(signIn);
-  }
+// It does NOT decide who may see what, and has no list of protected paths
+// (Clerk deprecated createRouteMatcher). Every page, layout and server action
+// checks the session and role itself (src/lib/auth), and signed-out visitors
+// are sent to sign-in from there.
+//
+// Why it still calls auth(): that makes Clerk bring the session up to date
+// on this request. Without it, right after someone switches firms (or creates
+// one), the next page still sees the old firm (or none). The firm-switcher and
+// create-firm browser tests catch this.
+export default clerkMiddleware(async (auth) => {
+  await auth();
 });
 
 export const config = {

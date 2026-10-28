@@ -81,6 +81,15 @@ export const getSession = cache(async (): Promise<SessionResult> => {
 });
 
 /**
+ * Send a signed-out visitor to sign-in. Clerk adds a link back to the page
+ * they asked for, so they land there after signing in.
+ */
+export async function redirectToSignIn(): Promise<never> {
+  const { redirectToSignIn } = await auth();
+  return redirectToSignIn();
+}
+
+/**
  * For pages and server actions under /app: returns the session, or sends the
  * person where they need to go (sign-in, choose a firm, create a firm, or the
  * "access turned off" page).
@@ -91,7 +100,7 @@ export async function requireSession(): Promise<FirmSession> {
     case "ok":
       return result.session;
     case "signed_out":
-      redirect("/sign-in");
+      return redirectToSignIn();
     case "choose_firm":
       redirect("/onboarding/choose-firm");
     case "no_firm":
