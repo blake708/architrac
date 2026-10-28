@@ -104,8 +104,8 @@ Put the two placeholders behind constants in `src/lib/features.ts`: `FEATURES = 
 
 ## Business rules
 1. **Firm context.** Every `/app/**` request runs `getSession()` / `requireSession()` (`src/lib/auth/session.ts`; built in 0.3): Clerk `auth()` → `orgId`, `userId` → `firms` by `clerk_org_id` → `users` by `clerk_user_id` → `memberships` by (`firm_id`, `user_id`). Returns `{ firm, settings, user, membership }` (or a status saying where to send the person). All firm-owned queries go through the tenant-scoped helper `src/db/tenant.ts`, which sets the firm for row-level security from `firm.id` (see ARCHITECTURE → Multi-tenancy). Only the `firms` lookup by `clerk_org_id` and the `users` lookup run before the firm is known.
-2. **Routing guard (middleware + layout).**
-   - Signed out → `/sign-in?redirect_url=<path>`.
+2. **Routing guard (pages and layouts).** Each page, layout and server action checks the session itself (`requireSession()` / `getSession()`); the Clerk middleware in `src/proxy.ts` only reads the session and does no path matching (Clerk deprecated `createRouteMatcher`; changed in 0.6).
+   - Signed out → `/sign-in?redirect_url=<page they asked for>` (Clerk's `redirectToSignIn()`).
    - Signed in, no active Clerk org: if the user belongs to ≥1 Clerk org → `/onboarding/choose-firm`, which calls `setActive` on the first by firm name and continues to `/app`; if none → `/onboarding/create-firm`. (Built in 0.3. Preferring the most recently used firm can come with the firm switcher in 0.5.)
    - Signed in, org active, but no `memberships` row yet → run `ensureMembership()` (rule 7) once; if it still finds none → `/onboarding/create-firm`.
    - Membership `active = false` → redirect to `/onboarding/access-off` (outside the shell, so no rail), which shows "Your access to [Firm] has been turned off. Ask an owner or admin if this is a mistake." with only the Sign out button. A redirect is used instead of rendering inside the layout so no page data loads for a deactivated member.

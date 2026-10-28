@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getSession } from "@/lib/auth/session";
+import { getSession, redirectToSignIn } from "@/lib/auth/session";
 import { ChooseFirm } from "./choose-firm";
 
 /**
@@ -8,7 +8,7 @@ import { ChooseFirm } from "./choose-firm";
  */
 export default async function ChooseFirmPage() {
   const result = await getSession();
-  if (result.status === "signed_out") redirect("/sign-in");
+  if (result.status === "signed_out") return redirectToSignIn();
   if (result.status === "no_firm") redirect("/onboarding/create-firm");
   if (result.status === "ok") redirect("/app");
   if (result.status === "deactivated") redirect("/onboarding/access-off");

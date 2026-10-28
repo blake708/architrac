@@ -1,7 +1,17 @@
-import { expect, test } from "@playwright/test";
+import { type APIResponse, expect, test } from "@playwright/test";
 
 // App-shell spec acceptance test 1: signed-out visitors are sent to sign-in,
 // remembering where they were going.
+
+/** A redirect to sign-in whose return link (redirect_url) points at `path`. */
+function expectSignInRedirect(response: APIResponse, path: string) {
+  expect([302, 307]).toContain(response.status());
+  const location = new URL(response.headers()["location"], "http://localhost");
+  expect(location.pathname).toBe("/sign-in");
+  const back = location.searchParams.get("redirect_url");
+  expect(back, "sign-in link should say where to come back to").not.toBeNull();
+  expect(new URL(back ?? "", "http://localhost").pathname).toBe(path);
+}
 
 test("signed out: /app/projects redirects to sign-in with redirect_url", async ({
   page,
@@ -9,10 +19,7 @@ test("signed out: /app/projects redirects to sign-in with redirect_url", async (
   const response = await page.request.get("/app/projects", {
     maxRedirects: 0,
   });
-  expect(response.status()).toBe(307);
-  expect(response.headers()["location"]).toMatch(
-    /\/sign-in\?redirect_url=%2Fapp%2Fprojects$/,
-  );
+  expectSignInRedirect(response, "/app/projects");
 });
 
 test("signed out: onboarding pages also redirect to sign-in", async ({
@@ -21,10 +28,7 @@ test("signed out: onboarding pages also redirect to sign-in", async ({
   const response = await page.request.get("/onboarding/create-firm", {
     maxRedirects: 0,
   });
-  expect(response.status()).toBe(307);
-  expect(response.headers()["location"]).toContain(
-    "/sign-in?redirect_url=%2Fonboarding%2Fcreate-firm",
-  );
+  expectSignInRedirect(response, "/onboarding/create-firm");
 });
 
 test("signed out: the sign-in page shows Clerk's sign-in form", async ({
