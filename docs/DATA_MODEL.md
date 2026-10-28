@@ -72,7 +72,7 @@ One row per firm.
 | invoice_prefix | text | "2026-" |
 | next_invoice_number | integer | 128 in the seed (2026-121 … 2026-127 already exist) |
 | default_payment_terms_days | smallint | 30 |
-| modules_enabled | text[] | `{'build','workload','accounting','marketing','knowledge','website','hiring'}` |
+| modules_enabled | text[] | `'{}'` (valid keys: `build`,`workload`,`accounting`,`marketing`,`knowledge`,`code`,`website`,`hiring`) |
 
 ### teams
 | id | firm_id | name | leader_membership_id | sort_order |
@@ -298,7 +298,7 @@ The screen specs found fields the model above doesn't have yet. **Add each one w
 | 0.6 | **invitations** (new) | id, firm_id, email, app_role, title, firm_role_id, status (`pending`/`accepted`/`revoked`/`expired`), clerk_invitation_id, invited_by, created_at | Invited people have no `users` row yet; keeps `memberships.user_id` required (settings-firm). `team.md`'s alternative (nullable user_id on memberships) is **not** used |
 | 0.6 | firms | display_name, address_line1/2, city, state, postal_code, phone, email, website, license_number | Firm profile; invoice PDF header (settings-firm, invoicing) |
 | 0.5 | users | preferences jsonb (menu rail collapsed, etc.) | Rail state follows the person across devices (app-shell) |
-| 0.5 ⚑ | firm_settings | modules_enabled keys are the 7 add-ons only (`build`,`workload`,`accounting`,`marketing`,`knowledge`,`website`,`hiring`); new firms start with none enabled; TMG seed has all | Schedule is part of Projects, not a module (app-shell) |
+| 0.6 | firm_settings | modules_enabled keys are the 7 rail add-ons plus `code` (8 total: `build`,`workload`,`accounting`,`marketing`,`knowledge`,`code`,`website`,`hiring`); new firms start with none enabled; TMG seed has all except `code` | Decided by Blake (0.6): Schedule is a built-in part of Projects, not a module; Code is an add-on shown inside projects, with no menu item (settings-firm, app-shell) |
 | 1.1 | firm_roles | description text, is_billable boolean | "Not billable" roles (settings-rates-phases) |
 | 1.1 | overhead_categories | code text (`PTO`, `HOL`) | Leave codes (settings, timesheet) |
 | 1.2 | company_kind enum | add `agency` | Permitting agencies, review boards (contacts) |
