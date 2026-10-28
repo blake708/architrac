@@ -45,7 +45,7 @@ Badges use the tint as background and the strong color as text (e.g. green-tint 
 
 ## App shell
 
-- **Menu rail** (left): 232px expanded / 64px collapsed; white background, right border line. Rows: 20px icon + label to the right. Active row = ink background, white text. Group label "MODULES" (11px caption) above add-on modules; add-ons show a small purple badge when not enabled (Settings only). Collapse toggle at bottom; state remembered per user.
+- **Menu rail** (left): 216px expanded / 64px collapsed; black background (`--color-rail`). Rows: 20px icon + label to the right. Active row = `#2A2A2A` background, white text, 2px white bar on the left. Group label "MODULES" (10.5px caption) above add-on modules. Modules that are off are hidden from project managers and staff; owners and admins see them dimmed with an "ADD" badge. Collapse toggle at bottom; state remembered per browser (cookie). Full detail: `specs/release-0/app-shell.md`.
 - **Top header**: ink background, 10px 32px padding; firm switcher button (initial square + firm name + chevron), page title (uppercase), then right side: search (chrome-2 field), notifications (orange dot), settings gear, avatar.
 - **Page header**: white band under the top header, 32px padding; mono meta line (12px, e.g. date · counts), H1 30px weight 500, actions on the right.
 
