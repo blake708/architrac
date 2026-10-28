@@ -11,8 +11,16 @@ import {
   roleChangeBlocked,
 } from "./user-management";
 
-const owner: Actor = { membershipId: "m-owner", appRole: "owner", active: true };
-const admin: Actor = { membershipId: "m-admin", appRole: "admin", active: true };
+const owner: Actor = {
+  membershipId: "m-owner",
+  appRole: "owner",
+  active: true,
+};
+const admin: Actor = {
+  membershipId: "m-admin",
+  appRole: "admin",
+  active: true,
+};
 const pm: Actor = {
   membershipId: "m-pm",
   appRole: "project_manager",
@@ -21,7 +29,11 @@ const pm: Actor = {
 
 describe("assignableRoles", () => {
   it("an admin's role select lists Admin, Project manager, Staff and not Owner", () => {
-    expect(assignableRoles(admin)).toEqual(["admin", "project_manager", "staff"]);
+    expect(assignableRoles(admin)).toEqual([
+      "admin",
+      "project_manager",
+      "staff",
+    ]);
   });
   it("an owner can give every role", () => {
     expect(assignableRoles(owner)).toEqual([
@@ -37,7 +49,10 @@ describe("assignableRoles", () => {
 });
 
 describe("who may change whom", () => {
-  const ownerTarget = { membershipId: "m-other-owner", appRole: "owner" as const };
+  const ownerTarget = {
+    membershipId: "m-other-owner",
+    appRole: "owner" as const,
+  };
   const staffTarget = { membershipId: "m-staff", appRole: "staff" as const };
 
   it("only an owner may touch an owner", () => {

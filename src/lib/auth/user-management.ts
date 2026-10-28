@@ -6,10 +6,8 @@ import { type AppRole, type Member, can } from "./permissions";
 
 /** Role help text, shown under the invite form's role select. */
 export const ROLE_HELP: Record<AppRole, string> = {
-  owner:
-    "Everything, including billing, modules and managing other owners.",
-  admin:
-    "Everything except managing owners. Sees rates, cost and profit.",
+  owner: "Everything, including billing, modules and managing other owners.",
+  admin: "Everything except managing owners. Sees rates, cost and profit.",
   project_manager:
     "Runs their projects. Sees budgets and hours on their projects, not cost rates or salaries.",
   staff: "Logs time and sees the projects they're on.",

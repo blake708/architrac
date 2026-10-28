@@ -1,6 +1,14 @@
 import type { Pool } from "@neondatabase/serverless";
 import { and, desc, eq } from "drizzle-orm";
-import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  afterAll,
+  beforeAll,
+  beforeEach,
+  describe,
+  expect,
+  it,
+  vi,
+} from "vitest";
 import { closeDb } from "@/db/client";
 import {
   activityLog,
@@ -118,7 +126,11 @@ const asPm = () => actorFor(A, pm, "project_manager");
 
 const readFirm = () =>
   withFirm(A.firmId, (db) =>
-    db.select().from(firms).where(eq(firms.id, A.firmId)).then((r) => r[0]),
+    db
+      .select()
+      .from(firms)
+      .where(eq(firms.id, A.firmId))
+      .then((r) => r[0]),
   );
 const readModules = () =>
   withFirm(A.firmId, (db) =>
@@ -176,7 +188,11 @@ describe("updateFirmProfile", () => {
 
   it("Firm name is required: error and firms.name unchanged", async () => {
     const before = (await readFirm()).name;
-    const r = await updateFirmProfileCore(asOwner(), profile({ name: "" }), clerk);
+    const r = await updateFirmProfileCore(
+      asOwner(),
+      profile({ name: "" }),
+      clerk,
+    );
     expect(r).toEqual({
       ok: false,
       fieldErrors: { name: "Firm name is required" },
@@ -273,15 +289,19 @@ describe("updateModules", () => {
     expect(await readModules()).not.toContain("hiring");
     const log = await lastLog("firm_settings");
     expect(log.changes).toEqual({
-      modules_enabled: { before: TMG, after: TMG.filter((k) => k !== "hiring") },
+      modules_enabled: {
+        before: TMG,
+        after: TMG.filter((k) => k !== "hiring"),
+      },
     });
   });
 
   it("Code on then off saves the same array as before", async () => {
     await updateModulesCore(asOwner(), TMG);
-    await updateModulesCore(asOwner(), [...TMG.slice().reverse(), "code"].filter(
-      (k) => k !== "code",
-    ));
+    await updateModulesCore(
+      asOwner(),
+      [...TMG.slice().reverse(), "code"].filter((k) => k !== "code"),
+    );
     expect(await readModules()).toEqual(TMG);
   });
 });
@@ -292,7 +312,9 @@ describe("invitations", () => {
       db
         .select()
         .from(invitations)
-        .where(and(eq(invitations.firmId, A.firmId), eq(invitations.email, email)))
+        .where(
+          and(eq(invitations.firmId, A.firmId), eq(invitations.email, email)),
+        )
         .orderBy(desc(invitations.invitedAt)),
     );
 
@@ -341,7 +363,11 @@ describe("invitations", () => {
   it("a second invite for the same email: use Resend", async () => {
     const email = `twice.${Date.now()}@example.com`;
     await inviteUserCore(asOwner(), { email, appRole: "staff" }, clerk);
-    const r = await inviteUserCore(asOwner(), { email, appRole: "admin" }, clerk);
+    const r = await inviteUserCore(
+      asOwner(),
+      { email, appRole: "admin" },
+      clerk,
+    );
     expect(r).toEqual({
       ok: false,
       fieldErrors: { email: ALREADY_INVITED_MESSAGE },
@@ -362,7 +388,11 @@ describe("invitations", () => {
     clerk.createInvitation.mockRejectedValueOnce({
       errors: [{ longMessage: "Email address is invalid" }],
     });
-    const r = await inviteUserCore(asOwner(), { email, appRole: "staff" }, clerk);
+    const r = await inviteUserCore(
+      asOwner(),
+      { email, appRole: "staff" },
+      clerk,
+    );
     expect(r).toEqual({
       ok: false,
       error: "Couldn't send the invite: Email address is invalid",
@@ -403,6 +433,20 @@ describe("invitations", () => {
     expect(after.status).toBe("pending");
   });
 
+  it("Resend still works when Clerk refuses to revoke the old invitation (already expired)", async () => {
+    const email = `expired.${Date.now()}@example.com`;
+    await inviteUserCore(asOwner(), { email, appRole: "staff" }, clerk);
+    const [before] = await readInvite(email);
+    clerk.revokeInvitation.mockRejectedValueOnce({
+      status: 400,
+      errors: [{ longMessage: "Invitation is not pending" }],
+    });
+    const r = await resendInviteCore(asOwner(), before.id, clerk);
+    expect(r.ok).toBe(true);
+    const [after] = await readInvite(email);
+    expect(after.clerkInvitationId).not.toBe(before.clerkInvitationId);
+  });
+
   it("an admin can't resend or revoke an owner invitation", async () => {
     const email = `owner-invite.${Date.now()}@example.com`;
     await inviteUserCore(asOwner(), { email, appRole: "owner" }, clerk);
@@ -432,8 +476,14 @@ describe("invitations", () => {
     );
     extraUsers.push(u.rows[0].id);
 
-    const m = await ensureMembership(A.firmId, u.rows[0].id, { reactivate: true });
-    expect(m).toMatchObject({ appRole: "staff", title: "Designer", active: true });
+    const m = await ensureMembership(A.firmId, u.rows[0].id, {
+      reactivate: true,
+    });
+    expect(m).toMatchObject({
+      appRole: "staff",
+      title: "Designer",
+      active: true,
+    });
     const [inv] = await readInvite(email);
     expect(inv).toMatchObject({ status: "accepted", membershipId: m.id });
     expect(inv.acceptedAt).not.toBeNull();
@@ -451,12 +501,18 @@ describe("invitations", () => {
     // because they're not an active member.
     const r = await inviteUserCore(
       asOwner(),
-      { email: off.email, appRole: "project_manager", title: "Project Architect" },
+      {
+        email: off.email,
+        appRole: "project_manager",
+        title: "Project Architect",
+      },
       clerk,
     );
     expect(r.ok).toBe(true);
 
-    const m = await ensureMembership(A.firmId, off.userId, { reactivate: true });
+    const m = await ensureMembership(A.firmId, off.userId, {
+      reactivate: true,
+    });
     expect(m).toMatchObject({
       id: off.membershipId,
       active: true,

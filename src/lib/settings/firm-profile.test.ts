@@ -47,12 +47,12 @@ describe("normalization (business rule 5)", () => {
   it('display name "" saves null and the app falls back to name', () => {
     const r = parse({ displayName: "  " });
     expect(r.ok && r.values.displayName).toBeNull();
-    expect(firmDisplayName({ name: "TMG Architecture", displayName: null })).toBe(
-      "TMG Architecture",
-    );
-    expect(firmDisplayName({ name: "TMG Architecture", displayName: "TMG" })).toBe(
-      "TMG",
-    );
+    expect(
+      firmDisplayName({ name: "TMG Architecture", displayName: null }),
+    ).toBe("TMG Architecture");
+    expect(
+      firmDisplayName({ name: "TMG Architecture", displayName: "TMG" }),
+    ).toBe("TMG");
   });
 
   it("saves cleaned values", () => {
@@ -117,7 +117,10 @@ describe("validation", () => {
   });
 
   it("enforces lengths", () => {
-    const r = parse({ displayName: "x".repeat(81), licenseNumber: "x".repeat(51) });
+    const r = parse({
+      displayName: "x".repeat(81),
+      licenseNumber: "x".repeat(51),
+    });
     expect(r.ok).toBe(false);
     if (!r.ok) {
       expect(r.fieldErrors.displayName).toMatch(/80 characters/);

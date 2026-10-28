@@ -133,7 +133,9 @@ export const firmProfileSchema = z.object({
     .refine((v) => v.length <= 200, { error: WEBSITE_MESSAGE })
     .transform((v) => (v === "" ? null : v)),
   licenseNumber: optionalText(50, "License number"),
-  timezone: z.enum(TIMEZONE_VALUES, { error: "Pick a time zone from the list" }),
+  timezone: z.enum(TIMEZONE_VALUES, {
+    error: "Pick a time zone from the list",
+  }),
   fiscalYearStartMonth: z.coerce
     .number({ error: "Pick a month" })
     .int({ error: "Pick a month" })

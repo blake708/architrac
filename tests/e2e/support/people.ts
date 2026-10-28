@@ -22,6 +22,15 @@ export const FIRMS = {
   alpha: { name: `${E2E_PREFIX}Alpha Architects`, modules: ALL_MODULES },
   /** No modules on. */
   beta: { name: `${E2E_PREFIX}Beta Studio`, modules: [] as string[] },
+  /**
+   * For settings.spec.ts, which changes things (profile, modules, people).
+   * Its own people, so other test files never see those changes.
+   */
+  gamma: {
+    name: `${E2E_PREFIX}Gamma Group`,
+    modules: ALL_MODULES,
+    createdBy: "gammaOwner",
+  },
 } as const;
 export type FirmKey = keyof typeof FIRMS;
 
@@ -70,6 +79,30 @@ export const PEOPLE = {
     firstName: "Nora",
     lastName: "Newfirm",
     memberships: [],
+  },
+  gammaOwner: {
+    email: "architrac-e2e-gowner+clerk_test@example.com",
+    firstName: "Gail",
+    lastName: "Gowner",
+    memberships: [{ firm: "gamma", role: "owner" }],
+  },
+  gammaAdmin: {
+    email: "architrac-e2e-gadmin+clerk_test@example.com",
+    firstName: "Glen",
+    lastName: "Gadmin",
+    memberships: [{ firm: "gamma", role: "admin" }],
+  },
+  gammaPm: {
+    email: "architrac-e2e-gpm+clerk_test@example.com",
+    firstName: "Pam",
+    lastName: "Manager",
+    memberships: [{ firm: "gamma", role: "project_manager" }],
+  },
+  gammaJr: {
+    email: "architrac-e2e-jr+clerk_test@example.com",
+    firstName: "Jo",
+    lastName: "Rivers",
+    memberships: [{ firm: "gamma", role: "staff" }],
   },
 } satisfies Record<string, Person>;
 export type PersonKey = keyof typeof PEOPLE;

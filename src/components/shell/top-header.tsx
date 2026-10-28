@@ -1,5 +1,6 @@
 import { ROLE_LABELS, can } from "@/lib/auth/permissions";
 import type { FirmSession } from "@/lib/auth/session";
+import { firmDisplayName } from "@/lib/settings/firm-profile";
 import { listMyFirms } from "@/server/firms/my-firms";
 import { AccountMenu } from "./account-menu";
 import { FirmSwitcher } from "./firm-switcher";
@@ -20,8 +21,11 @@ export async function TopHeader({ session }: { session: FirmSession }) {
   return (
     <header className="flex flex-wrap items-center gap-4 bg-chrome px-4 py-2.5 text-chrome-text md:px-page-x">
       <MobileMenuButton />
-      {/* Firm display names arrive in 0.6 (settings-firm spec). */}
-      <FirmSwitcher name={firm.name} logoUrl={firm.logoUrl} firms={firms} />
+      <FirmSwitcher
+        name={firmDisplayName(firm)}
+        logoUrl={firm.logoUrl}
+        firms={firms}
+      />
       <CurrentPageTitle />
       <div className="ml-auto flex flex-wrap items-center gap-3">
         {/* The search box (FEATURES.globalSearch) and notifications bell

@@ -26,7 +26,15 @@ This is the source of truth for the database. Claude Code builds the Drizzle sch
 | name | text | "The Middleton Group" |
 | slug | text unique | used in URLs if needed |
 | clerk_org_id | text unique | link to the login provider's organization |
+| display_name | text null | shown in the app and on letterhead; null = use `name` (0.6) |
 | logo_url | text null | |
+| address_line1, address_line2, city | text null | same names as `companies` (0.6) |
+| state | text null | 2-letter code (0.6) |
+| postal_code | text null | `12345` or `12345-6789` (0.6) |
+| phone | text null | stored formatted `(843) 555-0100` (0.6) |
+| email | text null | firm's general email; not on the form yet (0.6) |
+| website | text null | lowercase, no `https://` or trailing `/` (0.6) |
+| license_number | text null | firm license / COA number (0.6) |
 | timezone | text | default `America/New_York` |
 | fiscal_year_start_month | smallint | 1–12 |
 | created_at, updated_at | | |
@@ -77,10 +85,29 @@ One row per firm.
 ### teams
 | id | firm_id | name | leader_membership_id | sort_order |
 
+### invitations  (0.6, Settings → Users & access)
+Someone invited who hasn't joined yet. They have no `users` row until they accept, so this is its own table and `memberships.user_id` stays required. Clerk sends the email; we keep the app role and title. Rows are never deleted.
+| column | type | notes |
+|---|---|---|
+| id | uuid pk | |
+| firm_id | uuid fk | RLS |
+| email | citext | |
+| app_role | app_role | role they get on joining |
+| title | text null | |
+| firm_role_id | uuid null | FK once `firm_roles` exists (1.1) |
+| status | enum `invitation_status` | `pending`, `accepted`, `revoked`, `expired` |
+| clerk_invitation_id | text unique null | null only if the Clerk call failed |
+| invited_by | uuid fk → users | |
+| invited_at | timestamptz | reset by Resend |
+| accepted_at | timestamptz null | |
+| membership_id | uuid null | same-firm FK `(firm_id, membership_id) → memberships (firm_id, id)` |
+| created_at, updated_at | | |
+| unique (firm_id, email) where status = 'pending' | | one open invite per email |
+
 ### Release 0 implementation notes (milestone 0.2)
 - Schema lives in `src/db/schema/` (`firms.ts`, `people.ts` = users + memberships + teams, `activity-log.ts`, `enums.ts`). Migrations in `src/db/migrations/`.
 - Added per the global rules: `created_at`/`updated_at` on every table; `archived_at` on firms, users, memberships, teams; `created_by` on memberships and teams. `activity_log` is append-only (`created_at` only).
-- **Row-level security:** memberships, firm_settings, teams, activity_log (ENABLE + FORCE, keyed on `firm_id`); firms (ENABLE, keyed on `id`; not FORCEd so the owner-run lookup below works). Outside `withFirm` these tables return no rows.
+- **Row-level security:** memberships, firm_settings, teams, activity_log, invitations (ENABLE + FORCE, keyed on `firm_id`); firms (ENABLE, keyed on `id`; not FORCEd so the owner-run lookup below works). Outside `withFirm` these tables return no rows.
 - **users** has no `firm_id` and no RLS (a person can belong to several firms). Reach users through memberships. Revisit in 0.3.
 - **Same-firm foreign keys:** `memberships (firm_id, team_id) → teams (firm_id, id)` and `teams (firm_id, leader_membership_id) → memberships (firm_id, id)`. Plain FKs ignore RLS; these stop a row pointing at another firm's row. Use the same pattern for every new firm-to-firm link.
 - `memberships.firm_role_id` has no FK until `firm_roles` exists (1.1).
@@ -295,10 +322,7 @@ The screen specs found fields the model above doesn't have yet. **Add each one w
 
 | Milestone | Table | Addition | Why (spec) |
 |---|---|---|---|
-| 0.6 | **invitations** (new) | id, firm_id, email, app_role, title, firm_role_id, status (`pending`/`accepted`/`revoked`/`expired`), clerk_invitation_id, invited_by, created_at | Invited people have no `users` row yet; keeps `memberships.user_id` required (settings-firm). `team.md`'s alternative (nullable user_id on memberships) is **not** used |
-| 0.6 | firms | display_name, address_line1/2, city, state, postal_code, phone, email, website, license_number | Firm profile; invoice PDF header (settings-firm, invoicing) |
 | 0.5 | users | preferences jsonb (menu rail collapsed, etc.) | Rail state follows the person across devices (app-shell) |
-| 0.6 | firm_settings | modules_enabled keys are the 7 rail add-ons plus `code` (8 total: `build`,`workload`,`accounting`,`marketing`,`knowledge`,`code`,`website`,`hiring`); new firms start with none enabled; TMG seed has all except `code` | Decided by Blake (0.6): Schedule is a built-in part of Projects, not a module; Code is an add-on shown inside projects, with no menu item (settings-firm, app-shell) |
 | 1.1 | firm_roles | description text, is_billable boolean | "Not billable" roles (settings-rates-phases) |
 | 1.1 | overhead_categories | code text (`PTO`, `HOL`) | Leave codes (settings, timesheet) |
 | 1.2 | company_kind enum | add `agency` | Permitting agencies, review boards (contacts) |

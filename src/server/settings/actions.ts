@@ -44,7 +44,11 @@ export async function revokeInvite(invitationId: unknown) {
 }
 
 export async function changeRole(membershipId: unknown, appRole: unknown) {
-  return changeRoleCore(await actor(), { membershipId, appRole }, settingsClerk);
+  return changeRoleCore(
+    await actor(),
+    { membershipId, appRole },
+    settingsClerk,
+  );
 }
 
 export async function deactivateMember(membershipId: unknown) {

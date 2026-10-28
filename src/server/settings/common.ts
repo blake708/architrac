@@ -16,7 +16,11 @@ export type SettingsActor = {
   member: Actor;
 };
 
-export function actorFrom({ firm, user, membership }: FirmSession): SettingsActor {
+export function actorFrom({
+  firm,
+  user,
+  membership,
+}: FirmSession): SettingsActor {
   return {
     firmId: firm.id,
     firmName: firmDisplayName(firm),

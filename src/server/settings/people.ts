@@ -304,6 +304,8 @@ export async function resendInviteCore(
 
   try {
     if (inv.clerkInvitationId && inv.status === "pending") {
+      // Best effort: the old one may already be expired or gone in Clerk.
+      // A new invitation is sent either way, so this never blocks a resend.
       await clerk
         .revokeInvitation({
           clerkOrgId: actor.clerkOrgId,
@@ -311,7 +313,7 @@ export async function resendInviteCore(
           requestingClerkUserId: actor.clerkUserId,
         })
         .catch((err: unknown) => {
-          if (!isClerkNotFound(err)) throw err;
+          console.warn("resendInvite: old Clerk invitation not revoked", err);
         });
     }
     const clerkInvitationId = await clerk.createInvitation({
@@ -416,7 +418,9 @@ async function lockMember(db: TenantDb, firmId: string, membershipId: string) {
     })
     .from(memberships)
     .innerJoin(users, eq(users.id, memberships.userId))
-    .where(and(eq(memberships.firmId, firmId), eq(memberships.id, membershipId)))
+    .where(
+      and(eq(memberships.firmId, firmId), eq(memberships.id, membershipId)),
+    )
     .for("update", { of: memberships });
   return row ?? null;
 }
@@ -520,7 +524,8 @@ export async function deactivateMemberCore(
 ): Promise<MemberActionResult> {
   if (!can(actor.member, "users.manage")) return forbidden;
   const id = idSchema.safeParse(rawId);
-  if (!id.success) return { ok: false, error: "That person isn't in this firm." };
+  if (!id.success)
+    return { ok: false, error: "That person isn't in this firm." };
 
   try {
     const name = await withFirm(actor.firmId, async (db) => {

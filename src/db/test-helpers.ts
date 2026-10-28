@@ -177,7 +177,13 @@ export async function addTestMember(
   const email = `${p.firstName.toLowerCase()}-${suffix}@example.com`;
   const user = await pool.query<{ id: string }>(
     "insert into users (clerk_user_id, email, first_name, last_name, initials) values ($1, $2, $3, $4, $5) returning id",
-    [clerkUserId, email, p.firstName, p.lastName, p.firstName[0] + p.lastName[0]],
+    [
+      clerkUserId,
+      email,
+      p.firstName,
+      p.lastName,
+      p.firstName[0] + p.lastName[0],
+    ],
   );
   const userId = user.rows[0].id;
   const membershipId = await asFirm(pool, firm.firmId, async (c) => {

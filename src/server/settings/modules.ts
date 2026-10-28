@@ -27,7 +27,10 @@ export async function updateModulesCore(
 
   const parsed = modulesSchema.safeParse(raw);
   if (!parsed.success) {
-    return { ok: false, error: "Unknown module. Reload the page and try again." };
+    return {
+      ok: false,
+      error: "Unknown module. Reload the page and try again.",
+    };
   }
   const after = normalizeModules(parsed.data);
 
@@ -39,7 +42,10 @@ export async function updateModulesCore(
         .where(eq(firmSettings.firmId, actor.firmId))
         .for("update");
       const before = row.modules;
-      if (before.length === after.length && before.every((k, i) => k === after[i]))
+      if (
+        before.length === after.length &&
+        before.every((k, i) => k === after[i])
+      )
         return;
 
       await db
