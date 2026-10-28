@@ -68,10 +68,14 @@ test("progress bars change colour at 90% and over 100%", async ({ page }) => {
     "data-tone",
     "warning",
   );
-  await expect(page.getByRole("img", { name: "Over: 118%" })).toHaveAttribute(
-    "data-tone",
-    "over",
-  );
+  const over = page.getByRole("img", { name: "Over: 118%" });
+  await expect(over).toHaveAttribute("data-tone", "over");
+
+  // Only the over-budget bar has a hatched overrun segment.
+  await expect(over.locator('[data-part="over"]')).toBeVisible();
+  await expect(
+    page.getByRole("img", { name: "Warning: 92%" }).locator('[data-part="over"]'),
+  ).toHaveCount(0);
 });
 
 test("tabs switch with the mouse and arrow keys", async ({ page }) => {

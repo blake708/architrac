@@ -2,10 +2,12 @@ import { progressStatus } from "@/lib/calc/progress";
 import type { ProgressTone } from "@/lib/calc/progress";
 import { cn } from "@/lib/cn";
 
+// Within budget the fill shows the tone. Once over, the budget part goes back
+// to blue and the overrun is hatched red, so the excess stands out.
 const fills: Record<ProgressTone, string> = {
   normal: "bg-blue",
   warning: "bg-orange",
-  over: "bg-red",
+  over: "bg-blue",
 };
 
 const percentText: Record<ProgressTone, string> = {
@@ -13,6 +15,9 @@ const percentText: Record<ProgressTone, string> = {
   warning: "text-orange",
   over: "text-red",
 };
+
+const hatch =
+  "repeating-linear-gradient(135deg, var(--color-red) 0 1.5px, var(--color-red-tint) 1.5px 5px)";
 
 type ProgressBarProps = {
   /** Amount used, e.g. hours logged. */
@@ -26,7 +31,7 @@ type ProgressBarProps = {
   className?: string;
 };
 
-/** 6px bar: blue normally, orange at 90%+, red over 100%. */
+/** 6px bar: blue normally, orange at 90%+, hatched red overrun past 100%. */
 export function ProgressBar({
   value,
   max,
@@ -34,19 +39,26 @@ export function ProgressBar({
   showPercent,
   className,
 }: ProgressBarProps) {
-  const { percent, fillPercent, tone } = progressStatus(value, max);
+  const { percent, fillWidth, overWidth, tone } = progressStatus(value, max);
   return (
     <span className={cn("flex items-center gap-2", className)}>
       <span
         role="img"
         aria-label={`${label}: ${percent}%`}
         data-tone={tone}
-        className="block h-1.5 min-w-12 flex-1 overflow-hidden rounded-[1px] bg-line-soft"
+        className="flex h-1.5 min-w-12 flex-1 overflow-hidden rounded-[1px] bg-line-soft"
       >
         <span
           className={cn("block h-full", fills[tone])}
-          style={{ width: `${fillPercent}%` }}
+          style={{ width: `${fillWidth}%` }}
         />
+        {overWidth > 0 && (
+          <span
+            data-part="over"
+            className="block h-full"
+            style={{ width: `${overWidth}%`, background: hatch }}
+          />
+        )}
       </span>
       {showPercent && (
         <span
