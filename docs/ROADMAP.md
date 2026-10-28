@@ -19,7 +19,7 @@ Work top to bottom. Each line is roughly one Claude Code session (see `docs/PROM
 
 - [x] **0.1 Project setup** — Next.js + TypeScript + Tailwind + pnpm; ESLint/Prettier; Vitest; Playwright; folder structure from ARCHITECTURE.md; tokens.css wired; fonts loaded.
 - [x] **0.2 Database** — Neon connected; Drizzle configured; schema for firms, users, memberships, firm_settings, teams, activity_log; first migration; app vs owner DB roles; RLS policies; `withFirm` helper; cross-firm test.
-- [ ] **0.3 Auth & firms** — Clerk installed; sign-in/up pages; Clerk webhook creates users/firms/memberships; `getSession`, `requireRole`, `can` + tests; middleware protecting `(app)` routes.
+- [x] **0.3 Auth & firms** — Clerk installed; sign-in/up pages; create-firm onboarding creates firms (webhook syncs users/memberships); `getSession`, `requireRole`, `can` + tests; middleware protecting `(app)` routes.
 - [ ] **0.4 UI kit** — Button, Input, Select, Textarea, Table, Card, KPI tile, Tabs, Badge, Progress, Avatar, Dialog, Empty state; a `/dev/ui` page showing all of them.
 - [ ] **0.5 App shell** — Menu rail (collapse remembered), top header, page header; module visibility from `firm_settings.modules_enabled`. Spec: `specs/release-0/app-shell.md`.
 - [ ] **0.6 Settings shell** — Firm profile, Users & invitations, Modules. Spec: `specs/release-0/settings-firm.md`.
