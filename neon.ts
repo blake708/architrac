@@ -9,8 +9,13 @@ export default defineConfig({
       // Default branch: no overrides, uses project defaults
       return {};
     }
+    if (branch.name === "dev") {
+      // The long-lived local development branch: never expires.
+      // (An earlier dev branch was auto-deleted by the 7-day rule below.)
+      return {};
+    }
     if (!branch.exists) {
-      // New non-default branches: auto-expire
+      // New throwaway branches: auto-expire
       // Run `neon checkout <name>` to create a new branch with these settings
       return { ttl: "7d" };
     }

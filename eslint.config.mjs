@@ -24,7 +24,8 @@ export default defineConfig([
     },
   },
   {
-    files: ["src/db/tenant.ts", "src/db/**/*.test.ts"],
+    // Database tests may use the raw client to close the connection.
+    files: ["src/db/tenant.ts", "src/**/*.db.test.ts", "src/db/**/*.test.ts"],
     rules: { "no-restricted-imports": "off" },
   },
   // Must come last: turns off style rules that Prettier handles.

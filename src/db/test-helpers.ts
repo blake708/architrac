@@ -126,3 +126,18 @@ export async function removeTestFirm(pool: Pool, firm: TestFirm) {
   await pool.query("delete from firms where id = $1", [firm.firmId]);
   await pool.query("delete from users where id = $1", [firm.userId]);
 }
+
+/** Remove a firm made by the code under test (e.g. createFirm), and its rows. */
+export async function removeFirmById(pool: Pool, firmId: string) {
+  await asFirm(pool, firmId, async (c) => {
+    await c.query("delete from activity_log where firm_id = $1", [firmId]);
+    await c.query("delete from memberships where firm_id = $1", [firmId]);
+    await c.query("delete from firm_settings where firm_id = $1", [firmId]);
+  });
+  await pool.query("delete from firms where id = $1", [firmId]);
+}
+
+/** Remove a user row by Clerk id. Remove their memberships first. */
+export async function removeUserByClerkId(pool: Pool, clerkUserId: string) {
+  await pool.query("delete from users where clerk_user_id = $1", [clerkUserId]);
+}

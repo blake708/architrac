@@ -101,12 +101,12 @@ Put the two placeholders behind constants in `src/lib/features.ts`: `FEATURES = 
 | Mobile menu button | Opens rail as drawer (see rule 9) | — | all |
 
 ## Business rules
-1. **Firm context.** Every `/app/**` request runs `getFirmContext()` (`src/lib/auth/context.ts`): Clerk `auth()` → `orgId`, `userId` → `firms` by `clerk_org_id` → `users` by `clerk_user_id` → `memberships` by (`firm_id`, `user_id`). Returns `{ firm, settings, user, membership }`. All firm-owned queries go through the tenant-scoped helper `src/db/tenant.ts`, which sets the firm for row-level security from `firm.id` (see ARCHITECTURE → Multi-tenancy). Only the `firms` lookup by `clerk_org_id` and the `users` lookup run before the firm is known.
+1. **Firm context.** Every `/app/**` request runs `getSession()` / `requireSession()` (`src/lib/auth/session.ts`; built in 0.3): Clerk `auth()` → `orgId`, `userId` → `firms` by `clerk_org_id` → `users` by `clerk_user_id` → `memberships` by (`firm_id`, `user_id`). Returns `{ firm, settings, user, membership }` (or a status saying where to send the person). All firm-owned queries go through the tenant-scoped helper `src/db/tenant.ts`, which sets the firm for row-level security from `firm.id` (see ARCHITECTURE → Multi-tenancy). Only the `firms` lookup by `clerk_org_id` and the `users` lookup run before the firm is known.
 2. **Routing guard (middleware + layout).**
    - Signed out → `/sign-in?redirect_url=<path>`.
-   - Signed in, no active Clerk org: if the user has ≥1 active membership → `setActive` to the most recently used (Clerk `lastActiveOrganizationId`, else first by firm name) and continue; if none → `/onboarding/create-firm`.
+   - Signed in, no active Clerk org: if the user belongs to ≥1 Clerk org → `/onboarding/choose-firm`, which calls `setActive` on the first by firm name and continues to `/app`; if none → `/onboarding/create-firm`. (Built in 0.3. Preferring the most recently used firm can come with the firm switcher in 0.5.)
    - Signed in, org active, but no `memberships` row yet → run `ensureMembership()` (rule 7) once; if it still finds none → `/onboarding/create-firm`.
-   - Membership `active = false` → render `<AccessDenied reason="deactivated">` ("Your access to [Firm] has been turned off. Ask an owner or admin if this is a mistake.") with only the Sign out button.
+   - Membership `active = false` → redirect to `/onboarding/access-off` (outside the shell, so no rail), which shows "Your access to [Firm] has been turned off. Ask an owner or admin if this is a mistake." with only the Sign out button. A redirect is used instead of rendering inside the layout so no page data loads for a deactivated member.
 3. **Module visibility.** `isModuleOn(settings, key) = settings.modules_enabled.includes(key)`. Rail shows a module item only if on. The "Modules" label shows only if at least one of the 7 rail modules is on. Worked example (TMG seed `{schedule,build,workload,accounting,marketing,knowledge,website,hiring}`): rail shows 6 core + label + 7 modules = 14 rows. If Blake turns off Hiring, Hiring disappears after save, with no reload of the whole app needed (`router.refresh()`).
 4. **Module route guard.** Each module page calls `requireModule(key)`. If off → render `<ModuleOff module="Build">`: H1 "Build is turned off", text "Build isn't turned on for [Firm].", and for owner/admin a button "Turn on in Settings" → `/app/settings/modules`; others see "Ask an owner or admin to turn it on." HTTP status 200, rail unchanged.
 5. **Current item.** `/app` is current only on exact match. Any other item is current when `pathname === route || pathname.startsWith(route + '/')`.
@@ -118,9 +118,10 @@ Put the two placeholders behind constants in `src/lib/features.ts`: `FEATURES = 
    New firms start with **no modules on**; they turn them on in Settings.
 7. **User/membership sync.** Webhook `POST /api/webhooks/clerk` verifies the Svix signature (`CLERK_WEBHOOK_SIGNING_SECRET`), then:
    - `user.created` / `user.updated` → upsert `users` (`clerk_user_id`, `email`, `first_name`, `last_name`, `avatar_url`; `initials` = first letter of first + last name, uppercase, only set on create).
-   - `organizationMembership.created` → `ensureMembership(clerkOrgId, clerkUserId)`: find `invitations` row (pending, same firm, same email) and create/reactivate `memberships` with its `app_role` and `title`; mark invitation `accepted`. If no invitation is found, create with `app_role 'staff'`.
+   - `organizationMembership.created` → `ensureMembership(clerkOrgId, clerkUserId)`: find `invitations` row (pending, same firm, same email) and create/reactivate `memberships` with its `app_role` and `title`; mark invitation `accepted`. If no invitation is found, create with `app_role 'staff'`. An existing membership's role is never changed (so the owner isn't downgraded when Clerk reports the creator joining). *0.3 builds the no-invitation path only; the `invitations` lookup arrives with that table in 0.6.*
    - `organizationMembership.deleted` → `memberships.active = false`.
-   All handlers are idempotent (safe to receive twice). The layout calls `ensureMembership` too (rule 2), so a person who lands before the webhook arrives still gets in.
+   All handlers are idempotent (safe to receive twice). The layout calls `ensureMembership` too (rule 2), so a person who lands before the webhook arrives still gets in; that path never reactivates a deactivated membership.
+   - The webhook does **not** create firms (`organization.created` is ignored). The create-firm action (rule 6) is the only path, so it can save time zone and fiscal year and roll back the Clerk org on failure without racing the webhook. *Decided by Blake, 0.3.*
 8. **Clerk role mapping.** `owner`/`admin` ↔ Clerk `org:admin`; `project_manager`/`staff` ↔ `org:member`. `memberships.app_role` is the source of truth; Clerk role is kept in sync when the app role changes.
 9. **Responsive.**
    - ≥ 768px: rail inline, honors the cookie.
@@ -168,6 +169,6 @@ Put the two placeholders behind constants in `src/lib/features.ts`: `FEATURES = 
 ## Open questions
 1. **Modules that are off:** you asked for them hidden; the mockup (`RAIL()` + Settings copy "A module that's off still shows in the menu with an Add prompt") shows them dimmed with an "ADD" badge as an upsell. This spec hides them. Confirm, or switch to the mockup's behavior.
 2. **Rail preference across devices:** cookie/localStorage is per browser. If it should follow the person to every device: *Data model addition needed: `users.preferences jsonb` (e.g. `{ "railMin": true }`).*
-3. **Open sign-up:** during the TMG pilot, should anyone be able to sign up and create a firm, or should Clerk be in "Restricted" mode (invite-only)? Recommend restricted until Release 1 ships.
+3. ~~**Open sign-up**~~ **Decided (0.3):** Clerk sign-up mode is **Invite only** (called "Restricted" on older Clerk screens) until Release 1 ships. Setup steps in `docs/GETTING_STARTED.md` → Setting up Clerk.
 4. **Rail order of core items:** confirm Reports stays in core (the Settings plan card lists "Projects, Contacts, Team, Time, Reports" as Core, which matches).
 5. Data model additions this spec depends on (defined in settings-firm spec): `firms.display_name`, `invitations` table, `schedule` and `code` as valid `modules_enabled` keys.

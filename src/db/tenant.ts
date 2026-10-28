@@ -28,3 +28,30 @@ export async function withFirm<T>(
     return fn(tx);
   });
 }
+
+/**
+ * Run `fn` in a transaction with NO firm selected. Only for the `users` table,
+ * which isn't owned by a firm (a person can belong to several).
+ *
+ * Safe by design: every firm-owned table returns nothing here and refuses
+ * writes, because row-level security fails closed when no firm is set.
+ */
+export async function withoutFirm<T>(
+  fn: (db: TenantDb) => Promise<T>,
+): Promise<T> {
+  return getDb().transaction(fn);
+}
+
+/**
+ * Turn a Clerk organization id into our firm id (or null if there's no firm
+ * for it, or it's archived). The one lookup that runs before the firm is known;
+ * it uses a database function that returns only the id.
+ */
+export async function findFirmIdByClerkOrg(
+  clerkOrgId: string,
+): Promise<string | null> {
+  const result = await getDb().execute<{ id: string | null }>(
+    sql`select firm_id_for_clerk_org(${clerkOrgId}) as id`,
+  );
+  return result.rows[0]?.id ?? null;
+}
