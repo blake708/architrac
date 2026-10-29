@@ -22,3 +22,6 @@ blob-report/
 Thumbs.db
 *.log
 .neon
+
+# Vercel CLI link and pulled settings
+.vercel/

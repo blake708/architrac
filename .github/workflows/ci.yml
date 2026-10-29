@@ -1,0 +1,99 @@
+# Checks every pull request: lint, typecheck, unit tests, browser tests.
+# Tests run against a throwaway Neon branch made from `main`, so they never
+# touch the dev or production database.
+name: CI
+
+on:
+  pull_request:
+
+# A new push to the same pull request cancels the older run.
+concurrency:
+  group: ci-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    name: Lint and typecheck
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+
+  tests:
+    name: Unit and browser tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Browser tests create and delete test people in the shared Clerk
+    # development instance, so only one run may do that at a time.
+    concurrency:
+      group: clerk-e2e
+      cancel-in-progress: false
+    env:
+      NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+      NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+      NEON_APP_ROLE_PASSWORD: ${{ secrets.NEON_APP_ROLE_PASSWORD }}
+      NEON_BRANCH: ci/pr-${{ github.event.pull_request.number }}-run-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Create test database branch
+        id: db
+        run: bash scripts/ci/neon-branch.sh "$NEON_BRANCH" main
+        env:
+          EXPIRES_IN_HOURS: 2
+
+      - name: Apply migrations
+        run: pnpm db:migrate
+        env:
+          DATABASE_URL_OWNER: ${{ steps.db.outputs.owner_url }}
+
+      - name: Unit tests
+        run: pnpm test
+        env:
+          DATABASE_URL: ${{ steps.db.outputs.app_url }}
+          DATABASE_URL_OWNER: ${{ steps.db.outputs.owner_url }}
+
+      - name: Install Playwright browser
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Browser tests
+        run: pnpm test:e2e
+        env:
+          DATABASE_URL: ${{ steps.db.outputs.app_url }}
+          DATABASE_URL_OWNER: ${{ steps.db.outputs.owner_url }}
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ vars.CLERK_DEV_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.CLERK_DEV_SECRET_KEY }}
+          NEXT_PUBLIC_CLERK_SIGN_IN_URL: /sign-in
+          NEXT_PUBLIC_CLERK_SIGN_UP_URL: /sign-up
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      - name: Save browser test report
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report/
+            test-results/
+          retention-days: 7
+
+      - name: Delete test database branch
+        if: always() && steps.db.outcome != 'skipped'
+        run: pnpm dlx neonctl@8 branches delete "$NEON_BRANCH" --project-id "$NEON_PROJECT_ID" || true

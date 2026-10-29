@@ -1,0 +1,108 @@
+# Gives every pull request its own preview deployment on Vercel, with its own
+# Neon database branch (preview/pr-<number>, copied from `main` and migrated).
+# When the pull request is closed or merged, the database branch is deleted.
+#
+# Vercel's own Git deploys are switched off (vercel.json) so that every
+# deployment goes through here and connects as architrac_app (RLS applies).
+name: Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+
+concurrency:
+  group: preview-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+env:
+  NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+  NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+  NEON_BRANCH: preview/pr-${{ github.event.pull_request.number }}
+  VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+
+jobs:
+  deploy:
+    name: Deploy preview
+    if: github.event.action != 'closed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: preview
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Create or reuse preview database branch
+        id: db
+        run: bash scripts/ci/neon-branch.sh "$NEON_BRANCH" main
+        env:
+          NEON_APP_ROLE_PASSWORD: ${{ secrets.NEON_APP_ROLE_PASSWORD }}
+
+      - name: Apply migrations
+        run: pnpm db:migrate
+        env:
+          DATABASE_URL_OWNER: ${{ steps.db.outputs.owner_url }}
+
+      - name: Get Vercel settings for previews
+        run: pnpm dlx vercel@65 pull --yes --environment=preview --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build
+        run: pnpm dlx vercel@65 build --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          NEXT_PUBLIC_APP_ENV: preview
+          DATABASE_URL: ${{ steps.db.outputs.app_url }}
+          # Lets Sentry upload source maps so errors point at real code lines.
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+
+      - name: Deploy
+        id: deploy
+        # The database URL is given to this deployment only (not saved in Vercel's settings).
+        run: |
+          url=$(pnpm dlx vercel@65 deploy --prebuilt --token="$VERCEL_TOKEN" \
+            --env DATABASE_URL="$DATABASE_URL" \
+            --env NEXT_PUBLIC_APP_ENV=preview)
+          echo "url=$url" >>"$GITHUB_OUTPUT"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          DATABASE_URL: ${{ steps.db.outputs.app_url }}
+
+      - name: Post preview link on the pull request
+        run: |
+          gh pr comment "$PR" --edit-last --create-if-none --body "**Preview:** $URL
+
+          Database: Neon branch \`$NEON_BRANCH\` (copied from \`main\`, migrations applied). Updated for commit $SHA."
+        env:
+          GH_TOKEN: ${{ github.token }}
+          PR: ${{ github.event.pull_request.number }}
+          URL: ${{ steps.deploy.outputs.url }}
+          SHA: ${{ github.event.pull_request.head.sha }}
+
+  cleanup:
+    name: Delete preview database
+    if: github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - name: Delete Neon branch
+        run: pnpm dlx neonctl@8 branches delete "$NEON_BRANCH" --project-id "$NEON_PROJECT_ID" || echo "Branch $NEON_BRANCH was already gone."
