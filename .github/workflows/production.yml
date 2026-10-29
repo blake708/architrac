@@ -52,12 +52,12 @@ jobs:
           DATABASE_URL_OWNER: ${{ steps.db.outputs.owner_url }}
 
       - name: Get Vercel settings for production
-        run: pnpm dlx vercel@65 pull --yes --environment=production --token="$VERCEL_TOKEN"
+        run: pnpm dlx --allow-build=esbuild vercel@65 pull --yes --environment=production --token="$VERCEL_TOKEN"
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
 
       - name: Build
-        run: pnpm dlx vercel@65 build --prod --token="$VERCEL_TOKEN"
+        run: pnpm dlx --allow-build=esbuild vercel@65 build --prod --token="$VERCEL_TOKEN"
         env:
           VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
           NEXT_PUBLIC_APP_ENV: production
@@ -69,7 +69,7 @@ jobs:
       - name: Deploy
         id: deploy
         run: |
-          url=$(pnpm dlx vercel@65 deploy --prebuilt --prod --token="$VERCEL_TOKEN" \
+          url=$(pnpm dlx --allow-build=esbuild vercel@65 deploy --prebuilt --prod --token="$VERCEL_TOKEN" \
             --env DATABASE_URL="$DATABASE_URL" \
             --env NEXT_PUBLIC_APP_ENV=production)
           echo "url=$url" >>"$GITHUB_OUTPUT"
