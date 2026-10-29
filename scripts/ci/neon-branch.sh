@@ -15,7 +15,7 @@
 set -euo pipefail
 
 name="$1"
-parent="${2:-main}"
+parent="${2:-production}"
 neon=(pnpm dlx neonctl@8 --project-id "$NEON_PROJECT_ID")
 
 if "${neon[@]}" branches get "$name" --output json >/dev/null 2>&1; then

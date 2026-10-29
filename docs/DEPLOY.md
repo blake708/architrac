@@ -9,7 +9,7 @@ How code gets from a pull request to the internet, and every setting it needs. B
 | A pull request is opened or updated | `ci.yml` | Lint, typecheck, unit tests and browser tests run against a throwaway Neon branch |
 | Same | `preview.yml` | Neon branch `preview/pr-<n>` is created and migrated; a Vercel preview is deployed; the link is posted on the pull request |
 | A pull request is closed or merged | `preview.yml` | The preview's Neon branch is deleted |
-| A pull request is merged into `main` | `production.yml` | The production database (Neon `main`) is migrated, then production is deployed |
+| A pull request is merged into `main` | `production.yml` | The production database (Neon `production` branch) is migrated, then production is deployed |
 
 Vercel never deploys by itself (`vercel.json`); only these workflows do.
 
@@ -56,5 +56,5 @@ Don't set `DATABASE_URL` in Vercel. The workflows pass it to each deployment.
 ## Troubleshooting
 
 - **Preview workflow fails at "Create or reuse preview database branch":** check `NEON_API_KEY` and `NEON_PROJECT_ID`. The Neon free plan limits how many branches you can have, so delete old `preview/*` or `ci/*` branches in the Neon console.
-- **The app shows "permission denied" errors on a preview:** `NEON_APP_ROLE_PASSWORD` is wrong, or `architrac_app` was never created on `main` (run `src/db/sql/create-app-role.sql` there).
+- **The app shows "permission denied" errors on a preview:** `NEON_APP_ROLE_PASSWORD` is wrong, or `architrac_app` was never created on the Neon `production` branch (run `src/db/sql/create-app-role.sql` there).
 - **Browser tests fail in CI but pass locally:** download the `playwright-report` artifact from the failed run on GitHub (it contains traces).

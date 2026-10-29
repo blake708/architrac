@@ -42,7 +42,7 @@ jobs:
 
       - name: Get production database connection
         id: db
-        run: bash scripts/ci/neon-branch.sh main
+        run: bash scripts/ci/neon-branch.sh production
         env:
           NEON_APP_ROLE_PASSWORD: ${{ secrets.NEON_APP_ROLE_PASSWORD }}
 

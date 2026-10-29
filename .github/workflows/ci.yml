@@ -1,5 +1,5 @@
 # Checks every pull request: lint, typecheck, unit tests, browser tests.
-# Tests run against a throwaway Neon branch made from `main`, so they never
+# Tests run against a throwaway Neon branch made from Neon `production`, so they never
 # touch the dev or production database.
 name: CI
 
@@ -55,7 +55,7 @@ jobs:
 
       - name: Create test database branch
         id: db
-        run: bash scripts/ci/neon-branch.sh "$NEON_BRANCH" main
+        run: bash scripts/ci/neon-branch.sh "$NEON_BRANCH" production
         env:
           EXPIRES_IN_HOURS: 2
 

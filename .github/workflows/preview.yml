@@ -1,5 +1,5 @@
 # Gives every pull request its own preview deployment on Vercel, with its own
-# Neon database branch (preview/pr-<number>, copied from `main` and migrated).
+# Neon database branch (preview/pr-<number>, copied from Neon `production` and migrated).
 # When the pull request is closed or merged, the database branch is deleted.
 #
 # Vercel's own Git deploys are switched off (vercel.json) so that every
@@ -45,7 +45,7 @@ jobs:
 
       - name: Create or reuse preview database branch
         id: db
-        run: bash scripts/ci/neon-branch.sh "$NEON_BRANCH" main
+        run: bash scripts/ci/neon-branch.sh "$NEON_BRANCH" production
         env:
           NEON_APP_ROLE_PASSWORD: ${{ secrets.NEON_APP_ROLE_PASSWORD }}
 
