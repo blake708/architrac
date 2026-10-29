@@ -56,6 +56,27 @@ export const PEOPLE = {
       { firm: "beta", role: "owner" },
     ],
   },
+  /**
+   * Only for the firm-switcher test. Joined Beta last, so Clerk opens Beta
+   * first and the test always switches Beta → Alpha → Beta. No other test
+   * signs in as this person, so nothing else changes their last-used firm.
+   */
+  switcher: {
+    email: "architrac-e2e-switcher+clerk_test@example.com",
+    firstName: "Fran",
+    lastName: "Switcher",
+    memberships: [
+      { firm: "alpha", role: "admin" },
+      { firm: "beta", role: "admin" },
+    ],
+  },
+  /** In Alpha only (every module on), so no switching is needed. */
+  alphaStaff: {
+    email: "architrac-e2e-alpha+clerk_test@example.com",
+    firstName: "Al",
+    lastName: "Alpha",
+    memberships: [{ firm: "alpha", role: "staff" }],
+  },
   admin: {
     email: "architrac-e2e-admin+clerk_test@example.com",
     firstName: "Adam",

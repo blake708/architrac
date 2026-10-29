@@ -46,8 +46,8 @@ test.describe("menu rail", () => {
   test("all modules on: 6 core, the Modules label, then 7 modules in order, no Schedule or Code", async ({
     page,
   }) => {
-    await signInAs(page, "owner");
-    await useFirm(page, "alpha"); // every module on
+    await signInAs(page, "alphaStaff"); // only in Alpha: every module on
+    await expect(page.getByTestId("firm-name")).toHaveText(FIRMS.alpha.name);
     await expect(rail(page).locator("[data-off]")).toHaveCount(0);
     expect(await railItemNames(page)).toEqual([...CORE, ...MODULES]);
     await expect(
@@ -219,7 +219,7 @@ test.describe("header", () => {
   test("switching firms changes the header name and the rail", async ({
     page,
   }) => {
-    await signInAs(page, "owner");
+    await signInAs(page, "switcher"); // own person: no other test moves them
     await useFirm(page, "alpha");
     await expect(rail(page).locator("[data-off]")).toHaveCount(0);
 
@@ -235,7 +235,7 @@ test.describe("header", () => {
     await expect(page.getByTestId("firm-name")).toHaveText(FIRMS.beta.name, {
       timeout: 20_000,
     });
-    // Beta has no modules on; the owner sees all 7 as off.
+    // Beta has no modules on; an admin sees all 7 as off.
     await expect(rail(page).locator("[data-off]")).toHaveCount(7);
   });
 });
