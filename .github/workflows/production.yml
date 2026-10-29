@@ -1,0 +1,78 @@
+# Deploys to production when a pull request is merged into `main`.
+# Order matters: migrate the production database first, then deploy the code
+# that expects the new tables. (Migrations must therefore stay backward
+# compatible: the old code keeps running for a minute against the new schema.)
+name: Production
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# Never run two production deploys at once, and never cancel one halfway.
+concurrency:
+  group: production
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  NEON_API_KEY: ${{ secrets.NEON_API_KEY }}
+  NEON_PROJECT_ID: ${{ vars.NEON_PROJECT_ID }}
+  VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ vars.VERCEL_PROJECT_ID }}
+
+jobs:
+  deploy:
+    name: Migrate and deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+
+      - name: Get production database connection
+        id: db
+        run: bash scripts/ci/neon-branch.sh production
+        env:
+          NEON_APP_ROLE_PASSWORD: ${{ secrets.NEON_APP_ROLE_PASSWORD }}
+
+      - name: Apply migrations
+        run: pnpm db:migrate
+        env:
+          DATABASE_URL_OWNER: ${{ steps.db.outputs.owner_url }}
+
+      - name: Get Vercel settings for production
+        run: pnpm dlx --allow-build=esbuild vercel@65 pull --yes --environment=production --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+
+      - name: Build
+        run: pnpm dlx --allow-build=esbuild vercel@65 build --prod --token="$VERCEL_TOKEN"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          NEXT_PUBLIC_APP_ENV: production
+          DATABASE_URL: ${{ steps.db.outputs.app_url }}
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          SENTRY_ORG: ${{ vars.SENTRY_ORG }}
+          SENTRY_PROJECT: ${{ vars.SENTRY_PROJECT }}
+
+      - name: Deploy
+        id: deploy
+        run: |
+          url=$(pnpm dlx --allow-build=esbuild vercel@65 deploy --prebuilt --prod --token="$VERCEL_TOKEN" \
+            --env DATABASE_URL="$DATABASE_URL" \
+            --env NEXT_PUBLIC_APP_ENV=production)
+          echo "url=$url" >>"$GITHUB_OUTPUT"
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          DATABASE_URL: ${{ steps.db.outputs.app_url }}
