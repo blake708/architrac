@@ -22,7 +22,7 @@ Work top to bottom. Each line is roughly one Claude Code session (see `docs/PROM
 - [x] **0.3 Auth & firms** — Clerk installed; sign-in/up pages; create-firm onboarding creates firms (webhook syncs users/memberships); `getSession`, `requireRole`, `can` + tests; middleware protecting `(app)` routes.
 - [x] **0.4 UI kit** — Button, Input, Select, Textarea, Table, Card, KPI tile, Tabs, Badge, Progress, Avatar, Dialog, Empty state; a `/dev/ui` page showing all of them.
 - [x] **0.5 App shell** — Menu rail (collapse remembered), top header, page header; module visibility from `firm_settings.modules_enabled`. Spec: `specs/release-0/app-shell.md`.
-- [ ] **0.6 Settings shell** — Firm profile, Users & invitations, Modules. Spec: `specs/release-0/settings-firm.md`.
+- [x] **0.6 Settings shell** — Firm profile, Users & invitations, Modules. Spec: `specs/release-0/settings-firm.md`.
 - [ ] **0.7 Deploy** — GitHub repo; Vercel project with preview deploys; Neon branch per preview; GitHub Actions running lint/typecheck/tests; Sentry.
 
 ## Release 1 — milestones
