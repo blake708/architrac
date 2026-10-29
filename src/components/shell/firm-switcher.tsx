@@ -54,7 +54,7 @@ type FirmSwitcherProps = FirmProps & {
  * the app for it.
  */
 export function FirmSwitcher({ name, logoUrl, firms }: FirmSwitcherProps) {
-  const { setActive } = useClerk();
+  const { setActive, loaded } = useClerk();
   const router = useRouter();
   const [switching, startSwitching] = useTransition();
 
@@ -70,7 +70,13 @@ export function FirmSwitcher({ name, logoUrl, firms }: FirmSwitcherProps) {
   function pick(firm: MyFirm) {
     if (firm.current) return;
     startSwitching(async () => {
-      await setActive({ organization: firm.clerkOrgId });
+      try {
+        await setActive({ organization: firm.clerkOrgId });
+      } catch (err) {
+        // Stay on the current firm rather than crashing the page.
+        console.error("Couldn't switch firm", err);
+        return;
+      }
       router.push("/app");
       router.refresh();
     });
@@ -78,8 +84,11 @@ export function FirmSwitcher({ name, logoUrl, firms }: FirmSwitcherProps) {
 
   return (
     <HeaderMenu>
+      {/* Disabled until Clerk has loaded in the browser: switching before
+          then crashed the page ("This page couldn't load"). */}
       <HeaderMenuTrigger
-        aria-busy={switching || undefined}
+        disabled={!loaded}
+        aria-busy={switching || !loaded || undefined}
         className="flex h-9 max-w-full cursor-pointer items-center gap-2.5 rounded-sm border border-chrome-line bg-transparent pr-2.5 pl-1 text-chrome-text hover:bg-chrome-2 focus-visible:outline-2 focus-visible:outline-white"
       >
         <FirmTile name={name} logoUrl={logoUrl} />
