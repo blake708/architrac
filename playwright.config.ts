@@ -25,7 +25,8 @@ export default defineConfig({
   timeout: 60_000,
   use: {
     baseURL,
-    trace: "on-first-retry",
+    // In CI keep a full trace of any failure (screens, network, clicks).
+    trace: process.env.CI ? "retain-on-failure" : "on-first-retry",
   },
   projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
   // Starts the app before the tests run (or reuses one already running).

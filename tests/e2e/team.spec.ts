@@ -38,6 +38,11 @@ async function query<T extends Record<string, unknown>>(
 }
 
 test.beforeAll(async () => {
+  // A CI retry runs this again on the same firm: seed only once.
+  const [{ n }] = await query<{ n: number }>(
+    "select count(*)::int as n from firm_roles where firm_id = :firm",
+  );
+  if (n > 0) return;
   const membership = (email: string) =>
     `(select m.id from memberships m join users u on u.id = m.user_id where m.firm_id = :firm and u.email = '${email}')`;
   await query(`

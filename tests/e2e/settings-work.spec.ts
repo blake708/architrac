@@ -31,7 +31,9 @@ test.beforeAll(async () => {
     const firmId = firm.rows[0].id;
     await c.query("begin");
     await c.query("select set_config('app.firm_id', $1, true)", [firmId]);
-    for (const r of ROLES) {
+    // A CI retry runs this again on the same firm: seed only once.
+    const existing = await c.query("select 1 from firm_roles where firm_id = $1 limit 1", [firmId]);
+    for (const r of existing.rowCount ? [] : ROLES) {
       const role = await c.query<{ id: string }>(
         "insert into firm_roles (firm_id, name, is_billable, sort_order) values ($1, $2, $3, $4) returning id",
         [firmId, r.name, r.billable, r.sort],
