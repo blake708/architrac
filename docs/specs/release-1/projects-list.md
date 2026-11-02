@@ -97,7 +97,7 @@ A single page with two Cards and a sticky footer holding **Cancel** (secondary, 
 - Inputs above the table:
   - **Total fee** * (money, ≥ $0, default $0).
   - **Total budget hours** (≥ 0, multiple of 0.25, default 0).
-- The table is generated from `phase_templates` (firm's own, `archived_at is null`, ordered by `sort_order`). One row per template, with these columns:
+- The table is generated from `phase_templates` (firm's own, `is_optional = false`, `archived_at is null`, ordered by `sort_order`). One row per template, with these columns. Optional phases are not included; they're added later from the project's Phases & fees. Each created `project_phases` row copies the template's `description` (settings-rates-phases rule 10a).
 
 | Column | Behavior |
 |---|---|

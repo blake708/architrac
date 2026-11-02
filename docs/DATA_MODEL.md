@@ -325,6 +325,8 @@ The screen specs found fields the model above doesn't have yet. **Add each one w
 | 0.5 | users | preferences jsonb (menu rail collapsed, etc.) | Rail state follows the person across devices (app-shell) |
 | 1.1 | firm_roles | description text, is_billable boolean | "Not billable" roles (settings-rates-phases) |
 | 1.1 | overhead_categories | code text (`PTO`, `HOL`) | Leave codes (settings, timesheet) |
+| 1.1 | phase_templates | description text null, is_optional boolean default false (optional ⇒ default_fee_share_bp = 0) | Optional phases not on every project; default phase descriptions (settings-rates-phases, Blake 2026-11-02) |
+| 1.4 | project_phases | description text null, copied from the template | (settings-rates-phases rule 10a, projects-list) |
 | 1.2 | company_kind enum | add `agency` | Permitting agencies, review boards (contacts) |
 | 1.2 | companies | description, primary_contact_id | (contacts) |
 | 1.2 | contacts | designations text ("PE, LEED AP") | (contacts) |

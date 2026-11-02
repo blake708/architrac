@@ -17,7 +17,7 @@ Decisions Blake needs to make. Each has a recommendation; the specs currently fo
 | 4 | PMs see **bill** rates on invoice lines they prepare? (Cost rates and profit stay hidden.) | Yes: bill rates print on the client's invoice anyway | invoicing, CLAUDE.md rule 4 | |
 | 5 | Invoice numbering at year end: does the prefix change to "2027-" automatically, and does the counter reset to 1? | Prefix rolls over automatically; counter keeps counting (no reset), which avoids duplicate-looking numbers | invoicing | |
 | 6 | Email provider: Postmark or Resend? | Postmark: best deliverability for invoices | invoicing, ARCHITECTURE | |
-| 7 | Must phase fee shares total 100% before a phase template can be saved? (The mockup only warns.) | Yes, block saving | settings-rates-phases | |
+| 7 | Must phase fee shares total 100% before a phase template can be saved? (The mockup only warns.) | Yes, block saving | settings-rates-phases | **Block saving** (Blake, 2026-11-02). Only default phases count; optional phases have no share |
 | 8 | Project profit to date: based on **billed** (mockup) or **earned** (% complete × fee)? | Show both in Release 2: earned for profitability, billed for cash. Release 1 has no profit display | project-snapshot | |
 | 9 | Project health: does a phase that finished over budget keep the project "At risk" until it closes? | No: flag it at phase level only; project health looks at open phases | projects-list | |
 | 10 | A firm with one owner: who approves that person's overhead time? | A firm setting "allow self-approval of own time" (off by default) | timesheet-approval | |

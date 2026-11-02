@@ -30,11 +30,19 @@ Uses the Settings frame from `release-0/settings-firm.md` (page-header band with
 
 Each section is one form with one Save changes (all-or-nothing, one DB transaction).
 
-**A. Phases & fees** — one white card (max-width 960px, `overflow-x:auto`):
-- Title row: H2 "Default phases & fee split" (13px/600 uppercase) + hint "New projects and proposals start with these. Each can be changed per project."
-- Table (`min-width:720px`), header 11px `#666666` on `#FAFAFA`. Columns: **Phase** (text input, 500), **Abbrev.** (text input, IBM Plex Mono 12.5px, 72px), **% of fee** (number input 60×32, right-aligned, `min 0 max 100 step 1`, "%" suffix, visually-hidden label "{name} percent of fee"), **Share** (180×8px track `#EBEBEB`, fill `#2F5BAA`), **Order** (▲/▼ icon buttons, `aria-label="Move {name} up|down"`), **Remove** (text button `#B42318`).
-- Total row (600): "Total" · `{sum}%` (Plex Mono 13px) · note. Color `#1D6234` when sum = 100, else `#9A3412`.
-- Under the table: "+ Add phase" button (32px, border `#D4D4D4`) adds an empty row at the end with focus on its name.
+**A. Phases & fees** — column, gap 16px, max-width 960px. Two white cards (`overflow-x:auto`) saved by the one Save changes:
+
+1. **Default phases** card:
+   - Title row: H2 "Default phases & fee split" (13px/600 uppercase) + hint "New projects and proposals start with these. Each can be changed per project."
+   - Table (`min-width:720px`), header 11px `#666666` on `#FAFAFA`. Columns: **Phase** (text input, 500), **Abbrev.** (text input, IBM Plex Mono 12.5px, 72px), **% of fee** (number input 60×32, right-aligned, `min 0 max 100 step 1`, "%" suffix, visually-hidden label "{name} percent of fee"), **Share** (180×8px track `#EBEBEB`, fill `#2F5BAA`), **Order** (▲/▼ icon buttons, `aria-label="Move {name} up|down"`), **Remove** (text button `#B42318`).
+   - **(not in mockup)** Under each phase row, a full-width description line (no top border, padding 0 12px 10px): auto-growing textarea (min 1 line, 13px, `#4D4D4D`, placeholder "Default description (optional)", visually-hidden label "{name} description"). Copied to the project's phase when a project is created; editable per project.
+   - Total row (600): "Total" · `{sum}%` (Plex Mono 13px) · note. Color `#1D6234` when sum = 100, else `#9A3412`. Optional phases are not counted.
+   - Under the table: "+ Add phase" button (32px, border `#D4D4D4`) adds an empty row at the end with focus on its name.
+2. **(not in mockup) Optional phases** card:
+   - Title row: H2 "Optional phases" + hint "Phases only some projects need, like interiors or as-built surveys. They aren't added to new projects automatically. Add one from a project's Phases & fees, and set its fee there."
+   - Table (`min-width:720px`), same header style. Columns: **Phase**, **Abbrev.** (as above), **Fee type** (select 120×32: Fixed / Hourly / Not to exceed, visually-hidden label "{name} fee type"), **Order** (▲/▼), **Remove**. Same description line under each row. No % or Share column.
+   - Empty: "No optional phases yet." (13px `#666666`, padding 16px 20px).
+   - Under the table: "+ Add optional phase" button (same style).
 
 **B. Roles & rates** — column, gap 16px, max-width 1040px:
 1. **KPI strip** (white card, grid `repeat(auto-fit, minmax(200px,1fr))`, cells padding 16px 20px 18px, right border `#EBEBEB`): label (11px/600 uppercase), value (22px/500, tabular numbers), note (12.5px `#666666`). Four tiles in order: Blended bill rate, Avg. multiplier, Roles flagged, Breakeven (formulas in Business rules 3–6).
@@ -63,7 +71,8 @@ The mockup's other two cards in this section ("Timesheets" rules and "Approval r
 ## Data shown
 | UI element | Source (table.column or calculation) | Notes / format |
 |---|---|---|
-| Phase rows | `phase_templates` (`name`, `code`, `default_fee_share_bp`, `sort_order`) where `archived_at is null` | % = `default_fee_share_bp / 100` |
+| Default phase rows | `phase_templates` (`name`, `code`, `description`, `default_fee_share_bp`, `sort_order`) where `is_optional = false` and `archived_at is null` | % = `default_fee_share_bp / 100` |
+| Optional phase rows | `phase_templates` (`name`, `code`, `description`, `default_fee_type`, `sort_order`) where `is_optional = true` and `archived_at is null` | `description`, `is_optional` are additions |
 | Share bar width | `min(100, pct / 40 × 100)%` | 40% fills the bar (mockup) |
 | Role rows | `firm_roles` where `archived_at is null` order by `sort_order` | description, is_billable are additions |
 | People | `count(memberships) where firm_role_id = role.id and active` | |
@@ -80,11 +89,12 @@ The mockup's other two cards in this section ("Timesheets" rules and "Approval r
 ## Actions
 | Action | What happens | Validation | Permission |
 |---|---|---|---|
-| Edit phase name / abbrev / % | Form dirty; total and bars update live | name 1–60; code 1–6, `^[A-Z0-9-]+$` (input upper-cases); unique codes and names (case-insensitive); % integer 0–100 | owner, admin |
-| Move phase up/down | Swap order; dirty | — | owner, admin |
-| Add phase | New row at end; dirty | as above | owner, admin |
-| Remove phase | Row removed from form; on save `archived_at = now()` | at least 1 phase must remain | owner, admin |
-| Save (Phases) | Upsert `phase_templates` (`default_fee_share_bp = pct × 100`, `sort_order` = row index, new rows `default_fee_type 'fixed'`); archive removed; `activity_log` per changed row | Σ % must equal 100 → else "Phase shares must add up to 100%. Now {sum}%." | owner, admin |
+| Edit phase name / abbrev / % / description | Form dirty; total and bars update live | name 1–60; code 1–6, `^[A-Z0-9-]+$` (input upper-cases); codes and names unique (case-insensitive) across default **and** optional phases; % integer 0–100; description trimmed, 0–500 chars (empty → null) | owner, admin |
+| Edit optional phase fee type | Form dirty | `fixed`, `hourly`, `nte` | owner, admin |
+| Move phase up/down | Swap order within its own list; dirty | — | owner, admin |
+| Add phase / Add optional phase | New row at end of that list; dirty | as above | owner, admin |
+| Remove phase | Row removed from form; on save `archived_at = now()` | at least 1 default phase must remain; optional list may be empty | owner, admin |
+| Save (Phases) | Upsert `phase_templates`: default rows `is_optional = false`, `default_fee_share_bp = pct × 100`, new rows `default_fee_type 'fixed'`; optional rows `is_optional = true`, `default_fee_share_bp = 0`, `default_fee_type` from the select; `sort_order` = row index within its list; archive removed; `activity_log` per changed row | Σ % of default phases must equal 100 → else "Phase shares must add up to 100%. Now {sum}%." | owner, admin |
 | Edit bill/cost rate | Form dirty; multiplier, KPIs, Designer example update live | integers 0–9,999; billable role bill rate ≥ 1 | owner, admin |
 | Save (Rates) with rate changes | Dialog "Apply new rates from" date (default today in firm time zone) listing each changed role "Designer: $115 → $120 bill". Confirm → rule 8 | date ≥ each changed role's current `effective_from` → else "Pick {date} or later — {role}'s current rate starts then." | owner, admin |
 | Save (Rates) overhead only | Update `firm_settings.overhead_rate_bp`, `include_overhead_default`; `activity_log` | rate integer 0–300 | owner, admin |
@@ -113,7 +123,12 @@ The mockup's other two cards in this section ("Timesheets" rules and "Approval r
    - Example: Designer bill $115 since 2026-01-01; change to $120 from 2026-11-01 → old row `effective_to = 2026-10-31`, new row 12000/4400 from 2026-11-01; Effective column shows "Nov 1, 2026" from that day, and "Jan 1, 2026" until then.
    - Non-billable roles store `bill_rate_cents = 0`.
 9. **Overhead from actuals**: `calc_pct = round(expenses / labor × 100)` (integer %); "Use" sets `overhead_rate_bp = calc_pct × 100`. Example: $612,000 ÷ $1,020,000 = 0.60 → **60%** → 6000. Labor 0 → calc shows "—" and button disabled.
-10. **Phase share total** = Σ pct. Note: 100 → "Adds up to the full fee"; < 100 → "{100 − sum}% of the fee is unassigned"; > 100 → "{sum − 100}% over the full fee". Seed: 5+15+25+35+5+15+0 = 100. Example: CD changed to 30 → total 95, "5% of the fee is unassigned", Save blocked. Template changes never alter existing projects' `project_phases` (they were copied at creation).
+10. **Phase share total** = Σ pct. Note: 100 → "Adds up to the full fee"; < 100 → "{100 − sum}% of the fee is unassigned"; > 100 → "{sum − 100}% over the full fee". Seed: 5+15+25+35+5+15+0 = 100. Example: CD changed to 30 → total 95, "5% of the fee is unassigned", Save blocked (Open Decision #7: block). Optional phases are never in the total. Template changes never alter existing projects' `project_phases` (they were copied at creation).
+10a. **Optional phases and descriptions** (added by Blake, 2026-11-02):
+    - New projects (projects-list spec) copy only default phases (`is_optional = false`). Optional phases are offered in the project's "Add phase" dialog (project-detail spec), which prefills code, name, description and fee type from the template; the fee is entered there.
+    - A phase's `description` is copied to `project_phases.description` when the phase is created on a project, and is editable per project after that. Editing the template never changes existing projects.
+    - `default_fee_share_bp` is always 0 for optional phases (check constraint).
+    - Moving a phase between the default and optional lists is out of scope; remove it from one list and add it to the other.
 11. **Timesheet lists**:
     - Names are trimmed, 1–60 chars. Adding a duplicate (case-insensitive) within the same list shows "Already in the list" under the input and adds nothing. Empty input → Add does nothing.
     - Removing a chip or overhead phase sets `active = false` (never deleted); existing `time_entries` keep their reference and still appear in reports under that name.
@@ -153,6 +168,8 @@ TMG seed (from mockup JS). All rates `effective_from = 2026-01-01`, `effective_t
 | 5 | PRM | Permitting | 500 | 5 |
 | 6 | CA | Construction Admin | 1500 | 9 |
 | 7 | CO | Close Out | 0 | 7 |
+
+All seeded default phases have `description = null` and `is_optional = false`. No optional phases are seeded; the firm adds its own.
 
 **activities — project** (`TS.project`, in order): Design · Drawings & production · Coordination · Meetings · Code & research · Specifications · Project management · QA/QC review · Permit & agency review · Site visit · Submittals & RFIs · Pay app review · Travel (13).
 
@@ -200,6 +217,11 @@ TMG seed (from mockup JS). All rates `effective_from = 2026-01-01`, `effective_t
 - [ ] Given the seed phases, then the total reads "100%" in green with "Adds up to the full fee".
 - [ ] Given I change CD to 30, then the total reads "95%" with "5% of the fee is unassigned", and Save shows "Phase shares must add up to 100%. Now 95%." and writes nothing.
 - [ ] Given I rename Permitting's abbreviation to "PRM2" and save, then `phase_templates.code = 'PRM2'` and existing projects' phases are unchanged.
+- [ ] Given I type "Programming, site analysis and code review" as the Pre-Design description and save, then that `phase_templates.description` is stored, and clearing it and saving stores null.
+- [ ] Given I add optional phase "INT Interior Design" with fee type Hourly and save, then a `phase_templates` row exists with `is_optional = true`, `default_fee_type = 'hourly'`, `default_fee_share_bp = 0`, and the default total still reads "100%".
+- [ ] Given optional phase "INT" exists, when I add a default phase with abbreviation "int", then I see an "already used" error on the abbreviation and Save writes nothing.
+- [ ] Given I remove every optional phase and save, then the save succeeds and the card shows "No optional phases yet."
+- [ ] *(Test in 1.4)* Given optional phase "INT" exists, when I create a project, then its phases are the 7 default phases only, each with the template's description.
 - [ ] Given I type "travel" in New activity and click Add, then I see "Already in the list" and no chip is added.
 - [ ] Given I add "Punch walk" to Project activities and save, then an `activities` row (`applies_to 'project'`, `sort_order 14`, active) exists.
 - [ ] Given I remove "Travel" and save, then its row has `active = false`, it still exists, and time entries that used it still show "Travel" in reports.
@@ -216,8 +238,10 @@ TMG seed (from mockup JS). All rates `effective_from = 2026-01-01`, `effective_t
 2. *Data model addition needed:* `overhead_categories.code text null`, unique per firm when set (`PTO`, `HOL`), so the app can tell the PTO category (holds leave types) from Holiday. The Time mockup also uses `OH` as the overhead group code (not a row).
 3. *Data model addition needed (later):* phase checklist table (mockup counts 6/8/6/12/5/9/7 items) — confirm release.
 4. DATA_MODEL seed notes disagree with the mockup; this spec uses the mockup values. Update DATA_MODEL: phase codes `PRM`/`CO` (not "Permitting"/"Close Out"); 8 roles (not "Principal, Project Architect, Designer, Admin"); overhead categories Marketing / Administration / Professional development / Firm standards (not "Admin, Marketing, Professional development, IT"); leave as PTO + Holiday categories with Vacation/Sick/Personal activities; project activity list of 13.
-5. `phase_templates.default_fee_type` is not in the mockup. Seeded `fixed` for all. Should CA default to `hourly`, and should the column be editable here?
-6. Should the 2.5× flag threshold be a firm setting (e.g. `firm_settings.min_multiplier_bp`)? Spec uses a constant.
-7. Should the overhead calculator inputs be saved (e.g. with year) for reference? Spec does not store them.
-8. Overhead rate allows whole percents only (matches mockup). OK, or allow decimals (bp allows 60.25%)?
-9. Should Phases & fees block save when shares ≠ 100%? The mockup only warns. Spec blocks it.
+5. ~~`phase_templates.default_fee_type` is not in the mockup.~~ **Answered (Blake, 2026-11-02):** default phases are all `fixed` and fee type isn't shown for them; optional phases have an editable fee type.
+6. ~~Should the 2.5× flag threshold be a firm setting?~~ **Answered:** constant `MULTIPLIER_FLAG = 2.5` for now.
+7. ~~Should the overhead calculator inputs be saved?~~ **Answered:** no.
+8. ~~Overhead rate decimals?~~ **Answered:** whole percents only.
+9. ~~Block save when shares ≠ 100%?~~ **Answered:** yes, block (Open Decision #7).
+10. *Data model addition (Blake, 2026-11-02):* `phase_templates.description text null`, `phase_templates.is_optional boolean not null default false`; `project_phases.description text null` (added in 1.4 when that table is created).
+11. Time-entry acceptance tests (approved entry keeps its rate; "12 h are logged to Marketing"; removed "Travel" still shows in reports) can't run until `time_entries` exists. 1.1 builds the hooks (the logged-hours check returns 0 until then); the tests are written in 1.6 / 1.7.
