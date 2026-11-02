@@ -5,7 +5,7 @@
 | **Release** | 1 |
 | **Route** | `/app/contacts` (tab, filter, search and open drawer live in the URL: `?tab=companies\|people&kind=client&q=palm&company=<id>` or `&contact=<id>`) |
 | **Mockup** | `mockup/Contacts.dc.html` |
-| **Status** | Draft |
+| **Status** | Building (1.2) |
 
 ## Purpose
 The firm's address book. Everyone uses it to find a client, consultant, contractor, agency or vendor and the people who work there; owners/admins also use it to spot clients with open balances or no billing contact (invoices can't be emailed without one).
@@ -137,12 +137,13 @@ All writes are server actions that set `firm_id` from the session, `created_by`,
 - [ ] Given a search with no matches, then the empty message and "Clear search and filters" are shown, and clicking it restores the full list.
 
 ## Open questions
-1. **Data model addition needed:** add `agency` to enum `company_kind` (mockup filter and pill "Agency" for building departments, planning & zoning). Alternative: map to `other` and label it "Agency" — Blake to choose.
-2. **Data model addition needed:** `companies.description text` (the grey line under the name, e.g. "Medical developer").
-3. **Data model addition needed:** `companies.primary_contact_id uuid fk → contacts null` (the "Main contact" column). If rejected, fallback rule: first non-archived contact (by `created_at`) tagged "Main contact".
-4. **Data model addition needed:** `contacts.designations text` ("PE", "PLA", "CPA") shown after the name.
+10. *(Added Blake, 2026-11-02)* Until invoices (1.8) exist, a client with nothing billed shows "—" in Billed / fees, not "Paid up". Project counts and lists fill in from 1.4 (projects) and 1.5 (consultants).
+1. **Decided (Blake, 2026-11-02): add `agency`** as its own kind. *(Was: data model addition needed:* add `agency` to enum `company_kind` (mockup filter and pill "Agency" for building departments, planning & zoning). Alternative: map to `other` and label it "Agency" — Blake to choose.
+2. **Done in 1.2.** `companies.description text` (the grey line under the name, e.g. "Medical developer").
+3. **Done in 1.2.** `companies.primary_contact_id uuid fk → contacts null` (the "Main contact" column). If rejected, fallback rule: first non-archived contact (by `created_at`) tagged "Main contact".
+4. **Done in 1.2.** `contacts.designations text` ("PE", "PLA", "CPA") shown after the name.
 5. **Data model addition needed (Release 2):** `companies.send_statements boolean default false` for the "Send monthly statements" toggle.
-6. **Data model addition needed (decide for R1 or later):** a generic link table, e.g. `project_contacts (id, firm_id, project_id, company_id, contact_id null, role text)`, so contractors, agencies and vendors show their projects ("GC", "Permit review", "Zoning letter") as in the mockup. Without it these kinds show "No projects yet".
-7. **CSV import (R1 nice-to-have):** proposed: upload CSV with headers `company, kind, first_name, last_name, title, email, phone, mobile, tags (semicolon-separated), address_line1, city, state, postal_code`; preview table with per-row errors; companies matched by exact name (case-insensitive) or created; contacts de-duplicated by email. Build in R1 or defer? Also: import customers from QuickBooks instead/as well?
-8. Should PMs see billed/open money for clients (at least on projects they manage)? Spec currently hides it from PM and staff.
-9. Should staff be allowed to create/edit contacts (e.g. adding a consultant's new engineer)? Spec currently says view-only.
+6. **Decided (Blake, 2026-11-02): build `project_contacts` in 1.4/1.5**, once `projects` exists. Until then contractors, agencies and vendors show "No projects yet". *(Was: decide for R1 or later:* a generic link table, e.g. `project_contacts (id, firm_id, project_id, company_id, contact_id null, role text)`, so contractors, agencies and vendors show their projects ("GC", "Permit review", "Zoning letter") as in the mockup. Without it these kinds show "No projects yet".
+7. **Decided (Blake, 2026-11-02): defer.** Existing contacts come over in 1.11 (Import from Bubble); the Import button stays hidden. *(Was:* **CSV import (R1 nice-to-have):** proposed: upload CSV with headers `company, kind, first_name, last_name, title, email, phone, mobile, tags (semicolon-separated), address_line1, city, state, postal_code`; preview table with per-row errors; companies matched by exact name (case-insensitive) or created; contacts de-duplicated by email. Build in R1 or defer? Also: import customers from QuickBooks instead/as well?
+8. **Decided (Blake, 2026-11-02): no**, owners/admins only. Should PMs see billed/open money for clients (at least on projects they manage)? Spec currently hides it from PM and staff.
+9. **Decided (Blake, 2026-11-02): view only.** Should staff be allowed to create/edit contacts (e.g. adding a consultant's new engineer)? Spec currently says view-only.

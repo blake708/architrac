@@ -6,6 +6,8 @@ import { closeDb, getDb } from "./client";
 import {
   activities,
   activityLog,
+  companies,
+  contacts,
   firmRoles,
   firmSettings,
   firms,
@@ -339,6 +341,50 @@ const cases: TableCase[] = [
         .insert(activities)
         .values({ firmId: B.firmId, name: "Sneaky", appliesTo: "project" }),
   },
+  {
+    table: "companies",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: companies.firmId })
+        .from(companies)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) =>
+      db
+        .update(companies)
+        .set({ name: "hacked" })
+        .where(eq(companies.id, B.companyId))
+        .returning(),
+    readB: (db) =>
+      db
+        .select({ v: companies.name })
+        .from(companies)
+        .where(eq(companies.id, B.companyId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db.insert(companies).values({ firmId: B.firmId, name: "Sneaky", kind: "client" }),
+  },
+  {
+    table: "contacts",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: contacts.firmId })
+        .from(contacts)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) =>
+      db
+        .update(contacts)
+        .set({ firstName: "hacked" })
+        .where(eq(contacts.id, B.contactId))
+        .returning(),
+    readB: (db) =>
+      db
+        .select({ v: contacts.firstName })
+        .from(contacts)
+        .where(eq(contacts.id, B.contactId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db.insert(contacts).values({ firmId: B.firmId, firstName: "Sneaky" }),
+  },
 ];
 
 describe("database role", () => {
@@ -403,6 +449,24 @@ describe("other guards", () => {
           .update(memberships)
           .set({ firmRoleId: B.firmRoleId })
           .where(eq(memberships.id, A.membershipId)),
+      ),
+      /foreign key/,
+    );
+  });
+
+  it("a contact can't belong to another firm's company", async () => {
+    await expectDbError(
+      withFirm(A.firmId, (db) =>
+        db.insert(contacts).values({ firmId: A.firmId, firstName: "X", companyId: B.companyId }),
+      ),
+      /foreign key/,
+    );
+  });
+
+  it("a company's billing contact can't be another firm's contact", async () => {
+    await expectDbError(
+      withFirm(A.firmId, (db) =>
+        db.update(companies).set({ billingContactId: B.contactId }).where(eq(companies.id, A.companyId)),
       ),
       /foreign key/,
     );
