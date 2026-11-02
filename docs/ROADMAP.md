@@ -23,7 +23,7 @@ Work top to bottom. Each line is roughly one Claude Code session (see `docs/PROM
 - [x] **0.4 UI kit** — Button, Input, Select, Textarea, Table, Card, KPI tile, Tabs, Badge, Progress, Avatar, Dialog, Empty state; a `/dev/ui` page showing all of them.
 - [x] **0.5 App shell** — Menu rail (collapse remembered), top header, page header; module visibility from `firm_settings.modules_enabled`. Spec: `specs/release-0/app-shell.md`.
 - [x] **0.6 Settings shell** — Firm profile, Users & invitations, Modules. Spec: `specs/release-0/settings-firm.md`.
-- [x] **0.7 Deploy** — GitHub repo; Vercel project with preview deploys; Neon branch per preview; GitHub Actions running lint/typecheck/tests; Sentry. Live at https://architrac.vercel.app. Setup and settings: `DEPLOY.md`, ADR 0006. **Pending:** no event has reached Sentry yet; Sentry accepts events but doesn't store them (account issue raised with Sentry support). Re-run the console test once fixed.
+- [x] **0.7 Deploy** — GitHub repo; Vercel project with preview deploys; Neon branch per preview; GitHub Actions running lint/typecheck/tests; Sentry. Live at https://architrac.vercel.app. Setup and settings: `DEPLOY.md`, ADR 0006. Sentry verified with a test error from production.
 
 ## Release 1 — milestones
 
