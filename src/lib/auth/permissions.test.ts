@@ -114,6 +114,11 @@ const MATRIX: Row[] = [
     expected: { owner: true, admin: true, project_manager: true, staff: false },
   },
   {
+    row: "Contacts: archive (contacts spec)",
+    actions: ["contacts.archive"],
+    expected: OA,
+  },
+  {
     row: "Delete (archive) firm",
     actions: ["firm.archive"],
     expected: {
