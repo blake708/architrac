@@ -598,6 +598,13 @@ export async function deactivateMemberCore(
       const name = `${them.firstName} ${them.lastName}`.trim();
       if (!them.active) return name;
 
+      // A team leader keeps their team's reviews going (team spec, Actions).
+      const [led] = await db
+        .select({ name: teams.name })
+        .from(teams)
+        .where(and(eq(teams.leaderMembershipId, them.id), isNull(teams.archivedAt)));
+      if (led) throw new Refused(`Assign a new leader to ${led.name} first.`);
+
       const owners = await lockActiveOwnerCount(db, actor.firmId);
       if (removesLastOwner(them, owners, { deactivate: true })) {
         throw new Refused(needsOwnerMessage(actor.firmName));
