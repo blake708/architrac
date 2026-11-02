@@ -1,10 +1,19 @@
 "use server";
 
 import { requireSession } from "@/lib/auth/session";
+import { todayIn } from "@/lib/format";
 import { settingsClerk } from "@/server/auth/clerk";
 import { actorFrom } from "./common";
 import { updateFirmProfileCore } from "./firm-profile";
 import { updateModulesCore } from "./modules";
+import { savePhasesCore } from "./phases";
+import {
+  addRoleCore,
+  archiveRoleCore,
+  editRoleCore,
+  saveRatesCore,
+} from "./rates";
+import { saveTimeListsCore } from "./time-lists";
 import {
   changeRoleCore,
   deactivateMemberCore,
@@ -53,4 +62,40 @@ export async function changeRole(membershipId: unknown, appRole: unknown) {
 
 export async function deactivateMember(membershipId: unknown) {
   return deactivateMemberCore(await actor(), membershipId, settingsClerk);
+}
+
+// ── Work settings (settings-rates-phases spec, milestone 1.1) ───────────────
+
+/** Today in the firm's time zone, from the session. */
+async function actorAndToday() {
+  const session = await requireSession();
+  return { actor: actorFrom(session), today: todayIn(session.firm.timezone) };
+}
+
+export async function savePhases(form: unknown) {
+  return savePhasesCore(await actor(), form);
+}
+
+export async function saveRates(input: unknown) {
+  const { actor, today } = await actorAndToday();
+  return saveRatesCore(actor, input, today);
+}
+
+export async function addRole(input: unknown) {
+  const { actor, today } = await actorAndToday();
+  return addRoleCore(actor, input, today);
+}
+
+export async function editRole(input: unknown) {
+  const { actor, today } = await actorAndToday();
+  return editRoleCore(actor, input, today);
+}
+
+export async function archiveRole(roleId: unknown) {
+  const { actor, today } = await actorAndToday();
+  return archiveRoleCore(actor, roleId, today);
+}
+
+export async function saveTimeLists(form: unknown) {
+  return saveTimeListsCore(await actor(), form);
 }

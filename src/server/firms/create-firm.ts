@@ -1,4 +1,5 @@
 import { randomBytes, randomUUID } from "node:crypto";
+import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { activityLog, firmSettings, firms, memberships } from "@/db/schema";
 import { type TenantDb, withFirm } from "@/db/tenant";
@@ -127,6 +128,9 @@ export async function createFirmCore(
           defaultPaymentTermsDays: 30,
           modulesEnabled: [],
         });
+        // Default phases, activities, overhead phases and leave types
+        // (settings-rates-phases, Empty state). Roles start empty.
+        await db.execute(sql`select seed_firm_defaults(${firmId})`);
         const me = await upsertUserIn(db, user);
         await db.insert(memberships).values({
           firmId,

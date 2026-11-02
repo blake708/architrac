@@ -62,8 +62,13 @@ export async function cleanE2eData() {
         );
         for (const table of [
           "activity_log",
+          "rates",
+          "activities",
+          "overhead_categories",
+          "phase_templates",
           "invitations",
           "memberships",
+          "firm_roles",
           "teams",
           "firm_settings",
         ]) {

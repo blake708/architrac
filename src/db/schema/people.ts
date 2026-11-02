@@ -8,8 +8,10 @@ import {
   integer,
   numeric,
   pgTable,
+  smallint,
   text,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 import { archivedAt, citext, id, timestamps } from "./columns";
@@ -49,7 +51,7 @@ export const memberships = pgTable(
       .references(() => users.id),
     appRole: appRole("app_role").notNull().default("staff"),
     title: text("title"),
-    /** Billing role. Becomes a foreign key to firm_roles in milestone 1.1. */
+    /** Billing role: drives the person's default rates. */
     firmRoleId: uuid("firm_role_id"),
     teamId: uuid("team_id"),
     employmentType: employmentType("employment_type")
@@ -77,6 +79,11 @@ export const memberships = pgTable(
       name: "memberships_team_same_firm_fk",
       columns: [t.firmId, t.teamId],
       foreignColumns: [teams.firmId, teams.id],
+    }),
+    foreignKey({
+      name: "memberships_firm_role_same_firm_fk",
+      columns: [t.firmId, t.firmRoleId],
+      foreignColumns: [firmRoles.firmId, firmRoles.id],
     }),
     check(
       "memberships_target_utilization_bp_range",
@@ -106,5 +113,35 @@ export const teams = pgTable(
       columns: [t.firmId, t.leaderMembershipId],
       foreignColumns: [memberships.firmId, memberships.id],
     }),
+  ],
+);
+
+/**
+ * A billing role (Settings → Roles & rates): "Principal", "Designer"…
+ * Its bill and cost rates live in `rates`, effective-dated.
+ */
+export const firmRoles = pgTable(
+  "firm_roles",
+  {
+    id: id(),
+    firmId: uuid("firm_id")
+      .notNull()
+      .references(() => firms.id),
+    name: text("name").notNull(),
+    /** Short note under the name, e.g. "Owners and partners". */
+    description: text("description"),
+    /** False for overhead roles (Office manager): bill rate is always 0. */
+    isBillable: boolean("is_billable").notNull().default(true),
+    sortOrder: smallint("sort_order").notNull().default(0),
+    createdBy: uuid("created_by").references((): AnyPgColumn => users.id),
+    ...timestamps,
+    archivedAt: archivedAt(),
+  },
+  (t): PgTableExtraConfigValue[] => [
+    unique("firm_roles_firm_id_id_unique").on(t.firmId, t.id),
+    // Names are unique (ignoring case) among roles that aren't archived.
+    uniqueIndex("firm_roles_name_unique")
+      .on(t.firmId, sql`lower(${t.name})`)
+      .where(sql`${t.archivedAt} is null`),
   ],
 );

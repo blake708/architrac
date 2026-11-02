@@ -3,3 +3,4 @@ export * from "./firms";
 export * from "./people";
 export * from "./activity-log";
 export * from "./invitations";
+export * from "./firm-setup";

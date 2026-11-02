@@ -4,11 +4,16 @@ import { eq, sql } from "drizzle-orm";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { closeDb, getDb } from "./client";
 import {
+  activities,
   activityLog,
+  firmRoles,
   firmSettings,
   firms,
   invitations,
   memberships,
+  overheadCategories,
+  phaseTemplates,
+  rates,
   teams,
 } from "./schema";
 import { type TenantDb, withFirm } from "./tenant";
@@ -212,6 +217,128 @@ const cases: TableCase[] = [
         appRole: "owner",
       }),
   },
+  {
+    table: "firm_roles",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: firmRoles.firmId })
+        .from(firmRoles)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) =>
+      db
+        .update(firmRoles)
+        .set({ name: "hacked" })
+        .where(eq(firmRoles.id, B.firmRoleId))
+        .returning(),
+    readB: (db) =>
+      db
+        .select({ v: firmRoles.name })
+        .from(firmRoles)
+        .where(eq(firmRoles.id, B.firmRoleId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db.insert(firmRoles).values({ firmId: B.firmId, name: "Sneaky" }),
+  },
+  {
+    table: "rates",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: rates.firmId })
+        .from(rates)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) =>
+      db
+        .update(rates)
+        .set({ costRateCents: 1 })
+        .where(eq(rates.id, B.rateId))
+        .returning(),
+    readB: (db) =>
+      db
+        .select({ v: rates.costRateCents })
+        .from(rates)
+        .where(eq(rates.id, B.rateId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db.insert(rates).values({
+        firmId: B.firmId,
+        firmRoleId: B.firmRoleId,
+        billRateCents: 1,
+        costRateCents: 1,
+        effectiveFrom: "2030-01-01",
+      }),
+  },
+  {
+    table: "phase_templates",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: phaseTemplates.firmId })
+        .from(phaseTemplates)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) =>
+      db
+        .update(phaseTemplates)
+        .set({ name: "hacked" })
+        .where(eq(phaseTemplates.id, B.phaseTemplateId))
+        .returning(),
+    readB: (db) =>
+      db
+        .select({ v: phaseTemplates.name })
+        .from(phaseTemplates)
+        .where(eq(phaseTemplates.id, B.phaseTemplateId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db
+        .insert(phaseTemplates)
+        .values({ firmId: B.firmId, code: "ZZ", name: "Sneaky" }),
+  },
+  {
+    table: "overhead_categories",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: overheadCategories.firmId })
+        .from(overheadCategories)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) =>
+      db
+        .update(overheadCategories)
+        .set({ name: "hacked" })
+        .where(eq(overheadCategories.id, B.overheadCategoryId))
+        .returning(),
+    readB: (db) =>
+      db
+        .select({ v: overheadCategories.name })
+        .from(overheadCategories)
+        .where(eq(overheadCategories.id, B.overheadCategoryId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db
+        .insert(overheadCategories)
+        .values({ firmId: B.firmId, name: "Sneaky" }),
+  },
+  {
+    table: "activities",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: activities.firmId })
+        .from(activities)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) =>
+      db
+        .update(activities)
+        .set({ name: "hacked" })
+        .where(eq(activities.id, B.activityId))
+        .returning(),
+    readB: (db) =>
+      db
+        .select({ v: activities.name })
+        .from(activities)
+        .where(eq(activities.id, B.activityId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db
+        .insert(activities)
+        .values({ firmId: B.firmId, name: "Sneaky", appliesTo: "project" }),
+  },
 ];
 
 describe("database role", () => {
@@ -267,6 +394,59 @@ describe("other guards", () => {
       ),
       /foreign key/,
     );
+  });
+
+  it("a membership can't point at another firm's role", async () => {
+    await expectDbError(
+      withFirm(A.firmId, (db) =>
+        db
+          .update(memberships)
+          .set({ firmRoleId: B.firmRoleId })
+          .where(eq(memberships.id, A.membershipId)),
+      ),
+      /foreign key/,
+    );
+  });
+
+  it("an activity can't point at another firm's overhead phase", async () => {
+    await expectDbError(
+      withFirm(A.firmId, (db) =>
+        db.insert(activities).values({
+          firmId: A.firmId,
+          name: "Sneaky",
+          appliesTo: "overhead",
+          overheadCategoryId: B.overheadCategoryId,
+        }),
+      ),
+      /foreign key/,
+    );
+  });
+
+  it("a role's rate periods can't overlap", async () => {
+    // A's Designer rate runs from 2026-01-01 with no end date.
+    await expectDbError(
+      withFirm(A.firmId, (db) =>
+        db.insert(rates).values({
+          firmId: A.firmId,
+          firmRoleId: A.firmRoleId,
+          billRateCents: 12000,
+          costRateCents: 4400,
+          effectiveFrom: "2026-11-01",
+        }),
+      ),
+      /rates_role_no_overlap/,
+    );
+  });
+
+  it("new firms get the default setup lists", async () => {
+    const counts = await withFirm(A.firmId, async (db) => ({
+      phases: (await db.select().from(phaseTemplates)).length,
+      activities: (await db.select().from(activities)).length,
+      categories: (await db.select().from(overheadCategories)).length,
+    }));
+    // 7 phases; 13 project + 13 overhead + 3 leave + 1 holiday activities;
+    // 4 overhead phases + PTO + Holiday.
+    expect(counts).toEqual({ phases: 7, activities: 30, categories: 6 });
   });
 
   it("the app can't hard-delete rows", async () => {
