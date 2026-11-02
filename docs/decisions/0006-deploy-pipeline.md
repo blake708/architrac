@@ -24,5 +24,5 @@
 
 ## Open questions
 - **Clerk production instance:** this needs a real domain. Until then, production uses the Clerk development keys.
-- **Clerk webhook on previews:** the webhook points at one URL. Creating a new firm through the browser on a preview won't write the firm row. Signing in as an existing user works.
+- **Clerk webhook on previews:** the webhook points at one URL, so changes that start in Clerk (e.g. someone accepting an invitation) don't reach a preview's database. Signing in and creating a firm work, because the app writes those rows itself.
 - **Invite links on previews:** `NEXT_PUBLIC_APP_URL` is the production URL, so invitation emails sent from a preview link to production.
