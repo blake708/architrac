@@ -2,6 +2,8 @@ import { sql } from "drizzle-orm";
 import {
   foreignKey,
   index,
+  integer,
+  numeric,
   pgTable,
   text,
   timestamp,
@@ -9,9 +11,9 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { citext, id, timestamps } from "./columns";
-import { appRole, invitationStatus } from "./enums";
+import { appRole, employmentType, invitationStatus } from "./enums";
 import { firms } from "./firms";
-import { firmRoles, memberships, users } from "./people";
+import { firmRoles, memberships, teams, users } from "./people";
 
 /**
  * Someone invited to a firm who hasn't joined yet (settings-firm spec).
@@ -33,6 +35,17 @@ export const invitations = pgTable(
     title: text("title"),
     /** Billing role the person gets when they join. */
     firmRoleId: uuid("firm_role_id"),
+    // Profile set on Team → Invite person (team spec, 1.3). Copied to the
+    // membership when they accept; names show while they're invited.
+    firstName: text("first_name"),
+    lastName: text("last_name"),
+    teamId: uuid("team_id"),
+    employmentType: employmentType("employment_type"),
+    weeklyCapacityHours: numeric("weekly_capacity_hours", {
+      precision: 5,
+      scale: 2,
+    }),
+    targetUtilizationBp: integer("target_utilization_bp"),
     status: invitationStatus("status").notNull().default("pending"),
     /** Clerk's id for the invitation. Null only if the Clerk call failed. */
     clerkInvitationId: text("clerk_invitation_id").unique(),
@@ -57,6 +70,11 @@ export const invitations = pgTable(
       name: "invitations_membership_same_firm_fk",
       columns: [t.firmId, t.membershipId],
       foreignColumns: [memberships.firmId, memberships.id],
+    }),
+    foreignKey({
+      name: "invitations_team_same_firm_fk",
+      columns: [t.firmId, t.teamId],
+      foreignColumns: [teams.firmId, teams.id],
     }),
     foreignKey({
       name: "invitations_firm_role_same_firm_fk",

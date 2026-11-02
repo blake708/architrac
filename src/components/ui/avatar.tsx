@@ -8,18 +8,26 @@ type AvatarProps = {
   initials?: string;
   /** Photo (users.avatar_url). Shown instead of initials when set. */
   src?: string | null;
-  /** sm = 28px (tables), md = 32px (header). */
-  size?: "sm" | "md";
+  /** sm = 28px, md = 32px (header), lg = 36px (people table), xl = 52px (profile). */
+  size?: "sm" | "md" | "lg" | "xl";
+  /** Background behind initials (Team uses a shade per person). */
+  color?: string;
   className?: string;
 };
 
-const sizes = { sm: "size-7", md: "size-8" };
+const sizes = {
+  sm: "size-7",
+  md: "size-8",
+  lg: "size-9 text-xs",
+  xl: "size-[52px] text-base",
+};
 
 export function Avatar({
   name,
   initials,
   src,
   size = "md",
+  color,
   className,
 }: AvatarProps) {
   return (
@@ -27,6 +35,7 @@ export function Avatar({
       role="img"
       aria-label={name}
       title={name}
+      style={color ? { background: color } : undefined}
       className={cn(
         "inline-flex shrink-0 items-center justify-center overflow-hidden rounded-full bg-ink-2 text-2xs font-semibold text-white select-none",
         sizes[size],

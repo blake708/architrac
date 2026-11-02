@@ -37,6 +37,12 @@ export const FIRMS = {
     modules: [] as string[],
     createdBy: "deltaOwner",
   },
+  /** For team.spec.ts (Team page), which changes people and teams. */
+  epsilon: {
+    name: `${E2E_PREFIX}Epsilon Partners`,
+    modules: [] as string[],
+    createdBy: "epsOwner",
+  },
 } as const;
 export type FirmKey = keyof typeof FIRMS;
 
@@ -142,6 +148,24 @@ export const PEOPLE = {
     firstName: "Drew",
     lastName: "Manager",
     memberships: [{ firm: "delta", role: "project_manager" }],
+  },
+  epsOwner: {
+    email: "architrac-e2e-eowner+clerk_test@example.com",
+    firstName: "Erin",
+    lastName: "Owner",
+    memberships: [{ firm: "epsilon", role: "owner" }],
+  },
+  epsPm: {
+    email: "architrac-e2e-epm+clerk_test@example.com",
+    firstName: "Jamie",
+    lastName: "Reyes",
+    memberships: [{ firm: "epsilon", role: "project_manager" }],
+  },
+  epsStaff: {
+    email: "architrac-e2e-estaff+clerk_test@example.com",
+    firstName: "Kim",
+    lastName: "Lee",
+    memberships: [{ firm: "epsilon", role: "staff" }],
   },
 } satisfies Record<string, Person>;
 export type PersonKey = keyof typeof PEOPLE;

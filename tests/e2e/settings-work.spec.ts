@@ -31,7 +31,9 @@ test.beforeAll(async () => {
     const firmId = firm.rows[0].id;
     await c.query("begin");
     await c.query("select set_config('app.firm_id', $1, true)", [firmId]);
-    for (const r of ROLES) {
+    // A CI retry runs this again on the same firm: seed only once.
+    const existing = await c.query("select 1 from firm_roles where firm_id = $1 limit 1", [firmId]);
+    for (const r of existing.rowCount ? [] : ROLES) {
       const role = await c.query<{ id: string }>(
         "insert into firm_roles (firm_id, name, is_billable, sort_order) values ($1, $2, $3, $4) returning id",
         [firmId, r.name, r.billable, r.sort],
@@ -47,6 +49,29 @@ test.beforeAll(async () => {
     await pool.end();
   }
 });
+
+/** Run one query against Delta's rows (owner role: filter by firm yourself). */
+async function deltaQuery<T extends Record<string, unknown>>(
+  sql: string,
+  params: (firmId: string) => unknown[],
+): Promise<T[]> {
+  const pool = ownerPool();
+  const c = await pool.connect();
+  try {
+    const firm = await c.query<{ id: string }>(
+      "select id from firms where name = $1",
+      [FIRMS.delta.name],
+    );
+    await c.query("begin");
+    await c.query("select set_config('app.firm_id', $1, true)", [firm.rows[0].id]);
+    const r = await c.query<T>(sql, params(firm.rows[0].id));
+    await c.query("commit");
+    return r.rows;
+  } finally {
+    c.release();
+    await pool.end();
+  }
+}
 
 /** Is this project activity active in Delta? (null = no such row) */
 async function projectActivityActive(name: string): Promise<boolean | null> {
@@ -133,7 +158,15 @@ test.describe("Roles & rates", () => {
     await page.getByRole("button", { name: "Use 60%" }).click();
     await expect(rate).toHaveValue("60");
     await expect(page.getByTestId("kpi-Breakeven")).toHaveText("1.60×");
-    await page.waitForLoadState("networkidle"); // let the save finish
+    // Wait until the save is stored before reloading.
+    await expect
+      .poll(async () =>
+        (await deltaQuery<{ bp: number }>(
+          "select overhead_rate_bp as bp from firm_settings where firm_id = $1",
+          (f) => [f],
+        ))[0]?.bp,
+      )
+      .toBe(6000);
     await page.reload();
     await expect(page.getByRole("spinbutton", { name: "Overhead rate" })).toHaveValue("60");
   });
@@ -241,7 +274,14 @@ test.describe("Timesheet phases & activities", () => {
     await expect(page.getByText("Add an activity to save this phase.")).toBeVisible();
     await page.getByLabel("New activity for IT").fill("Help desk");
     await page.getByLabel("New activity for IT").press("Enter");
-    await page.waitForLoadState("networkidle");
+    await expect
+      .poll(async () =>
+        (await deltaQuery<{ n: number }>(
+          "select count(*)::int as n from activities a join overhead_categories c on c.id = a.overhead_category_id where a.firm_id = $1 and c.name = 'IT' and a.name = 'Help desk' and a.active",
+          (f) => [f],
+        ))[0]?.n,
+      )
+      .toBe(1);
     await page.reload();
     await expect(page.getByRole("button", { name: "Remove Help desk from IT" })).toBeVisible();
   });

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { getSession, redirectToSignIn } from "@/lib/auth/session";
 import { CreateFirmForm } from "./create-firm-form";
+import { PendingInvites } from "./pending-invites";
 
 export const metadata = { title: "Create your firm · ArchiTrac" };
 
@@ -12,13 +13,16 @@ export default async function CreateFirmPage() {
   if (result.status === "deactivated") redirect("/onboarding/access-off");
 
   return (
-    <section className="w-full rounded-sm border border-line bg-surface p-8">
-      <h1 className="text-xl font-medium">Create your firm</h1>
-      <p className="mt-1 text-sm text-ink-3">
-        You&apos;ll be its owner. You can invite your team and turn on modules
-        later in Settings.
-      </p>
-      <CreateFirmForm />
-    </section>
+    <>
+      <PendingInvites />
+      <section className="w-full rounded-sm border border-line bg-surface p-8">
+        <h1 className="text-xl font-medium">Create your firm</h1>
+        <p className="mt-1 text-sm text-ink-3">
+          You&apos;ll be its owner. You can invite your team and turn on modules
+          later in Settings.
+        </p>
+        <CreateFirmForm />
+      </section>
+    </>
   );
 }

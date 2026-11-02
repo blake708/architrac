@@ -4,6 +4,7 @@ import {
   type PgTableExtraConfigValue,
   boolean,
   check,
+  date,
   foreignKey,
   integer,
   numeric,
@@ -64,6 +65,15 @@ export const memberships = pgTable(
       .notNull()
       .default("40"),
     targetUtilizationBp: integer("target_utilization_bp"),
+    // Team profile (team spec, 1.3).
+    /** Stored formatted: (843) 555-0100 */
+    phone: text("phone"),
+    /** "Licensed architect · SC, NC" */
+    licenseNote: text("license_note"),
+    /** When they joined the firm ("With firm since"). */
+    startDate: date("start_date"),
+    /** Gives final timesheet approval; Principal-in-Charge picker (1.4). */
+    isPrincipal: boolean("is_principal").notNull().default(false),
     active: boolean("active").notNull().default(true),
     createdBy: uuid("created_by").references((): AnyPgColumn => users.id),
     ...timestamps,
