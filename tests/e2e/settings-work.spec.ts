@@ -48,6 +48,30 @@ test.beforeAll(async () => {
   }
 });
 
+/** Is this project activity active in Delta? (null = no such row) */
+async function projectActivityActive(name: string): Promise<boolean | null> {
+  const pool = ownerPool();
+  const c = await pool.connect();
+  try {
+    const firm = await c.query<{ id: string }>(
+      "select id from firms where name = $1",
+      [FIRMS.delta.name],
+    );
+    await c.query("begin");
+    await c.query("select set_config('app.firm_id', $1, true)", [firm.rows[0].id]);
+    const r = await c.query<{ active: boolean }>(
+      // The owner role can see every firm, so filter by firm too.
+      "select active from activities where firm_id = $1 and applies_to = 'project' and name = $2",
+      [firm.rows[0].id, name],
+    );
+    await c.query("commit");
+    return r.rows[0]?.active ?? null;
+  } finally {
+    c.release();
+    await pool.end();
+  }
+}
+
 const main = (page: Page) => page.getByRole("main");
 const roleRow = (page: Page, name: string) =>
   main(page).locator(`tr[data-role="${name}"]`);
@@ -96,15 +120,22 @@ test.describe("Roles & rates", () => {
     await expect(page.getByText("Unsaved changes")).toBeVisible();
   });
 
-  test("the overhead calculator fills in the rate", async ({ page }) => {
+  test("the overhead calculator fills in the rate and saves it", async ({ page }) => {
+    const rate = page.getByRole("spinbutton", { name: "Overhead rate" });
+    await rate.fill("50");
+    await rate.press("Enter");
+    await expect(page.getByText("Saved", { exact: true })).toBeVisible();
     await page.getByLabel("Overhead expenses").fill("612000");
     await page.getByLabel("Labor cost on projects").fill("1020000");
     await expect(page.getByTestId("overhead-calc")).toHaveText(
       "$612,000 ÷ $1,020,000 = 60%",
     );
     await page.getByRole("button", { name: "Use 60%" }).click();
+    await expect(rate).toHaveValue("60");
+    await expect(page.getByTestId("kpi-Breakeven")).toHaveText("1.60×");
+    await page.waitForLoadState("networkidle"); // let the save finish
+    await page.reload();
     await expect(page.getByRole("spinbutton", { name: "Overhead rate" })).toHaveValue("60");
-    await expect(page.getByText("Unsaved changes")).toBeVisible();
   });
 
   test("a rate change asks for a date and rejects one that's too early", async ({
@@ -128,11 +159,14 @@ test.describe("Roles & rates", () => {
     await expect(roleRow(page, "Designer").getByText("Jan 1, 2026")).toBeVisible();
   });
 
-  test("saving overhead 75% shows a 1.75× breakeven", async ({ page }) => {
-    await page.getByRole("spinbutton", { name: "Overhead rate" }).fill("75");
-    await saveButton(page).click();
+  test("overhead 75% saves when you leave the box; 1.75× breakeven", async ({ page }) => {
+    const rate = page.getByRole("spinbutton", { name: "Overhead rate" });
+    await rate.fill("75");
+    await rate.blur();
     await expect(page.getByText("Saved", { exact: true })).toBeVisible();
     await expect(page.getByTestId("kpi-Breakeven")).toHaveText("1.75×");
+    // Only the rates table waits for Save changes.
+    await expect(page.getByText("Unsaved changes")).toHaveCount(0);
   });
 
   test("Add role puts Senior designer last at 2.60× with 0 people", async ({ page }) => {
@@ -199,13 +233,41 @@ test.describe("Timesheet phases & activities", () => {
     await expect(project.getByText("travel", { exact: true })).toHaveCount(0);
   });
 
-  test("an overhead phase with no activities can't be saved", async ({ page }) => {
+  test("a new overhead phase saves once it has an activity", async ({ page }) => {
     await signInAs(page, "deltaOwner", "/app/settings/time");
+    await expect(saveButton(page)).toHaveCount(0);
     await page.getByLabel("New overhead phase").fill("IT");
     await page.getByLabel("New overhead phase").press("Enter");
-    await saveButton(page).click();
-    await expect(
-      page.getByText("Add at least one activity to IT, or remove it."),
-    ).toBeVisible();
+    await expect(page.getByText("Add an activity to save this phase.")).toBeVisible();
+    await page.getByLabel("New activity for IT").fill("Help desk");
+    await page.getByLabel("New activity for IT").press("Enter");
+    await page.waitForLoadState("networkidle");
+    await page.reload();
+    await expect(page.getByRole("button", { name: "Remove Help desk from IT" })).toBeVisible();
+  });
+
+  test("adding and removing activities saves straight away", async ({ page }) => {
+    await signInAs(page, "deltaOwner", "/app/settings/time");
+    const project = page.getByRole("group", { name: "Project activities" });
+    await project.getByLabel("New project activity").fill("Punch walk");
+    await project.getByRole("button", { name: "Add" }).click();
+    // Remove straight away, while the first save may still be running.
+    await project.getByRole("button", { name: "Remove Travel" }).click();
+    await expect(project.getByText("Travel", { exact: true })).toHaveCount(0);
+    await expect.poll(() => projectActivityActive("Punch walk")).toBe(true);
+    await expect.poll(() => projectActivityActive("Travel")).toBe(false);
+    await page.reload();
+    await expect(project.getByText("Punch walk", { exact: true })).toBeVisible();
+    await expect(project.getByText("Travel", { exact: true })).toHaveCount(0);
+  });
+
+  test("the last leave type can't be removed", async ({ page }) => {
+    await signInAs(page, "deltaOwner", "/app/settings/time");
+    const leave = page.getByRole("group", { name: "Leave types" });
+    await leave.getByRole("button", { name: "Remove Vacation" }).click();
+    await leave.getByRole("button", { name: "Remove Sick" }).click();
+    await leave.getByRole("button", { name: "Remove Personal" }).click();
+    await expect(leave.getByText("Keep at least one leave type.")).toBeVisible();
+    await expect(leave.getByText("Personal", { exact: true })).toBeVisible();
   });
 });

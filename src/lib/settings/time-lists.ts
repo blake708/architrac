@@ -32,6 +32,10 @@ export const TIME_LIST_MESSAGES = {
   projectEmpty: "Add at least one project activity.",
   leaveEmpty: "Add at least one leave type.",
   summary: "Fix the highlighted items, then save.",
+  keepProject: "Keep at least one project activity.",
+  keepLeave: "Keep at least one leave type.",
+  keepPhaseActivity:
+    "Each overhead phase needs at least one activity. Add another first, or remove the phase.",
 } as const;
 
 export function emptyPhaseMessage(phase: string) {

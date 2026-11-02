@@ -28,7 +28,7 @@ Uses the Settings frame from `release-0/settings-firm.md` (page-header band with
 | Work | Roles & rates | `/app/settings/rates` | WORK | Roles & rates | Each role's bill rate (what clients pay on hourly work) and cost rate (salary plus burden), plus the firm's overhead rate. Used by Time, Accounting, Reports and project profit. |
 | Work | Time & approvals | `/app/settings/time` | WORK | Time & approvals | When timesheets are due, how hours are entered, and who approves them. |
 
-Each section is one form with one Save changes (all-or-nothing, one DB transaction).
+Each section is one form with one Save changes (all-or-nothing, one DB transaction). **Changed 2026-11-02 (Blake): instant saving.** Phases & fees keeps Save changes (shares must total 100%). Roles & rates keeps it for the rates table (each change needs an effective date); the overhead rate, the include-overhead switch and "Use {calc}%" save straight away. Time & approvals has no Save button: every add, remove and rename saves straight away.
 
 **A. Phases & fees** — column, gap 16px, max-width 960px. Two white cards (`overflow-x:auto`) saved by the one Save changes:
 
@@ -97,14 +97,14 @@ The mockup's other two cards in this section ("Timesheets" rules and "Approval r
 | Save (Phases) | Upsert `phase_templates`: default rows `is_optional = false`, `default_fee_share_bp = pct × 100`, new rows `default_fee_type 'fixed'`; optional rows `is_optional = true`, `default_fee_share_bp = 0`, `default_fee_type` from the select; `sort_order` = row index within its list; archive removed; `activity_log` per changed row | Σ % of default phases must equal 100 → else "Phase shares must add up to 100%. Now {sum}%." | owner, admin |
 | Edit bill/cost rate | Form dirty; multiplier, KPIs, Designer example update live | integers 0–9,999; billable role bill rate ≥ 1 | owner, admin |
 | Save (Rates) with rate changes | Dialog "Apply new rates from" date (default today in firm time zone) listing each changed role "Designer: $115 → $120 bill". Confirm → rule 8 | date ≥ each changed role's current `effective_from` → else "Pick {date} or later — {role}'s current rate starts then." | owner, admin |
-| Save (Rates) overhead only | Update `firm_settings.overhead_rate_bp`, `include_overhead_default`; `activity_log` | rate integer 0–300 | owner, admin |
+| Save overhead (instant) | When the Overhead rate field is left (or Enter), the switch flips, or "Use {calc}%" is clicked: update `firm_settings.overhead_rate_bp`, `include_overhead_default`; `activity_log`. Unsaved rate edits in the table are not sent | rate integer 0–300 | owner, admin |
 | Add role | Dialog: Name, Description, Billable (checkbox, on), Bill rate $ (hidden if not billable), Cost rate $, Effective from (default Jan 1 of current year). Saves immediately: insert `firm_roles` (`sort_order` = max+1) + `rates` row. | name 1–60 unique (case-insensitive, non-archived); cost ≥ 0; bill ≥ 1 if billable | owner, admin |
 | Edit role | Dialog: Name, Description, Billable. Saves immediately. Turning Billable off sets future bill rate 0 via a new rates row from today. | as Add | owner, admin |
 | Archive role | Sets `archived_at`. | blocked if People > 0: "Move the {n} people in {role} to another role on the Team page first." | owner, admin |
 | Rate history | Popover list from `rates` for the role | — | owner, admin |
-| Type in calculator / Use {calc}% | Sets the Overhead rate input to calc; dirty. Calculator inputs are never saved. | both > 0 | owner, admin |
-| Add / remove activity chip, add / rename / remove overhead phase, add / remove leave type | Staged in the form; dirty (rule 11) | rule 11 | owner, admin |
-| Save (Time) | One transaction applying all staged chip/phase changes; `activity_log` per created/updated/archived row | rule 11 | owner, admin |
+| Type in calculator / Use {calc}% | Sets the Overhead rate to calc and saves it. Calculator inputs are never saved. | both > 0 | owner, admin |
+| Add / remove activity chip, add / rename / remove overhead phase, add / remove leave type | Saves straight away (renames when the name field is left). A new overhead phase waits, with the hint "Add an activity to save this phase.", until it has its first activity. Removing the last project activity, last leave type, or last activity of a saved overhead phase is refused with a message | rule 11 | owner, admin |
+| Save (Time) | Runs after each change: one transaction applying the lists; `activity_log` per created/updated/archived row | rule 11 | owner, admin |
 
 ## Business rules
 1. All money math in `src/lib/calc/rates.ts` (pure, unit-tested); inputs in cents/bp, output cents/bp or display ratio.
@@ -211,7 +211,7 @@ Tests: `src/lib/calc/rates.test.ts`, `src/lib/settings/work-settings.test.ts`, `
 - [x] Given Designer's current rate starts 2026-01-01, when I save a change with effective date 2025-12-15, then I see "Pick Jan 1, 2026 or later — Designer's current rate starts then." and nothing is written.
 - [x] Given I change a rate and pick the effective date equal to the current row's `effective_from`, then that row is updated and no new row is inserted.
 - [ ] Given a Designer time entry approved at $115 before the change, when the rate changes to $120 from 2026-11-01, then that entry's `bill_rate_cents` is still 11500. *(Test in 1.6/1.7 — needs time entries; see open question 11.)*
-- [x] Given I enter overhead expenses 612000 and labor 1020000, then the line reads "$612,000 ÷ $1,020,000 = 60%", and clicking "Use 60%" sets the Overhead rate input to 60 and marks the form dirty.
+- [x] Given I enter overhead expenses 612000 and labor 1020000, then the line reads "$612,000 ÷ $1,020,000 = 60%", and clicking "Use 60%" sets the Overhead rate to 60 and saves it.
 - [x] Given I set the Overhead rate to 75 and save, then `firm_settings.overhead_rate_bp = 7500` and Breakeven shows "1.75×".
 - [x] Given I turn off "Include overhead in project profit by default" and save, then `include_overhead_default = false`.
 - [x] Given I add role "Senior designer" (billable, $130 bill, $50 cost, from Jan 1, 2026), then it appears last with multiplier "2.60×" and People 0.
@@ -228,7 +228,7 @@ Tests: `src/lib/calc/rates.test.ts`, `src/lib/settings/work-settings.test.ts`, `
 - [x] Given I add "Punch walk" to Project activities and save, then an `activities` row (`applies_to 'project'`, `sort_order 14`, active) exists.
 - [ ] Given I remove "Travel" and save, then its row has `active = false`, it still exists, and time entries that used it still show "Travel" in reports. *(Test in 1.6/1.7 — needs time entries; see open question 11.)*
 - [x] Given "Travel" is inactive, when I add "Travel" again and save, then the same row is reactivated (same id).
-- [x] Given I add overhead phase "IT" with no activities, when I save, then I see "Add at least one activity to IT, or remove it."
+- [x] Given I add overhead phase "IT" with no activities, then it isn't saved and shows "Add an activity to save this phase."; adding "Help desk" saves both. (Server still refuses a phase with no activities: "Add at least one activity to IT, or remove it.")
 - [x] Given I rename overhead phase "Firm standards" to "Standards" and save, then the `overhead_categories` row keeps its id and its name is "Standards".
 - [ ] Given Marketing has 12 h logged, when I click Remove on Marketing, then I see "12 h are logged to Marketing…" before it is staged for removal. *(Test in 1.6/1.7 — needs time entries; see open question 11.)*
 - [x] Given I add leave type "Bereavement" and save, then an `activities` row under the `PTO` category exists, and the Holiday category is unchanged.

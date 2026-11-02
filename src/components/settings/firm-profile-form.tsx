@@ -1,11 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useRef, useState } from "react";
 import { Input, Select } from "@/components/ui/field";
 import {
   type FieldErrors,
-  FIRM_PROFILE_FIELDS,
   type FirmProfileField,
   type FirmProfileForm,
   US_STATES,
@@ -14,7 +13,7 @@ import {
 import { MONTHS, TIMEZONES } from "@/lib/timezones";
 import { updateFirmProfile } from "@/server/settings/actions";
 import { ErrorBanner } from "./error-banner";
-import { useSettingsForm } from "./form-state";
+import { blurOnEnter, useInstantSave } from "./form-state";
 
 const FORM_ID = "firm-profile-form";
 const fieldId = (f: FirmProfileField) => `firm-${f}`;
@@ -64,51 +63,61 @@ export function FirmProfileFormSection({
 }) {
   const router = useRouter();
   const [values, setValues] = useState(initial);
-  const [dirty, setDirty] = useState(false);
   const [errors, setErrors] = useState<FieldErrors<FirmProfileField>>({});
   const [banner, setBanner] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
-  const markSaved = useSettingsForm(FORM_ID, dirty, pending);
+  const { save } = useInstantSave(FORM_ID);
+  /** What the server has. Each save sends these plus the one changed field. */
+  const saved = useRef(initial);
 
   function set(field: FirmProfileField, value: string) {
     setValues((v) => ({ ...v, [field]: value }));
-    setDirty(true);
   }
 
-  function showErrors(fieldErrors: FieldErrors<FirmProfileField>) {
-    setErrors(fieldErrors);
-    const first = FIRM_PROFILE_FIELDS.find((f) => fieldErrors[f]);
-    if (first) document.getElementById(fieldId(first))?.focus();
-  }
-
-  function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!dirty || pending) return;
-    setBanner(null);
-
-    // Check in the browser first, so mistakes show without a round trip.
-    const checked = parseFirmProfile(values);
-    if (!checked.ok) {
-      showErrors(checked.fieldErrors);
+  /**
+   * Save one field (decided 2026-11-02: text fields save when you leave them,
+   * selects as soon as you pick). Only that field is checked, so a mistake in
+   * one box never blocks another.
+   */
+  function saveField(field: FirmProfileField, value: string) {
+    if (value === saved.current[field]) {
+      setErrors((e) => ({ ...e, [field]: undefined }));
       return;
     }
-
-    startTransition(async () => {
-      const result = await updateFirmProfile(values);
+    const candidate = { ...saved.current, [field]: value };
+    const checked = parseFirmProfile(candidate);
+    if (!checked.ok) {
+      setErrors((e) => ({ ...e, [field]: checked.fieldErrors[field] }));
+      return;
+    }
+    setBanner(null);
+    void save(async () => {
+      const result = await updateFirmProfile({ ...saved.current, [field]: value });
       if (!result.ok) {
-        if (result.fieldErrors) showErrors(result.fieldErrors);
+        if (result.fieldErrors?.[field])
+          setErrors((e) => ({ ...e, [field]: result.fieldErrors?.[field] }));
         else
           setBanner(
             result.error ?? "Couldn't save. Nothing was changed. Try again.",
           );
-        return;
+        return false;
       }
-      setErrors({});
-      setValues(result.data.values);
-      setDirty(false);
-      markSaved();
-      router.refresh(); // the header shows the new firm name
+      const before = saved.current;
+      saved.current = result.data.values;
+      // Show the cleaned value ("(843) 555-0100") unless they've typed since.
+      setValues((v) =>
+        v[field] === value ? { ...v, [field]: result.data.values[field] } : v,
+      );
+      setErrors((e) => ({ ...e, [field]: undefined }));
+      if (before.name !== saved.current.name || before.displayName !== saved.current.displayName)
+        router.refresh(); // the header shows the firm name
+      return true;
     });
+  }
+
+  // Enter in a field saves it (by leaving it).
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    (document.activeElement as HTMLElement | null)?.blur();
   }
 
   const text = (d: FieldDef) => (
@@ -123,11 +132,18 @@ export function FirmProfileFormSection({
       placeholder={d.field === "displayName" ? values.name : undefined}
       value={values[d.field]}
       onChange={(e) => set(d.field, e.target.value)}
+      onBlur={(e) => saveField(d.field, e.target.value)}
     />
   );
 
   return (
-    <form id={FORM_ID} onSubmit={onSubmit} noValidate className="contents">
+    <form
+      id={FORM_ID}
+      onSubmit={onSubmit}
+      onKeyDown={blurOnEnter}
+      noValidate
+      className="contents"
+    >
       {banner && <ErrorBanner message={banner} />}
       <section
         aria-label="Firm profile"
@@ -163,7 +179,10 @@ export function FirmProfileFormSection({
             label="State"
             error={errors.state}
             value={values.state}
-            onChange={(e) => set("state", e.target.value)}
+            onChange={(e) => {
+              set("state", e.target.value);
+              saveField("state", e.target.value);
+            }}
           >
             <option value="">—</option>
             {US_STATES.map(([code, name]) => (
@@ -179,7 +198,10 @@ export function FirmProfileFormSection({
             hint="Used for due dates and reminders"
             error={errors.timezone}
             value={values.timezone}
-            onChange={(e) => set("timezone", e.target.value)}
+            onChange={(e) => {
+              set("timezone", e.target.value);
+              saveField("timezone", e.target.value);
+            }}
           >
             {TIMEZONES.map((t) => (
               <option key={t.value} value={t.value}>
@@ -193,7 +215,10 @@ export function FirmProfileFormSection({
             hint="Used by Reports"
             error={errors.fiscalYearStartMonth}
             value={values.fiscalYearStartMonth}
-            onChange={(e) => set("fiscalYearStartMonth", e.target.value)}
+            onChange={(e) => {
+              set("fiscalYearStartMonth", e.target.value);
+              saveField("fiscalYearStartMonth", e.target.value);
+            }}
           >
             {MONTHS.map((m, i) => (
               <option key={m} value={String(i + 1)}>

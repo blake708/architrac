@@ -75,30 +75,29 @@ test.describe("settings frame and access", () => {
 });
 
 test.describe("firm profile", () => {
+  // Fields save when you leave them; selects save as you pick (instant
+  // saving, decided 2026-11-02). There's no Save changes button.
+  const field = (page: Page, label: string) =>
+    page.getByRole("main").getByLabel(label);
+  const saved = (page: Page) => page.getByText("Saved", { exact: true });
+
   test.beforeEach(async ({ page }) => {
     await signInAs(page, "gammaOwner", "/app/settings/firm");
-    await expect(page.getByRole("main").getByLabel("Firm name")).toBeVisible();
+    await expect(field(page, "Firm name")).toBeVisible();
   });
 
-  test("Save is disabled until something changes", async ({ page }) => {
-    await expect(saveButton(page)).toBeDisabled();
-    await expect(page.getByText("Unsaved changes")).toHaveCount(0);
-    await page.getByRole("main").getByLabel("Main phone").fill("843");
-    await expect(page.getByText("Unsaved changes")).toBeVisible();
-    await expect(saveButton(page)).toBeEnabled();
+  test("there's no Save button", async ({ page }) => {
+    await expect(saveButton(page)).toHaveCount(0);
   });
 
   test("phone and website are cleaned up when saved", async ({ page }) => {
-    await page.getByRole("main").getByLabel("Main phone").fill("843.555.0100");
-    await page
-      .getByRole("main")
-      .getByLabel("Website")
-      .fill("https://www.TMG-Arch.com/");
-    await saveButton(page).click();
-    await expect(page.getByText("Saved", { exact: true })).toBeVisible();
-    await expect(page.getByRole("main").getByLabel("Main phone")).toHaveValue(
-      "(843) 555-0100",
-    );
+    await field(page, "Main phone").fill("843.555.0100");
+    await field(page, "Main phone").blur();
+    await expect(field(page, "Main phone")).toHaveValue("(843) 555-0100");
+    await field(page, "Website").fill("https://www.TMG-Arch.com/");
+    await field(page, "Website").press("Enter");
+    await expect(saved(page)).toBeVisible();
+    await expect(field(page, "Website")).toHaveValue("www.tmg-arch.com");
     const [firm] = await query<{ phone: string; website: string }>(
       "select phone, website from firms where id = :firm",
     );
@@ -108,33 +107,43 @@ test.describe("firm profile", () => {
     });
   });
 
-  test("an empty Firm name is refused and gets focus", async ({ page }) => {
-    await page.getByRole("main").getByLabel("Firm name").fill("");
-    await saveButton(page).click();
+  test("an empty Firm name is refused and not saved", async ({ page }) => {
+    await field(page, "Firm name").fill("");
+    await field(page, "Firm name").blur();
     await expect(page.getByText("Firm name is required")).toBeVisible();
-    await expect(page.getByRole("main").getByLabel("Firm name")).toBeFocused();
     const [firm] = await query<{ name: string }>(
       "select name from firms where id = :firm",
     );
     expect(firm.name).toBe(GAMMA);
   });
 
-  test('ZIP "2940" is refused and nothing is saved', async ({ page }) => {
-    await page.getByRole("main").getByLabel("City").fill("Mount Pleasant");
-    await page.getByRole("main").getByLabel("ZIP").fill("2940");
-    await saveButton(page).click();
+  test('ZIP "2940" is refused, but City still saves', async ({ page }) => {
+    await field(page, "ZIP").fill("2940");
+    await field(page, "ZIP").blur();
     await expect(page.getByText("Enter a 5-digit ZIP")).toBeVisible();
-    const [firm] = await query<{ city: string | null }>(
-      "select city from firms where id = :firm",
+    await field(page, "City").fill("Mount Pleasant");
+    await field(page, "City").blur();
+    await expect(saved(page)).toBeVisible();
+    const [firm] = await query<{ city: string | null; postal_code: string | null }>(
+      "select city, postal_code from firms where id = :firm",
     );
-    expect(firm.city).toBeNull();
+    expect(firm).toEqual({ city: "Mount Pleasant", postal_code: null });
+  });
+
+  test("picking a time zone saves it", async ({ page }) => {
+    await field(page, "Time zone").selectOption("America/Chicago");
+    await expect(saved(page)).toBeVisible();
+    const [firm] = await query<{ timezone: string }>(
+      "select timezone from firms where id = :firm",
+    );
+    expect(firm.timezone).toBe("America/Chicago");
   });
 
   test('Display name "TMG" shows in the header, Clerk and the activity log', async ({
     page,
   }) => {
-    await page.getByRole("main").getByLabel("Display name").fill("TMG");
-    await saveButton(page).click();
+    await field(page, "Display name").fill("TMG");
+    await field(page, "Display name").blur();
     await expect(page.getByTestId("firm-name")).toHaveText("TMG");
 
     const [firm] = await query<{ clerk_org_id: string }>(
@@ -150,25 +159,6 @@ test.describe("firm profile", () => {
     );
     expect(logs).toHaveLength(1);
     expect(logs[0].changes.display_name?.after).toBe("TMG");
-  });
-
-  test("leaving with unsaved changes asks first; Cancel stays", async ({
-    page,
-  }) => {
-    await page.getByRole("main").getByLabel("City").fill("Charleston");
-    let message = "";
-    page.once("dialog", (d) => {
-      message = d.message();
-      void d.dismiss();
-    });
-    await sectionNav(page)
-      .getByRole("link", { name: "Modules & plan" })
-      .click();
-    expect(message).toBe("Discard unsaved changes?");
-    await expect(page).toHaveURL(/\/app\/settings\/firm$/);
-    await expect(page.getByRole("main").getByLabel("City")).toHaveValue(
-      "Charleston",
-    );
   });
 });
 
@@ -205,7 +195,7 @@ test.describe("modules & plan", () => {
     await expect(plan).toContainText("4 seats");
   });
 
-  test("switching Hiring off and saving updates the menu without a reload", async ({
+  test("switching Hiring off saves and updates the menu straight away", async ({
     page,
   }) => {
     await expect(
@@ -216,7 +206,6 @@ test.describe("modules & plan", () => {
       "border-color",
       "rgb(220, 220, 220)",
     );
-    await saveButton(page).click();
     await expect(page.getByText("Saved", { exact: true })).toBeVisible();
     // Owners still see modules that are off, dimmed (decided in 0.5).
     await expect(
@@ -228,17 +217,14 @@ test.describe("modules & plan", () => {
     expect(row.modules_enabled).not.toContain("hiring");
   });
 
-  test("Code on then off is still unsaved, and saves the same list", async ({
-    page,
-  }) => {
+  test("Code on then off ends with the same list saved", async ({ page }) => {
     const [before] = await query<{ modules_enabled: string[] }>(
       "select modules_enabled from firm_settings where firm_id = :firm",
     );
     await page.getByRole("switch", { name: "Turn on Code" }).click();
     await page.getByRole("switch", { name: "Turn off Code" }).click();
-    await expect(page.getByText("Unsaved changes")).toBeVisible();
-    await saveButton(page).click();
     await expect(page.getByText("Saved", { exact: true })).toBeVisible();
+    await expect(page.getByText("Saving…")).toHaveCount(0);
     const [after] = await query<{ modules_enabled: string[] }>(
       "select modules_enabled from firm_settings where firm_id = :firm",
     );
