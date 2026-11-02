@@ -356,6 +356,7 @@ The screen specs found fields the model above doesn't have yet. **Add each one w
 | 1.2 | contacts | designations text ("PE, LEED AP") | (contacts) |
 | 1.2 | **project_contacts** (new) | id, firm_id, project_id, contact_id, role text | Contractors/agencies/vendors linked to projects (contacts) |
 | 1.3 | memberships | phone, license_note, start_date, is_principal boolean | Team profile; Principal in Charge picker (team) |
+| 1.3 | invitations | first_name, last_name, team_id (same-firm fk), employment_type, weekly_capacity_hours, target_utilization_bp | Invite person on Team: the profile is ready when they accept (team) |
 | 1.4 | projects | scope_kind enum (`ground_up`,`tenant_upfit`,`shell`), closed_on date, stories, building_height_ft, occupancy_group, construction_type, sprinklered, delivery_method, design_review_board; address columns named as in `companies` | (projects-list, project-detail) |
 | 1.5 | project_phases | is_additional_service boolean, planned_cost_rate_cents bigint null | Additional-service phases; projected profit (project-detail, timesheet) |
 | 1.5 | consultants | contact_id | (project-detail) |
@@ -363,7 +364,8 @@ The screen specs found fields the model above doesn't have yet. **Add each one w
 | 1.6 | **timesheet_rows** (new) | id, firm_id, timesheet_id, row_type (`project`/`overhead`/`leave`), project_id, project_phase_id, overhead_category_id, activity_id, billable, sort_order | Rows exist before they have hours ("Add row", "Copy last week") (timesheet) |
 | 1.6 | time_entries | timesheet_row_id fk; while the timesheet is `draft`, activity_id may be null and the check becomes "not both phase and overhead category"; submit enforces completeness | (timesheet) |
 | 1.6 | firm_settings | timesheet_due_time time (09:00) | Reminder timing (timesheet) |
-| 1.7 | time_entries | approved_at, approved_by | Per-line approval by project (timesheet-approval) ⚑ |
+| 1.7 | time_entries | ~~approved_at, approved_by~~ not needed: decision #3 is (b), approval is per timesheet (Blake, 2026-11-02) | (timesheet-approval) |
+| 1.6–1.7 | timesheet_status enum, timesheets | add `leader_approved`; `reviewer_membership_id` (team leader at submission), `leader_approved_at`, `leader_approved_by` | Two-step approval, decision #3 (b) (Blake, 2026-11-02) |
 | 1.7 | timesheets | rejected_at, rejected_by | "Returned by JR on Oct 20" (timesheet-approval) |
 | 1.7 | activity_log | actions `approved`, `reopened`, `reminder_sent` | (timesheet-approval) |
 | 1.8 | invoice_status enum | add `in_review`; invoices.reviewed_by, reviewed_at | Review step before sending (invoicing) |

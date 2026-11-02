@@ -7,6 +7,9 @@
 | **Mockup** | `mockup/Time.dc.html` → "Approvals" tab (team tables, Approve / Return / Send reminder / Nudge, "Approve N … no flags"). Detail page and Return dialog are not in the mockup; they use the same components. |
 | **Status** | Draft |
 
+
+> **⚠ Revise before building (Open Decision #3, Blake, 2026-11-02):** timesheets are approved by the person's **team leader, then a principal** (option b), not per project by PMs. This spec was written for option (a). Rework approvals, statuses (`leader_approved`), the reviewer snapshot (`timesheets.reviewer_membership_id`) and permissions before starting this milestone.
+
 ## Purpose
 Project managers approve submitted time on the projects they run; owners and admins approve overhead, leave and anything a PM can't, and can approve everything. Approval freezes bill and cost rates onto each time entry so later rate changes never rewrite history. Admins also chase people who haven't submitted.
 

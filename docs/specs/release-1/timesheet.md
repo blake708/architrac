@@ -7,6 +7,9 @@
 | **Mockup** | `mockup/Time.dc.html` → tabs "My timesheet" and "History" |
 | **Status** | Draft |
 
+
+> **⚠ Revise before building (Open Decision #3, Blake, 2026-11-02):** timesheets are approved by the person's **team leader, then a principal** (option b), not per project by PMs. This spec was written for option (a). Rework approvals, statuses (`leader_approved`), the reviewer snapshot (`timesheets.reviewer_membership_id`) and permissions before starting this milestone.
+
 ## Purpose
 Every person logs their hours for one week against a project phase + activity, an overhead category + activity, or leave, then submits the week for approval. This is the only way time enters ArchiTrac; budgets, invoices and project snapshots read from it.
 

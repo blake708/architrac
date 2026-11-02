@@ -5,7 +5,7 @@
 | **Release** | 1 |
 | **Route** | `/app/team` (`?tab=people\|teams&team=<teamId>&q=…&person=<membershipId>`) |
 | **Mockup** | `mockup/Team.dc.html` |
-| **Status** | Draft |
+| **Status** | Building (1.3) |
 
 ## Purpose
 The firm's people directory and team structure. Everyone looks people up here; owners/admins invite people, set each person's role, team, weekly hours and utilization target, and arrange teams (in the mockup a team's leader is the first reviewer of its members' timesheets — see Open question 4). Billing roles and rates are **edited in Settings → Roles & rates** (separate spec); this page only displays them.
@@ -28,7 +28,7 @@ The firm's people directory and team structure. Everyone looks people up here; o
    - Toolbar: `SearchInput` ("Search by name or role"), `SegmentedFilter` by team: All · {team names in `teams.sort_order`} · No team (only if anyone has `team_id` null).
    - `DataTable` (row = button, selected `#EAF0FB`), columns: Person (avatar 36 + full name + title) · Role · rate (role name; owner/admin also see rate line, mono) · Team (name + "Leads this team" / "Leader · {initials}") · Week (right, mono "40 h") · Utilization · 4 wks (110px bar + target tick + "84% / 80%") · Access (pill).
 5. **Teams tab**
-   - Info banner (blue `#E4EBF8`/`#1E3F7A`, info icon). Text if the two-step route is adopted (mockup): "Each person's timesheet goes to their team leader first, then to a principal. Moving someone to another team changes who reviews their time from the next timesheet on." If `timesheet.md`'s model stays (PMs approve their projects, admins approve all): "Teams group people for filtering and capacity. Timesheets are approved by each project's PM and by admins." Text is a constant chosen at build time per Open question 4.
+   - Info banner (blue `#E4EBF8`/`#1E3F7A`, info icon). Text if the two-step route is adopted (mockup): "Each person's timesheet goes to their team leader first, then to a principal. Moving someone to another team changes who reviews their time from the next timesheet on." If `timesheet.md`'s model stays (PMs approve their projects, admins approve all): "Teams group people for filtering and capacity. Timesheets are approved by each project's PM and by admins." **Decided (Blake, 2026-11-02): two-step route**, so the first text is used.
    - Grid of team cards (`minmax(320px, 1fr)`): header = team name + "{n} people"; leader row = avatar + "TEAM LEADER" + name + "{h} h / week capacity"; member list = avatar 28, name, title (+ " · leader"), and a team `select` (owner/admin only; read-only text for others). Owner/admin also get a card menu `⋯` → Edit team / Archive team (not in mockup; needed to rename or change leader).
 6. **Person DetailDrawer** (420px, top-right): avatar 52, name, title, "{team} · team leader" or "{team} · reports to {leader initials}"; `dl` rows; **Access** section (replaces the mockup's "Permissions" checkboxes, see Out of scope); footer `Edit profile` (owner/admin) and `View timesheets` link.
 7. **FormModal**s: Invite person, Edit profile, New/Edit team.
@@ -39,7 +39,7 @@ The firm's people directory and team structure. Everyone looks people up here; o
 | KPI People | count(memberships) where active (incl. invited) | note "{n} invited, not yet signed in" |
 | KPI Teams | count(teams) not archived | note "Each with a leader who reviews time" |
 | KPI Billable staff | count of active memberships whose current bill rate (rule 2) > 0 | note "{Σ weekly_capacity_hours} h / week capacity". Owner/admin only |
-| KPI Avg. multiplier | rule 3 | "2.54×"; note "Bill ÷ cost · rates are set in Settings" with link `/app/settings/roles-rates`. Owner/admin only |
+| KPI Avg. multiplier | rule 3 | "2.54×"; note "Bill ÷ cost · rates are set in Settings" with link `/app/settings/rates`. Owner/admin only |
 | Avatar / initials | `users.initials`, `users.avatar_url` (image if set) | fallback colour: rule 8 |
 | Name | `users.first_name` + `users.last_name` | invited: invite name |
 | Title | `memberships.title` | |
@@ -47,7 +47,7 @@ The firm's people directory and team structure. Everyone looks people up here; o
 | Rate line | rule 2 → "$115 / h"; bill rate 0 → "Not billable"; none found → "No rate set" (orange) | owner/admin only; stripped server-side otherwise |
 | Team | `memberships.team_id` → `teams.name`; sub-line rule 7 | "No team" if null |
 | Week | `memberships.weekly_capacity_hours` | "40 h", "24 h" |
-| Utilization | rule 4 | "88% / 85%"; "—" when target is 0/null or invited |
+| Utilization | rule 4 | "88% / 85%"; "—" when target is 0/null or invited. Until time entries exist (1.6) everyone shows "0% / {target}%" (Blake, 2026-11-02) |
 | Access pill | rule 6 | |
 | Drawer: Email | `users.email` (invited: invite email) | `mailto:` link |
 | Drawer: Phone | **Data model addition needed** (`memberships.phone`) | "—" if empty |
@@ -128,10 +128,13 @@ The firm's people directory and team structure. Everyone looks people up here; o
 - [ ] Given staff viewing another person's drawer, then "View timesheets" is not shown; viewing their own, it links to `/app/time/history`.
 
 ## Open questions
-1. **Data model addition needed:** invitation state on memberships — e.g. `memberships.status enum (invited, active, inactive)` replacing `active`, `memberships.invited_email citext`, `invited_at`, and `user_id` nullable until the invite is accepted (today `user_id` is required and `users.clerk_user_id` is required, so an invited person cannot be stored).
-2. **Data model addition needed:** `memberships.phone text`, `memberships.license_note text`, `memberships.start_date date` for the drawer rows (Phone, License, With firm since).
-3. **Data model addition needed:** `memberships.is_principal boolean default false` — who gives final timesheet approval (TMG: Blake and Laura). Alternative: derive from `firm_roles.name = 'Principal'` (fragile).
-4. **Approval model conflict (decide once for Time, Team and Home):** the mockup routes timesheets team leader → principal; `timesheet.md` follows "PMs approve their projects, admins approve all". If the two-step route is adopted, **Data model addition needed:** `leader_approved` in enum `timesheet_status`, `timesheets.leader_approved_at`, `leader_approved_by`, and `timesheets.reviewer_membership_id` (team leader snapshot at submission, so a move takes effect "from the next timesheet on"). Utilization (rule 4) counts `submitted` and `approved` either way, plus `leader_approved` if added.
-5. Should fine-grained permissions ("Accounting access", "Approve team time") exist beyond the four app roles? Mockup shows a bookkeeper with "Accounting" access who is not an admin.
-6. Should PMs see rates? CLAUDE.md says owner/admin only; confirm for team leaders who are PMs.
-7. Should people be able to edit their own phone/license in R1, or only owners/admins?
+8. *(Added Blake, 2026-11-02)* Settings → Users & access stays as a compact admin list (access levels, deactivate, pending invites); inviting and profiles move to Team. Both use the same server code.
+9. *(Added Blake, 2026-11-02, roadmap)* A signed-in person with a pending invitation but no invite link is offered "Join {firm}" on the no-firm page instead of only "Create your firm". (With Clerk's invite-only sign-up, this helps people who already have an account; others still need the emailed link — use Resend.)
+
+1. **Resolved in 0.6/1.3:** invitations have their own table (`invitations`), so memberships keep a required `user_id`. 1.3 adds the invite profile fields to `invitations` (name, team, employment, hours, target) and copies them to the membership on acceptance. *(Was: data model addition needed:* invitation state on memberships — e.g. `memberships.status enum (invited, active, inactive)` replacing `active`, `memberships.invited_email citext`, `invited_at`, and `user_id` nullable until the invite is accepted (today `user_id` is required and `users.clerk_user_id` is required, so an invited person cannot be stored).
+2. **Done in 1.3.** `memberships.phone text`, `memberships.license_note text`, `memberships.start_date date` for the drawer rows (Phone, License, With firm since).
+3. **Decided (Blake, 2026-11-02): checkbox** in Edit profile. `memberships.is_principal boolean default false` — who gives final timesheet approval (TMG: Blake and Laura). Alternative: derive from `firm_roles.name = 'Principal'` (fragile).
+4. **Decided (Blake, 2026-11-02): two-step route (team leader, then principal).** The 1.6–1.7 data additions below are in DATA_MODEL. Team uses the two-step banner and toast, and a team leader sees "View timesheets" for their members. *(Was: approval model conflict:* the mockup routes timesheets team leader → principal; `timesheet.md` follows "PMs approve their projects, admins approve all". If the two-step route is adopted, **Data model addition needed:** `leader_approved` in enum `timesheet_status`, `timesheets.leader_approved_at`, `leader_approved_by`, and `timesheets.reviewer_membership_id` (team leader snapshot at submission, so a move takes effect "from the next timesheet on"). Utilization (rule 4) counts `submitted` and `approved` either way, plus `leader_approved` if added.
+5. **Recommended / R1: no.** Four app roles only. Should fine-grained permissions ("Accounting access", "Approve team time") exist beyond the four app roles? Mockup shows a bookkeeper with "Accounting" access who is not an admin.
+6. **No** (CLAUDE.md rule 4), including PMs who lead teams. Should PMs see rates? CLAUDE.md says owner/admin only; confirm for team leaders who are PMs.
+7. **R1: owners/admins only.** Should people be able to edit their own phone/license in R1, or only owners/admins?
