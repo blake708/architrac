@@ -106,29 +106,31 @@ The firm's people directory and team structure. Everyone looks people up here; o
 - **Hiring pipeline / openings** — Release 5.
 
 ## Acceptance tests
-- [ ] Given the seed firm, when an owner opens `/app/team`, then KPIs read People 14 ("1 invited, not yet signed in"), Teams 4, Billable staff 12 ("464 h / week capacity"), Avg. multiplier 2.54×.
-- [ ] Given a staff user, when they open `/app/team`, then only People and Teams KPIs show, the Role · rate column shows role names with no "$", and the server payload contains no rate or cost fields.
-- [ ] Given a staff user KL, then KL's own row shows utilization and every other row shows "—" in the utilization column; given a PM, then every row shows utilization.
-- [ ] Given KL has capacity 40, target 8500 bp, and 141 billable hours in submitted/approved timesheets across the 4 completed weeks, then the row shows "88% / 85%" with a blue bar and tick at 85%.
-- [ ] Given DS has 126.5 billable hours in the window (79%), target 85%, then the text is orange and the bar is hatched.
-- [ ] Given billable hours on a draft timesheet or non-billable entries or overhead entries, then they are excluded from utilization.
-- [ ] Given today is Sunday 2026-10-18 and week starts Monday, then the utilization window is 2026-09-14 to 2026-10-11.
-- [ ] Given OK has target 0, then the utilization cell shows "—" and no tick.
-- [ ] Given team filter "Medical studio", then only its 5 members show and the URL has `team=<id>`.
-- [ ] Given search "project arch", then TC and SG are shown.
-- [ ] Given the Teams tab as owner, when KL is moved to Commercial studio, then `memberships.team_id` updates, an `activity_log` row is written, the toast confirms the move (naming TC as next reviewer if the two-step route is adopted), and the Medical studio card count drops by 1.
-- [ ] Given JR leads Medical studio, when an owner tries to move JR, then it is blocked with "Assign a new leader to Medical studio first."
-- [ ] Given a PM on the Teams tab, then member team selects are rendered as plain text.
-- [ ] Given an owner invites "new@firm.com" as staff on Commercial studio, then a membership in invited state exists, a Clerk invitation was requested, and the row shows the "Invited" pill.
-- [ ] Given an email already a member of the firm, when invited again, then the form shows "Already on the team".
-- [ ] Given an admin, when they try to set someone's app role to owner, then the action returns 403.
-- [ ] Given the firm has one owner, when that owner is demoted or deactivated, then it is blocked with "needs at least one owner".
-- [ ] Given a team with members, when an owner archives it, then it is blocked with "Move its {n} people first."
-- [ ] Given a person row is clicked, then the drawer opens with `person=<id>` in the URL and reloading keeps it open.
-- [ ] Given staff viewing another person's drawer, then "View timesheets" is not shown; viewing their own, it links to `/app/time/history`.
+
+Tests: `src/lib/calc/utilization.test.ts`, `src/lib/team/display.test.ts`, `src/server/team/team.db.test.ts`, `tests/e2e/team.spec.ts`.
+- [ ] Given the seed firm, when an owner opens `/app/team`, then KPIs read People 14 ("1 invited, not yet signed in"), Teams 4, Billable staff 12 ("464 h / week capacity"), Avg. multiplier 2.54×. *(Seed firm data comes with milestone 1.11; KPI rules tested with smaller data in team.db.test.ts.)*
+- [x] Given a staff user, when they open `/app/team`, then only People and Teams KPIs show, the Role · rate column shows role names with no "$", and the server payload contains no rate or cost fields.
+- [x] Given a staff user KL, then KL's own row shows utilization and every other row shows "—" in the utilization column; given a PM, then every row shows utilization.
+- [ ] Given KL has capacity 40, target 8500 bp, and 141 billable hours in submitted/approved timesheets across the 4 completed weeks, then the row shows "88% / 85%" with a blue bar and tick at 85%. *(Hours need time entries, 1.6; the math is tested in utilization.test.ts.)*
+- [ ] Given DS has 126.5 billable hours in the window (79%), target 85%, then the text is orange and the bar is hatched. *(1.6; colour rule tested in utilization.test.ts.)*
+- [ ] Given billable hours on a draft timesheet or non-billable entries or overhead entries, then they are excluded from utilization. *(1.6.)*
+- [x] Given today is Sunday 2026-10-18 and week starts Monday, then the utilization window is 2026-09-14 to 2026-10-11.
+- [x] Given OK has target 0, then the utilization cell shows "—" and no tick.
+- [x] Given team filter "Medical studio", then only its 5 members show and the URL has `team=<id>`. *(Tested with 2 members in team.spec.ts.)*
+- [x] Given search "project arch", then TC and SG are shown.
+- [x] Given the Teams tab as owner, when KL is moved to Commercial studio, then `memberships.team_id` updates, an `activity_log` row is written, the toast confirms the move (naming TC as next reviewer if the two-step route is adopted), and the Medical studio card count drops by 1.
+- [x] Given JR leads Medical studio, when an owner tries to move JR, then it is blocked with "Assign a new leader to Medical studio first."
+- [x] Given a PM on the Teams tab, then member team selects are rendered as plain text.
+- [x] Given an owner invites "new@firm.com" as staff on Commercial studio, then a membership in invited state exists, a Clerk invitation was requested, and the row shows the "Invited" pill.
+- [x] Given an email already a member of the firm, when invited again, then the form shows "Already on the team".
+- [x] Given an admin, when they try to set someone's app role to owner, then the action returns 403.
+- [x] Given the firm has one owner, when that owner is demoted or deactivated, then it is blocked with "needs at least one owner". *(Covered by the shared Settings code: settings.db.test.ts.)*
+- [x] Given a team with members, when an owner archives it, then it is blocked with "Move its {n} people first."
+- [x] Given a person row is clicked, then the drawer opens with `person=<id>` in the URL and reloading keeps it open.
+- [ ] Given staff viewing another person's drawer, then "View timesheets" is not shown; viewing their own, it links to `/app/time/history`. *(1.6: no timesheets yet, so the link is hidden for everyone.)*
 
 ## Open questions
-8. *(Added Blake, 2026-11-02)* Settings → Users & access stays as a compact admin list (access levels, deactivate, pending invites); inviting and profiles move to Team. Both use the same server code.
+8. *(Added Blake, 2026-11-02)* Team is the main place for people: full invite and profiles. Settings → Users & access stays as a compact admin list (access levels, deactivate, pending invites) with its short invite form (email, access, title; also used by Reactivate) and a pointer to Team. Both use the same server code.
 9. *(Added Blake, 2026-11-02, roadmap)* A signed-in person with a pending invitation but no invite link is offered "Join {firm}" on the no-firm page instead of only "Create your firm". (With Clerk's invite-only sign-up, this helps people who already have an account; others still need the emailed link — use Resend.)
 
 1. **Resolved in 0.6/1.3:** invitations have their own table (`invitations`), so memberships keep a required `user_id`. 1.3 adds the invite profile fields to `invitations` (name, team, employment, hours, target) and copies them to the membership on acceptance. *(Was: data model addition needed:* invitation state on memberships — e.g. `memberships.status enum (invited, active, inactive)` replacing `active`, `memberships.invited_email citext`, `invited_at`, and `user_id` nullable until the invite is accepted (today `user_id` is required and `users.clerk_user_id` is required, so an invited person cannot be stored).

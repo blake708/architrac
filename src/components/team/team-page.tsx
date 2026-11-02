@@ -133,7 +133,7 @@ export function TeamPage({
   );
 
   return (
-    <>
+    <main>
       <PageHeader
         eyebrow="PEOPLE · TEAMS"
         title="Team"
@@ -412,6 +412,6 @@ export function TeamPage({
           changed(message);
         }}
       />
-    </>
+    </main>
   );
 }

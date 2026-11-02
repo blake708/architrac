@@ -64,6 +64,10 @@ A user's role inside a firm. A user can belong to more than one firm (consultant
 | employment_type | enum | `full_time`, `part_time`, `contract` |
 | weekly_capacity_hours | numeric(5,2) | default 40, used by Workload |
 | target_utilization_bp | integer | e.g. 8000 = 80% |
+| phone | text null | stored formatted "(843) 555-0100" (1.3) |
+| license_note | text null | "Licensed architect · SC, NC" (1.3) |
+| start_date | date null | "With firm since" (1.3) |
+| is_principal | boolean | default false; final timesheet approval, Principal in Charge (1.3) |
 | active | boolean | default true |
 | unique (firm_id, user_id) | | |
 
@@ -86,7 +90,7 @@ One row per firm.
 | id | firm_id | name | leader_membership_id | sort_order |
 
 ### invitations  (0.6, Settings → Users & access)
-Someone invited who hasn't joined yet. They have no `users` row until they accept, so this is its own table and `memberships.user_id` stays required. Clerk sends the email; we keep the app role and title. Rows are never deleted.
+Someone invited who hasn't joined yet. They have no `users` row until they accept, so this is its own table and `memberships.user_id` stays required. Clerk sends the email; we keep the app role, title and (1.3) the Team profile, copied to the membership on acceptance. Rows are never deleted.
 | column | type | notes |
 |---|---|---|
 | id | uuid pk | |
@@ -94,7 +98,12 @@ Someone invited who hasn't joined yet. They have no `users` row until they accep
 | email | citext | |
 | app_role | app_role | role they get on joining |
 | title | text null | |
-| firm_role_id | uuid null | FK once `firm_roles` exists (1.1) |
+| firm_role_id | uuid null | same-firm FK → firm_roles (1.1) |
+| first_name, last_name | text null | shown while invited (1.3, Team → Invite person) |
+| team_id | uuid null | same-firm FK → teams (1.3) |
+| employment_type | enum null | (1.3) |
+| weekly_capacity_hours | numeric(5,2) null | (1.3) |
+| target_utilization_bp | integer null | (1.3) |
 | status | enum `invitation_status` | `pending`, `accepted`, `revoked`, `expired` |
 | clerk_invitation_id | text unique null | null only if the Clerk call failed |
 | invited_by | uuid fk → users | |
@@ -355,8 +364,6 @@ The screen specs found fields the model above doesn't have yet. **Add each one w
 | 1.2 | companies | description, primary_contact_id | (contacts) |
 | 1.2 | contacts | designations text ("PE, LEED AP") | (contacts) |
 | 1.2 | **project_contacts** (new) | id, firm_id, project_id, contact_id, role text | Contractors/agencies/vendors linked to projects (contacts) |
-| 1.3 | memberships | phone, license_note, start_date, is_principal boolean | Team profile; Principal in Charge picker (team) |
-| 1.3 | invitations | first_name, last_name, team_id (same-firm fk), employment_type, weekly_capacity_hours, target_utilization_bp | Invite person on Team: the profile is ready when they accept (team) |
 | 1.4 | projects | scope_kind enum (`ground_up`,`tenant_upfit`,`shell`), closed_on date, stories, building_height_ft, occupancy_group, construction_type, sprinklered, delivery_method, design_review_board; address columns named as in `companies` | (projects-list, project-detail) |
 | 1.5 | project_phases | is_additional_service boolean, planned_cost_rate_cents bigint null | Additional-service phases; projected profit (project-detail, timesheet) |
 | 1.5 | consultants | contact_id | (project-detail) |

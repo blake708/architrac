@@ -68,9 +68,11 @@ describe("display rules", () => {
   });
   it("rate line", () => {
     expect(rateLine(person({}))).toBeNull(); // not sent to this viewer
-    expect(rateLine(person({ rate: null }))).toEqual({ text: "No rate set", warn: true });
-    expect(rateLine(person({ rate: { billCents: 0, costCents: 3800 } }))).toEqual({ text: "Not billable", warn: false });
-    expect(rateLine(person({ rate: { billCents: 11500, costCents: 4400 } }))).toEqual({ text: "$115 / h", warn: false });
+    const r = { firmRoleId: "designer" };
+    expect(rateLine(person({ ...r, rate: null }))).toEqual({ text: "No rate set", warn: true });
+    expect(rateLine(person({ ...r, rate: { billCents: 0, costCents: 3800 } }))).toEqual({ text: "Not billable", warn: false });
+    expect(rateLine(person({ ...r, rate: { billCents: 11500, costCents: 4400 } }))).toEqual({ text: "$115 / h", warn: false });
+    expect(rateLine(person({ rate: null }))).toBeNull(); // no role: "No role" says it
   });
   it("week hours", () => {
     expect(formatWeekHours(40)).toBe("40 h");

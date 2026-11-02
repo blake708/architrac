@@ -46,7 +46,8 @@ export function teamSubLine(p: PersonRow): string | null {
 
 /** The rate line under the role (owner/admin only). */
 export function rateLine(p: PersonRow): { text: string; warn: boolean } | null {
-  if (p.rate === undefined) return null;
+  // Not sent to this viewer, or no role (the row already says "No role").
+  if (p.rate === undefined || !p.firmRoleId) return null;
   if (p.rate === null) return { text: "No rate set", warn: true };
   if (p.rate.billCents === 0) return { text: "Not billable", warn: false };
   return { text: `${formatMoney(p.rate.billCents)} / h`, warn: false };

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Avatar } from "@/components/ui/avatar";
@@ -169,6 +170,14 @@ export function UsersSection({
           data-testid="role-help"
         >
           {ROLE_HELP[invite.appRole]}
+        </p>
+        <p className="m-0 mt-1 text-[12.5px] text-muted">
+          To set someone&apos;s billing role, team and weekly hours, invite
+          them or edit their profile on the{" "}
+          <Link href="/app/team" className="text-blue underline">
+            Team
+          </Link>{" "}
+          page.
         </p>
       </section>
 
