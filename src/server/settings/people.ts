@@ -1,7 +1,15 @@
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNull, sql } from "drizzle-orm";
 import { z } from "zod";
-import { activityLog, invitations, memberships, users } from "@/db/schema";
+import {
+  activityLog,
+  firmRoles,
+  invitations,
+  memberships,
+  teams,
+  users,
+} from "@/db/schema";
 import { type TenantDb, withFirm } from "@/db/tenant";
+import { EMPLOYMENT_TYPES } from "@/lib/team/profile";
 import { APP_ROLES, type AppRole, can } from "@/lib/auth/permissions";
 import {
   ONLY_OWNER_MESSAGE,
@@ -135,8 +143,26 @@ const inviteSchema = z.object({
     .transform((v) => (v === "" ? null : v))
     .optional()
     .default(""),
+  // Team → Invite person also sends a profile (team spec). Settings doesn't.
+  firstName: z.string().trim().max(60).optional(),
+  lastName: z.string().trim().max(60).optional(),
+  firmRoleId: z.uuid().nullable().optional(),
+  teamId: z.uuid().nullable().optional(),
+  employmentType: z.enum(EMPLOYMENT_TYPES).optional(),
+  weeklyCapacityHours: z.number().min(0).max(80).optional(),
+  targetUtilizationPct: z.number().int().min(0).max(100).optional(),
 });
-export type InviteField = "email" | "appRole" | "title";
+export type InviteField =
+  | "email"
+  | "appRole"
+  | "title"
+  | "firstName"
+  | "lastName"
+  | "firmRoleId"
+  | "teamId"
+  | "employmentType"
+  | "weeklyCapacityHours"
+  | "targetUtilizationPct";
 
 export const ALREADY_INVITED_MESSAGE = "Already invited — use Resend";
 export const alreadyMemberMessage = (email: string) =>
@@ -152,6 +178,7 @@ export async function inviteUserCore(
   actor: SettingsActor,
   raw: unknown,
   clerk: Pick<SettingsClerk, "createInvitation">,
+  opts: { alreadyMember?: (email: string) => string } = {},
 ): Promise<InviteResult> {
   if (!can(actor.member, "users.manage")) return forbidden;
 
@@ -164,6 +191,7 @@ export async function inviteUserCore(
     return { ok: false, fieldErrors };
   }
   const { email, appRole, title } = parsed.data;
+  const p = parsed.data;
   if (!assignableRoles(actor.member).includes(appRole)) {
     return { ok: false, error: ONLY_OWNER_MESSAGE };
   }
@@ -183,7 +211,24 @@ export async function inviteUserCore(
             eq(users.email, email),
           ),
         );
-      if (member) return { error: alreadyMemberMessage(email) };
+      if (member)
+        return { error: (opts.alreadyMember ?? alreadyMemberMessage)(email) };
+
+      // The billing role and team must be this firm's and not archived.
+      if (p.firmRoleId) {
+        const [role] = await db
+          .select({ id: firmRoles.id })
+          .from(firmRoles)
+          .where(and(eq(firmRoles.id, p.firmRoleId), isNull(firmRoles.archivedAt)));
+        if (!role) return { field: "firmRoleId", error: "Pick a role from the list" };
+      }
+      if (p.teamId) {
+        const [team] = await db
+          .select({ id: teams.id })
+          .from(teams)
+          .where(and(eq(teams.id, p.teamId), isNull(teams.archivedAt)));
+        if (!team) return { field: "teamId", error: "Pick a team from the list" };
+      }
 
       const [pending] = await db
         .select({ id: invitations.id })
@@ -206,6 +251,19 @@ export async function inviteUserCore(
           title,
           status: "pending",
           invitedBy: actor.userId,
+          firstName: p.firstName || null,
+          lastName: p.lastName || null,
+          firmRoleId: p.firmRoleId ?? null,
+          teamId: p.teamId ?? null,
+          employmentType: p.employmentType ?? null,
+          weeklyCapacityHours:
+            p.weeklyCapacityHours === undefined
+              ? null
+              : String(p.weeklyCapacityHours),
+          targetUtilizationBp:
+            p.targetUtilizationPct === undefined
+              ? null
+              : p.targetUtilizationPct * 100,
         })
         .returning({ id: invitations.id });
       await db.insert(activityLog).values({
@@ -223,7 +281,8 @@ export async function inviteUserCore(
       return { id: row.id };
     });
     if ("error" in saved) {
-      return { ok: false, fieldErrors: { email: saved.error } };
+      const field = ("field" in saved ? saved.field : "email") as InviteField;
+      return { ok: false, fieldErrors: { [field]: saved.error } };
     }
     invitationId = saved.id;
   } catch (err) {
