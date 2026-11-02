@@ -9,7 +9,7 @@
 3. **Preview** (`preview.yml`, every pull request): Neon branch `preview/pr-<n>` copied from Neon `production` (reused on later pushes), migrated, deployed, and the link posted on the pull request. Deleted when the pull request closes.
 4. **Production** (`production.yml`, push to `main`): migrate the Neon `production` branch, then deploy with `--prod`.
 5. **The app always connects as `architrac_app`.** `scripts/ci/neon-branch.sh` takes the owner's pooled URL from `neonctl` and swaps in the app login. The password comes from the `NEON_APP_ROLE_PASSWORD` secret, because Neon can't show passwords for roles created by SQL. `DATABASE_URL` is passed to each deployment with `--env`; it is not stored in Vercel's settings.
-6. **Sentry** (`@sentry/nextjs`) covers the browser, the server and the proxy. It is on only when `NEXT_PUBLIC_SENTRY_DSN` is set, and is tagged with `NEXT_PUBLIC_APP_ENV` (production / preview). `sendDefaultPii: false`, and `scrub()` removes request bodies, cookies, headers and query strings. There is no session replay. Source maps are uploaded at build time and then deleted from the deployment.
+6. **Sentry** (`@sentry/nextjs`) covers the browser, the server and the proxy. It is on only when `NEXT_PUBLIC_SENTRY_DSN` is set, and is tagged with `NEXT_PUBLIC_APP_ENV` (production / preview). `sendDefaultPii: false`, and `scrub()` removes request bodies, cookies, headers and query strings. There is no session replay. Source maps are uploaded at build time and then deleted from the deployment. Browser error reports go through our own `/monitoring` route (`tunnelRoute`), so ad blockers don't drop them; the proxy skips that route.
 
 ## Why
 - Vercel's Neon integration connects previews as the database owner, which would skip row-level security on every preview (ADR 0005). Building the URL ourselves keeps previews identical to production.
@@ -23,6 +23,6 @@
 - Secrets and settings live in GitHub (Actions secrets and variables) and Vercel (project environment variables). The list is in `docs/DEPLOY.md`.
 
 ## Open questions
-- **Clerk production instance:** this needs a real domain. Until then, production uses the Clerk development keys.
+- **Domain and Clerk production instance:** the app will live at `app.architrac.com`, with a separate landing page at `architrac.com`. Moving there means: add the domain in Vercel and DNS; update `NEXT_PUBLIC_APP_URL`; create a Clerk production instance for the domain and swap the keys in Vercel; point the Clerk webhook at the new URL. Clerk users and organizations do **not** carry over from the development instance to the production instance, so do the switch **before real firms use production** (and before the Bubble import, 1.11). Until then, production uses the Clerk development keys.
 - **Clerk webhook on previews:** the webhook points at one URL, so changes that start in Clerk (e.g. someone accepting an invitation) don't reach a preview's database. Signing in and creating a firm work, because the app writes those rows itself.
 - **Invite links on previews:** `NEXT_PUBLIC_APP_URL` is the production URL, so invitation emails sent from a preview link to production.

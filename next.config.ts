@@ -11,4 +11,8 @@ export default withSentryConfig(nextConfig, {
   // Upload source maps to Sentry, then delete them so they're not public.
   sourcemaps: { deleteSourcemapsAfterUpload: true },
   widenClientFileUpload: true,
+  // Browsers send error reports to our own /monitoring address, which passes
+  // them on to Sentry. Ad blockers block sentry.io directly, so without this
+  // we'd miss errors from anyone running one.
+  tunnelRoute: "/monitoring",
 });
