@@ -21,3 +21,9 @@ export const invitationStatus = pgEnum("invitation_status", [
   "revoked",
   "expired",
 ]);
+
+/** How a phase is billed (DATA_MODEL → project_phases.fee_type). */
+export const feeType = pgEnum("fee_type", ["fixed", "hourly", "nte"]);
+
+/** Which timesheet rows an activity is offered on (DATA_MODEL → activities). */
+export const activityScope = pgEnum("activity_scope", ["project", "overhead"]);

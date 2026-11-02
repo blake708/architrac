@@ -49,9 +49,19 @@ export type TestFirm = {
   teamId: string;
   activityLogId: string;
   invitationId: string;
+  /** A "Designer" role ($115 bill / $44 cost from 2026-01-01). */
+  firmRoleId: string;
+  rateId: string;
+  /** From the firm defaults (seed_firm_defaults). */
+  phaseTemplateId: string;
+  overheadCategoryId: string;
+  activityId: string;
 };
 
-/** Create a firm with one user, membership, team, firm_settings row and activity_log row. */
+/**
+ * Create a firm with one user, membership, team, firm_settings row,
+ * activity_log row, the default setup lists, and one role with a rate.
+ */
 export async function createTestFirm(
   pool: Pool,
   label: string,
@@ -102,7 +112,30 @@ export async function createTestFirm(
       "insert into invitations (firm_id, email, app_role, title, invited_by) values ($1, $2, 'staff', 'Designer', $3) returning id",
       [firmId, `invitee-${suffix}@example.com`, userId],
     );
+    await c.query("select seed_firm_defaults($1)", [firmId]);
+    const role = await c.query<{ id: string }>(
+      "insert into firm_roles (firm_id, name, sort_order) values ($1, 'Designer', 1) returning id",
+      [firmId],
+    );
+    const firmRoleId = role.rows[0].id;
+    const rate = await c.query<{ id: string }>(
+      "insert into rates (firm_id, firm_role_id, bill_rate_cents, cost_rate_cents, effective_from) values ($1, $2, 11500, 4400, '2026-01-01') returning id",
+      [firmId, firmRoleId],
+    );
+    const pick = async (q: string) =>
+      (await c.query<{ id: string }>(q, [firmId])).rows[0].id;
     return {
+      firmRoleId,
+      rateId: rate.rows[0].id,
+      phaseTemplateId: await pick(
+        "select id from phase_templates where firm_id = $1 and code = 'SD'",
+      ),
+      overheadCategoryId: await pick(
+        "select id from overhead_categories where firm_id = $1 and name = 'Marketing'",
+      ),
+      activityId: await pick(
+        "select id from activities where firm_id = $1 and name = 'Design'",
+      ),
       invitationId: invite.rows[0].id,
       label,
       firmId,
@@ -122,9 +155,14 @@ export async function removeTestFirm(pool: Pool, firm: TestFirm) {
       "update teams set leader_membership_id = null where firm_id = $1",
       [firm.firmId],
     );
+    await c.query("delete from rates where firm_id = $1", [firm.firmId]);
+    await c.query("delete from activities where firm_id = $1", [firm.firmId]);
+    await c.query("delete from overhead_categories where firm_id = $1", [firm.firmId]);
+    await c.query("delete from phase_templates where firm_id = $1", [firm.firmId]);
     await c.query("delete from activity_log where firm_id = $1", [firm.firmId]);
     await c.query("delete from invitations where firm_id = $1", [firm.firmId]);
     await c.query("delete from memberships where firm_id = $1", [firm.firmId]);
+    await c.query("delete from firm_roles where firm_id = $1", [firm.firmId]);
     await c.query("delete from teams where firm_id = $1", [firm.firmId]);
     await c.query("delete from firm_settings where firm_id = $1", [
       firm.firmId,
@@ -137,9 +175,14 @@ export async function removeTestFirm(pool: Pool, firm: TestFirm) {
 /** Remove a firm made by the code under test (e.g. createFirm), and its rows. */
 export async function removeFirmById(pool: Pool, firmId: string) {
   await asFirm(pool, firmId, async (c) => {
+    await c.query("delete from rates where firm_id = $1", [firmId]);
+    await c.query("delete from activities where firm_id = $1", [firmId]);
+    await c.query("delete from overhead_categories where firm_id = $1", [firmId]);
+    await c.query("delete from phase_templates where firm_id = $1", [firmId]);
     await c.query("delete from activity_log where firm_id = $1", [firmId]);
     await c.query("delete from invitations where firm_id = $1", [firmId]);
     await c.query("delete from memberships where firm_id = $1", [firmId]);
+    await c.query("delete from firm_roles where firm_id = $1", [firmId]);
     await c.query("delete from firm_settings where firm_id = $1", [firmId]);
   });
   await pool.query("delete from firms where id = $1", [firmId]);
