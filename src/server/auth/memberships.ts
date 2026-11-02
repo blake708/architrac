@@ -29,6 +29,28 @@ async function findPendingInvitation(
   return invite ?? null;
 }
 
+type Invitation = typeof invitations.$inferSelect;
+
+/**
+ * The membership fields an invitation sets (team spec, Invite person). Only
+ * the ones the inviter filled in; the rest keep the column defaults.
+ */
+function profileFrom(invite: Invitation) {
+  return {
+    appRole: invite.appRole,
+    title: invite.title,
+    ...(invite.firmRoleId && { firmRoleId: invite.firmRoleId }),
+    ...(invite.teamId && { teamId: invite.teamId }),
+    ...(invite.employmentType && { employmentType: invite.employmentType }),
+    ...(invite.weeklyCapacityHours && {
+      weeklyCapacityHours: invite.weeklyCapacityHours,
+    }),
+    ...(invite.targetUtilizationBp !== null && {
+      targetUtilizationBp: invite.targetUtilizationBp,
+    }),
+  };
+}
+
 async function acceptInvitation(
   db: TenantDb,
   firmId: string,
@@ -55,7 +77,8 @@ async function acceptInvitation(
  * decides the winner).
  *
  * - A pending invitation for their email (settings-firm rule 8) supplies
- *   the role and title, and is marked accepted.
+ *   the role, title and Team profile (billing role, team, hours, target),
+ *   and is marked accepted.
  * - No row yet: create one with the invited role, or Staff if not invited.
  * - Row exists: never change its role, so an owner is never downgraded —
  *   unless Clerk says they just joined (`reactivate: true`) through a pending
@@ -77,8 +100,9 @@ export async function ensureMembership(
       .values({
         firmId,
         userId,
-        appRole: invite?.appRole ?? "staff",
-        title: invite?.title ?? null,
+        appRole: "staff",
+        title: null,
+        ...(invite && profileFrom(invite)),
         createdBy: invite?.invitedBy ?? null,
       })
       .onConflictDoNothing({ target: [memberships.firmId, memberships.userId] })
@@ -107,7 +131,7 @@ export async function ensureMembership(
     if (reactivate && invite) {
       const [updated] = await db
         .update(memberships)
-        .set({ active: true, appRole: invite.appRole, title: invite.title })
+        .set({ active: true, ...profileFrom(invite) })
         .where(eq(memberships.id, existing.id))
         .returning();
       await db.insert(activityLog).values({
