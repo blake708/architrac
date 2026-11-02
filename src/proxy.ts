@@ -19,8 +19,9 @@ export default clerkMiddleware(async (auth) => {
 
 export const config = {
   matcher: [
-    // Everything except Next.js internals and static files...
-    "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
+    // Everything except Next.js internals, Sentry's error-report route
+    // (/monitoring, see next.config.ts) and static files...
+    "/((?!_next|monitoring|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
     // ...and always API routes.
     "/(api|trpc)(.*)",
   ],
