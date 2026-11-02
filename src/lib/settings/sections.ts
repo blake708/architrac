@@ -1,8 +1,9 @@
 // The Settings section menu (settings-firm spec, "Release 0 section nav").
-// Release 1 adds a "Work" group between Firm and Account.
+// Release 1 adds a "Work" group between Firm and Account
+// (settings-rates-phases spec, Layout).
 
 export type SettingsSection = {
-  key: "firm" | "users" | "modules";
+  key: "firm" | "users" | "phases" | "rates" | "time" | "modules";
   group: string;
   label: string;
   href: string;
@@ -32,6 +33,36 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     description:
       "Who can sign in to ArchiTrac and what each person can see and do.",
     hasSave: false,
+  },
+  {
+    key: "phases",
+    group: "Work",
+    label: "Phases & fees",
+    href: "/app/settings/phases",
+    title: "Phases & fees",
+    description:
+      "The phases every new project starts with and how the fee splits across them.",
+    hasSave: true,
+  },
+  {
+    key: "rates",
+    group: "Work",
+    label: "Roles & rates",
+    href: "/app/settings/rates",
+    title: "Roles & rates",
+    description:
+      "Each role's bill rate (what clients pay on hourly work) and cost rate (salary plus burden), plus the firm's overhead rate. Used by Time, Accounting, Reports and project profit.",
+    hasSave: true,
+  },
+  {
+    key: "time",
+    group: "Work",
+    label: "Time & approvals",
+    href: "/app/settings/time",
+    title: "Time & approvals",
+    description:
+      "When timesheets are due, how hours are entered, and who approves them.",
+    hasSave: true,
   },
   {
     key: "modules",
