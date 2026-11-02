@@ -123,8 +123,13 @@ Someone invited who hasn't joined yet. They have no `users` row until they accep
 | column | type | notes |
 |---|---|---|
 | id, firm_id | | |
-| name | text | "Principal", "Project manager", "Project architect", "Designer"… (see settings spec seed) |
+| name | text | "Principal", "Project manager", "Project architect", "Designer"… (see settings spec seed). Unique per firm (ignoring case) among non-archived roles |
+| description | text null | note under the name ("Owners and partners") |
+| is_billable | boolean | default true; false = overhead role, bill rate always 0 |
 | sort_order | smallint | |
+| archived_at | timestamptz null | |
+
+`memberships.firm_role_id` and `invitations.firm_role_id` point here (same-firm composite FK, 1.1).
 
 ### rates
 Effective-dated so old time keeps the rate in force when it was worked.
@@ -138,11 +143,23 @@ Effective-dated so old time keeps the rate in force when it was worked.
 | effective_from | date | |
 | effective_to | date null | null = current |
 
+Constraints (1.1): one role's (or one person's) periods never overlap (`EXCLUDE USING gist`, needs `btree_gist`); `effective_to ≥ effective_from`; amounts ≥ 0. A change from date D closes the current row on D − 1 and inserts a new one (settings-rates-phases rule 8).
+
 **Rate lookup rule:** for a time entry on date D for person P: person override effective on D → else their role's rate effective on D → else error (block approval).
 
-### phase_templates  (Settings → Timesheet phases & activities, project section)
-Firm's standard phase list used when creating a project.
-| id, firm_id | code text ("SD") | name text ("Schematic Design") | default_fee_type enum | default_fee_share_bp integer | sort_order |
+### phase_templates  (Settings → Phases & fees)
+Firm's standard phase list. Default phases are copied to every new project; optional phases are offered when adding a phase to a project.
+| column | type | notes |
+|---|---|---|
+| id, firm_id | | |
+| code | text | "SD"; unique per firm (ignoring case) among non-archived rows, across both lists |
+| name | text | "Schematic Design"; unique like code |
+| description | text null | copied to `project_phases.description` when the phase is created on a project |
+| is_optional | boolean | default false. Optional ⇒ `default_fee_share_bp = 0` (check) |
+| default_fee_type | enum `fee_type` | `fixed`, `hourly`, `nte`. Default phases: fixed |
+| default_fee_share_bp | integer | 0–10000. Default phases add up to 10000 (checked on save) |
+| sort_order | smallint | within its own list |
+| archived_at | timestamptz null | |
 
 Seed codes: PD, SD, DD, CD, PRM (Permitting), CA, CO (Close Out). Full seed values: `docs/specs/release-1/settings-rates-phases.md` → Seed values.
 
@@ -154,11 +171,21 @@ Activities a person picks on a timesheet row.
 | name | text | "Design", "Drawings & production", "Coordination", "Meetings", "Site visit"… |
 | applies_to | enum `activity_scope` | `project`, `overhead` |
 | overhead_category_id | uuid fk null | for overhead activities, which category they belong to |
-| sort_order, active | | |
+| sort_order, active | | removed = `active false`; adding the same name back reactivates the row |
+
+Check: `applies_to = 'overhead'` exactly when `overhead_category_id` is set. Leave types are overhead activities under the `PTO` category.
 
 ### overhead_categories
-Non-project "phases" (Settings → overhead section).
-| id, firm_id | name ("Marketing", "Administration", "Professional development", "Firm standards"; leave: "Paid time off", "Holiday") | is_leave boolean (Leave: PTO, Holiday, Sick) | sort_order | active |
+Non-project "phases" (Settings → Time & approvals).
+| column | type | notes |
+|---|---|---|
+| id, firm_id | | |
+| code | text null | `PTO`, `HOL` for the leave categories; unique per firm when set |
+| name | text | "Marketing", "Administration", "Professional development", "Firm standards"; leave: "Paid time off", "Holiday" |
+| is_leave | boolean | |
+| sort_order, active | | |
+
+New firms get the default phases, activities and categories from the database function `seed_firm_defaults(firm_id)` (migration 0003), called by createFirm. No roles.
 
 ### companies
 | column | type | notes |
@@ -323,9 +350,6 @@ The screen specs found fields the model above doesn't have yet. **Add each one w
 | Milestone | Table | Addition | Why (spec) |
 |---|---|---|---|
 | 0.5 | users | preferences jsonb (menu rail collapsed, etc.) | Rail state follows the person across devices (app-shell) |
-| 1.1 | firm_roles | description text, is_billable boolean | "Not billable" roles (settings-rates-phases) |
-| 1.1 | overhead_categories | code text (`PTO`, `HOL`) | Leave codes (settings, timesheet) |
-| 1.1 | phase_templates | description text null, is_optional boolean default false (optional ⇒ default_fee_share_bp = 0) | Optional phases not on every project; default phase descriptions (settings-rates-phases, Blake 2026-11-02) |
 | 1.4 | project_phases | description text null, copied from the template | (settings-rates-phases rule 10a, projects-list) |
 | 1.2 | company_kind enum | add `agency` | Permitting agencies, review boards (contacts) |
 | 1.2 | companies | description, primary_contact_id | (contacts) |

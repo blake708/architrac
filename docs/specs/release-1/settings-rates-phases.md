@@ -5,7 +5,7 @@
 | **Release** | 1 |
 | **Route** | `/app/settings/phases`, `/app/settings/rates`, `/app/settings/time` |
 | **Mockup** | `mockup/Settings.dc.html` — sections `phases`, `rates` (incl. Overhead rate card), `time` (only the "Timesheet phases & activities" card). JS: `PH`, `ROLES`, `rateKpis`, `oh`, `TS`. Timesheet use of these lists: `mockup/Time.dc.html` (`OPTIONS`, `PHASES`, `ACTS`). |
-| **Status** | Draft |
+| **Status** | Built (1.1) |
 
 ## Purpose
 Owners and admins set the firm's standard project phases and fee split, each billing role's bill and cost rate (effective-dated), the overhead rate used for true profit, and the overhead phases, activities and leave types people pick on timesheets. Time, Accounting, Reports and project profit all read from these.
@@ -202,46 +202,48 @@ All seeded default phases have `description = null` and `is_optional = false`. N
 - Firm holiday calendar — later.
 
 ## Acceptance tests
-- [ ] Given the TMG seed, when I open `/app/settings/rates`, then the KPIs read "$126 / h", "2.54×", "3", "1.60×".
-- [ ] Given the TMG seed, then Principal shows multiplier "1.95×" on an orange pill, Project architect "2.50×" on a green pill, and Office manager shows "Not billable" and "—".
-- [ ] Given I change Designer cost from 44 to 40, then without saving the Designer multiplier shows "2.88×" and the Designer example shows "$64.00 / h".
-- [ ] Given I change Designer bill to 120 and save with effective date 2026-11-01, then the 2026-01-01 Designer row has `effective_to = 2026-10-31`, a new row has `bill_rate_cents = 12000`, `cost_rate_cents = 4400`, `effective_from = 2026-11-01`, and an `activity_log` row exists.
-- [ ] Given Designer's current rate starts 2026-01-01, when I save a change with effective date 2025-12-15, then I see "Pick Jan 1, 2026 or later — Designer's current rate starts then." and nothing is written.
-- [ ] Given I change a rate and pick the effective date equal to the current row's `effective_from`, then that row is updated and no new row is inserted.
-- [ ] Given a Designer time entry approved at $115 before the change, when the rate changes to $120 from 2026-11-01, then that entry's `bill_rate_cents` is still 11500.
-- [ ] Given I enter overhead expenses 612000 and labor 1020000, then the line reads "$612,000 ÷ $1,020,000 = 60%", and clicking "Use 60%" sets the Overhead rate input to 60 and marks the form dirty.
-- [ ] Given I set the Overhead rate to 75 and save, then `firm_settings.overhead_rate_bp = 7500` and Breakeven shows "1.75×".
-- [ ] Given I turn off "Include overhead in project profit by default" and save, then `include_overhead_default = false`.
-- [ ] Given I add role "Senior designer" (billable, $130 bill, $50 cost, from Jan 1, 2026), then it appears last with multiplier "2.60×" and People 0.
-- [ ] Given Designer has 6 people, when I choose Archive role, then I see "Move the 6 people in Designer to another role on the Team page first." and it is not archived.
-- [ ] Given the seed phases, then the total reads "100%" in green with "Adds up to the full fee".
-- [ ] Given I change CD to 30, then the total reads "95%" with "5% of the fee is unassigned", and Save shows "Phase shares must add up to 100%. Now 95%." and writes nothing.
-- [ ] Given I rename Permitting's abbreviation to "PRM2" and save, then `phase_templates.code = 'PRM2'` and existing projects' phases are unchanged.
-- [ ] Given I type "Programming, site analysis and code review" as the Pre-Design description and save, then that `phase_templates.description` is stored, and clearing it and saving stores null.
-- [ ] Given I add optional phase "INT Interior Design" with fee type Hourly and save, then a `phase_templates` row exists with `is_optional = true`, `default_fee_type = 'hourly'`, `default_fee_share_bp = 0`, and the default total still reads "100%".
-- [ ] Given optional phase "INT" exists, when I add a default phase with abbreviation "int", then I see an "already used" error on the abbreviation and Save writes nothing.
-- [ ] Given I remove every optional phase and save, then the save succeeds and the card shows "No optional phases yet."
+
+Tests: `src/lib/calc/rates.test.ts`, `src/lib/settings/work-settings.test.ts`, `src/server/settings/work-settings.db.test.ts`, `src/db/tenant.db.test.ts`, `tests/e2e/settings-work.spec.ts`.
+- [x] Given the TMG seed, when I open `/app/settings/rates`, then the KPIs read "$126 / h", "2.54×", "3", "1.60×".
+- [x] Given the TMG seed, then Principal shows multiplier "1.95×" on an orange pill, Project architect "2.50×" on a green pill, and Office manager shows "Not billable" and "—".
+- [x] Given I change Designer cost from 44 to 40, then without saving the Designer multiplier shows "2.88×" and the Designer example shows "$64.00 / h".
+- [x] Given I change Designer bill to 120 and save with effective date 2026-11-01, then the 2026-01-01 Designer row has `effective_to = 2026-10-31`, a new row has `bill_rate_cents = 12000`, `cost_rate_cents = 4400`, `effective_from = 2026-11-01`, and an `activity_log` row exists.
+- [x] Given Designer's current rate starts 2026-01-01, when I save a change with effective date 2025-12-15, then I see "Pick Jan 1, 2026 or later — Designer's current rate starts then." and nothing is written.
+- [x] Given I change a rate and pick the effective date equal to the current row's `effective_from`, then that row is updated and no new row is inserted.
+- [ ] Given a Designer time entry approved at $115 before the change, when the rate changes to $120 from 2026-11-01, then that entry's `bill_rate_cents` is still 11500. *(Test in 1.6/1.7 — needs time entries; see open question 11.)*
+- [x] Given I enter overhead expenses 612000 and labor 1020000, then the line reads "$612,000 ÷ $1,020,000 = 60%", and clicking "Use 60%" sets the Overhead rate input to 60 and marks the form dirty.
+- [x] Given I set the Overhead rate to 75 and save, then `firm_settings.overhead_rate_bp = 7500` and Breakeven shows "1.75×".
+- [x] Given I turn off "Include overhead in project profit by default" and save, then `include_overhead_default = false`.
+- [x] Given I add role "Senior designer" (billable, $130 bill, $50 cost, from Jan 1, 2026), then it appears last with multiplier "2.60×" and People 0.
+- [x] Given Designer has 6 people, when I choose Archive role, then I see "Move the 6 people in Designer to another role on the Team page first." and it is not archived.
+- [x] Given the seed phases, then the total reads "100%" in green with "Adds up to the full fee".
+- [x] Given I change CD to 30, then the total reads "95%" with "5% of the fee is unassigned", and Save shows "Phase shares must add up to 100%. Now 95%." and writes nothing.
+- [x] Given I rename Permitting's abbreviation to "PRM2" and save, then `phase_templates.code = 'PRM2'` and existing projects' phases are unchanged.
+- [x] Given I type "Programming, site analysis and code review" as the Pre-Design description and save, then that `phase_templates.description` is stored, and clearing it and saving stores null.
+- [x] Given I add optional phase "INT Interior Design" with fee type Hourly and save, then a `phase_templates` row exists with `is_optional = true`, `default_fee_type = 'hourly'`, `default_fee_share_bp = 0`, and the default total still reads "100%".
+- [x] Given optional phase "INT" exists, when I add a default phase with abbreviation "int", then I see an "already used" error on the abbreviation and Save writes nothing.
+- [x] Given I remove every optional phase and save, then the save succeeds and the card shows "No optional phases yet."
 - [ ] *(Test in 1.4)* Given optional phase "INT" exists, when I create a project, then its phases are the 7 default phases only, each with the template's description.
-- [ ] Given I type "travel" in New activity and click Add, then I see "Already in the list" and no chip is added.
-- [ ] Given I add "Punch walk" to Project activities and save, then an `activities` row (`applies_to 'project'`, `sort_order 14`, active) exists.
-- [ ] Given I remove "Travel" and save, then its row has `active = false`, it still exists, and time entries that used it still show "Travel" in reports.
-- [ ] Given "Travel" is inactive, when I add "Travel" again and save, then the same row is reactivated (same id).
-- [ ] Given I add overhead phase "IT" with no activities, when I save, then I see "Add at least one activity to IT, or remove it."
-- [ ] Given I rename overhead phase "Firm standards" to "Standards" and save, then the `overhead_categories` row keeps its id and its name is "Standards".
-- [ ] Given Marketing has 12 h logged, when I click Remove on Marketing, then I see "12 h are logged to Marketing…" before it is staged for removal.
-- [ ] Given I add leave type "Bereavement" and save, then an `activities` row under the `PTO` category exists, and the Holiday category is unchanged.
-- [ ] Given I am a project manager, when I call the rates server action or open `/app/settings/rates`, then I get access denied and no cost rate appears in the response.
-- [ ] Given firm B, when firm A's admin saves rates, then no firm B `rates` rows change (RLS test).
+- [x] Given I type "travel" in New activity and click Add, then I see "Already in the list" and no chip is added.
+- [x] Given I add "Punch walk" to Project activities and save, then an `activities` row (`applies_to 'project'`, `sort_order 14`, active) exists.
+- [ ] Given I remove "Travel" and save, then its row has `active = false`, it still exists, and time entries that used it still show "Travel" in reports. *(Test in 1.6/1.7 — needs time entries; see open question 11.)*
+- [x] Given "Travel" is inactive, when I add "Travel" again and save, then the same row is reactivated (same id).
+- [x] Given I add overhead phase "IT" with no activities, when I save, then I see "Add at least one activity to IT, or remove it."
+- [x] Given I rename overhead phase "Firm standards" to "Standards" and save, then the `overhead_categories` row keeps its id and its name is "Standards".
+- [ ] Given Marketing has 12 h logged, when I click Remove on Marketing, then I see "12 h are logged to Marketing…" before it is staged for removal. *(Test in 1.6/1.7 — needs time entries; see open question 11.)*
+- [x] Given I add leave type "Bereavement" and save, then an `activities` row under the `PTO` category exists, and the Holiday category is unchanged.
+- [x] Given I am a project manager, when I call the rates server action or open `/app/settings/rates`, then I get access denied and no cost rate appears in the response.
+- [x] Given firm B, when firm A's admin saves rates, then no firm B `rates` rows change (RLS test).
 
 ## Open questions
-1. *Data model addition needed:* `firm_roles.description text null` (mockup role note) and `firm_roles.is_billable boolean default true` (mockup shows "Not billable"; storing 0 bill rate alone is ambiguous).
-2. *Data model addition needed:* `overhead_categories.code text null`, unique per firm when set (`PTO`, `HOL`), so the app can tell the PTO category (holds leave types) from Holiday. The Time mockup also uses `OH` as the overhead group code (not a row).
+1. **Done in 1.1.** *Data model addition needed:* `firm_roles.description text null` (mockup role note) and `firm_roles.is_billable boolean default true` (mockup shows "Not billable"; storing 0 bill rate alone is ambiguous).
+2. **Done in 1.1.** *Data model addition needed:* `overhead_categories.code text null`, unique per firm when set (`PTO`, `HOL`), so the app can tell the PTO category (holds leave types) from Holiday. The Time mockup also uses `OH` as the overhead group code (not a row).
 3. *Data model addition needed (later):* phase checklist table (mockup counts 6/8/6/12/5/9/7 items) — confirm release.
-4. DATA_MODEL seed notes disagree with the mockup; this spec uses the mockup values. Update DATA_MODEL: phase codes `PRM`/`CO` (not "Permitting"/"Close Out"); 8 roles (not "Principal, Project Architect, Designer, Admin"); overhead categories Marketing / Administration / Professional development / Firm standards (not "Admin, Marketing, Professional development, IT"); leave as PTO + Holiday categories with Vacation/Sick/Personal activities; project activity list of 13.
+4. **Done in 1.1** (DATA_MODEL now points to this spec's seed). DATA_MODEL seed notes disagree with the mockup; this spec uses the mockup values. Update DATA_MODEL: phase codes `PRM`/`CO` (not "Permitting"/"Close Out"); 8 roles (not "Principal, Project Architect, Designer, Admin"); overhead categories Marketing / Administration / Professional development / Firm standards (not "Admin, Marketing, Professional development, IT"); leave as PTO + Holiday categories with Vacation/Sick/Personal activities; project activity list of 13.
 5. ~~`phase_templates.default_fee_type` is not in the mockup.~~ **Answered (Blake, 2026-11-02):** default phases are all `fixed` and fee type isn't shown for them; optional phases have an editable fee type.
 6. ~~Should the 2.5× flag threshold be a firm setting?~~ **Answered:** constant `MULTIPLIER_FLAG = 2.5` for now.
 7. ~~Should the overhead calculator inputs be saved?~~ **Answered:** no.
 8. ~~Overhead rate decimals?~~ **Answered:** whole percents only.
 9. ~~Block save when shares ≠ 100%?~~ **Answered:** yes, block (Open Decision #7).
-10. *Data model addition (Blake, 2026-11-02):* `phase_templates.description text null`, `phase_templates.is_optional boolean not null default false`; `project_phases.description text null` (added in 1.4 when that table is created).
+10. **phase_templates part done in 1.1; project_phases in 1.4.** *Data model addition (Blake, 2026-11-02):* `phase_templates.description text null`, `phase_templates.is_optional boolean not null default false`; `project_phases.description text null` (added in 1.4 when that table is created).
 11. Time-entry acceptance tests (approved entry keeps its rate; "12 h are logged to Marketing"; removed "Travel" still shows in reports) can't run until `time_entries` exists. 1.1 builds the hooks (the logged-hours check returns 0 until then); the tests are written in 1.6 / 1.7.

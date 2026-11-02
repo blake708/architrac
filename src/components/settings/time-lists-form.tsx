@@ -103,7 +103,7 @@ function AddControl({
           aria-describedby={error ? `${id}-error` : undefined}
           className={cn(
             controlClasses,
-            "h-7 w-[170px] border-dashed border-faint text-sm",
+            "h-7 w-[170px]! border-dashed border-faint text-sm",
           )}
         />
         <button

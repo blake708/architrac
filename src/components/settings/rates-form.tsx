@@ -77,6 +77,8 @@ export function RatesForm({ initial }: { initial: RatesView }) {
   );
   const [expenses, setExpenses] = useState("");
   const [labor, setLabor] = useState("");
+  /** "Use {calc}%" counts as an edit even if the rate ends up the same. */
+  const [calcUsed, setCalcUsed] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [banner, setBanner] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -106,6 +108,7 @@ export function RatesForm({ initial }: { initial: RatesView }) {
     ? Math.round(overheadNum * 100)
     : view.overheadBp;
   const dirty =
+    calcUsed ||
     changes.length > 0 ||
     overhead !== String(view.overheadBp / 100) ||
     includeOverhead !== view.includeOverheadDefault ||
@@ -136,6 +139,7 @@ export function RatesForm({ initial }: { initial: RatesView }) {
     setTyped(typedFrom(next));
     setOverhead(String(next.overheadBp / 100));
     setIncludeOverhead(next.includeOverheadDefault);
+    setCalcUsed(false);
     setErrors({});
     setBanner(null);
   }
@@ -463,7 +467,7 @@ export function RatesForm({ initial }: { initial: RatesView }) {
                   step={1}
                   value={overhead}
                   onChange={(e) => setOverhead(e.target.value)}
-                  className={cn(controlClasses, "num h-[var(--height-control)] w-24 text-right")}
+                  className={cn(controlClasses, "num h-[var(--height-control)] w-[96px]! text-right")}
                   {...aria("overhead")}
                 />
                 <span className="text-sm text-ink-3">% of labor cost</span>
@@ -543,7 +547,11 @@ export function RatesForm({ initial }: { initial: RatesView }) {
                 variant="primary"
                 className="h-8"
                 disabled={calcPct === null}
-                onClick={() => calcPct !== null && setOverhead(String(calcPct))}
+                onClick={() => {
+                  if (calcPct === null) return;
+                  setOverhead(String(calcPct));
+                  setCalcUsed(true);
+                }}
               >
                 {calcPct === null ? "Use —" : `Use ${calcPct}%`}
               </Button>
@@ -691,7 +699,7 @@ function MoneyCell({
           aria-label={label}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          className={cn(controlClasses, "num h-8 w-[70px] text-right text-sm")}
+          className={cn(controlClasses, "num h-8 w-[70px]! text-right text-sm")}
           {...aria}
         />
       </span>

@@ -31,6 +31,12 @@ export const FIRMS = {
     modules: ALL_MODULES,
     createdBy: "gammaOwner",
   },
+  /** For settings-work.spec.ts (phases, rates, timesheet lists), which changes them. */
+  delta: {
+    name: `${E2E_PREFIX}Delta Design`,
+    modules: [] as string[],
+    createdBy: "deltaOwner",
+  },
 } as const;
 export type FirmKey = keyof typeof FIRMS;
 
@@ -124,6 +130,18 @@ export const PEOPLE = {
     firstName: "Jo",
     lastName: "Rivers",
     memberships: [{ firm: "gamma", role: "staff" }],
+  },
+  deltaOwner: {
+    email: "architrac-e2e-downer+clerk_test@example.com",
+    firstName: "Dana",
+    lastName: "Downer",
+    memberships: [{ firm: "delta", role: "owner" }],
+  },
+  deltaPm: {
+    email: "architrac-e2e-dpm+clerk_test@example.com",
+    firstName: "Drew",
+    lastName: "Manager",
+    memberships: [{ firm: "delta", role: "project_manager" }],
   },
 } satisfies Record<string, Person>;
 export type PersonKey = keyof typeof PEOPLE;

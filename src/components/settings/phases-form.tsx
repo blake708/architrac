@@ -336,7 +336,7 @@ function PhaseRows({
             value={row.code}
             maxLength={8}
             onChange={(e) => onChange({ code: e.target.value.toUpperCase() })}
-            className={cn(smallInput, "num w-[72px] text-[12.5px]")}
+            className={cn(smallInput, "num w-[72px]! text-[12.5px]")}
             {...aria("code")}
           />
           <FieldError id={errId("code")} message={err("code")} />
@@ -358,7 +358,7 @@ function PhaseRows({
                       pct: e.target.value === "" ? Number.NaN : Number(e.target.value),
                     })
                   }
-                  className={cn(smallInput, "num w-[60px] text-right")}
+                  className={cn(smallInput, "num w-[60px]! text-right")}
                   {...aria("pct")}
                 />
                 <span className="text-muted">%</span>
@@ -382,7 +382,7 @@ function PhaseRows({
               aria-label={`${label} fee type`}
               value={row.feeType}
               onChange={(e) => onChange({ feeType: e.target.value as FeeType })}
-              className={cn(smallInput, "w-[130px] cursor-pointer")}
+              className={cn(smallInput, "w-[130px]! cursor-pointer")}
             >
               {FEE_TYPES.map((t) => (
                 <option key={t} value={t}>

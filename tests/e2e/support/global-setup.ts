@@ -70,12 +70,14 @@ export default async function globalSetup() {
         [f.name, slug, org.id],
       );
       firmIds[key] = firm.rows[0].id;
-      await asFirm(pool, firmIds[key], (c) =>
-        c.query(
+      await asFirm(pool, firmIds[key], async (c) => {
+        await c.query(
           "insert into firm_settings (firm_id, modules_enabled) values ($1, $2::text[])",
           [firmIds[key], f.modules],
-        ),
-      );
+        );
+        // Default phases, activities and leave, as createFirm does.
+        await c.query("select seed_firm_defaults($1)", [firmIds[key]]);
+      });
     }
 
     // Memberships, in Clerk and in our database.
