@@ -1,7 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useId, useMemo, useState, useTransition } from "react";
+import { useId, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -19,28 +18,103 @@ import {
 } from "@/lib/settings/time-lists";
 import { saveTimeLists } from "@/server/settings/actions";
 import { ErrorBanner } from "./error-banner";
-import { useSettingsForm } from "./form-state";
+import { blurOnEnter, useInstantSave } from "./form-state";
 
 const FORM_ID = "time-lists-form";
 
 /** Rows get a key that survives renames. */
 type KeyedPhase = OverheadPhase & { key: string };
-type State = Omit<TimeListsForm, "overheadPhases"> & { overheadPhases: KeyedPhase[] };
+type State = Omit<TimeListsForm, "overheadPhases"> & {
+  overheadPhases: KeyedPhase[];
+};
 
 let nextKey = 0;
 const withKeys = (f: TimeListsForm): State => ({
   ...f,
-  overheadPhases: f.overheadPhases.map((p) => ({ ...p, key: p.id ?? `new-${nextKey++}` })),
-});
-const strip = (s: State): TimeListsForm => ({
-  ...s,
-  overheadPhases: s.overheadPhases.map((p) => ({
-    id: p.id,
-    name: p.name,
-    activities: p.activities,
-    loggedHours: p.loggedHours,
+  overheadPhases: f.overheadPhases.map((p) => ({
+    ...p,
+    key: p.id ?? `new-${nextKey++}`,
   })),
 });
+
+/**
+ * What to send: everything except new overhead phases that have no
+ * activities yet (they wait for their first one). `keys` maps the sent
+ * phases back to rows, for error messages.
+ */
+function savable(s: State): { payload: TimeListsForm; keys: string[] } {
+  const phases = s.overheadPhases.filter(
+    (p) => !(p.id === null && p.activities.length === 0),
+  );
+  return {
+    payload: {
+      projectActivities: s.projectActivities,
+      leaveTypes: s.leaveTypes,
+      overheadPhases: phases.map((p) => ({
+        id: p.id,
+        name: p.name,
+        activities: p.activities,
+        loggedHours: p.loggedHours,
+      })),
+    },
+    keys: phases.map((p) => p.key),
+  };
+}
+
+/** The lists as a string, for "has anything changed since the last save?". */
+function fingerprint(f: TimeListsForm): string {
+  const items = (l: readonly ListItem[]) => l.map((x) => [x.id, x.name.trim()]);
+  return JSON.stringify([
+    items(f.projectActivities),
+    f.overheadPhases.map((p) => [p.id, p.name.trim(), items(p.activities)]),
+    items(f.leaveTypes),
+  ]);
+}
+
+const PHASE_ERROR = /^overheadPhases\.(\d+)(\.name)?$/;
+
+/** "overheadPhases.2" → "phase:{key}"; "overheadPhases.2.name" → "phaseName:{key}". */
+function byKey(errors: TimeListErrors, keys: string[]): TimeListErrors {
+  const out: TimeListErrors = {};
+  for (const [k, v] of Object.entries(errors)) {
+    const m = PHASE_ERROR.exec(k);
+    if (!m) out[k] = v;
+    else out[`${m[2] ? "phaseName" : "phase"}:${keys[Number(m[1])]}`] = v;
+  }
+  return out;
+}
+
+const sameName = (a: string, b: string) =>
+  a.trim().toLowerCase() === b.trim().toLowerCase();
+
+/** Give new items the ids the server just assigned (matched by name). */
+function withIds(items: readonly ListItem[], saved: readonly ListItem[]) {
+  return items.map((it) =>
+    it.id !== null
+      ? it
+      : { ...it, id: saved.find((x) => sameName(x.name, it.name))?.id ?? null },
+  );
+}
+
+/** Copy new ids from a save into the current lists (which may have moved on). */
+function reconcile(cur: State, saved: TimeListsForm): State {
+  return {
+    projectActivities: withIds(cur.projectActivities, saved.projectActivities),
+    leaveTypes: withIds(cur.leaveTypes, saved.leaveTypes),
+    overheadPhases: cur.overheadPhases.map((p) => {
+      const match = saved.overheadPhases.find((x) =>
+        p.id !== null ? x.id === p.id : sameName(x.name, p.name),
+      );
+      if (!match) return p;
+      return {
+        ...p,
+        id: match.id,
+        loggedHours: match.loggedHours,
+        activities: withIds(p.activities, match.activities),
+      };
+    }),
+  };
+}
 
 function ListError({ message }: { message?: string }) {
   if (!message) return null;
@@ -146,63 +220,81 @@ function Chips({
   );
 }
 
+const removeAt = <T,>(list: readonly T[], i: number) =>
+  list.filter((_, j) => j !== i);
+
 /**
  * Settings → Time & approvals → "Timesheet phases & activities"
- * (settings-rates-phases spec, section C).
+ * (settings-rates-phases spec, section C). Every change saves straight away
+ * (decided 2026-11-02); a new overhead phase waits for its first activity.
  */
 export function TimeListsFormView({ initial }: { initial: TimeListsForm }) {
-  const router = useRouter();
-  const [saved, setSaved] = useState(() => withKeys(initial));
-  const [form, setForm] = useState(saved);
+  const [form, setFormState] = useState(() => withKeys(initial));
   const [errors, setErrors] = useState<TimeListErrors>({});
   const [banner, setBanner] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<KeyedPhase | null>(null);
-  const [pending, startTransition] = useTransition();
+  const { save } = useInstantSave(FORM_ID);
+  /** The latest lists (saves read this when they run) and what's stored. */
+  const latest = useRef(form);
+  const savedJson = useRef(fingerprint(initial));
 
-  const dirty = useMemo(
-    () => JSON.stringify(strip(form)) !== JSON.stringify(strip(saved)),
-    [form, saved],
-  );
-  const markSaved = useSettingsForm(FORM_ID, dirty, pending);
+  function setForm(next: State) {
+    latest.current = next;
+    setFormState(next);
+  }
 
-  const removeAt = <T,>(list: readonly T[], i: number) =>
-    list.filter((_, j) => j !== i);
-  const setPhase = (key: string, patch: Partial<OverheadPhase>) =>
-    setForm((f) => ({
-      ...f,
-      overheadPhases: f.overheadPhases.map((p) => (p.key === key ? { ...p, ...patch } : p)),
-    }));
+  /** Saves run one at a time; each sends the latest lists. */
+  function queueSave() {
+    void save(async () => {
+      const { payload, keys } = savable(latest.current);
+      if (fingerprint(payload) === savedJson.current) return false;
+      const found = validateTimeLists(payload);
+      if (Object.keys(found).length > 0) {
+        setErrors(byKey(found, keys));
+        return false;
+      }
+      const result = await saveTimeLists(payload);
+      if (!result.ok) {
+        setErrors(byKey((result.fieldErrors ?? {}) as TimeListErrors, keys));
+        setBanner(result.error ?? TIME_LIST_MESSAGES.summary);
+        return false;
+      }
+      setForm(reconcile(latest.current, result.data.form));
+      // Remember what the server stored, not what's on screen: a change made
+      // while this save was running still needs its own save.
+      savedJson.current = fingerprint(result.data.form);
+      return true;
+    });
+  }
+
+  /** Apply a change and save it. */
+  function change(update: (f: State) => State) {
+    setForm(update(latest.current));
+    setErrors({});
+    setBanner(null);
+    queueSave();
+  }
+
+  const updatePhase = (
+    f: State,
+    key: string,
+    patch: Partial<OverheadPhase>,
+  ): State => ({
+    ...f,
+    overheadPhases: f.overheadPhases.map((p) =>
+      p.key === key ? { ...p, ...patch } : p,
+    ),
+  });
   const dropPhase = (key: string) =>
-    setForm((f) => ({
+    change((f) => ({
       ...f,
       overheadPhases: f.overheadPhases.filter((p) => p.key !== key),
     }));
 
+  // Enter in a name field saves it (by leaving it).
   function onSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!dirty || pending) return;
-    const data = strip(form);
-    const found = validateTimeLists(data);
-    setErrors(found);
-    if (Object.keys(found).length > 0) {
-      setBanner(TIME_LIST_MESSAGES.summary);
-      return;
-    }
-    setBanner(null);
-    startTransition(async () => {
-      const result = await saveTimeLists(data);
-      if (!result.ok) {
-        setErrors((result.fieldErrors ?? {}) as Record<string, string>);
-        setBanner(result.error ?? TIME_LIST_MESSAGES.summary);
-        return;
-      }
-      const next = withKeys(result.data.form);
-      setSaved(next);
-      setForm(next);
-      setErrors({});
-      markSaved();
-      router.refresh();
-    });
+    (document.activeElement as HTMLElement | null)?.blur();
   }
 
   const block = "border-t border-line-soft pt-5 first:border-t-0 first:pt-0";
@@ -213,6 +305,7 @@ export function TimeListsFormView({ initial }: { initial: TimeListsForm }) {
     <form
       id={FORM_ID}
       onSubmit={onSubmit}
+      onKeyDown={blurOnEnter}
       noValidate
       className="flex max-w-[960px] flex-col gap-4"
     >
@@ -234,14 +327,23 @@ export function TimeListsFormView({ initial }: { initial: TimeListsForm }) {
         <div className="flex flex-col gap-5">
           {/* 1. Project activities */}
           <div className={block} role="group" aria-labelledby="ts-project-label">
-            <div id="ts-project-label" className={labelCls}>Project activities</div>
+            <div id="ts-project-label" className={labelCls}>
+              Project activities
+            </div>
             <div className={hintCls}>Used on every project, in any phase</div>
             <div className="mt-3 flex flex-wrap items-start gap-1.5">
               <Chips
                 items={form.projectActivities}
-                onRemove={(i) =>
-                  setForm((f) => ({ ...f, projectActivities: removeAt(f.projectActivities, i) }))
-                }
+                onRemove={(i) => {
+                  if (form.projectActivities.length === 1) {
+                    setErrors({ projectActivities: TIME_LIST_MESSAGES.keepProject });
+                    return;
+                  }
+                  change((f) => ({
+                    ...f,
+                    projectActivities: removeAt(f.projectActivities, i),
+                  }));
+                }}
                 removeLabel={(n) => `Remove ${n}`}
               />
               <AddControl
@@ -249,7 +351,7 @@ export function TimeListsFormView({ initial }: { initial: TimeListsForm }) {
                 placeholder="New activity…"
                 label="New project activity"
                 onAdd={(name) =>
-                  setForm((f) => ({
+                  change((f) => ({
                     ...f,
                     projectActivities: [...f.projectActivities, { id: null, name }],
                   }))
@@ -261,15 +363,18 @@ export function TimeListsFormView({ initial }: { initial: TimeListsForm }) {
 
           {/* 2. Overhead phases */}
           <div className={block} role="group" aria-labelledby="ts-overhead-label">
-            <div id="ts-overhead-label" className={labelCls}>Overhead phases</div>
+            <div id="ts-overhead-label" className={labelCls}>
+              Overhead phases
+            </div>
             <div className={hintCls}>
               Non-billable time. Each phase has its own activities, and the
               timesheet only shows the activities for the phase picked.
             </div>
             <div className="mt-3 flex flex-col gap-2">
-              {form.overheadPhases.map((p, i) => {
-                const nameErr = errors[`overheadPhases.${i}.name`];
-                const listErr = errors[`overheadPhases.${i}`];
+              {form.overheadPhases.map((p) => {
+                const nameErr = errors[`phaseName:${p.key}`];
+                const listErr = errors[`phase:${p.key}`];
+                const draft = p.id === null && p.activities.length === 0;
                 const label = p.name.trim() || "new phase";
                 return (
                   <div
@@ -282,7 +387,10 @@ export function TimeListsFormView({ initial }: { initial: TimeListsForm }) {
                         aria-label="Overhead phase name"
                         value={p.name}
                         maxLength={80}
-                        onChange={(e) => setPhase(p.key, { name: e.target.value })}
+                        onChange={(e) =>
+                          setForm(updatePhase(latest.current, p.key, { name: e.target.value }))
+                        }
+                        onBlur={() => queueSave()}
                         aria-invalid={nameErr ? true : undefined}
                         className={cn(controlClasses, "h-8 text-sm font-semibold")}
                       />
@@ -299,7 +407,23 @@ export function TimeListsFormView({ initial }: { initial: TimeListsForm }) {
                       <div className="flex flex-wrap items-start gap-1.5">
                         <Chips
                           items={p.activities}
-                          onRemove={(j) => setPhase(p.key, { activities: removeAt(p.activities, j) })}
+                          onRemove={(j) => {
+                            if (p.id !== null && p.activities.length === 1) {
+                              setErrors({
+                                [`phase:${p.key}`]: TIME_LIST_MESSAGES.keepPhaseActivity,
+                              });
+                              return;
+                            }
+                            change((f) =>
+                              updatePhase(f, p.key, {
+                                activities: removeAt(
+                                  f.overheadPhases.find((x) => x.key === p.key)
+                                    ?.activities ?? [],
+                                  j,
+                                ),
+                              }),
+                            );
+                          }}
                           removeLabel={(n) => `Remove ${n} from ${label}`}
                         />
                         <AddControl
@@ -307,16 +431,31 @@ export function TimeListsFormView({ initial }: { initial: TimeListsForm }) {
                           placeholder="New activity…"
                           label={`New activity for ${label}`}
                           onAdd={(name) =>
-                            setPhase(p.key, { activities: [...p.activities, { id: null, name }] })
+                            change((f) =>
+                              updatePhase(f, p.key, {
+                                activities: [
+                                  ...(f.overheadPhases.find((x) => x.key === p.key)
+                                    ?.activities ?? []),
+                                  { id: null, name },
+                                ],
+                              }),
+                            )
                           }
                         />
                       </div>
                       <ListError message={listErr} />
+                      {draft && !listErr && (
+                        <p className="m-0 mt-2 text-[12.5px] text-muted">
+                          Add an activity to save this phase.
+                        </p>
+                      )}
                     </div>
                     <button
                       type="button"
                       aria-label={`Remove overhead phase ${label}`}
-                      onClick={() => (p.loggedHours > 0 ? setConfirm(p) : dropPhase(p.key))}
+                      onClick={() =>
+                        p.loggedHours > 0 ? setConfirm(p) : dropPhase(p.key)
+                      }
                       className="h-8 cursor-pointer border-0 bg-transparent px-1 text-sm text-red hover:underline focus-visible:outline-2 focus-visible:outline-blue"
                     >
                       Remove
@@ -330,11 +469,17 @@ export function TimeListsFormView({ initial }: { initial: TimeListsForm }) {
                   placeholder="New overhead phase…"
                   label="New overhead phase"
                   onAdd={(name) =>
-                    setForm((f) => ({
+                    change((f) => ({
                       ...f,
                       overheadPhases: [
                         ...f.overheadPhases,
-                        { key: `new-${nextKey++}`, id: null, name, activities: [], loggedHours: 0 },
+                        {
+                          key: `new-${nextKey++}`,
+                          id: null,
+                          name,
+                          activities: [],
+                          loggedHours: 0,
+                        },
                       ],
                     }))
                   }
@@ -345,12 +490,22 @@ export function TimeListsFormView({ initial }: { initial: TimeListsForm }) {
 
           {/* 3. Leave types */}
           <div className={block} role="group" aria-labelledby="ts-leave-label">
-            <div id="ts-leave-label" className={labelCls}>Leave types</div>
-            <div className={hintCls}>Shown under PTO. Holidays are set by the firm calendar.</div>
+            <div id="ts-leave-label" className={labelCls}>
+              Leave types
+            </div>
+            <div className={hintCls}>
+              Shown under PTO. Holidays are set by the firm calendar.
+            </div>
             <div className="mt-3 flex flex-wrap items-start gap-1.5">
               <Chips
                 items={form.leaveTypes}
-                onRemove={(i) => setForm((f) => ({ ...f, leaveTypes: removeAt(f.leaveTypes, i) }))}
+                onRemove={(i) => {
+                  if (form.leaveTypes.length === 1) {
+                    setErrors({ leaveTypes: TIME_LIST_MESSAGES.keepLeave });
+                    return;
+                  }
+                  change((f) => ({ ...f, leaveTypes: removeAt(f.leaveTypes, i) }));
+                }}
                 removeLabel={(n) => `Remove ${n}`}
               />
               <AddControl
@@ -358,7 +513,10 @@ export function TimeListsFormView({ initial }: { initial: TimeListsForm }) {
                 placeholder="New leave type…"
                 label="New leave type"
                 onAdd={(name) =>
-                  setForm((f) => ({ ...f, leaveTypes: [...f.leaveTypes, { id: null, name }] }))
+                  change((f) => ({
+                    ...f,
+                    leaveTypes: [...f.leaveTypes, { id: null, name }],
+                  }))
                 }
               />
             </div>

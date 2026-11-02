@@ -29,7 +29,7 @@ Work top to bottom. Each line is roughly one Claude Code session (see `docs/PROM
 
 - [ ] **1.1 Rates & firm setup** — firm_roles, rates, phase_templates, activities, overhead_categories; Settings screens. Spec: `settings-rates-phases.md`. Calc: rate lookup.
 - [ ] **1.2 Contacts** — companies, contacts. Spec: `contacts.md`.
-- [ ] **1.3 Team** — people directory, teams. Spec: `team.md`.
+- [ ] **1.3 Team** — people directory, teams. Spec: `team.md`. Also (Blake, 2026-11-02): someone who signs in with a pending invitation but no invite link (lost email, or a test address) is offered "Join {firm}" instead of Create firm.
 - [ ] **1.4 Projects** — list + create (phases from template). Spec: `projects-list.md`.
 - [ ] **1.5 Project detail** — overview, phases & fees, team, consultants, hours vs budget. Spec: `project-detail.md`. Calc: `distributeFee`.
 - [ ] **1.6 Timesheet** — weekly entry with phase + activity. Spec: `timesheet.md`.

@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useRef, useState } from "react";
 import { RAIL_ICONS, iconProps } from "@/components/shell/icons";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/cn";
@@ -14,7 +14,7 @@ import {
 } from "@/lib/modules";
 import { updateModules } from "@/server/settings/actions";
 import { ErrorBanner } from "./error-banner";
-import { useSettingsForm } from "./form-state";
+import { useInstantSave } from "./form-state";
 
 const FORM_ID = "modules-form";
 
@@ -59,41 +59,41 @@ export function ModulesForm({
 }) {
   const router = useRouter();
   const [on, setOn] = useState<ModuleKey[]>(() => normalizeModules(initial));
-  // Any switch counts as a change, even switching back (mockup behaviour).
-  const [dirty, setDirty] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
-  const [pending, startTransition] = useTransition();
-  const markSaved = useSettingsForm(FORM_ID, dirty, pending);
+  const { save } = useInstantSave(FORM_ID);
+  /** What the server has. The latest switch state is what gets sent. */
+  const saved = useRef(on);
+  const latest = useRef(on);
 
+  // Each switch saves straight away (decided 2026-11-02). If a save fails,
+  // the switches go back to what's saved.
   function toggle(key: ModuleKey, next: boolean) {
-    setOn((cur) =>
-      normalizeModules(next ? [...cur, key] : cur.filter((k) => k !== key)),
+    const updated = normalizeModules(
+      next ? [...latest.current, key] : latest.current.filter((k) => k !== key),
     );
-    setDirty(true);
-  }
-
-  function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!dirty || pending) return;
+    latest.current = updated;
+    setOn(updated);
     setBanner(null);
-    startTransition(async () => {
-      const result = await updateModules(on);
+    void save(async () => {
+      const result = await updateModules(latest.current);
       if (!result.ok) {
+        latest.current = saved.current;
+        setOn(saved.current);
         setBanner(
           result.error ?? "Couldn't save. Nothing was changed. Try again.",
         );
-        return;
+        return false;
       }
-      setDirty(false);
-      markSaved();
+      saved.current = result.data.modules;
       router.refresh(); // the menu rail updates without a full reload
+      return true;
     });
   }
 
   return (
     <form
       id={FORM_ID}
-      onSubmit={onSubmit}
+      onSubmit={(e) => e.preventDefault()}
       className="flex max-w-[1040px] flex-col gap-4"
     >
       {banner && <ErrorBanner message={banner} />}

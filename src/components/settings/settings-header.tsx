@@ -7,9 +7,10 @@ import { sectionForPath } from "@/lib/settings/sections";
 import { useSettingsFormStatus } from "./form-state";
 
 /**
- * The white band at the top of Settings: which section you're in, and on
- * sections with a form, its save state and the Save changes button
- * (settings-firm spec, Layout §1).
+ * The white band at the top of Settings: which section you're in and its save
+ * state. Sections that save each change straight away show "Saving…" and
+ * "✓ Saved"; Phases & fees and Roles & rates also have Save changes
+ * (settings-firm spec, Layout §1; instant saving decided 2026-11-02).
  */
 export function SettingsHeader() {
   const section = sectionForPath(usePathname());
@@ -33,8 +34,13 @@ export function SettingsHeader() {
             {section.description}
           </p>
         </div>
-        {section.hasSave && form && (
-          <div className="flex items-center gap-2.5">
+        {form && (
+          <div className="flex min-h-[var(--height-control)] items-center gap-2.5">
+            {!section.hasSave && pending && (
+              <span className="text-[12.5px] text-muted" role="status">
+                Saving…
+              </span>
+            )}
             {dirty && (
               <span className="text-[12.5px] text-orange-strong">
                 Unsaved changes
@@ -46,6 +52,7 @@ export function SettingsHeader() {
                 Saved
               </span>
             )}
+            {section.hasSave && (
             <button
               type="submit"
               form={form.formId}
@@ -60,6 +67,7 @@ export function SettingsHeader() {
             >
               {pending ? "Saving…" : "Save changes"}
             </button>
+            )}
           </div>
         )}
       </div>

@@ -28,3 +28,4 @@ Decisions Blake needs to make. Each has a recommendation; the specs currently fo
 | 15 | Show Close Out phase ($0 fee) in the snapshot? | Show it; hours on Close Out are real cost | project-snapshot | |
 | 16 | Over-hours flag on timesheets at 44 h (40 + 4): fixed or a firm setting? | Firm setting, default 44 | timesheet | |
 | 17 | Are notes required on billable time? | Optional in Release 1 | timesheet | |
+| 18 | Settings: Save button or save each change instantly? | Mixed | settings-firm, settings-rates-phases | **Mixed** (Blake, 2026-11-02): instant everywhere except Phases & fees (100% rule) and the Roles & rates table (effective date) |

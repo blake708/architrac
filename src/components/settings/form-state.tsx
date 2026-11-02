@@ -93,3 +93,46 @@ export function useSettingsForm(
   useEffect(() => () => setForm(null), [setForm]);
   return markSaved;
 }
+
+/**
+ * For sections that save each change straight away (no Save button). Saves
+ * run one at a time, in order, so a quick second change never races the
+ * first. `fn` should read the latest values when it runs (use a ref) and
+ * resolve true if the save worked.
+ */
+export function useInstantSave(formId: string) {
+  const [inFlight, setInFlight] = useState(0);
+  const chain = useRef<Promise<void>>(Promise.resolve());
+  const markSaved = useSettingsForm(formId, false, inFlight > 0);
+
+  const save = useCallback(
+    (fn: () => Promise<boolean>) => {
+      setInFlight((n) => n + 1);
+      chain.current = chain.current
+        .then(fn)
+        .then(
+          (ok) => {
+            if (ok) markSaved();
+          },
+          (err: unknown) => console.error("Instant save failed", err),
+        )
+        .finally(() => setInFlight((n) => n - 1));
+      return chain.current;
+    },
+    [markSaved],
+  );
+
+  return { saving: inFlight > 0, save };
+}
+
+/**
+ * Put on an instant-save <form> as onKeyDown: Enter in a one-line field saves
+ * it by leaving the field. (A form with no submit button ignores Enter.)
+ * Controls that handle Enter themselves call preventDefault first.
+ */
+export function blurOnEnter(e: React.KeyboardEvent<HTMLFormElement>) {
+  const t = e.target as HTMLElement;
+  if (e.key !== "Enter" || e.defaultPrevented || t.tagName !== "INPUT") return;
+  e.preventDefault();
+  t.blur();
+}

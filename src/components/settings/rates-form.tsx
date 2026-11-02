@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input, controlClasses } from "@/components/ui/field";
@@ -77,8 +77,9 @@ export function RatesForm({ initial }: { initial: RatesView }) {
   );
   const [expenses, setExpenses] = useState("");
   const [labor, setLabor] = useState("");
-  /** "Use {calc}%" counts as an edit even if the rate ends up the same. */
-  const [calcUsed, setCalcUsed] = useState(false);
+  /** Overhead saves straight away; this counts saves in flight. */
+  const [overheadSaving, setOverheadSaving] = useState(0);
+  const overheadChain = useRef<Promise<void>>(Promise.resolve());
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [banner, setBanner] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -107,17 +108,24 @@ export function RatesForm({ initial }: { initial: RatesView }) {
   const overheadBp = Number.isFinite(overheadNum)
     ? Math.round(overheadNum * 100)
     : view.overheadBp;
+  // Only the rates table waits for Save changes; overhead saves instantly.
   const dirty =
-    calcUsed ||
     changes.length > 0 ||
-    overhead !== String(view.overheadBp / 100) ||
-    includeOverhead !== view.includeOverheadDefault ||
     view.roles.some(
       (r) =>
         typed[r.id]?.bill !== String(r.billCents / 100) ||
         typed[r.id]?.cost !== String(r.costCents / 100),
     );
-  const markSaved = useSettingsForm(FORM_ID, dirty, pending);
+  const markSaved = useSettingsForm(
+    FORM_ID,
+    dirty,
+    pending || overheadSaving > 0,
+  );
+  /** The saved view, for saves that finish after a later render. */
+  const viewRef = useRef(view);
+  useEffect(() => {
+    viewRef.current = view;
+  }, [view]);
 
   const facts: RoleRateFacts[] = view.roles.map((r) => ({ ...live(r), people: r.people }));
   const blended = blendedBillRateCents(facts);
@@ -139,7 +147,6 @@ export function RatesForm({ initial }: { initial: RatesView }) {
     setTyped(typedFrom(next));
     setOverhead(String(next.overheadBp / 100));
     setIncludeOverhead(next.includeOverheadDefault);
-    setCalcUsed(false);
     setErrors({});
     setBanner(null);
   }
@@ -153,13 +160,47 @@ export function RatesForm({ initial }: { initial: RatesView }) {
       if (e.bill) out[`roles.${r.id}.bill`] = e.bill;
       if (e.cost) out[`roles.${r.id}.cost`] = e.cost;
     }
-    if (
-      !Number.isInteger(overheadNum) ||
-      overheadNum < 0 ||
-      overheadNum > OVERHEAD_MAX_PCT
-    )
-      out.overhead = RATE_MESSAGES.overhead;
     return out;
+  }
+
+  /**
+   * Save the overhead rate and switch straight away (decided 2026-11-02).
+   * Sends no role rates, so unsaved rate edits in the table stay as typed.
+   */
+  function saveOverhead(pct: number, include: boolean) {
+    if (!Number.isInteger(pct) || pct < 0 || pct > OVERHEAD_MAX_PCT) {
+      setErrors((e) => ({ ...e, overhead: RATE_MESSAGES.overhead }));
+      return;
+    }
+    setErrors((e) => {
+      const rest = { ...e };
+      delete rest.overhead;
+      return rest;
+    });
+    const v = viewRef.current;
+    if (pct * 100 === v.overheadBp && include === v.includeOverheadDefault) return;
+    setOverheadSaving((n) => n + 1);
+    overheadChain.current = overheadChain.current
+      .then(async () => {
+        const result = await saveRates({
+          roles: [],
+          effectiveFrom: null,
+          overheadPct: pct,
+          includeOverheadDefault: include,
+        });
+        const saved = viewRef.current;
+        if (!result.ok) {
+          setOverhead(String(saved.overheadBp / 100));
+          setIncludeOverhead(saved.includeOverheadDefault);
+          setBanner(result.error ?? RATE_MESSAGES.summary);
+          return;
+        }
+        const { overheadBp, includeOverheadDefault } = result.data.view;
+        setView((cur) => ({ ...cur, overheadBp, includeOverheadDefault }));
+        markSaved();
+      })
+      .catch((err: unknown) => console.error("saveOverhead failed", err))
+      .finally(() => setOverheadSaving((n) => n - 1));
   }
 
   /** The earliest allowed "apply from" date, and whose rate sets it. */
@@ -181,8 +222,9 @@ export function RatesForm({ initial }: { initial: RatesView }) {
           costDollars: toNum(typed[r.id].cost),
         })),
         effectiveFrom,
-        overheadPct: overheadNum,
-        includeOverheadDefault: includeOverhead,
+        // Overhead is saved on its own; send what's stored.
+        overheadPct: view.overheadBp / 100,
+        includeOverheadDefault: view.includeOverheadDefault,
       });
       if (!result.ok) {
         const fe = (result.fieldErrors ?? {}) as Record<string, string>;
@@ -467,6 +509,14 @@ export function RatesForm({ initial }: { initial: RatesView }) {
                   step={1}
                   value={overhead}
                   onChange={(e) => setOverhead(e.target.value)}
+                  onBlur={(e) => saveOverhead(toNum(e.target.value), includeOverhead)}
+                  onKeyDown={(e) => {
+                    // Enter saves this field, not the rates table.
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      e.currentTarget.blur();
+                    }
+                  }}
                   className={cn(controlClasses, "num h-[var(--height-control)] w-[96px]! text-right")}
                   {...aria("overhead")}
                 />
@@ -501,7 +551,13 @@ export function RatesForm({ initial }: { initial: RatesView }) {
             <div className="flex items-start gap-3">
               <Switch
                 checked={includeOverhead}
-                onCheckedChange={setIncludeOverhead}
+                onCheckedChange={(next) => {
+                  setIncludeOverhead(next);
+                  saveOverhead(
+                    Number.isInteger(overheadNum) ? overheadNum : view.overheadBp / 100,
+                    next,
+                  );
+                }}
                 aria-label="Include overhead in project profit by default"
               />
               <div>
@@ -550,7 +606,7 @@ export function RatesForm({ initial }: { initial: RatesView }) {
                 onClick={() => {
                   if (calcPct === null) return;
                   setOverhead(String(calcPct));
-                  setCalcUsed(true);
+                  saveOverhead(calcPct, includeOverhead);
                 }}
               >
                 {calcPct === null ? "Use —" : `Use ${calcPct}%`}

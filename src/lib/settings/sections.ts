@@ -9,7 +9,11 @@ export type SettingsSection = {
   href: string;
   title: string;
   description: string;
-  /** Has a Save changes button (Users saves each change straight away). */
+  /**
+   * Has a Save changes button. The others save each change straight away
+   * (decided 2026-11-02): only Phases & fees (100% rule) and Roles & rates
+   * (effective date) keep one.
+   */
   hasSave: boolean;
 };
 
@@ -22,7 +26,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     title: "Firm profile",
     description:
       "Your firm's name, address and license details. These appear on letterhead, invoices, proposals and the client portal.",
-    hasSave: true,
+    hasSave: false,
   },
   {
     key: "users",
@@ -62,7 +66,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     title: "Time & approvals",
     description:
       "When timesheets are due, how hours are entered, and who approves them.",
-    hasSave: true,
+    hasSave: false,
   },
   {
     key: "modules",
@@ -72,7 +76,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     title: "Modules & plan",
     description:
       "Turn modules on or off for the whole firm. A module that's off is hidden from the menu.",
-    hasSave: true,
+    hasSave: false,
   },
 ];
 
