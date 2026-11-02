@@ -5,7 +5,7 @@
 | **Release** | 1 |
 | **Route** | `/app/contacts` (tab, filter, search and open drawer live in the URL: `?tab=companies\|people&kind=client&q=palm&company=<id>` or `&contact=<id>`) |
 | **Mockup** | `mockup/Contacts.dc.html` |
-| **Status** | Building (1.2) |
+| **Status** | Built (1.2) |
 
 ## Purpose
 The firm's address book. Everyone uses it to find a client, consultant, contractor, agency or vendor and the people who work there; owners/admins also use it to spot clients with open balances or no billing contact (invoices can't be emailed without one).
@@ -59,7 +59,7 @@ TypePill / badge colours (fill, text): client `#E4EBF8 #1E3F7A`; consultant `#EF
 ## Actions
 | Action | What happens | Validation | Permission |
 |---|---|---|---|
-| Search | Server filters as user types (debounce 250 ms), updates `?q=` | trims whitespace; case-insensitive | all |
+| Search | Filters as user types (debounce 250 ms), updates `?q=`. *(Built: all rows are loaded (≤ 1,000, rule 11), so filtering runs in the browser.)* | trims whitespace; case-insensitive | all |
 | Filter by kind | Sets `?kind=`; applies to both tabs (people via their company's kind) | | all |
 | Switch tab | Sets `?tab=`, clears `company`/`contact` param | | all |
 | Open row | Sets `?company=<id>` or `?contact=<id>`; drawer opens; row highlighted | | all |
@@ -112,29 +112,31 @@ All writes are server actions that set `firm_id` from the session, `created_by`,
 - **QuickBooks customer sync** (push/pull) — handled by the invoicing/integrations spec; this screen only displays link status.
 
 ## Acceptance tests
-- [ ] Given the seed firm, when an owner opens `/app/contacts`, then the Companies tab is active, rows are sorted by name, and KPI tiles read Companies 20, People 24, Missing billing contact 2.
-- [ ] Given a staff user, when they open `/app/contacts`, then the "Billed / fees" column and "Clients with open balances" tile are not rendered and the `New company`, `New contact` buttons are absent.
-- [ ] Given a PM, when the contacts list response is inspected (network/server test), then no billed, open or fee fields are present in the payload.
-- [ ] Given a company in firm A, when a user of firm B requests `/app/contacts?company=<id>`, then the drawer shows "doesn't exist" and no data from firm A is returned.
-- [ ] Given a PM, when they call the create-company server action, then it succeeds; given staff, then it returns 403 and no row is written.
-- [ ] Given the Companies tab, when the user types "palm", then after 250 ms only "Palmetto Medical Properties" is shown and the note reads "1 companies shown" and the URL contains `q=palm`.
-- [ ] Given the People tab, when the user types "billing", then contacts tagged "Billing" are shown.
-- [ ] Given kind filter "Consultants", when the user switches to People, then only contacts at consultant companies are listed and the filter stays selected.
-- [ ] Given a contact with no company, when kind filter is "Clients", then that contact is not listed; when "All", then it is.
-- [ ] Given Palmetto has invoices totalling $37,200 (statuses paid and sent) with $11,160 unpaid, when an owner views the row, then Billed shows "$37,200" and "$11,160 open" in orange.
-- [ ] Given a client whose invoices are all `paid`, then the note reads "Paid up"; given a `draft` or `void` invoice, then it is not counted in billed.
-- [ ] Given Coastal Federal Credit Union has `billing_contact_id` null, then its Billing cell shows "◆ No billing contact" in orange and it is counted in the Missing billing contact KPI.
-- [ ] Given a client's billing contact has an empty email, then the client is counted as missing a billing contact.
-- [ ] Given Coastal MEP Engineers is consultant on two projects with fees $28,500 and $13,800, then the row shows "$42,300", Projects "2", and the drawer lists both projects with discipline "MEP".
-- [ ] Given a row is clicked, then the drawer opens, the row background is `#EAF0FB`, and the URL has `company=<id>`; when the page is reloaded with that URL, then the same drawer is open.
-- [ ] Given a client company drawer, when "New project" is clicked, then the browser navigates to `/app/projects/new?client=<id>`.
-- [ ] Given the Contact form with company = a client and "Billing contact" checked, when saved, then `companies.billing_contact_id` equals the new contact id and two `activity_log` rows are written.
-- [ ] Given the Company form, when postal code "2940" is entered, then Save is disabled with "Enter a 5-digit ZIP or ZIP+4".
-- [ ] Given an existing company "Oakmont Health", when a user creates "oakmont health ", then a duplicate warning shows and Save still works.
-- [ ] Given a contact is a company's billing contact, when an owner archives it, then the action is blocked with "Choose another billing contact for {company} first."
-- [ ] Given a company is client on an active project, when an owner archives it, then the action is blocked; given it is client only on closed projects, then it is archived and disappears from the list.
-- [ ] Given a PM, when they open a drawer, then no Archive control is shown.
-- [ ] Given a search with no matches, then the empty message and "Clear search and filters" are shown, and clicking it restores the full list.
+
+Tests: `src/lib/calc/contacts.test.ts`, `src/lib/contacts/display.test.ts`, `src/server/contacts/contacts.db.test.ts`, `src/db/tenant.db.test.ts`, `tests/e2e/contacts.spec.ts`.
+- [ ] Given the seed firm, when an owner opens `/app/contacts`, then the Companies tab is active, rows are sorted by name, and KPI tiles read Companies 20, People 24, Missing billing contact 2. *(Seed data comes with 1.11; sorting and KPIs tested in contacts.db.test.ts / contacts.spec.ts.)*
+- [x] Given a staff user, when they open `/app/contacts`, then the "Billed / fees" column and "Clients with open balances" tile are not rendered and the `New company`, `New contact` buttons are absent.
+- [x] Given a PM, when the contacts list response is inspected (network/server test), then no billed, open or fee fields are present in the payload.
+- [x] Given a company in firm A, when a user of firm B requests `/app/contacts?company=<id>`, then the drawer shows "doesn't exist" and no data from firm A is returned.
+- [x] Given a PM, when they call the create-company server action, then it succeeds; given staff, then it returns 403 and no row is written.
+- [x] Given the Companies tab, when the user types "palm", then after 250 ms only "Palmetto Medical Properties" is shown and the note reads "1 companies shown" and the URL contains `q=palm`.
+- [x] Given the People tab, when the user types "billing", then contacts tagged "Billing" are shown.
+- [x] Given kind filter "Consultants", when the user switches to People, then only contacts at consultant companies are listed and the filter stays selected.
+- [x] Given a contact with no company, when kind filter is "Clients", then that contact is not listed; when "All", then it is.
+- [ ] Given Palmetto has invoices totalling $37,200 (statuses paid and sent) with $11,160 unpaid, when an owner views the row, then Billed shows "$37,200" and "$11,160 open" in orange. *(Needs invoices, 1.8; the math is tested in src/lib/calc/contacts.test.ts.)*
+- [ ] Given a client whose invoices are all `paid`, then the note reads "Paid up"; given a `draft` or `void` invoice, then it is not counted in billed. *(1.8; math tested.)*
+- [x] Given Coastal Federal Credit Union has `billing_contact_id` null, then its Billing cell shows "◆ No billing contact" in orange and it is counted in the Missing billing contact KPI.
+- [x] Given a client's billing contact has an empty email, then the client is counted as missing a billing contact.
+- [ ] Given Coastal MEP Engineers is consultant on two projects with fees $28,500 and $13,800, then the row shows "$42,300", Projects "2", and the drawer lists both projects with discipline "MEP". *(Needs projects and consultants, 1.4–1.5; fee math tested.)*
+- [x] Given a row is clicked, then the drawer opens, the row background is `#EAF0FB`, and the URL has `company=<id>`; when the page is reloaded with that URL, then the same drawer is open.
+- [x] Given a client company drawer, when "New project" is clicked, then the browser navigates to `/app/projects/new?client=<id>`.
+- [x] Given the Contact form with company = a client and "Billing contact" checked, when saved, then `companies.billing_contact_id` equals the new contact id and two `activity_log` rows are written.
+- [x] Given the Company form, when postal code "2940" is entered, then Save is disabled with "Enter a 5-digit ZIP or ZIP+4".
+- [x] Given an existing company "Oakmont Health", when a user creates "oakmont health ", then a duplicate warning shows and Save still works.
+- [x] Given a contact is a company's billing contact, when an owner archives it, then the action is blocked with "Choose another billing contact for {company} first."
+- [ ] Given a company is client on an active project, when an owner archives it, then the action is blocked; given it is client only on closed projects, then it is archived and disappears from the list. *(The open-project block needs projects, 1.4; archiving itself is tested.)*
+- [x] Given a PM, when they open a drawer, then no Archive control is shown.
+- [x] Given a search with no matches, then the empty message and "Clear search and filters" are shown, and clicking it restores the full list.
 
 ## Open questions
 10. *(Added Blake, 2026-11-02)* Until invoices (1.8) exist, a client with nothing billed shows "—" in Billed / fees, not "Paid up". Project counts and lists fill in from 1.4 (projects) and 1.5 (consultants).

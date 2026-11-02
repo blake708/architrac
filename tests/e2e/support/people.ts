@@ -43,6 +43,12 @@ export const FIRMS = {
     modules: [] as string[],
     createdBy: "epsOwner",
   },
+  /** For contacts.spec.ts (Contacts page), which adds and archives contacts. */
+  zeta: {
+    name: `${E2E_PREFIX}Zeta Studio`,
+    modules: [] as string[],
+    createdBy: "zetaOwner",
+  },
 } as const;
 export type FirmKey = keyof typeof FIRMS;
 
@@ -166,6 +172,24 @@ export const PEOPLE = {
     firstName: "Kim",
     lastName: "Lee",
     memberships: [{ firm: "epsilon", role: "staff" }],
+  },
+  zetaOwner: {
+    email: "architrac-e2e-zowner+clerk_test@example.com",
+    firstName: "Zoe",
+    lastName: "Owner",
+    memberships: [{ firm: "zeta", role: "owner" }],
+  },
+  zetaPm: {
+    email: "architrac-e2e-zpm+clerk_test@example.com",
+    firstName: "Zack",
+    lastName: "Manager",
+    memberships: [{ firm: "zeta", role: "project_manager" }],
+  },
+  zetaStaff: {
+    email: "architrac-e2e-zstaff+clerk_test@example.com",
+    firstName: "Zia",
+    lastName: "Staff",
+    memberships: [{ firm: "zeta", role: "staff" }],
   },
 } satisfies Record<string, Person>;
 export type PersonKey = keyof typeof PEOPLE;

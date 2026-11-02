@@ -201,15 +201,28 @@ New firms get the default phases, activities and categories from the database fu
 |---|---|---|
 | id, firm_id | | |
 | name | text | |
-| kind | enum `company_kind` | `client`, `consultant`, `contractor`, `vendor`, `other` |
-| phone, website | text | |
+| kind | enum `company_kind` | `client`, `consultant`, `contractor`, `agency` (1.2), `vendor`, `other` |
+| description | text null | "Medical developer" (1.2) |
+| phone, website | text | website stored with its scheme ("https://…") |
 | address_line1, address_line2, city, state, postal_code | text | |
-| billing_contact_id | uuid fk → contacts null | |
+| primary_contact_id | uuid null | main contact; same-firm FK → contacts (1.2) |
+| billing_contact_id | uuid null | same-firm FK → contacts; clients only |
 | quickbooks_customer_id | text null | sync key |
 | notes | text | |
+| archived_at | timestamptz null | |
 
 ### contacts
-| id, firm_id | company_id fk null | first_name | last_name | title | email | phone | mobile | tags text[] | notes |
+| column | type | notes |
+|---|---|---|
+| id, firm_id | | |
+| company_id | uuid null | same-firm FK → companies |
+| first_name | text | required |
+| last_name | text | default "" |
+| designations | text null | "PE", "LEED AP": shown after the name (1.2) |
+| title, email, phone, mobile | text null | email stored lower-case |
+| tags | text[] | default '{}'; no duplicates (ignoring case) |
+| notes | text null | |
+| archived_at | timestamptz null | |
 
 ### projects
 | column | type | notes |
@@ -360,10 +373,7 @@ The screen specs found fields the model above doesn't have yet. **Add each one w
 |---|---|---|---|
 | 0.5 | users | preferences jsonb (menu rail collapsed, etc.) | Rail state follows the person across devices (app-shell) |
 | 1.4 | project_phases | description text null, copied from the template | (settings-rates-phases rule 10a, projects-list) |
-| 1.2 | company_kind enum | add `agency` | Permitting agencies, review boards (contacts) |
-| 1.2 | companies | description, primary_contact_id | (contacts) |
-| 1.2 | contacts | designations text ("PE, LEED AP") | (contacts) |
-| 1.2 | **project_contacts** (new) | id, firm_id, project_id, contact_id, role text | Contractors/agencies/vendors linked to projects (contacts) |
+| 1.4–1.5 | **project_contacts** (new) | id, firm_id, project_id, company_id, contact_id null, role text | Contractors/agencies/vendors linked to projects (contacts; moved from 1.2 because it needs `projects`, Blake, 2026-11-02) |
 | 1.4 | projects | scope_kind enum (`ground_up`,`tenant_upfit`,`shell`), closed_on date, stories, building_height_ft, occupancy_group, construction_type, sprinklered, delivery_method, design_review_board; address columns named as in `companies` | (projects-list, project-detail) |
 | 1.5 | project_phases | is_additional_service boolean, planned_cost_rate_cents bigint null | Additional-service phases; projected profit (project-detail, timesheet) |
 | 1.5 | consultants | contact_id | (project-detail) |
