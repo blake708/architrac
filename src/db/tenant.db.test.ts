@@ -9,6 +9,8 @@ import {
   companies,
   consultants,
   contacts,
+  phaseTemplateRoles,
+  projectPhaseRoles,
   projectContacts,
   projectMembers,
   projectPhases,
@@ -500,6 +502,50 @@ const cases: TableCase[] = [
     insertForB: (db) =>
       db.insert(consultants).values({ firmId: B.firmId, projectId: B.projectId, companyId: B.companyId, discipline: "Sneaky" }),
   },
+  {
+    table: "phase_template_roles",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: phaseTemplateRoles.firmId })
+        .from(phaseTemplateRoles)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) =>
+      db
+        .update(phaseTemplateRoles)
+        .set({ shareBp: 1 })
+        .where(eq(phaseTemplateRoles.id, B.templateRoleId))
+        .returning(),
+    readB: (db) =>
+      db
+        .select({ v: phaseTemplateRoles.shareBp })
+        .from(phaseTemplateRoles)
+        .where(eq(phaseTemplateRoles.id, B.templateRoleId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db.insert(phaseTemplateRoles).values({ firmId: B.firmId, phaseTemplateId: B.phaseTemplateId, firmRoleId: B.firmRoleId, shareBp: 1 }),
+  },
+  {
+    table: "project_phase_roles",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: projectPhaseRoles.firmId })
+        .from(projectPhaseRoles)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) =>
+      db
+        .update(projectPhaseRoles)
+        .set({ shareBp: 1 })
+        .where(eq(projectPhaseRoles.id, B.phaseRoleId))
+        .returning(),
+    readB: (db) =>
+      db
+        .select({ v: projectPhaseRoles.shareBp })
+        .from(projectPhaseRoles)
+        .where(eq(projectPhaseRoles.id, B.phaseRoleId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db.insert(projectPhaseRoles).values({ firmId: B.firmId, projectPhaseId: B.projectPhaseId, firmRoleId: B.firmRoleId, shareBp: 1 }),
+  },
 ];
 
 describe("database role", () => {
@@ -614,6 +660,18 @@ describe("other guards", () => {
       { ...base, projectId: A.projectId, companyId: A.companyId, contactId: B.contactId },
     ])
       await expectDbError(withFirm(A.firmId, (db) => db.insert(consultants).values(v)), /foreign key/);
+  });
+
+  it("a role mix can't use another firm's role, template or phase", async () => {
+    for (const q of [
+      (db: Parameters<Parameters<typeof withFirm>[1]>[0]) =>
+        db.insert(phaseTemplateRoles).values({ firmId: A.firmId, phaseTemplateId: A.phaseTemplateId, firmRoleId: B.firmRoleId, shareBp: 1 }),
+      (db: Parameters<Parameters<typeof withFirm>[1]>[0]) =>
+        db.insert(phaseTemplateRoles).values({ firmId: A.firmId, phaseTemplateId: B.phaseTemplateId, firmRoleId: A.firmRoleId, shareBp: 1 }),
+      (db: Parameters<Parameters<typeof withFirm>[1]>[0]) =>
+        db.insert(projectPhaseRoles).values({ firmId: A.firmId, projectPhaseId: B.projectPhaseId, firmRoleId: A.firmRoleId, shareBp: 1 }),
+    ])
+      await expectDbError(withFirm(A.firmId, q), /foreign key/);
   });
 
   it("a contact can't belong to another firm's company", async () => {
