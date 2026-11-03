@@ -112,6 +112,12 @@ A single page with two Cards and a sticky footer holding **Cancel** (secondary, 
 | Budget hours | Number input, step 0.25. Auto-filled by Rule 7. Typing marks the row *hours-edited*. |
 
 - Footer row: Σ Fee and Σ Budget hours over the included rows.
+
+*(Changed by Blake, 2026-11-03.)*
+- **Share is editable.** Typing a % sets that phase's fee to % × total. Typing a fee shows its new %. Either edit marks the row (blue dot). A %-edited phase keeps its % when the total changes; a fee-edited phase keeps its dollars. Unedited checked phases rebalance by template share, so checked phases total **100%** (footer shows Σ %).
+- **Unchecked and hourly phases are 0% and $0.** Hourly phases are billed by the hour: their fee box is disabled and their budget hours are typed in. The server refuses an hourly phase with a fee.
+- **Budget hours = phase fee ÷ the firm's blended bill rate** (settings-rates-phases rule 3), rounded to the quarter hour (`hoursFromFee`). Typing a phase's hours overrides it (blue dot). **Total budget hours** is a read-only sum (no longer typed). Without rates set up, hours are typed and a note points to Settings → Rates & roles. Only the blended *bill* rate is sent to the page; PMs may see bill rates (OPEN_DECISIONS #4), never cost.
+- **Coming in 1.5:** each phase gets a role mix (e.g. 20% Principal, 30% PA, 50% Designer) with defaults on the phase templates, edited in a side panel; hours then come from each role's own bill rate.
 - Link button **Reset to template split**: clears every edited flag and recalculates.
 - Help text under the table, by fee type:
   - Fixed: "Fixed: the fee for the phase."

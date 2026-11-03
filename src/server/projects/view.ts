@@ -24,7 +24,9 @@ import {
   projectFee,
   projectHealth,
 } from "@/lib/calc/projects";
+import { blendedBillRateCents } from "@/lib/calc/rates";
 import { todayIn } from "@/lib/format";
+import { loadRates } from "@/server/settings/rates";
 import { initials } from "@/lib/initials";
 import type { ScopeKind } from "@/lib/projects/form";
 
@@ -258,6 +260,8 @@ export type NewProjectOptions = {
   pms: Person[];
   types: string[];
   templates: TemplateRow[];
+  /** Firm-wide blended bill rate for budget hours; null if rates aren't set up. Bill only, never cost. */
+  blendedBillRateCents: number | null;
 };
 
 /** Active people in the firm with their app role and principal flag. */
@@ -293,7 +297,11 @@ export function pmChoices<T extends { appRole: AppRole }>(people: T[]): T[] {
   return people.filter((p) => p.appRole !== "staff");
 }
 
-export async function loadNewProjectOptions(db: TenantDb, timezone: string): Promise<NewProjectOptions> {
+export async function loadNewProjectOptions(
+  db: TenantDb,
+  firmId: string,
+  timezone: string,
+): Promise<NewProjectOptions> {
   const [numbers, clientRows, contactRows, people, typeRows, templates] = await Promise.all([
     db.select({ n: projects.number }).from(projects),
     db
@@ -326,7 +334,14 @@ export async function loadNewProjectOptions(db: TenantDb, timezone: string): Pro
       .orderBy(asc(phaseTemplates.sortOrder)),
   ]);
 
-  const year = Number(todayIn(timezone).slice(0, 4));
+  const today = todayIn(timezone);
+  const year = Number(today.slice(0, 4));
+  // Only the single blended bill rate leaves this function (Blake,
+  // 2026-11-03: PMs may see bill rates; cost stays owner/admin only).
+  const rateView = await loadRates(db, firmId, today);
+  const blended = blendedBillRateCents(
+    rateView.roles.map((r) => ({ billCents: r.billCents, costCents: r.costCents, people: r.people })),
+  );
   const contactsByClient: NewProjectOptions["contactsByClient"] = {};
   for (const c of contactRows) {
     if (!c.companyId) continue;
@@ -353,6 +368,7 @@ export async function loadNewProjectOptions(db: TenantDb, timezone: string): Pro
     pms: pmChoices(people).map(strip),
     types: typeRows.map((r) => r.t),
     templates: templates.map((t) => ({ ...t, feeType: t.feeType as FeeType })),
+    blendedBillRateCents: blended,
   };
 }
 

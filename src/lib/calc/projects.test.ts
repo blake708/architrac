@@ -4,6 +4,8 @@ import {
   billedPct,
   distributeFee,
   distributeHours,
+  hoursFromFee,
+  planPhaseFees,
   nextProjectNumber,
   phaseText,
   projectBilled,
@@ -170,5 +172,64 @@ describe("rule 7: hours split in quarter hours", () => {
     const v = values(distributeHours(10, rows(), new Set()));
     for (const h of v) expect(h * 4).toBe(Math.round(h * 4));
     expect(v.reduce((a, b) => a + b)).toBe(10);
+  });
+});
+
+describe("phase fees from shares (Blake, 2026-11-03)", () => {
+  const plan = (edits: Record<string, import("./projects").PhaseEdit> = {}, over: Partial<Record<string, Partial<import("./projects").PlanRow>>> = {}) =>
+    CODES.map((id, i) => ({ id, include: true, feeType: "fixed" as const, weightBp: SHARES[i], edit: edits[id] ?? null, ...over[id] }));
+
+  it("no edits: the template split, shares add to 100%", () => {
+    const p = planPhaseFees(18_600_000, plan());
+    expect(CODES.map((c) => p.fees[c])).toEqual([930_000, 2_790_000, 4_650_000, 6_510_000, 930_000, 2_790_000, 0]);
+    expect(CODES.map((c) => p.shares[c])).toEqual(SHARES);
+    expect(p.sumCents).toBe(18_600_000);
+  });
+
+  it("a % edit sets that phase; the others rebalance to 100%", () => {
+    const p = planPhaseFees(18_600_000, plan({ CA: { kind: "pct", bp: 2000 } }));
+    expect(p.fees.CA).toBe(3_720_000);
+    expect(p.shares.CA).toBe(2000);
+    expect(p.sumCents).toBe(18_600_000);
+  });
+
+  it("a fee edit shows its new %", () => {
+    const p = planPhaseFees(18_600_000, plan({ CA: { kind: "fee", cents: 2_000_000 } }));
+    expect(p.fees.CA).toBe(2_000_000);
+    expect(p.shares.CA).toBe(1075); // 10.75%
+    expect(p.fees.CD).toBe(6_835_297); // example C
+  });
+
+  it("a % edit follows the total; a fee edit keeps its dollars", () => {
+    const p = planPhaseFees(10_000_000, plan({ PD: { kind: "pct", bp: 1000 }, SD: { kind: "fee", cents: 500_000 } }));
+    expect(p.fees.PD).toBe(1_000_000);
+    expect(p.fees.SD).toBe(500_000);
+    expect(p.sumCents).toBe(10_000_000);
+  });
+
+  it("unchecked and hourly phases are 0% and $0; the rest still make 100%", () => {
+    const p = planPhaseFees(18_600_000, plan({}, { PD: { include: false }, SD: { feeType: "hourly" } }));
+    expect([p.fees.PD, p.shares.PD, p.fees.SD, p.shares.SD]).toEqual([0, 0, 0, 0]);
+    expect(p.sumCents).toBe(18_600_000);
+  });
+
+  it("edits past the total are flagged", () => {
+    const p = planPhaseFees(100, plan({ CA: { kind: "pct", bp: 15000 } }));
+    expect(p.over).toBe(true);
+    expect(p.fees.CA).toBe(150);
+  });
+
+  it("no total: everything is $0 and 0%", () => {
+    const p = planPhaseFees(0, plan());
+    expect(p.sumCents).toBe(0);
+    expect(p.shares.CD).toBe(0);
+  });
+});
+
+describe("hours from fee", () => {
+  it("fee ÷ blended bill rate, to the quarter hour", () => {
+    expect(hoursFromFee(2_790_000, 15_000)).toBe(186);
+    expect(hoursFromFee(2_790_000, 12_583)).toBe(221.75); // 221.72 → 221.75
+    expect(hoursFromFee(100, null)).toBeNull();
   });
 });

@@ -23,7 +23,7 @@ export const FEE_TYPE_LABELS: Record<FeeType, string> = {
 
 export const FEE_TYPE_HELP: Record<FeeType, string> = {
   fixed: "Fixed: the fee for the phase.",
-  hourly: "Hourly: an estimate; may be $0.",
+  hourly: "Hourly: billed by the hour, so 0% of the fee; type its budget hours.",
   nte: "Not-to-exceed: the cap.",
 };
 
@@ -61,6 +61,7 @@ export const PROJECT_MESSAGES = {
   hours: "Use quarter hours (0.25)",
   noPhases: "Include at least one phase",
   nteCap: "Not-to-exceed phases need a cap",
+  hourlyFee: "Hourly phases have no fixed fee; they're billed by the hour",
   feeSum: (phases: number, total: number) =>
     `Phase fees add up to ${moneyExact(phases)}; total fee is ${moneyExact(total)}`,
   hoursSum: (phases: number, total: number) =>
@@ -174,6 +175,7 @@ export function phaseProblem(v: {
   const units = v.phases.reduce((n, p) => n + Math.round(p.budgetHours * 4), 0);
   if (units !== Math.round(v.totalBudgetHours * 4))
     return PROJECT_MESSAGES.hoursSum(units / 4, v.totalBudgetHours);
+  if (v.phases.some((p) => p.feeType === "hourly" && p.feeCents !== 0)) return PROJECT_MESSAGES.hourlyFee;
   if (v.phases.some((p) => p.feeType === "nte" && p.feeCents <= 0)) return PROJECT_MESSAGES.nteCap;
   return null;
 }

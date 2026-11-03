@@ -233,3 +233,72 @@ export function distributeHours(
   for (const [k, v] of Object.entries(r.amounts)) amounts[k] = v / 4;
   return { ok: true, amounts };
 }
+
+// ---------------------------------------------------------------------------
+// New project: phase fees from shares (Blake, 2026-11-03)
+
+export type PhaseEdit = { kind: "fee"; cents: number } | { kind: "pct"; bp: number } | null;
+
+export type PlanRow = {
+  id: string;
+  include: boolean;
+  feeType: FeeType;
+  /** Template share, used to rebalance phases nobody has edited. */
+  weightBp: number;
+  edit: PhaseEdit;
+};
+
+export type FeePlan = {
+  fees: Record<string, number>;
+  /** Each row's share of the total, in basis points (0 when there's no total). */
+  shares: Record<string, number>;
+  /** Σ fees of rows in the split. */
+  sumCents: number;
+  /** Edited rows alone are more than the total. */
+  over: boolean;
+};
+
+/** Hourly phases and unchecked phases are outside the split: 0%, $0. */
+export const inSplit = (r: Pick<PlanRow, "include" | "feeType">) => r.include && r.feeType !== "hourly";
+
+/**
+ * Split the total fee over the checked fixed and not-to-exceed phases.
+ * A %-edited phase gets that share of the total; a fee-edited phase keeps
+ * its dollars; the rest share what's left by template share (rule 6), so
+ * the phases add up to 100% unless every phase was edited.
+ */
+export function planPhaseFees(totalCents: number, rows: readonly PlanRow[]): FeePlan {
+  const fees: Record<string, number> = {};
+  const shares: Record<string, number> = {};
+  for (const r of rows) {
+    fees[r.id] = 0;
+    shares[r.id] = 0;
+  }
+  const split = rows.filter(inSplit);
+  const amountOf = (r: PlanRow) =>
+    r.edit?.kind === "fee" ? r.edit.cents : r.edit?.kind === "pct" ? roundDiv(totalCents * r.edit.bp, 10_000) : 0;
+  const result = distributeFee(
+    totalCents,
+    split.map((r) => ({ id: r.id, weightBp: r.weightBp, amount: amountOf(r) })),
+    new Set(split.filter((r) => r.edit).map((r) => r.id)),
+  );
+  let over = false;
+  if (result.ok) Object.assign(fees, result.amounts);
+  else {
+    over = true;
+    for (const r of split) fees[r.id] = r.edit ? amountOf(r) : 0;
+  }
+  let sumCents = 0;
+  for (const r of split) {
+    sumCents += fees[r.id];
+    shares[r.id] =
+      r.edit?.kind === "pct" ? r.edit.bp : totalCents > 0 ? roundDiv(fees[r.id] * 10_000, totalCents) : 0;
+  }
+  return { fees, shares, sumCents, over };
+}
+
+/** Budget hours from a fee at a bill rate, to the nearest quarter hour. */
+export function hoursFromFee(feeCents: number, rateCents: number | null): number | null {
+  if (!rateCents || rateCents <= 0) return null;
+  return roundDiv(feeCents * 4, rateCents) / 4;
+}

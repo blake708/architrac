@@ -40,6 +40,15 @@ test.beforeAll(async () => {
   if (n > 0) return;
   const owner = membership(PEOPLE.etaOwner.email);
   await query(`
+    with r as (
+      insert into firm_roles (firm_id, name, sort_order) values (:firm, 'Architect', 1) returning id
+    ), x as (
+      insert into rates (firm_id, firm_role_id, bill_rate_cents, cost_rate_cents, effective_from)
+      select :firm, id, 15000, 6000, date '2026-01-01' from r returning firm_role_id
+    )
+    update memberships set firm_role_id = (select firm_role_id from x) where id = ${owner}
+  `);
+  await query(`
     with c as (
       insert into companies (firm_id, name, kind) values (:firm, 'Palmetto Medical Properties', 'client') returning id
     ), k as (
@@ -68,6 +77,7 @@ test.beforeAll(async () => {
 const row = (page: Page, number: string) => page.locator(`tr[data-project="${number}"]`);
 const phaseRow = (page: Page, code: string) => page.locator(`tr[data-phase="${code}"]`);
 const fee = (page: Page, code: string) => phaseRow(page, code).getByLabel(/ fee$/);
+const share = (page: Page, code: string) => phaseRow(page, code).getByLabel(/ share$/);
 const create = (page: Page) => page.getByRole("button", { name: "Create project" });
 
 async function fillDetails(page: Page, number: string) {
@@ -97,38 +107,67 @@ test.describe("owner", () => {
       await expect(page.getByRole("group", { name: group, exact: true })).toBeVisible();
     await fillDetails(page, "2026-014");
 
-    // Rule 6–7, example A: the seed split.
+    // Example A: the seed split; hours = fee ÷ the $150/h blended bill rate.
     await page.getByLabel("Total fee *").fill("186,000");
-    await page.getByLabel("Total budget hours").fill("1240");
     const codes = ["PD", "SD", "DD", "CD", "PRM", "CA", "CO"];
-    const fees = await Promise.all(codes.map((c) => fee(page, c).inputValue()));
-    expect(fees).toEqual(["9,300", "27,900", "46,500", "65,100", "9,300", "27,900", "0"]);
-    const hours = await Promise.all(codes.map((c) => phaseRow(page, c).getByLabel(/budget hours$/).inputValue()));
-    expect(hours).toEqual(["62", "186", "310", "434", "62", "186", "0"]);
+    const values = (label: RegExp) => Promise.all(codes.map((c) => phaseRow(page, c).getByLabel(label).inputValue()));
+    expect(await values(/ fee$/)).toEqual(["9,300", "27,900", "46,500", "65,100", "9,300", "27,900", "0"]);
+    expect(await values(/ share$/)).toEqual(["5", "15", "25", "35", "5", "15", "0"]);
+    expect(await values(/budget hours$/)).toEqual(["62", "186", "310", "434", "62", "186", "0"]);
+    await expect(page.getByTestId("hours-total")).toHaveText("1240");
+    await expect(page.getByTestId("share-sum")).toHaveText("100%");
+    await expect(page.getByTestId("hours-note")).toContainText("$150/h");
 
     // Example B: the leftover cent goes to CD.
     await page.getByLabel("Total fee *").fill("1000.01");
     await expect(fee(page, "CD")).toHaveValue("350.01");
     await expect(page.getByTestId("fee-sum")).toHaveText("$1,000.01");
 
-    // Example C: CA edited to $20,000.
+    // Example C: CA's fee edited to $20,000 → its share shows 10.75%.
     await page.getByLabel("Total fee *").fill("186000");
     await fee(page, "CA").fill("20000");
+    await fee(page, "CA").blur();
     await expect(phaseRow(page, "CA").getByRole("img", { name: "edited" })).toBeVisible();
+    await expect(share(page, "CA")).toHaveValue("10.75");
     await expect(fee(page, "CD")).toHaveValue("68,352.97");
     await expect(page.getByTestId("fee-sum")).toHaveText("$186,000");
+    await expect(page.getByTestId("share-sum")).toHaveText("100%");
+
+    // A % edit sets the fee; the others rebalance to 100%.
+    await share(page, "CA").fill("20");
+    await share(page, "CA").blur();
+    await expect(fee(page, "CA")).toHaveValue("37,200");
+    await expect(page.getByTestId("share-sum")).toHaveText("100%");
+    await expect(phaseRow(page, "CA").getByLabel(/budget hours$/)).toHaveValue("248");
+
+    // Hourly phases: 0%, $0, hours typed in; the rest still make 100%.
+    await phaseRow(page, "PRM").getByLabel(/fee type$/).selectOption("hourly");
+    await expect(share(page, "PRM")).toHaveValue("0");
+    await expect(fee(page, "PRM")).toHaveValue("0");
+    await expect(fee(page, "PRM")).toBeDisabled();
+    await expect(page.getByTestId("share-sum")).toHaveText("100%");
+    await phaseRow(page, "PRM").getByLabel(/budget hours$/).fill("40");
+    await phaseRow(page, "PRM").getByLabel(/budget hours$/).blur();
+    await phaseRow(page, "PRM").getByLabel(/fee type$/).selectOption("fixed");
+
+    // Unchecked phases are 0% and $0.
+    await phaseRow(page, "PD").getByRole("checkbox").uncheck();
+    await expect(share(page, "PD")).toHaveValue("0");
+    await expect(page.getByTestId("share-sum")).toHaveText("100%");
+    await phaseRow(page, "PD").getByRole("checkbox").check();
 
     // Edits past the total block Create until "Use $X as total".
     await fee(page, "CA").fill("200000");
+    await fee(page, "CA").blur();
     await expect(create(page)).toBeDisabled();
-    const useTotal = page.getByRole("button", { name: /^Use \$[\d,.]+ as total$/ });
-    await useTotal.click();
+    await page.getByRole("button", { name: /^Use \$[\d,.]+ as total$/ }).click();
     await expect(create(page)).toBeEnabled();
 
     // Back to the template split.
     await page.getByRole("button", { name: "Reset to template split" }).click();
     await page.getByLabel("Total fee *").fill("186,000");
     await expect(fee(page, "CA")).toHaveValue("27,900");
+    await expect(share(page, "CA")).toHaveValue("15");
 
     // A Not-to-exceed phase with no cap is refused on Create; nothing saved.
     await phaseRow(page, "CO").getByLabel(/fee type$/).selectOption("nte");

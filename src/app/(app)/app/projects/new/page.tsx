@@ -19,7 +19,7 @@ export default async function NewProjectRoute({
   if (!can(membership, "projects.create"))
     return <AccessDenied firmName={firmDisplayName(firm)} title={PROJECT_MESSAGES.forbidden} />;
   const sp = await searchParams;
-  const options = await withFirm(firm.id, (db) => loadNewProjectOptions(db, firm.timezone));
+  const options = await withFirm(firm.id, (db) => loadNewProjectOptions(db, firm.id, firm.timezone));
   return (
     <main>
       <PageHeader eyebrow="PROJECTS" title="New project" />

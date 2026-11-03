@@ -382,6 +382,7 @@ The screen specs found fields the model above doesn't have yet. **Add each one w
 | 1.5 | projects | stories, building_height_ft, occupancy_group, construction_type, sprinklered, delivery_method, design_review_board | Building facts on the project page (project-detail). scope_kind, closed_on and the address columns were added in 1.4 |
 | 1.5 | project_phases | is_additional_service boolean, planned_cost_rate_cents bigint null | Additional-service phases; projected profit (project-detail, timesheet) |
 | 1.5 | consultants | contact_id | (project-detail) |
+| 1.5 | **phase_template_roles**, **project_phase_roles** (new) | id, firm_id, phase_template_id / project_phase_id, firm_role_id, share_bp (of the phase fee), hours override null | Role mix per phase: hours = role's share of the fee ÷ the role's bill rate. Template defaults are copied to new projects (Blake, 2026-11-03) |
 | 1.5 | firm_settings | default_consultant_markup_bp (1000), budget_planning_rate_cents (15000) | Defaults for new projects (project-detail) |
 | 1.6 | **timesheet_rows** (new) | id, firm_id, timesheet_id, row_type (`project`/`overhead`/`leave`), project_id, project_phase_id, overhead_category_id, activity_id, billable, sort_order | Rows exist before they have hours ("Add row", "Copy last week") (timesheet) |
 | 1.6 | time_entries | timesheet_row_id fk; while the timesheet is `draft`, activity_id may be null and the check becomes "not both phase and overhead category"; submit enforces completeness | (timesheet) |

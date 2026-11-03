@@ -8,7 +8,8 @@ import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input, Select } from "@/components/ui/field";
 import { cn } from "@/lib/cn";
-import { type FeeType, type SplitRow, distributeFee, distributeHours } from "@/lib/calc/projects";
+import { type FeeType, type PhaseEdit, hoursFromFee, planPhaseFees } from "@/lib/calc/projects";
+import { formatMoney } from "@/lib/format";
 import {
   CREATE_STATUSES,
   FEE_TYPE_HELP,
@@ -29,8 +30,9 @@ import { createProject } from "@/server/projects/actions";
 import type { NewProjectOptions } from "@/server/projects/view";
 
 // New project (projects-list spec, "New project flow"). Card 1 is the
-// project; Card 2 splits the total fee and budget hours over the firm's
-// default phases. The server re-checks everything on Create.
+// project; Card 2 splits the total fee over the firm's default phases by
+// share (editable as % or $) and turns each fee into budget hours at the
+// firm's blended bill rate. The server re-checks everything on Create.
 
 type Row = {
   key: string;
@@ -38,20 +40,20 @@ type Row = {
   code: string;
   name: string;
   feeType: FeeType;
-  shareBp: number;
+  /** Template share, used to rebalance phases nobody has edited. */
+  weightBp: number;
   include: boolean;
-  feeCents: number;
-  feeText: string;
-  feeEdited: boolean;
-  hours: number;
-  hoursText: string;
-  hoursEdited: boolean;
+  /** The person set this phase's fee or % (blue dot). */
+  edit: PhaseEdit;
+  /** Hours typed over the calculated ones (always typed for hourly phases). */
+  hoursEdit: number | null;
+  /** What's in a box while it's being typed in. */
+  draft: { fee?: string; pct?: string; hours?: string };
 };
 
 const OTHER = "__other";
 const NEW_CLIENT = "__new";
 
-const hoursText = (h: number) => String(h);
 function parseHours(raw: string): number | null {
   const v = raw.trim().replace(/,/g, "");
   if (v === "") return 0;
@@ -60,35 +62,17 @@ function parseHours(raw: string): number | null {
   return Number.isInteger(n * 4) ? n : null;
 }
 
-/** Re-split fee and hours over included rows; edited rows keep theirs. */
-function resplit(rows: Row[], totalCents: number, totalHours: number): { rows: Row[]; feeOver: boolean; hoursOver: boolean } {
-  const included = rows.filter((r) => r.include);
-  const asSplit = (r: Row, amount: number): SplitRow => ({ id: r.key, weightBp: r.shareBp, amount });
-  const fee = distributeFee(
-    totalCents,
-    included.map((r) => asSplit(r, r.feeCents)),
-    new Set(included.filter((r) => r.feeEdited).map((r) => r.key)),
-  );
-  const hrs = distributeHours(
-    totalHours,
-    included.map((r) => asSplit(r, r.hours)),
-    new Set(included.filter((r) => r.hoursEdited).map((r) => r.key)),
-  );
-  const next = rows.map((r) => {
-    if (!r.include) return r;
-    const out = { ...r };
-    if (fee.ok && !r.feeEdited) {
-      out.feeCents = fee.amounts[r.key];
-      out.feeText = moneyInput(out.feeCents);
-    }
-    if (hrs.ok && !r.hoursEdited) {
-      out.hours = hrs.amounts[r.key];
-      out.hoursText = hoursText(out.hours);
-    }
-    return out;
-  });
-  return { rows: next, feeOver: !fee.ok, hoursOver: !hrs.ok };
+/** "12.5" or "12.5%" → 1250 basis points (0–100%, up to 2 decimals). */
+function parsePct(raw: string): number | null {
+  const v = raw.trim().replace(/%$/, "").trim();
+  if (v === "") return 0;
+  if (!/^\d+(\.\d{1,2})?$/.test(v)) return null;
+  const bp = Math.round(Number(v) * 100);
+  return bp <= 10_000 ? bp : null;
 }
+
+/** 1075 → "10.75", 2500 → "25". */
+const pctText = (bp: number) => String(bp / 100);
 
 export function NewProjectForm({
   options,
@@ -128,35 +112,42 @@ export function NewProjectForm({
   });
   const set = (p: Partial<typeof d>) => setD((x) => ({ ...x, ...p }));
   const [totalFeeText, setTotalFeeText] = useState("0");
-  const [totalHoursText, setTotalHoursText] = useState("0");
   const totalFee = parseMoney(totalFeeText);
-  const totalHours = parseHours(totalHoursText);
+  const rate = options.blendedBillRateCents;
 
-  const [split, setSplit] = useState(() =>
-    resplit(
-      options.templates.map((t) => ({
-        key: t.id,
-        templateId: t.id,
-        code: t.code,
-        name: t.name,
-        feeType: t.feeType,
-        shareBp: t.shareBp,
-        include: true,
-        feeCents: 0,
-        feeText: "0",
-        feeEdited: false,
-        hours: 0,
-        hoursText: "0",
-        hoursEdited: false,
-      })),
-      0,
-      0,
-    ),
+  const [rows, setRows] = useState<Row[]>(() =>
+    options.templates.map((t) => ({
+      key: t.id,
+      templateId: t.id,
+      code: t.code,
+      name: t.name,
+      feeType: t.feeType,
+      weightBp: t.shareBp,
+      include: true,
+      edit: null,
+      hoursEdit: null,
+      draft: {},
+    })),
   );
-  const rows = split.rows;
-  const update = (next: Row[], fee = totalFee ?? 0, hours = totalHours ?? 0) => setSplit(resplit(next, fee, hours));
-  const editRow = (key: string, p: Partial<Row>) => update(rows.map((r) => (r.key === key ? { ...r, ...p } : r)));
+  const editRow = (key: string, p: Partial<Row>) => setRows((rs) => rs.map((r) => (r.key === key ? { ...r, ...p } : r)));
+  const draft = (key: string, p: Row["draft"]) =>
+    setRows((rs) => rs.map((r) => (r.key === key ? { ...r, draft: { ...r.draft, ...p } } : r)));
 
+  // Fees and % from the total; hours from each fee at the blended bill rate.
+  const plan = useMemo(
+    () =>
+      planPhaseFees(
+        totalFee ?? 0,
+        rows.map((r) => ({ id: r.key, include: r.include, feeType: r.feeType, weightBp: r.weightBp, edit: r.edit })),
+      ),
+    [rows, totalFee],
+  );
+  const hoursOf = (r: Row) => {
+    if (!r.include) return 0;
+    if (r.hoursEdit !== null) return r.hoursEdit;
+    if (r.feeType === "hourly") return 0;
+    return hoursFromFee(plan.fees[r.key], rate) ?? 0;
+  };
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [newClient, setNewClient] = useState<{ open: boolean; name: string; error: string | null }>({
@@ -171,21 +162,26 @@ export function NewProjectForm({
   );
   const contacts = d.clientCompanyId ? (options.contactsByClient[d.clientCompanyId] ?? []) : [];
   const included = rows.filter((r) => r.include);
-  const sumFee = included.reduce((n, r) => n + r.feeCents, 0);
-  const sumHours = included.reduce((n, r) => n + Math.round(r.hours * 4), 0) / 4;
-  const rowBad = rows.some((r) => r.include && (parseMoney(r.feeText) === null || parseHours(r.hoursText) === null));
+  const sumFee = plan.sumCents;
+  const sumHours = included.reduce((n, r) => n + Math.round(hoursOf(r) * 4), 0) / 4;
+  const rowBad = rows.some(
+    (r) =>
+      (r.draft.fee !== undefined && parseMoney(r.draft.fee) === null) ||
+      (r.draft.pct !== undefined && parsePct(r.draft.pct) === null) ||
+      (r.draft.hours !== undefined && parseHours(r.draft.hours) === null),
+  );
   const problem =
-    totalFee === null || totalHours === null || rowBad
+    totalFee === null || rowBad
       ? null
       : phaseProblem({
           totalFeeCents: totalFee,
-          totalBudgetHours: totalHours,
-          phases: included.map((r) => ({ feeType: r.feeType, feeCents: r.feeCents, budgetHours: r.hours })),
+          totalBudgetHours: sumHours,
+          phases: included.map((r) => ({ feeType: r.feeType, feeCents: plan.fees[r.key], budgetHours: hoursOf(r) })),
         });
   // The NTE cap is reported on Create (spec); sum problems block the button.
   const blocking = problem !== null && problem !== PROJECT_MESSAGES.nteCap;
   const feeMismatch = totalFee !== null && sumFee !== totalFee;
-  const hoursMismatch = totalHours !== null && Math.round(sumHours * 4) !== Math.round(totalHours * 4);
+  const sumPct = totalFee ? Math.round((sumFee * 10_000) / totalFee) : 0;
   const shownTypes = new Set(included.map((r) => r.feeType));
 
   function submit() {
@@ -196,7 +192,6 @@ export function NewProjectForm({
     if (d.projectType === OTHER && (projectType.length < 1 || projectType.length > 60)) local.projectType = "Enter a type (up to 60 characters)";
     if (construction === null && d.construction.trim() !== "") local.constructionCostCents = PROJECT_MESSAGES.money;
     if (totalFee === null) local.totalFeeCents = PROJECT_MESSAGES.money;
-    if (totalHours === null) local.totalBudgetHours = PROJECT_MESSAGES.hours;
     const sqft = d.squareFeet.trim() === "" ? null : Number(d.squareFeet.replace(/,/g, ""));
     if (sqft !== null && !(Number.isInteger(sqft) && sqft > 0)) local.squareFeet = PROJECT_MESSAGES.squareFeet;
     if (problem === PROJECT_MESSAGES.nteCap) local.phases = problem;
@@ -225,14 +220,14 @@ export function NewProjectForm({
         startDate: d.startDate,
         targetEndDate: d.targetEndDate,
         totalFeeCents: totalFee,
-        totalBudgetHours: totalHours,
+        totalBudgetHours: sumHours,
         phases: included.map((r) => ({
           templateId: r.templateId,
           code: r.code,
           name: r.name,
           feeType: r.feeType,
-          feeCents: r.feeCents,
-          budgetHours: r.hours,
+          feeCents: plan.fees[r.key],
+          budgetHours: hoursOf(r),
         })),
       });
       if (!result.ok) {
@@ -404,34 +399,24 @@ export function NewProjectForm({
       </Card>
 
       <Card title="Phases & fees" padded={false}>
-        <div className="flex flex-wrap gap-4 px-[var(--spacing-card)] pb-4">
+        <div className="flex flex-wrap items-end gap-6 px-[var(--spacing-card)] pb-4">
           <Input
             label="Total fee *"
             value={totalFeeText}
             inputMode="decimal"
             wrapperClassName="w-[200px]"
             error={totalFee === null ? PROJECT_MESSAGES.money : e("totalFeeCents")}
-            onChange={(ev) => {
-              setTotalFeeText(ev.target.value);
-              const v = parseMoney(ev.target.value);
-              if (v !== null) update(rows, v, totalHours ?? 0);
-            }}
+            onChange={(ev) => setTotalFeeText(ev.target.value)}
           />
-          <Input
-            label="Total budget hours"
-            value={totalHoursText}
-            inputMode="decimal"
-            wrapperClassName="w-[200px]"
-            error={totalHours === null ? PROJECT_MESSAGES.hours : e("totalBudgetHours")}
-            onChange={(ev) => {
-              setTotalHoursText(ev.target.value);
-              const v = parseHours(ev.target.value);
-              if (v !== null) update(rows, totalFee ?? 0, v);
-            }}
-          />
+          <div className="flex flex-col gap-1.5 pb-2">
+            <span className="cap text-xs font-medium text-muted">Total budget hours</span>
+            <span className="num text-base" data-testid="hours-total">
+              {sumHours}
+            </span>
+          </div>
         </div>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[820px] border-collapse text-sm">
+          <table className="w-full min-w-[880px] border-collapse text-sm">
             <thead className="bg-surface-2">
               <tr className="text-left text-2xs font-medium text-muted">
                 <th scope="col" className="cap border-b border-line px-2 py-2 pl-[18px]">Include</th>
@@ -444,86 +429,117 @@ export function NewProjectForm({
               </tr>
             </thead>
             <tbody>
-              {rows.map((r) => (
-                <tr key={r.key} data-phase={r.code} className={cn(!r.include && "opacity-50")}>
-                  <td className={cn(cell, "pl-[18px]")}>
-                    <input
-                      type="checkbox"
-                      aria-label={`Include ${r.name}`}
-                      checked={r.include}
-                      onChange={(ev) =>
-                        editRow(r.key, { include: ev.target.checked, feeEdited: false, hoursEdited: false })
-                      }
-                      className="size-4 cursor-pointer accent-ink"
-                    />
-                  </td>
-                  <td className={cell}>
-                    <input aria-label={`${r.name} code`} value={r.code} maxLength={12} disabled={!r.include} onChange={(ev) => editRow(r.key, { code: ev.target.value })} className="h-8 w-[70px] rounded-sm border border-line-input bg-surface px-2" />
-                  </td>
-                  <td className={cell}>
-                    <input aria-label={`${r.code} name`} value={r.name} maxLength={80} disabled={!r.include} onChange={(ev) => editRow(r.key, { name: ev.target.value })} className="h-8 w-full min-w-[180px] rounded-sm border border-line-input bg-surface px-2" />
-                  </td>
-                  <td className={cell}>
-                    <select aria-label={`${r.name} fee type`} value={r.feeType} disabled={!r.include} onChange={(ev) => editRow(r.key, { feeType: ev.target.value as FeeType })} className="h-8 rounded-sm border border-line-input bg-surface px-1.5">
-                      {(Object.keys(FEE_TYPE_LABELS) as FeeType[]).map((t) => (
-                        <option key={t} value={t}>
-                          {FEE_TYPE_LABELS[t]}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                  <td className={cn(cell, "num text-right text-ink-3")}>{r.shareBp / 100}%</td>
-                  <td className={cn(cell, "text-right")}>
-                    <span className="inline-flex items-center gap-1.5">
-                      {r.feeEdited && <span aria-label="edited" role="img" className="size-1.5 rounded-full bg-blue" />}
+              {rows.map((r) => {
+                const split = r.include && r.feeType !== "hourly";
+                const dot = <span aria-label="edited" role="img" className="size-1.5 rounded-full bg-blue" />;
+                return (
+                  <tr key={r.key} data-phase={r.code} className={cn(!r.include && "opacity-50")}>
+                    <td className={cn(cell, "pl-[18px]")}>
                       <input
-                        aria-label={`${r.name} fee`}
-                        value={r.feeText}
-                        inputMode="decimal"
-                        disabled={!r.include}
-                        aria-invalid={parseMoney(r.feeText) === null || undefined}
-                        onChange={(ev) => {
-                          const v = parseMoney(ev.target.value);
-                          const next = rows.map((x) =>
-                            x.key === r.key
-                              ? { ...x, feeText: ev.target.value, ...(v !== null ? { feeCents: v, feeEdited: true } : {}) }
-                              : x,
-                          );
-                          update(next);
-                        }}
-                        className="num h-8 w-[120px] rounded-sm border border-line-input bg-surface px-2 text-right aria-[invalid=true]:border-red"
+                        type="checkbox"
+                        aria-label={`Include ${r.name}`}
+                        checked={r.include}
+                        onChange={(ev) => editRow(r.key, { include: ev.target.checked, edit: null, hoursEdit: null, draft: {} })}
+                        className="size-4 cursor-pointer accent-ink"
                       />
-                    </span>
-                  </td>
-                  <td className={cn(cell, "pr-[18px] text-right")}>
-                    <span className="inline-flex items-center gap-1.5">
-                      {r.hoursEdited && <span aria-label="edited" role="img" className="size-1.5 rounded-full bg-blue" />}
-                      <input
-                        aria-label={`${r.name} budget hours`}
-                        value={r.hoursText}
-                        inputMode="decimal"
+                    </td>
+                    <td className={cell}>
+                      <input aria-label={`${r.name} code`} value={r.code} maxLength={12} disabled={!r.include} onChange={(ev) => editRow(r.key, { code: ev.target.value })} className="h-8 w-[70px] rounded-sm border border-line-input bg-surface px-2" />
+                    </td>
+                    <td className={cell}>
+                      <input aria-label={`${r.code} name`} value={r.name} maxLength={80} disabled={!r.include} onChange={(ev) => editRow(r.key, { name: ev.target.value })} className="h-8 w-full min-w-[180px] rounded-sm border border-line-input bg-surface px-2" />
+                    </td>
+                    <td className={cell}>
+                      <select
+                        aria-label={`${r.name} fee type`}
+                        value={r.feeType}
                         disabled={!r.include}
-                        aria-invalid={parseHours(r.hoursText) === null || undefined}
                         onChange={(ev) => {
-                          const v = parseHours(ev.target.value);
-                          const next = rows.map((x) =>
-                            x.key === r.key
-                              ? { ...x, hoursText: ev.target.value, ...(v !== null ? { hours: v, hoursEdited: true } : {}) }
-                              : x,
-                          );
-                          update(next);
+                          const feeType = ev.target.value as FeeType;
+                          // Hourly phases leave the split; their hours are typed.
+                          editRow(r.key, { feeType, edit: feeType === "hourly" ? null : r.edit, hoursEdit: null, draft: {} });
                         }}
-                        className="num h-8 w-[90px] rounded-sm border border-line-input bg-surface px-2 text-right aria-[invalid=true]:border-red"
-                      />
-                    </span>
-                  </td>
-                </tr>
-              ))}
+                        className="h-8 rounded-sm border border-line-input bg-surface px-1.5"
+                      >
+                        {(Object.keys(FEE_TYPE_LABELS) as FeeType[]).map((t) => (
+                          <option key={t} value={t}>
+                            {FEE_TYPE_LABELS[t]}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className={cn(cell, "text-right")}>
+                      <span className="inline-flex items-center gap-1.5">
+                        {r.edit?.kind === "pct" && dot}
+                        <input
+                          aria-label={`${r.name} share`}
+                          value={r.draft.pct ?? pctText(plan.shares[r.key])}
+                          inputMode="decimal"
+                          disabled={!split}
+                          aria-invalid={(r.draft.pct !== undefined && parsePct(r.draft.pct) === null) || undefined}
+                          onChange={(ev) => {
+                            const bp = parsePct(ev.target.value);
+                            editRow(r.key, {
+                              draft: { pct: ev.target.value },
+                              ...(bp !== null ? { edit: { kind: "pct" as const, bp }, hoursEdit: null } : {}),
+                            });
+                          }}
+                          onBlur={() => draft(r.key, { pct: undefined })}
+                          className="num h-8 w-[64px] rounded-sm border border-line-input bg-surface px-2 text-right aria-[invalid=true]:border-red"
+                        />
+                        <span className="text-muted">%</span>
+                      </span>
+                    </td>
+                    <td className={cn(cell, "text-right")}>
+                      <span className="inline-flex items-center gap-1.5">
+                        {r.edit?.kind === "fee" && dot}
+                        <input
+                          aria-label={`${r.name} fee`}
+                          value={r.draft.fee ?? moneyInput(plan.fees[r.key])}
+                          inputMode="decimal"
+                          disabled={!split}
+                          aria-invalid={(r.draft.fee !== undefined && parseMoney(r.draft.fee) === null) || undefined}
+                          onChange={(ev) => {
+                            const v = parseMoney(ev.target.value);
+                            editRow(r.key, {
+                              draft: { fee: ev.target.value },
+                              ...(v !== null ? { edit: { kind: "fee" as const, cents: v }, hoursEdit: null } : {}),
+                            });
+                          }}
+                          onBlur={() => draft(r.key, { fee: undefined })}
+                          className="num h-8 w-[120px] rounded-sm border border-line-input bg-surface px-2 text-right aria-[invalid=true]:border-red"
+                        />
+                      </span>
+                    </td>
+                    <td className={cn(cell, "pr-[18px] text-right")}>
+                      <span className="inline-flex items-center gap-1.5">
+                        {r.hoursEdit !== null && r.feeType !== "hourly" && dot}
+                        <input
+                          aria-label={`${r.name} budget hours`}
+                          value={r.draft.hours ?? String(hoursOf(r))}
+                          inputMode="decimal"
+                          disabled={!r.include}
+                          aria-invalid={(r.draft.hours !== undefined && parseHours(r.draft.hours) === null) || undefined}
+                          onChange={(ev) => {
+                            const v = parseHours(ev.target.value);
+                            editRow(r.key, { draft: { ...r.draft, hours: ev.target.value }, ...(v !== null ? { hoursEdit: v } : {}) });
+                          }}
+                          onBlur={() => draft(r.key, { hours: undefined })}
+                          className="num h-8 w-[90px] rounded-sm border border-line-input bg-surface px-2 text-right aria-[invalid=true]:border-red"
+                        />
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
             <tfoot>
               <tr className="font-semibold">
-                <td colSpan={5} className="px-2 py-2.5 pl-[18px]">
+                <td colSpan={4} className="px-2 py-2.5 pl-[18px]">
                   Total
+                </td>
+                <td className="num px-2 py-2.5 pr-6 text-right" data-testid="share-sum">
+                  {pctText(sumPct)}%
                 </td>
                 <td className="num px-2 py-2.5 text-right" data-testid="fee-sum">
                   {moneyExact(sumFee)}
@@ -540,38 +556,40 @@ export function NewProjectForm({
             <button
               type="button"
               className="cursor-pointer border-0 bg-transparent p-0 text-blue underline"
-              onClick={() => update(rows.map((r) => ({ ...r, feeEdited: false, hoursEdited: false })))}
+              onClick={() =>
+                setRows((rs) =>
+                  rs.map((r) => ({ ...r, edit: null, hoursEdit: r.feeType === "hourly" ? r.hoursEdit : null, draft: {} })),
+                )
+              }
             >
               Reset to template split
             </button>
           </div>
-          {(split.feeOver || feeMismatch || split.hoursOver || hoursMismatch || e("phases")) && (
+          {(plan.over || feeMismatch || e("phases") || (problem && problem !== PROJECT_MESSAGES.nteCap)) && (
             <div role="alert" className="flex flex-wrap items-center gap-3 text-red">
               <span>{e("phases") ?? problem}</span>
               {feeMismatch && (
                 <Button
                   type="button"
                   onClick={() => {
+                    // Freeze %-edited phases at their dollars so the new total
+                    // doesn't move them, then make the total match.
+                    setRows((rs) =>
+                      rs.map((r) => (r.edit?.kind === "pct" ? { ...r, edit: { kind: "fee", cents: plan.fees[r.key] } } : r)),
+                    );
                     setTotalFeeText(moneyInput(sumFee));
-                    update(rows, sumFee, totalHours ?? 0);
                   }}
                 >
                   Use {moneyExact(sumFee)} as total
                 </Button>
               )}
-              {!feeMismatch && hoursMismatch && (
-                <Button
-                  type="button"
-                  onClick={() => {
-                    setTotalHoursText(hoursText(sumHours));
-                    update(rows, totalFee ?? 0, sumHours);
-                  }}
-                >
-                  Use {sumHours} h as total
-                </Button>
-              )}
             </div>
           )}
+          <p className="m-0 text-xs text-muted" data-testid="hours-note">
+            {rate
+              ? `Budget hours = phase fee ÷ blended bill rate (${formatMoney(rate)}/h), to the quarter hour. Type over any phase's hours.`
+              : "Set up roles and rates in Settings → Rates & roles to fill in budget hours from the fee. Until then, type them in."}
+          </p>
           <ul className="m-0 list-none p-0 text-xs text-muted">
             {(Object.keys(FEE_TYPE_HELP) as FeeType[])
               .filter((t) => shownTypes.has(t))
@@ -592,7 +610,7 @@ export function NewProjectForm({
           <Button type="button" onClick={() => router.push("/app/projects")}>
             Cancel
           </Button>
-          <Button type="submit" variant="primary" disabled={pending || blocking || totalFee === null || totalHours === null || rowBad}>
+          <Button type="submit" variant="primary" disabled={pending || blocking || totalFee === null || rowBad}>
             {pending ? "Creating…" : "Create project"}
           </Button>
         </div>

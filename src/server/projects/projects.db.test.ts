@@ -286,7 +286,7 @@ describe("the list", () => {
 
 describe("the new project form", () => {
   it("suggests the next number and lists the default templates", async () => {
-    const o = await withFirm(A.firmId, (db) => loadNewProjectOptions(db, "America/New_York"));
+    const o = await withFirm(A.firmId, (db) => loadNewProjectOptions(db, A.firmId, "America/New_York"));
     const year = new Date().getFullYear();
     expect(o.suggestedNumber).toBe(year === 2026 ? "2026-091" : `${year}-001`);
     expect(o.templates.length).toBeGreaterThan(0);
@@ -296,7 +296,7 @@ describe("the new project form", () => {
 
   it("people marked Principal are the principal choices", async () => {
     await asFirm(pool, A.firmId, (c) => c.query("update memberships set is_principal = true where id = $1", [pm.membershipId]));
-    const o = await withFirm(A.firmId, (db) => loadNewProjectOptions(db, "America/New_York"));
+    const o = await withFirm(A.firmId, (db) => loadNewProjectOptions(db, A.firmId, "America/New_York"));
     expect(o.principals.map((p) => p.membershipId)).toEqual([pm.membershipId]);
     await asFirm(pool, A.firmId, (c) => c.query("update memberships set is_principal = false where id = $1", [pm.membershipId]));
   });

@@ -18,7 +18,7 @@ describe("address lookup", () => {
 
   it("does nothing without a key, for short input, or when Google refuses", async () => {
     const f = reply({});
-    expect(await suggestCore({ query: "40 calh", session }, undefined, f)).toEqual([]);
+    expect(await suggestCore({ query: "40 calh", session }, "", f)).toEqual([]);
     expect(await suggestCore({ query: "40", session }, "KEY", f)).toEqual([]);
     expect(f).not.toHaveBeenCalled();
     expect(await suggestCore({ query: "40 calh", session }, "KEY", reply({}, false))).toEqual([]);
