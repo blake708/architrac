@@ -58,6 +58,11 @@ export type TestFirm = {
   activityId: string;
   /** A client company with one contact (its billing contact). */
   companyId: string;
+  /** An active project for that client, with one phase and the owner as PM. */
+  projectId: string;
+  projectPhaseId: string;
+  projectMemberId: string;
+  projectContactId: string;
   contactId: string;
 };
 
@@ -137,11 +142,32 @@ export async function createTestFirm(
       contact.rows[0].id,
       company.rows[0].id,
     ]);
+    const project = await c.query<{ id: string }>(
+      "insert into projects (firm_id, number, name, client_company_id, project_type, principal_membership_id, pm_membership_id) values ($1, '2026-001', $2, $3, 'Office', $4, $4) returning id",
+      [firmId, `${label} Project`, company.rows[0].id, membershipId],
+    );
+    const projectId = project.rows[0].id;
+    const phase = await c.query<{ id: string }>(
+      "insert into project_phases (firm_id, project_id, code, name, sort_order, fee_type, fee_cents, status) values ($1, $2, 'SD', 'Schematic Design', 1, 'fixed', 1000000, 'current') returning id",
+      [firmId, projectId],
+    );
+    const member = await c.query<{ id: string }>(
+      "insert into project_members (firm_id, project_id, membership_id, project_role) values ($1, $2, $3, 'PM') returning id",
+      [firmId, projectId, membershipId],
+    );
+    const link = await c.query<{ id: string }>(
+      "insert into project_contacts (firm_id, project_id, company_id, role) values ($1, $2, $3, 'Owner') returning id",
+      [firmId, projectId, company.rows[0].id],
+    );
     const pick = async (q: string) =>
       (await c.query<{ id: string }>(q, [firmId])).rows[0].id;
     return {
       companyId: company.rows[0].id,
       contactId: contact.rows[0].id,
+      projectId,
+      projectPhaseId: phase.rows[0].id,
+      projectMemberId: member.rows[0].id,
+      projectContactId: link.rows[0].id,
       firmRoleId,
       rateId: rate.rows[0].id,
       phaseTemplateId: await pick(
@@ -176,6 +202,8 @@ export async function removeTestFirm(pool: Pool, firm: TestFirm) {
       "update companies set primary_contact_id = null, billing_contact_id = null where firm_id = $1",
       [firm.firmId],
     );
+    for (const t of ["project_contacts", "project_members", "project_phases", "projects"])
+      await c.query(`delete from ${t} where firm_id = $1`, [firm.firmId]);
     await c.query("delete from contacts where firm_id = $1", [firm.firmId]);
     await c.query("delete from companies where firm_id = $1", [firm.firmId]);
     await c.query("delete from rates where firm_id = $1", [firm.firmId]);
@@ -202,6 +230,8 @@ export async function removeFirmById(pool: Pool, firmId: string) {
       "update companies set primary_contact_id = null, billing_contact_id = null where firm_id = $1",
       [firmId],
     );
+    for (const t of ["project_contacts", "project_members", "project_phases", "projects"])
+      await c.query(`delete from ${t} where firm_id = $1`, [firmId]);
     await c.query("delete from contacts where firm_id = $1", [firmId]);
     await c.query("delete from companies where firm_id = $1", [firmId]);
     await c.query("delete from rates where firm_id = $1", [firmId]);

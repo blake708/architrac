@@ -37,3 +37,22 @@ export const companyKind = pgEnum("company_kind", [
   "vendor",
   "other",
 ]);
+
+/** Where a project is (DATA_MODEL → projects.status). */
+export const projectStatus = pgEnum("project_status", [
+  "pursuit",
+  "active",
+  "on_hold",
+  "closed",
+]);
+
+/** Where a phase is. `closed` = no new time. */
+export const phaseStatus = pgEnum("phase_status", [
+  "upcoming",
+  "current",
+  "complete",
+  "closed",
+]);
+
+/** Kind of building work, shown under the project type (1.4). */
+export const scopeKind = pgEnum("scope_kind", ["ground_up", "tenant_upfit", "shell"]);

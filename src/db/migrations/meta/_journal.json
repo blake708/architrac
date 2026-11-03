@@ -43,6 +43,13 @@
       "when": 1793657194570,
       "tag": "0005_contacts",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793717218230,
+      "tag": "0006_projects",
+      "breakpoints": true
     }
   ]
 }
