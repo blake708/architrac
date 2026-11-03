@@ -7,9 +7,12 @@ import { Badge } from "@/components/ui/badge";
 import { ChevronDownIcon } from "@/components/ui/icons";
 import { ProgressBar } from "@/components/ui/progress-bar";
 import { cn } from "@/lib/cn";
+import { progressStatus } from "@/lib/calc/progress";
 import { fmtHours, remainingText } from "@/lib/calc/project-detail";
 import type { PhaseRow } from "@/server/projects/page";
 import { PHASE_STATUS } from "../project-bits";
+
+const PCT_TONE = { normal: "text-ink-2", warning: "text-orange", over: "text-red" } as const;
 
 const th = "cap border-b border-line px-2.5 py-2 text-left text-2xs font-medium text-muted first:pl-[18px] last:pr-[18px]";
 const td = "border-b border-line-soft px-2.5 py-2.5 first:pl-[18px] last:pr-[18px]";
@@ -69,20 +72,29 @@ export function HoursTable({ projectId, phases }: { projectId: string; phases: P
                       <Badge tone={PHASE_STATUS[p.status].tone}>{PHASE_STATUS[p.status].label}</Badge>
                     </td>
                     <td className={td}>
-                      <span className="flex items-center gap-3">
-                        <ProgressBar
-                          value={m.usedHours}
-                          max={m.budgetHours}
-                          label={`${p.name}: ${fmtHours(m.usedHours)} of ${fmtHours(m.budgetHours)} budgeted hours${over ? `, ${fmtHours(over)} over` : ""}`}
-                          showPercent={m.budgetHours > 0}
-                          className="w-[300px]"
-                        />
-                        <span className="num text-xs whitespace-nowrap text-ink-2">
-                          {fmtHours(m.usedHours)} / {fmtHours(m.budgetHours)} h
+                      {m.feeType === "hourly" ? (
+                        // Hourly phases are billed by the hour: no bar, just hours.
+                        <span className="num text-xs text-ink-2">{fmtHours(m.usedHours)} h</span>
+                      ) : (
+                        // Fixed slots (bar · % · hours) so every row lines up.
+                        <span className="grid grid-cols-[230px_40px_auto] items-center gap-3">
+                          <ProgressBar
+                            value={m.usedHours}
+                            max={m.budgetHours}
+                            label={`${p.name}: ${fmtHours(m.usedHours)} of ${fmtHours(m.budgetHours)} budgeted hours${over ? `, ${fmtHours(over)} over` : ""}`}
+                          />
+                          <span className={cn("num text-right text-xs", PCT_TONE[progressStatus(m.usedHours, m.budgetHours).tone])}>
+                            {m.budgetHours > 0 ? `${progressStatus(m.usedHours, m.budgetHours).percent}%` : ""}
+                          </span>
+                          <span className="num text-xs whitespace-nowrap text-ink-2">
+                            {fmtHours(m.usedHours)} / {fmtHours(m.budgetHours)} h
+                          </span>
                         </span>
-                      </span>
+                      )}
                     </td>
-                    <td className={cn(td, "num text-right", left.over && "text-red")}>{left.text}</td>
+                    <td className={cn(td, "num text-right", m.feeType !== "hourly" && left.over && "text-red")}>
+                      {m.feeType === "hourly" ? <span className="cap text-2xs font-medium text-muted">Hourly</span> : left.text}
+                    </td>
                     <td className={cn(td, "num text-right")}>{m.feeType === "fixed" ? `${m.percentCompleteBp / 100}%` : "—"}</td>
                   </tr>
                   {expanded && (

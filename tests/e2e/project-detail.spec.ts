@@ -8,7 +8,7 @@ import { signInAs } from "./support/sign-in";
 // src/server/projects/page.db.test.ts.
 //
 // Runs in order against "E2E Theta Partners", which only this file uses.
-// Setup (fixture F2 without time, invoices or consultants): 2026-014
+// Setup (fixture F2 without time, invoices or consultants; Close Out is hourly): 2026-014
 // Medical Office Building for Palmetto Medical Properties; principal Bea
 // (owner), PM Jay; Kat (staff) on the team, Abe (staff) not. Coastal MEP
 // Engineers (consultant, contact Ravi) and Holder Builders (contractor)
@@ -60,16 +60,16 @@ test.beforeAll(async () => {
           date '2026-08-03', ${owner}, ${pm}, '40 Calhoun St', 'Charleston', 'SC' from c returning id
       ), ph as (
         insert into project_phases (firm_id, project_id, code, name, sort_order, fee_type, fee_cents, budget_hours, status, percent_complete_bp, end_date)
-        select :firm, p.id, v.code, v.name, v.ord, 'fixed'::fee_type, v.fee, v.hours, v.status::phase_status, v.pct, v.ends
+        select :firm, p.id, v.code, v.name, v.ord, v.ft::fee_type, v.fee, v.hours, v.status::phase_status, v.pct, v.ends
         from p, (values
-          ('PD', 'Pre-Design', 1, 930000, 62, 'closed', 10000, date '2026-08-28'),
-          ('SD', 'Schematic Design', 2, 2790000, 186, 'closed', 10000, date '2026-09-30'),
-          ('DD', 'Design Development', 3, 4650000, 310, 'current', 3000, date '2026-11-25'),
-          ('CD', 'Construction Documents', 4, 6510000, 434, 'upcoming', 0, null::date),
-          ('PRM', 'Permitting', 5, 930000, 62, 'upcoming', 0, null::date),
-          ('CA', 'Construction Admin', 6, 2790000, 186, 'upcoming', 0, null::date),
-          ('CO', 'Close Out', 7, 0, 0, 'upcoming', 0, null::date)
-        ) as v(code, name, ord, fee, hours, status, pct, ends)
+          ('PD', 'Pre-Design', 1, 'fixed', 930000, 62, 'closed', 10000, date '2026-08-28'),
+          ('SD', 'Schematic Design', 2, 'fixed', 2790000, 186, 'closed', 10000, date '2026-09-30'),
+          ('DD', 'Design Development', 3, 'fixed', 4650000, 310, 'current', 3000, date '2026-11-25'),
+          ('CD', 'Construction Documents', 4, 'fixed', 6510000, 434, 'upcoming', 0, null::date),
+          ('PRM', 'Permitting', 5, 'fixed', 930000, 62, 'upcoming', 0, null::date),
+          ('CA', 'Construction Admin', 6, 'fixed', 2790000, 186, 'upcoming', 0, null::date),
+          ('CO', 'Close Out', 7, 'hourly', 0, 0, 'upcoming', 0, null::date)
+        ) as v(code, name, ord, ft, fee, hours, status, pct, ends)
         returning 1
       )
       insert into project_members (firm_id, project_id, membership_id, project_role)
@@ -100,7 +100,7 @@ test.describe("owner", () => {
     await expect(steps.nth(2)).toHaveAttribute("aria-current", "step");
     await expect(steps.nth(2)).toContainText("Now · to Nov 25");
 
-    await expect(tiles(page)).toContainText("Architectural fee$186,000Fixed fee · 3.0% of construction");
+    await expect(tiles(page)).toContainText("Architectural fee$186,000Mixed fee types · 3.0% of construction");
     await expect(tiles(page)).toContainText("Billed$00% of fee · nothing outstanding");
     await expect(tiles(page)).toContainText("Hours0 hof 1,240 budgeted");
     await expect(tiles(page)).toContainText("Construction estimate$6.2M$310 / SF · 20,000 SF");
@@ -108,6 +108,19 @@ test.describe("owner", () => {
     const hours = page.getByRole("region", { name: "Hours vs budget" });
     await expect(hours.locator("tfoot")).toContainText("0 / 1,240 h");
     await expect(hours.locator("tfoot")).toContainText("1,240 h");
+    // Hourly phases: no bar, "Hourly" under Remaining.
+    const co = hours.locator('tr[data-phase="CO"]');
+    await expect(co.getByRole("img")).toHaveCount(0);
+    await expect(co).toContainText("Hourly");
+    // Every bar starts in the same place and is the same width.
+    const boxes = await Promise.all(
+      ["PD", "SD", "DD", "CD", "PRM", "CA"].map((c) => hours.locator(`tr[data-phase="${c}"]`).getByRole("img").boundingBox()),
+    );
+    expect(new Set(boxes.map((b) => Math.round(b!.x))).size).toBe(1);
+    expect(new Set(boxes.map((b) => Math.round(b!.width))).size).toBe(1);
+    // The tab bar only scrolls sideways.
+    const nav = tabs(page).locator("ul");
+    expect(await nav.evaluate((el) => el.scrollHeight - el.clientHeight)).toBe(0);
     await hours.getByRole("button", { name: "Show hours by person for Schematic Design" }).click();
     await expect(hours.getByText("No time logged yet")).toBeVisible();
 
