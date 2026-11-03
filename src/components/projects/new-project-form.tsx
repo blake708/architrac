@@ -289,7 +289,7 @@ export function NewProjectForm({
       }}
       noValidate
     >
-      <Card title="Project details">
+      <Card title="Project details" className="w-full max-w-[720px]">
         <fieldset className="m-0 border-0 p-0">
           <legend className="cap float-left mb-3 w-full text-xs font-semibold text-ink-2">Project</legend>
           <div className="clear-both grid grid-cols-1 gap-4 md:grid-cols-3">
@@ -394,7 +394,7 @@ export function NewProjectForm({
         </fieldset>
         <fieldset className="m-0 mt-6 border-0 border-t border-line-soft p-0 pt-5">
           <legend className="cap float-left mb-3 w-full text-xs font-semibold text-ink-2">Size & schedule</legend>
-          <div className="clear-both grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="clear-both grid grid-cols-1 gap-4 md:grid-cols-2">
             <Input label="Square feet" value={d.squareFeet} inputMode="numeric" onChange={(ev) => set({ squareFeet: ev.target.value })} error={e("squareFeet")} />
           <Input label="Construction estimate" value={d.construction} inputMode="decimal" placeholder="$" onChange={(ev) => set({ construction: ev.target.value })} error={e("constructionCostCents")} />
           <Input label="Start date" type="date" value={d.startDate} onChange={(ev) => set({ startDate: ev.target.value })} error={e("startDate")} />
