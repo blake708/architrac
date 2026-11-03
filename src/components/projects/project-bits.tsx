@@ -1,3 +1,4 @@
+import type { BadgeTone } from "@/components/ui/badge";
 import { cn } from "@/lib/cn";
 import { HEALTH_LABELS, type Health, type PhaseStatus } from "@/lib/calc/projects";
 import { HEALTH_SHAPES } from "@/lib/projects/form";
@@ -61,3 +62,11 @@ export function HealthBadge({ health }: { health: Health }) {
     </span>
   );
 }
+
+/** Phase status badges (project-detail spec, Phases & fees → Status). */
+export const PHASE_STATUS: Record<PhaseStatus, { label: string; tone: BadgeTone }> = {
+  upcoming: { label: "Not started", tone: "neutral" },
+  current: { label: "In progress", tone: "blue" },
+  complete: { label: "Complete", tone: "green" },
+  closed: { label: "Closed", tone: "neutral" },
+};

@@ -147,6 +147,18 @@ export type ProjectPage = {
   };
 };
 
+/** Fields the basic view never hears about, not even that they changed. */
+const MONEY_FIELDS = new Set([
+  "feeCents",
+  "totalFeeCents",
+  "budgetHours",
+  "totalBudgetHours",
+  "markupBp",
+  "billedThrough",
+  "billRateOverrideCents",
+  "percentCompleteBp",
+]);
+
 const fullName = (u: { firstName: string; lastName: string; email: string }) =>
   `${u.firstName} ${u.lastName}`.trim() || u.email;
 const contactName = (c: { firstName: string; lastName: string }) => `${c.firstName} ${c.lastName}`.trim();
@@ -427,7 +439,9 @@ export async function loadProjectPage(db: TenantDb, viewer: Viewer, id: string):
       ? (r.changes as Record<string, unknown>)
       : r.changes
         ? Object.fromEntries(
-            Object.entries(r.changes as Record<string, unknown>).map(([k, v]) => [k, k === "status" ? v : null]),
+            Object.entries(r.changes as Record<string, unknown>)
+              .filter(([k]) => !MONEY_FIELDS.has(k))
+              .map(([k, v]) => [k, k === "status" ? v : null]),
           )
         : null,
   }));
@@ -490,5 +504,34 @@ export async function loadProjectPage(db: TenantDb, viewer: Viewer, id: string):
     canEdit,
     canSetOverride,
     edit,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Company pickers on the project page
+
+export type CompanyChoice = { id: string; name: string; kind: string; contacts: { id: string; name: string }[] };
+
+/** Consultant companies, and contractors / agencies / vendors / other. */
+export async function loadCompanyChoices(db: TenantDb): Promise<{ consultants: CompanyChoice[]; linkable: CompanyChoice[] }> {
+  const rows = await db
+    .select({ id: companies.id, name: companies.name, kind: companies.kind })
+    .from(companies)
+    .where(and(isNull(companies.archivedAt), inArray(companies.kind, ["consultant", "contractor", "agency", "vendor", "other"])))
+    .orderBy(asc(companies.name));
+  const people = rows.length
+    ? await db
+        .select({ id: contacts.id, companyId: contacts.companyId, firstName: contacts.firstName, lastName: contacts.lastName })
+        .from(contacts)
+        .where(and(isNull(contacts.archivedAt), inArray(contacts.companyId, rows.map((r) => r.id))))
+        .orderBy(asc(contacts.lastName), asc(contacts.firstName))
+    : [];
+  const choices = rows.map((r) => ({
+    ...r,
+    contacts: people.filter((c) => c.companyId === r.id).map((c) => ({ id: c.id, name: contactName(c) })),
+  }));
+  return {
+    consultants: choices.filter((c) => c.kind === "consultant"),
+    linkable: choices.filter((c) => c.kind !== "consultant"),
   };
 }
