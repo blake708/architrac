@@ -180,7 +180,8 @@ test.describe("owner", () => {
     const e = page.getByRole("dialog", { name: "Edit consultant" });
     await e.getByLabel("Billed through to the client").uncheck();
     await e.getByRole("button", { name: "Save consultant" }).click();
-    await expect(mep).toContainText("Not billed through");
+    await expect(toast(page)).toHaveText("MEP saved");
+    await expect(mep).toContainText("Not billed through", { timeout: 15_000 });
   });
 
   test("Team: add a person with a rate override; add a contractor", async ({ page }) => {
@@ -208,7 +209,9 @@ test.describe("owner", () => {
     await l.getByLabel("Company *").selectOption({ label: "Holder Builders · Contractor" });
     await l.getByLabel("Role on this project").fill("General contractor");
     await l.getByRole("button", { name: "Add company" }).click();
-    await expect(outside.locator('li[data-company="Holder Builders"]')).toContainText("General contractor");
+    await expect(toast(page)).toHaveText("Holder Builders added");
+    // The list refreshes from the server, which can be slow while every test runs.
+    await expect(outside.locator('li[data-company="Holder Builders"]')).toContainText("General contractor", { timeout: 15_000 });
 
     // The Overview's activity shows what happened.
     await page.goto(url());
