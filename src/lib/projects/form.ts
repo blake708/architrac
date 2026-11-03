@@ -71,6 +71,14 @@ export const PROJECT_MESSAGES = {
   badContact: "That contact doesn't work for this client",
   badPerson: "That person can't be picked here",
   created: (number: string) => `Project ${number} created`,
+  editForbidden: "You don't have permission to change this project.",
+  notFound: "That project doesn't exist or was archived.",
+  keepPmPrincipal: "Change the PM or principal in Edit project first",
+  alreadyOnTeam: "Already on this project",
+  notConsultant: "That company isn't a consultant",
+  notLinkable: "Pick a contractor, agency, vendor or other company",
+  badCompanyContact: "That contact doesn't work for this company",
+  alreadyLinked: "That company is already on this project",
 } as const;
 
 /** "$190,000" when whole dollars, "$1,000.01" otherwise. */
@@ -106,8 +114,8 @@ export const phaseRowSchema = z.object({
 });
 export type PhaseRowInput = z.input<typeof phaseRowSchema>;
 
-export const createProjectSchema = z
-  .object({
+/** The project's own fields (Card 1), shared by create and Edit project. */
+const projectFields = {
     number: z
       .string()
       .trim()
@@ -146,6 +154,11 @@ export const createProjectSchema = z
     constructionCostCents: cents.nullable(),
     startDate: isoDate,
     targetEndDate: isoDate,
+};
+
+export const createProjectSchema = z
+  .object({
+    ...projectFields,
     totalFeeCents: cents,
     totalBudgetHours: quarterHours,
     phases: z.array(phaseRowSchema).max(50),
@@ -158,6 +171,48 @@ export const createProjectSchema = z
     if (problem) issue("phases", problem);
   });
 export type CreateProjectInput = z.input<typeof createProjectSchema>;
+
+/** Edit project (project-detail): the same fields, any status including Closed. */
+export const updateProjectSchema = z
+  .object({ ...projectFields, id: z.uuid(), status: z.enum(PROJECT_STATUSES) })
+  .superRefine((v, ctx) => {
+    if (v.startDate && v.targetEndDate && v.targetEndDate < v.startDate)
+      ctx.addIssue({ code: "custom", path: ["targetEndDate"], message: PROJECT_MESSAGES.dates });
+  });
+export type UpdateProjectInput = z.input<typeof updateProjectSchema>;
+
+export const DISCIPLINES = ["Civil", "Structural", "MEP", "Landscape"];
+export const PROJECT_ROLES = ["Principal", "PM", "PA", "Designer", "Interior designer"];
+
+const pct2 = z.number().int().min(0).max(10_000);
+
+export const memberSchema = z.object({
+  /** Set when editing an existing team row. */
+  id: z.uuid().nullable(),
+  projectId: z.uuid(),
+  membershipId: z.uuid({ error: "Pick a person" }),
+  projectRole: z.string().trim().min(1, { error: "Pick a role" }).max(40, { error: PROJECT_MESSAGES.long }),
+  /** Owner/admin only; undefined = leave as is. */
+  billRateOverrideCents: cents.nullable().optional(),
+});
+
+export const consultantSchema = z.object({
+  id: z.uuid().nullable(),
+  projectId: z.uuid(),
+  companyId: z.uuid({ error: "Pick a consultant" }),
+  contactId: z.uuid().nullable(),
+  discipline: z.string().trim().min(1, { error: "Pick a discipline" }).max(40, { error: PROJECT_MESSAGES.long }),
+  feeCents: cents,
+  markupBp: pct2,
+  billedThrough: z.boolean(),
+});
+
+export const linkSchema = z.object({
+  projectId: z.uuid(),
+  companyId: z.uuid({ error: "Pick a company" }),
+  contactId: z.uuid().nullable(),
+  role: optText(60),
+});
 
 /**
  * What's wrong with the phases, if anything (server checks in the spec).

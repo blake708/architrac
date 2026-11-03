@@ -1,5 +1,5 @@
 import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
-import { companies, contacts, projectContacts, projectPhases, projects } from "@/db/schema";
+import { companies, consultants, contacts, projectContacts, projectPhases, projects } from "@/db/schema";
 import type { TenantDb } from "@/db/tenant";
 import { type Member, can } from "@/lib/auth/permissions";
 import {
@@ -94,7 +94,7 @@ async function invoicesByCompany(db: TenantDb): Promise<Map<string, InvoiceMoney
  * Projects linked to each company (rule 3) and consultant fee rows (rule 5).
  * Clients: projects they're the client on (note: where it stands).
  * Contractors, agencies, vendors: project_contacts links (note: their role).
- * Consultants arrive in 1.5; until then they have none. Archived projects
+ * Consultants: projects they're on (note: discipline) and their fees. Archived projects
  * are left out; closed ones stay.
  */
 async function projectsByCompany(db: TenantDb): Promise<{
@@ -149,7 +149,26 @@ async function projectsByCompany(db: TenantDb): Promise<{
     .orderBy(desc(projects.number));
   for (const l of links) add(l.companyId, { id: l.projectId, name: l.name, note: l.role ?? "" });
 
-  return { projects: out, fees: new Map() };
+  // Consultants (rule 3: their projects with the discipline; rule 5: fees).
+  const fees = new Map<string, { feeCents: number; projectArchived: boolean }[]>();
+  const consultantRows = await db
+    .select({
+      companyId: consultants.companyId,
+      projectId: projects.id,
+      name: projects.name,
+      discipline: consultants.discipline,
+      feeCents: consultants.feeCents,
+    })
+    .from(consultants)
+    .innerJoin(projects, eq(projects.id, consultants.projectId))
+    .where(and(isNull(consultants.archivedAt), isNull(projects.archivedAt)))
+    .orderBy(desc(projects.number));
+  for (const c of consultantRows) {
+    add(c.companyId, { id: c.projectId, name: c.name, note: c.discipline });
+    fees.set(c.companyId, [...(fees.get(c.companyId) ?? []), { feeCents: c.feeCents, projectArchived: false }]);
+  }
+
+  return { projects: out, fees };
 }
 
 const byName = (a: string, b: string) =>

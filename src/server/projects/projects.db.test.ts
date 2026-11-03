@@ -275,7 +275,9 @@ describe("the list", () => {
     expect(v.rows.map((r) => r.number)).toEqual(["2026-011"]);
     expect(v.showMoneyColumns).toBe(false);
     expect(v.canCreate).toBe(false);
-    expect(JSON.stringify(v)).not.toMatch(/fee|billed|health/i);
+    // Ids are hex, so they can contain "fee" by chance; ignore them.
+    const text = JSON.stringify(v).replace(/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi, "<id>");
+    expect(text).not.toMatch(/fee|billed|health/i);
   });
 
   it("another firm sees none of these projects", async () => {

@@ -80,6 +80,11 @@ const RULES = {
   "projects.create": { ...OWNER_ADMIN, project_manager: true },
   // Edit project phases & fees
   "projects.edit_fees": { ...OWNER_ADMIN, project_manager: "own_projects" },
+  // Edit a project's details, team, consultants and linked companies
+  // (project-detail): PMs on projects they manage or are principal on.
+  "projects.edit": { ...OWNER_ADMIN, project_manager: "own_projects" },
+  // See and set a person's bill-rate override on a project
+  "projects.rate_override": OWNER_ADMIN,
   // See a project's fee, billed and health (projects-list): PMs only on
   // projects they manage or are principal on; staff never.
   "projects.view_fees": { ...OWNER_ADMIN, project_manager: "own_projects" },
