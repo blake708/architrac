@@ -33,6 +33,25 @@ export function formatMoney(
   return (opts.cents ? money2 : money0).format(cents / 100);
 }
 
+/**
+ * Short money for tight columns: "$6.2M" from $1,000,000 up (one decimal),
+ * else whole thousands "$640k". Halves round away from zero. Null → "—".
+ */
+export function formatMoneyShort(cents: number | null): string {
+  if (cents === null) return "—";
+  const sign = cents < 0 ? "−" : "";
+  const dollars = Math.abs(cents) / 100;
+  const k = Math.floor(dollars / 1000 + 0.5);
+  if (k < 1000) return `${sign}$${k}k`;
+  const tenthsOfM = Math.floor(dollars / 100_000 + 0.5);
+  return `${sign}$${(tenthsOfM / 10).toFixed(1)}M`;
+}
+
+/** Money that can go below zero, with a real minus sign: "−$1,200". */
+export function formatMoneySigned(cents: number): string {
+  return cents < 0 ? `−${formatMoney(-cents)}` : formatMoney(cents);
+}
+
 /** A multiplier in hundredths: 195 → "1.95×". Null → "—". */
 export function formatMultiplier(hundredths: number | null): string {
   if (hundredths === null) return "—";

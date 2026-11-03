@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   formatDate,
   formatMoney,
+  formatMoneyShort,
+  formatMoneySigned,
   formatMonthDay,
   formatMultiplier,
   todayIn,
@@ -49,5 +51,19 @@ describe("todayIn", () => {
     const d = new Date("2026-11-01T02:00:00Z");
     expect(todayIn("America/New_York", d)).toBe("2026-10-31");
     expect(todayIn("UTC", d)).toBe("2026-11-01");
+  });
+});
+
+describe("formatMoneyShort (projects-list, Constr. est.)", () => {
+  it("millions with one decimal, thousands whole", () => {
+    expect(formatMoneyShort(620_000_000)).toBe("$6.2M");
+    expect(formatMoneyShort(64_000_000)).toBe("$640k");
+    expect(formatMoneyShort(50_000)).toBe("$1k"); // $500 rounds half up
+    expect(formatMoneyShort(99_960_000)).toBe("$1.0M"); // $999.6k doesn't read "$1000k"
+    expect(formatMoneyShort(null)).toBe("—");
+  });
+  it("signed money uses a real minus", () => {
+    expect(formatMoneySigned(-120_000)).toBe("−$1,200");
+    expect(formatMoneySigned(120_000)).toBe("$1,200");
   });
 });
