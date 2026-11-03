@@ -1,5 +1,5 @@
-import { asc, isNull } from "drizzle-orm";
-import { companies, contacts } from "@/db/schema";
+import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
+import { companies, contacts, projectContacts, projectPhases, projects } from "@/db/schema";
 import type { TenantDb } from "@/db/tenant";
 import { type Member, can } from "@/lib/auth/permissions";
 import {
@@ -9,6 +9,7 @@ import {
   consultantFees,
   missingBillingContact,
 } from "@/lib/calc/contacts";
+import { phaseText } from "@/lib/calc/projects";
 import type { CompanyKind } from "@/lib/contacts/form";
 
 // Contacts page data (contacts spec, Data shown and business rules 1–13).
@@ -91,14 +92,64 @@ async function invoicesByCompany(db: TenantDb): Promise<Map<string, InvoiceMoney
 
 /**
  * Projects linked to each company (rule 3) and consultant fee rows (rule 5).
- * Projects arrive in 1.4 and consultants in 1.5; until then there are none.
+ * Clients: projects they're the client on (note: where it stands).
+ * Contractors, agencies, vendors: project_contacts links (note: their role).
+ * Consultants arrive in 1.5; until then they have none. Archived projects
+ * are left out; closed ones stay.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- reads projects from 1.4
 async function projectsByCompany(db: TenantDb): Promise<{
   projects: Map<string, ProjectLink[]>;
   fees: Map<string, { feeCents: number; projectArchived: boolean }[]>;
 }> {
-  return { projects: new Map(), fees: new Map() };
+  const out = new Map<string, ProjectLink[]>();
+  const add = (companyId: string, link: ProjectLink) => {
+    const list = out.get(companyId) ?? [];
+    if (!list.some((l) => l.id === link.id)) list.push(link);
+    out.set(companyId, list);
+  };
+
+  const rows = await db
+    .select({
+      id: projects.id,
+      name: projects.name,
+      number: projects.number,
+      status: projects.status,
+      clientCompanyId: projects.clientCompanyId,
+    })
+    .from(projects)
+    .where(isNull(projects.archivedAt))
+    .orderBy(desc(projects.number));
+  const ids = rows.map((r) => r.id);
+  const phases = ids.length
+    ? await db
+        .select({
+          projectId: projectPhases.projectId,
+          name: projectPhases.name,
+          sortOrder: projectPhases.sortOrder,
+          status: projectPhases.status,
+        })
+        .from(projectPhases)
+        .where(and(inArray(projectPhases.projectId, ids), isNull(projectPhases.archivedAt)))
+    : [];
+  const byProject = new Map<string, typeof phases>();
+  for (const ph of phases) byProject.set(ph.projectId, [...(byProject.get(ph.projectId) ?? []), ph]);
+  for (const r of rows)
+    add(r.clientCompanyId, { id: r.id, name: r.name, note: phaseText(r.status, byProject.get(r.id) ?? []) });
+
+  const links = await db
+    .select({
+      companyId: projectContacts.companyId,
+      projectId: projects.id,
+      name: projects.name,
+      role: projectContacts.role,
+    })
+    .from(projectContacts)
+    .innerJoin(projects, eq(projects.id, projectContacts.projectId))
+    .where(and(isNull(projectContacts.archivedAt), isNull(projects.archivedAt)))
+    .orderBy(desc(projects.number));
+  for (const l of links) add(l.companyId, { id: l.projectId, name: l.name, note: l.role ?? "" });
+
+  return { projects: out, fees: new Map() };
 }
 
 const byName = (a: string, b: string) =>

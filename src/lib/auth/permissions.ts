@@ -28,7 +28,7 @@ export type Member = { appRole: AppRole; active: boolean };
  * Projects arrive in Release 1; until then callers pass these flags directly.
  */
 export type ProjectScope = {
-  /** This person is the project's PM. */
+  /** This person is the project's PM (or its principal in charge). */
   isProjectManager?: boolean;
   /** This person is assigned to the project (on its team). */
   isAssigned?: boolean;
@@ -80,6 +80,9 @@ const RULES = {
   "projects.create": { ...OWNER_ADMIN, project_manager: true },
   // Edit project phases & fees
   "projects.edit_fees": { ...OWNER_ADMIN, project_manager: "own_projects" },
+  // See a project's fee, billed and health (projects-list): PMs only on
+  // projects they manage or are principal on; staff never.
+  "projects.view_fees": { ...OWNER_ADMIN, project_manager: "own_projects" },
   // View projects
   "projects.view": {
     owner: true,

@@ -104,6 +104,11 @@ const MATRIX: Row[] = [
     expected: OA,
   },
   {
+    row: "Projects: fee, billed, health (projects-list spec)",
+    actions: ["projects.view_fees"],
+    expected: { owner: true, admin: true, project_manager: "pm", staff: false },
+  },
+  {
     row: "Contacts: view",
     actions: ["contacts.view"],
     expected: { owner: true, admin: true, project_manager: true, staff: true },
