@@ -1,22 +1,15 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { Fragment, useMemo, useState, useTransition } from "react";
+import { Fragment, useState, useTransition } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Input, Select } from "@/components/ui/field";
+import { Dialog, DialogContent, DrawerContent } from "@/components/ui/dialog";
+import { Input, Select, Textarea } from "@/components/ui/field";
 import { ChevronDownIcon, ChevronUpIcon, PlusIcon } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/cn";
-import {
-  type EditRow,
-  completeWarnings,
-  defaultLocks,
-  mixHours,
-  phaseEditProblems,
-  redistribute,
-} from "@/lib/calc/phase-edit";
+import { completeWarnings, defaultLocks, mixHours, phaseEditProblems, redistribute } from "@/lib/calc/phase-edit";
 import { feeTypeSummary, fmtHours } from "@/lib/calc/project-detail";
 import { type FeeType, type PhaseStatus, hoursFromFee } from "@/lib/calc/projects";
 import { formatMoney, formatMoneySigned } from "@/lib/format";
@@ -24,36 +17,15 @@ import { FEE_TYPE_LABELS, moneyExact, moneyInput, parseMoney } from "@/lib/proje
 import { addPhase, updatePhases } from "@/server/projects/actions";
 import type { PhaseRow, ProjectPage } from "@/server/projects/page";
 import { PHASE_STATUS } from "../project-bits";
-import { type MixRow, RoleMixPanel } from "../role-mix-panel";
+import { type MixDraft, RoleMixEditor, RoleMixTable, fromDrafts, mixReady, toDrafts } from "../role-mix-panel";
+
+// Phases & fees (project-detail spec; Blake, 2026-11-03): each phase is
+// edited on its own in a side panel (details left, roles right). Roles show
+// in a small table under each phase. ↑/↓ reorder and save right away.
 
 const th = "cap border-b border-line px-2.5 py-2 text-left text-2xs font-medium whitespace-nowrap text-muted first:pl-[18px] last:pr-[18px]";
 const td = "border-b border-line-soft px-2.5 py-2.5 first:pl-[18px] last:pr-[18px]";
-const input = "h-8 rounded-sm border border-line-input bg-surface px-2 aria-[invalid=true]:border-red";
 const STATUSES: PhaseStatus[] = ["upcoming", "current", "complete", "closed"];
-
-/** One row while editing. Text boxes keep what's typed; numbers are parsed. */
-type Draft = {
-  key: string;
-  id: string | null;
-  code: string;
-  name: string;
-  description: string;
-  feeType: FeeType;
-  fee: string;
-  hours: string;
-  budgetHoursManual: boolean;
-  pct: string;
-  status: PhaseStatus;
-  startDate: string;
-  endDate: string;
-  isAdditionalService: boolean;
-  /** Undefined = unchanged. */
-  mix: MixRow[] | undefined;
-  savedMix: MixRow[];
-  savedFeeCents: number;
-  savedHours: number;
-  archived: boolean;
-};
 
 const hoursNum = (t: string) => {
   const v = t.trim().replace(/,/g, "");
@@ -66,163 +38,59 @@ const pctNum = (t: string) => {
   return /^\d+(\.\d{1,2})?$/.test(v) ? Math.round(Number(v) * 100) : Number.NaN;
 };
 
-function draftOf(p: PhaseRow): Draft {
-  const m = p.money!;
+/** A saved phase exactly as Save phases expects it (nothing changed). */
+function payloadOf(x: PhaseRow) {
+  const m = x.money!;
   return {
-    key: p.id,
-    id: p.id,
-    code: p.code,
-    name: p.name,
-    description: p.description ?? "",
+    id: x.id,
+    code: x.code,
+    name: x.name,
+    description: x.description ?? "",
     feeType: m.feeType,
-    fee: moneyInput(m.feeCents),
-    hours: String(m.budgetHours),
+    feeCents: m.feeCents,
+    budgetHours: m.budgetHours,
     budgetHoursManual: m.budgetHoursManual,
-    pct: String(m.percentCompleteBp / 100),
-    status: p.status,
-    startDate: p.startDate ?? "",
-    endDate: p.endDate ?? "",
+    percentCompleteBp: m.percentCompleteBp,
+    status: x.status,
+    startDate: x.startDate ?? "",
+    endDate: x.endDate ?? "",
     isAdditionalService: m.isAdditionalService,
-    mix: undefined,
-    savedMix: m.roles.map((r) => ({ firmRoleId: r.firmRoleId, shareBp: r.shareBp })),
-    savedFeeCents: m.feeCents,
-    savedHours: m.budgetHours,
     archived: false,
   };
 }
 
-/** Phases & fees table with Edit phases, Add phase and Redistribute (project-detail spec). */
 export function PhasesEditor({ p }: { p: ProjectPage }) {
   const router = useRouter();
   const toast = useToast();
   const [pending, startTransition] = useTransition();
   const rows = p.phases.filter((x) => x.money);
   const edit = p.phaseEdit;
-  const roles = edit?.roles ?? [];
-  const rateOf = (id: string) => roles.find((r) => r.id === id)?.billCents ?? 0;
-
-  const [drafts, setDrafts] = useState<Draft[] | null>(null);
-  const [rowErrors, setRowErrors] = useState<Record<number, Record<string, string>>>({});
-  const [banner, setBanner] = useState<{ text: string; stale: boolean } | null>(null);
-  const [mixFor, setMixFor] = useState<{ key: string; readOnly: boolean } | null>(null);
+  const [editing, setEditing] = useState<PhaseRow | null>(null);
   const [adding, setAdding] = useState(false);
   const [redistributing, setRedistributing] = useState(false);
+  const [banner, setBanner] = useState<string | null>(null);
+  const canEdit = p.canEdit && !!edit;
 
-  const set = (key: string, patch: Partial<Draft>) => {
-    const i = drafts?.findIndex((d) => d.key === key) ?? -1;
-    if (i >= 0 && rowErrors[i]) {
-      const rest = { ...rowErrors };
-      delete rest[i];
-      setRowErrors(rest);
-      if (Object.keys(rest).length === 0 && !banner?.stale) setBanner(null);
-    }
-    setDrafts((ds) => ds!.map((d) => (d.key === key ? { ...d, ...patch } : d)));
-  };
-  const move = (i: number, by: -1 | 1) =>
-    setDrafts((ds) => {
-      const next = [...ds!];
-      [next[i], next[i + by]] = [next[i + by], next[i]];
-      return next;
-    });
-
-  /** Hours shown for a row: typed, else from its mix, else from the fee at the blended rate. */
-  function autoHours(d: Draft, feeCents: number): number {
-    const mix = d.mix ?? d.savedMix;
-    if (d.feeType === "hourly") return hoursNum(d.hours);
-    if (mix.length && (d.mix !== undefined || feeCents !== d.savedFeeCents))
-      return mixHours(feeCents, mix.map((m) => ({ roleId: m.firmRoleId, shareBp: m.shareBp, rateCents: rateOf(m.firmRoleId) }))).total;
-    if (!mix.length && feeCents !== d.savedFeeCents) return hoursFromFee(feeCents, edit?.blendedBillRateCents ?? null) ?? d.savedHours;
-    return d.savedHours;
-  }
-  const rowValues = (d: Draft) => {
-    const feeCents = parseMoney(d.fee);
-    const typed = hoursNum(d.hours);
-    const budgetHours = d.budgetHoursManual ? typed : autoHours(d, feeCents ?? 0);
-    return { feeCents, budgetHours };
-  };
-
-  const live = useMemo(() => {
-    if (!drafts) return null;
-    const kept = drafts.filter((d) => !d.archived);
-    const vals = kept.map(rowValues);
-    return {
-      fee: vals.reduce((n, v) => n + (v.feeCents ?? 0), 0),
-      hours: vals.reduce((n, v) => n + Math.round((Number.isFinite(v.budgetHours) ? v.budgetHours : 0) * 4), 0) / 4,
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- rowValues reads drafts and the page's rates
-  }, [drafts]);
-
-  function asEditRow(d: Draft): EditRow {
-    const { feeCents, budgetHours } = rowValues(d);
-    return {
-      id: d.id,
-      code: d.code,
-      name: d.name,
-      feeType: d.feeType,
-      feeCents: feeCents ?? -1,
-      budgetHours: Number.isFinite(budgetHours) ? budgetHours : -1,
-      percentCompleteBp: Number.isFinite(pctNum(d.pct)) ? pctNum(d.pct) : -1,
-      status: d.status,
-      startDate: d.startDate || null,
-      endDate: d.endDate || null,
-    };
+  /** Save all phases (unchanged ones as they are), so order and the stale check stay right. */
+  async function saveAll(list: ReturnType<typeof payloadOf>[] | (ReturnType<typeof payloadOf> & { mix?: unknown })[]) {
+    return updatePhases({ projectId: p.id, loadedAt: edit!.loadedAt, rows: list });
   }
 
-  function save(source: Draft[], message = "Phases saved") {
-    // Same checks as the server (it re-checks, including what's been billed).
-    const kept = source.map((d, i) => ({ d, i })).filter(({ d }) => !d.archived);
-    const local = phaseEditProblems(kept.map(({ d }) => asEditRow(d)), new Map(), formatMoney);
-    const mapped: Record<number, Record<string, string>> = {};
-    for (const [k, v] of Object.entries(local)) mapped[kept[Number(k)].i] = v;
-    if (Object.keys(mapped).length) {
-      setRowErrors(mapped);
-      setBanner({ text: `${Object.keys(mapped).length} ${Object.keys(mapped).length === 1 ? "phase needs" : "phases need"} attention`, stale: false });
-      return;
-    }
+  function move(i: number, by: -1 | 1) {
+    const list = rows.map(payloadOf);
+    [list[i], list[i + by]] = [list[i + by], list[i]];
     startTransition(async () => {
-      const r = await updatePhases({
-        projectId: p.id,
-        loadedAt: edit!.loadedAt,
-        rows: source.map((d) => {
-          const { feeCents, budgetHours } = rowValues(d);
-          return {
-            id: d.id,
-            code: d.code,
-            name: d.name,
-            description: d.description,
-            feeType: d.feeType,
-            feeCents,
-            budgetHours,
-            budgetHoursManual: d.budgetHoursManual,
-            percentCompleteBp: pctNum(d.pct),
-            status: d.status,
-            startDate: d.startDate,
-            endDate: d.endDate,
-            isAdditionalService: d.isAdditionalService,
-            ...(d.mix !== undefined ? { mix: d.feeType === "hourly" ? [] : d.mix } : {}),
-            archived: d.archived,
-          };
-        }),
-      });
-      if (!r.ok) {
-        setRowErrors(r.rowErrors ?? {});
-        setBanner({ text: r.error ?? "Couldn't save the phases.", stale: r.error?.startsWith("Someone else") ?? false });
-        return;
-      }
-      setDrafts(null);
-      setRowErrors({});
+      const r = await saveAll(list);
+      if (!r.ok) return setBanner(r.error ?? "Couldn't move the phase.");
       setBanner(null);
-      toast(message);
       router.refresh();
     });
   }
 
-  const err = (i: number, f: string) => rowErrors[i]?.[f];
-  const warnings = drafts ? completeWarnings(drafts.filter((d) => !d.archived).map(asEditRow)) : [];
   const total = p.money?.feeCents ?? 0;
   const billed = rows.reduce((n, x) => n + x.money!.billedCents, 0);
   const pct = (fee: number) => (total > 0 ? `${Math.round((fee * 100) / total)}%` : "—");
-  const mixRow = mixFor && (drafts ?? rows.map(draftOf)).find((d) => d.key === mixFor.key);
+  const cols = canEdit ? 11 : 10;
 
   return (
     <section aria-label="Architectural fee by phase" className="rounded-sm border border-line bg-surface">
@@ -231,63 +99,27 @@ export function PhasesEditor({ p }: { p: ProjectPage }) {
           <h2 className="m-0 text-sm font-semibold">Architectural fee by phase</h2>
           <p className="m-0 mt-0.5 text-xs text-muted">{feeTypeSummary(rows.map((x) => x.money!.feeType))}</p>
         </div>
-        {p.canEdit && edit && !drafts && (
+        {canEdit && (
           <span className="ml-auto flex flex-wrap gap-2">
-            <Button icon={<PlusIcon />} onClick={() => setAdding(true)}>
-              Add phase
-            </Button>
             <Button onClick={() => setRedistributing(true)} disabled={rows.length === 0}>
               Redistribute fee
             </Button>
-            <Button variant="primary" onClick={() => setDrafts(rows.map(draftOf))} disabled={rows.length === 0}>
-              Edit phases
-            </Button>
-          </span>
-        )}
-        {drafts && (
-          <span className="ml-auto flex gap-2">
-            <Button
-              onClick={() => {
-                setDrafts(null);
-                setRowErrors({});
-                setBanner(null);
-              }}
-            >
-              Cancel
-            </Button>
-            <Button variant="primary" disabled={pending} onClick={() => save(drafts)}>
-              {pending ? "Saving…" : "Save phases"}
+            <Button variant="primary" icon={<PlusIcon />} onClick={() => setAdding(true)}>
+              Add phase
             </Button>
           </span>
         )}
       </header>
-
       {banner && (
         <div role="alert" className="mx-[var(--spacing-card)] mb-3 flex items-center gap-3 rounded-sm bg-red-tint px-3 py-2 text-sm text-red">
-          {banner.text}
-          {banner.stale && (
-            <Button className="ml-auto" onClick={() => window.location.reload()}>
-              Reload
-            </Button>
-          )}
-        </div>
-      )}
-      {warnings.map((w) => (
-        <div key={w.index} className="mx-[var(--spacing-card)] mb-3 flex items-center gap-3 rounded-sm bg-orange-tint px-3 py-2 text-sm text-orange-strong">
-          {w.text}
-          <Button
-            className="ml-auto"
-            onClick={() => {
-              const target = drafts!.filter((d) => !d.archived)[w.index];
-              set(target.key, { pct: "100" });
-            }}
-          >
-            Set to 100%
+          {banner}
+          <Button className="ml-auto" onClick={() => window.location.reload()}>
+            Reload
           </Button>
         </div>
-      ))}
+      )}
 
-      {rows.length === 0 && !drafts ? (
+      {rows.length === 0 ? (
         <div className="px-[var(--spacing-card)] pb-6 text-center">
           <p className="m-0 font-semibold">No phases yet</p>
           <p className="m-0 mt-1 text-sm text-muted">Add the phases this project is billed by.</p>
@@ -297,245 +129,126 @@ export function PhasesEditor({ p }: { p: ProjectPage }) {
           <table className="w-full min-w-[1040px] border-collapse text-sm">
             <thead className="bg-surface-2">
               <tr>
-                {drafts && <th scope="col" className={th}><span className="sr-only">Order</span></th>}
                 <th scope="col" className={th}>Phase</th>
                 <th scope="col" className={th}>Fee type</th>
                 <th scope="col" className={cn(th, "text-right")}>Fee</th>
                 <th scope="col" className={cn(th, "text-right")}>% of total</th>
                 <th scope="col" className={cn(th, "text-right")}>Budget hours</th>
-                {!drafts && <th scope="col" className={cn(th, "text-right")}>Hours used / budget</th>}
+                <th scope="col" className={cn(th, "text-right")}>Hours used / budget</th>
                 <th scope="col" className={cn(th, "text-right")}>% complete</th>
-                {drafts ? (
-                  <th scope="col" colSpan={2} className={cn(th, "text-right")}>Start / end</th>
-                ) : (
-                  <>
-                    <th scope="col" className={cn(th, "text-right")}>Billed</th>
-                    <th scope="col" className={cn(th, "text-right")}>Left to bill</th>
-                  </>
-                )}
+                <th scope="col" className={cn(th, "text-right")}>Billed</th>
+                <th scope="col" className={cn(th, "text-right")}>Left to bill</th>
                 <th scope="col" className={th}>Status</th>
-                {drafts && <th scope="col" className={th}><span className="sr-only">Archive</span></th>}
+                {canEdit && <th scope="col" className={th}><span className="sr-only">Actions</span></th>}
               </tr>
             </thead>
             <tbody>
-              {!drafts &&
-                rows.map((x) => {
-                  const m = x.money!;
-                  const left = m.feeCents - m.billedCents;
-                  return (
-                    <tr key={x.id} data-phase={x.code}>
-                      <td className={td}>
+              {rows.map((x, i) => {
+                const m = x.money!;
+                const left = m.feeCents - m.billedCents;
+                const hasRoles = m.roles.length > 0 && m.feeType !== "hourly";
+                const cell = cn(td, hasRoles && "border-b-0");
+                return (
+                  <Fragment key={x.id}>
+                    <tr data-phase={x.code}>
+                      <td className={cell}>
                         <span className="num mr-2 text-xs text-ink-3">{x.code}</span>
                         {x.name}
                         {m.isAdditionalService && <span className="ml-2 text-xs text-muted">Additional service</span>}
                       </td>
-                      <td className={td}>{m.feeType === "nte" ? "NTE" : FEE_TYPE_LABELS[m.feeType]}</td>
-                      <td className={cn(td, "num text-right")}>
+                      <td className={cell}>{m.feeType === "nte" ? "NTE" : FEE_TYPE_LABELS[m.feeType]}</td>
+                      <td className={cn(cell, "num text-right")}>
                         {formatMoney(m.feeCents)}
                         {m.feeType === "hourly" && m.feeCents === 0 && <span className="text-muted"> (estimate)</span>}
                       </td>
-                      <td className={cn(td, "num text-right")}>{pct(m.feeCents)}</td>
-                      <td className={cn(td, "num text-right")}>
-                        {fmtHours(m.budgetHours)}
-                        {m.roles.length > 0 && (
-                          <button
-                            type="button"
-                            onClick={() => setMixFor({ key: x.id, readOnly: true })}
-                            aria-label={`Roles for ${x.name}`}
-                            className="ml-1.5 cursor-pointer border-0 bg-transparent p-0 text-xs text-blue underline"
-                          >
-                            Roles ({m.roles.length})
-                          </button>
-                        )}
-                      </td>
-                      <td className={cn(td, "num text-right", m.usedHours > m.budgetHours && "text-red")}>
+                      <td className={cn(cell, "num text-right")}>{pct(m.feeCents)}</td>
+                      <td className={cn(cell, "num text-right")}>{fmtHours(m.budgetHours)}</td>
+                      <td className={cn(cell, "num text-right", m.usedHours > m.budgetHours && "text-red")}>
                         {fmtHours(m.usedHours)} / {fmtHours(m.budgetHours)} h
                       </td>
-                      <td className={cn(td, "num text-right")}>{m.feeType === "fixed" ? `${m.percentCompleteBp / 100}%` : "—"}</td>
-                      <td className={cn(td, "num text-right")}>{formatMoney(m.billedCents)}</td>
-                      <td className={cn(td, "num text-right", left < 0 && "text-red")}>{formatMoneySigned(left)}</td>
-                      <td className={td}>
+                      <td className={cn(cell, "num text-right")}>{m.feeType === "fixed" ? `${m.percentCompleteBp / 100}%` : "—"}</td>
+                      <td className={cn(cell, "num text-right")}>{formatMoney(m.billedCents)}</td>
+                      <td className={cn(cell, "num text-right", left < 0 && "text-red")}>{formatMoneySigned(left)}</td>
+                      <td className={cell}>
                         <Badge tone={PHASE_STATUS[x.status].tone} dot>
                           {PHASE_STATUS[x.status].label}
                         </Badge>
                       </td>
+                      {canEdit && (
+                        <td className={cn(cell, "text-right whitespace-nowrap")}>
+                          <Button variant="ghost" onClick={() => setEditing(x)} aria-label={`Edit ${x.name}`}>
+                            Edit
+                          </Button>
+                          <button
+                            type="button"
+                            aria-label={`Move ${x.name} up`}
+                            disabled={i === 0 || pending}
+                            onClick={() => move(i, -1)}
+                            className="cursor-pointer border-0 bg-transparent p-1 align-middle disabled:cursor-default disabled:opacity-30"
+                          >
+                            <ChevronUpIcon className="size-3.5" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label={`Move ${x.name} down`}
+                            disabled={i === rows.length - 1 || pending}
+                            onClick={() => move(i, 1)}
+                            className="cursor-pointer border-0 bg-transparent p-1 align-middle disabled:cursor-default disabled:opacity-30"
+                          >
+                            <ChevronDownIcon className="size-3.5" />
+                          </button>
+                        </td>
+                      )}
                     </tr>
-                  );
-                })}
-              {drafts?.map((d, i) => {
-                const { feeCents, budgetHours } = rowValues(d);
-                const mix = d.mix ?? d.savedMix;
-                return (
-                  <Fragment key={d.key}>
-                    <tr data-phase={d.code} className={cn(d.archived && "opacity-50")}>
-                      <td className={cn(td, "whitespace-nowrap")}>
-                        <button type="button" aria-label={`Move ${d.name} up`} disabled={i === 0} onClick={() => move(i, -1)} className="cursor-pointer border-0 bg-transparent p-0.5 disabled:opacity-30">
-                          <ChevronUpIcon className="size-3.5" />
-                        </button>
-                        <button type="button" aria-label={`Move ${d.name} down`} disabled={i === drafts.length - 1} onClick={() => move(i, 1)} className="cursor-pointer border-0 bg-transparent p-0.5 disabled:opacity-30">
-                          <ChevronDownIcon className="size-3.5" />
-                        </button>
-                      </td>
-                      <td className={td}>
-                        <span className="flex gap-1.5">
-                          <input aria-label={`${d.name} code`} value={d.code} maxLength={12} disabled={d.archived} aria-invalid={!!err(i, "code") || undefined} onChange={(e) => set(d.key, { code: e.target.value })} className={cn(input, "w-[64px]")} />
-                          <input aria-label={`${d.code} name`} value={d.name} maxLength={80} disabled={d.archived} aria-invalid={!!err(i, "name") || undefined} onChange={(e) => set(d.key, { name: e.target.value })} className={cn(input, "w-[170px]")} />
-                        </span>
-                        <label className="mt-1 flex items-center gap-1.5 text-xs text-muted">
-                          <input type="checkbox" checked={d.isAdditionalService} disabled={d.archived} onChange={(e) => set(d.key, { isAdditionalService: e.target.checked })} className="size-3.5 accent-ink" />
-                          Additional service
-                        </label>
-                        {(err(i, "code") || err(i, "name")) && <p className="m-0 mt-1 text-xs text-red">{err(i, "code") ?? err(i, "name")}</p>}
-                      </td>
-                      <td className={td}>
-                        <select
-                          aria-label={`${d.name} fee type`}
-                          value={d.feeType}
-                          disabled={d.archived}
-                          aria-invalid={!!err(i, "feeType") || undefined}
-                          onChange={(e) => set(d.key, { feeType: e.target.value as FeeType })}
-                          className={input}
-                        >
-                          {(Object.keys(FEE_TYPE_LABELS) as FeeType[]).map((t) => (
-                            <option key={t} value={t}>
-                              {FEE_TYPE_LABELS[t]}
-                            </option>
-                          ))}
-                        </select>
-                        {err(i, "feeType") && <p className="m-0 mt-1 max-w-[160px] text-xs text-red">{err(i, "feeType")}</p>}
-                      </td>
-                      <td className={cn(td, "text-right")}>
-                        <input
-                          aria-label={`${d.name} fee`}
-                          value={d.fee}
-                          inputMode="decimal"
-                          disabled={d.archived}
-                          aria-invalid={feeCents === null || !!err(i, "feeCents") || undefined}
-                          onChange={(e) => set(d.key, { fee: e.target.value })}
-                          className={cn(input, "num w-[110px] text-right")}
-                        />
-                        {err(i, "feeCents") && <p className="m-0 mt-1 max-w-[180px] text-xs text-red">{err(i, "feeCents")}</p>}
-                      </td>
-                      <td className={cn(td, "num text-right")}>{live && live.fee > 0 && feeCents !== null ? `${Math.round((feeCents * 100) / live.fee)}%` : "—"}</td>
-                      <td className={cn(td, "text-right")}>
-                        <span className="inline-flex items-center gap-1.5">
-                          {d.budgetHoursManual && <span role="img" aria-label="edited" className="size-1.5 rounded-full bg-blue" />}
-                          <input
-                            aria-label={`${d.name} budget hours`}
-                            value={d.budgetHoursManual || d.feeType === "hourly" ? d.hours : String(budgetHours)}
-                            inputMode="decimal"
-                            disabled={d.archived}
-                            aria-invalid={!!err(i, "budgetHours") || undefined}
-                            onChange={(e) => set(d.key, { hours: e.target.value, budgetHoursManual: d.feeType !== "hourly" })}
-                            className={cn(input, "num w-[84px] text-right")}
+                    {hasRoles && (
+                      <tr data-roles-for={x.code}>
+                        <td colSpan={cols} className="border-b border-line-soft px-[18px] pt-0 pb-3 pl-[46px]">
+                          <RoleMixTable
+                            label={`Roles for ${x.name}`}
+                            roles={m.roles.map((r) => ({ ...r, cents: Math.round((m.feeCents * r.shareBp) / 10_000) }))}
                           />
-                        </span>
-                        <span className="mt-1 flex justify-end gap-2 text-xs">
-                          {d.feeType !== "hourly" && (
-                            <button type="button" disabled={d.archived} onClick={() => setMixFor({ key: d.key, readOnly: false })} aria-label={`Roles for ${d.name}`} className="cursor-pointer border-0 bg-transparent p-0 text-blue underline">
-                              Roles{mix.length ? ` (${mix.length})` : ""}
-                            </button>
-                          )}
-                          {d.budgetHoursManual && (
-                            <button type="button" onClick={() => set(d.key, { budgetHoursManual: false })} className="cursor-pointer border-0 bg-transparent p-0 text-blue underline">
-                              Auto
-                            </button>
-                          )}
-                        </span>
-                        {err(i, "budgetHours") && <p className="m-0 mt-1 text-xs text-red">{err(i, "budgetHours")}</p>}
-                      </td>
-                      <td className={cn(td, "text-right")}>
-                        {d.feeType === "fixed" ? (
-                          <span className="inline-flex items-center gap-1">
-                            <input
-                              aria-label={`${d.name} percent complete`}
-                              value={d.pct}
-                              inputMode="decimal"
-                              disabled={d.archived}
-                              aria-invalid={!!err(i, "percentCompleteBp") || undefined}
-                              onChange={(e) => set(d.key, { pct: e.target.value })}
-                              className={cn(input, "num w-[60px] text-right")}
-                            />
-                            %
-                          </span>
-                        ) : (
-                          <span className="text-muted">—</span>
-                        )}
-                        {err(i, "percentCompleteBp") && <p className="m-0 mt-1 text-xs text-red">{err(i, "percentCompleteBp")}</p>}
-                      </td>
-                      <td className={cn(td, "text-right")} colSpan={2}>
-                        <span className="flex flex-col items-end gap-1">
-                          <input type="date" aria-label={`${d.name} start date`} value={d.startDate} disabled={d.archived} onChange={(e) => set(d.key, { startDate: e.target.value })} className={cn(input, "w-[132px]")} />
-                          <input type="date" aria-label={`${d.name} end date`} value={d.endDate} disabled={d.archived} aria-invalid={!!err(i, "endDate") || undefined} onChange={(e) => set(d.key, { endDate: e.target.value })} className={cn(input, "w-[132px]")} />
-                        </span>
-                        {err(i, "endDate") && <p className="m-0 mt-1 text-xs text-red">{err(i, "endDate")}</p>}
-                      </td>
-                      <td className={td}>
-                        <select aria-label={`${d.name} status`} value={d.status} disabled={d.archived} onChange={(e) => set(d.key, { status: e.target.value as PhaseStatus })} className={input}>
-                          {STATUSES.map((s) => (
-                            <option key={s} value={s}>
-                              {PHASE_STATUS[s].label}
-                            </option>
-                          ))}
-                        </select>
-                      </td>
-                      <td className={td}>
-                        <Button variant="ghost" aria-label={`${d.archived ? "Keep" : "Archive"} ${d.name}`} onClick={() => set(d.key, { archived: !d.archived })}>
-                          {d.archived ? "Undo" : "Archive"}
-                        </Button>
-                        {err(i, "archived") && <p className="m-0 mt-1 max-w-[160px] text-xs text-red">{err(i, "archived")}</p>}
-                      </td>
-                    </tr>
+                        </td>
+                      </tr>
+                    )}
                   </Fragment>
                 );
               })}
             </tbody>
             <tfoot>
               <tr className="font-semibold">
-                {drafts && <td />}
                 <td className="px-2.5 py-2.5 pl-[18px]" colSpan={2}>
                   Total
                 </td>
                 <td className="num px-2.5 py-2.5 text-right" data-testid="phase-fee-total">
-                  {formatMoney(drafts ? live!.fee : total)}
+                  {formatMoney(total)}
                 </td>
-                <td className="num px-2.5 py-2.5 text-right">{(drafts ? live!.fee : total) > 0 ? "100%" : "—"}</td>
+                <td className="num px-2.5 py-2.5 text-right">{total > 0 ? "100%" : "—"}</td>
                 <td className="num px-2.5 py-2.5 text-right" data-testid="phase-hours-total">
-                  {fmtHours(drafts ? live!.hours : rows.reduce((n, x) => n + x.money!.budgetHours, 0))}
+                  {fmtHours(rows.reduce((n, x) => n + x.money!.budgetHours, 0))}
                 </td>
-                {!drafts && (
-                  <td className="num px-2.5 py-2.5 text-right">
-                    {fmtHours(rows.reduce((n, x) => n + x.money!.usedHours, 0))} h
-                  </td>
-                )}
+                <td className="num px-2.5 py-2.5 text-right">{fmtHours(rows.reduce((n, x) => n + x.money!.usedHours, 0))} h</td>
                 <td />
-                {drafts ? (
-                  <td colSpan={2} />
-                ) : (
-                  <>
-                    <td className="num px-2.5 py-2.5 text-right">{formatMoney(billed)}</td>
-                    <td className="num px-2.5 py-2.5 text-right">{formatMoneySigned(total - billed)}</td>
-                  </>
-                )}
+                <td className="num px-2.5 py-2.5 text-right">{formatMoney(billed)}</td>
+                <td className="num px-2.5 py-2.5 text-right">{formatMoneySigned(total - billed)}</td>
                 <td />
-                {drafts && <td />}
+                {canEdit && <td />}
               </tr>
             </tfoot>
           </table>
         </div>
       )}
 
-      {mixFor && mixRow && (
-        <RoleMixPanel
-          title={`Roles · ${mixRow.code} ${mixRow.name}`}
-          feeCents={parseMoney(mixRow.fee) ?? 0}
-          mix={mixRow.mix ?? mixRow.savedMix}
-          roles={mixFor.readOnly ? rowsRoles(rows.find((x) => x.id === mixFor.key)!) : roles}
-          readOnly={mixFor.readOnly}
-          onClose={() => setMixFor(null)}
-          onSave={(mix) => {
-            set(mixRow.key, { mix, budgetHoursManual: false });
-            setMixFor(null);
+      {editing && edit && (
+        <PhasePanel
+          phase={editing}
+          all={rows}
+          edit={edit}
+          onClose={() => setEditing(null)}
+          save={saveAll}
+          onSaved={(msg) => {
+            setEditing(null);
+            toast(msg);
+            router.refresh();
           }}
         />
       )}
@@ -561,17 +274,18 @@ export function PhasesEditor({ p }: { p: ProjectPage }) {
           onClose={() => setRedistributing(false)}
           onApply={(fees, hours) => {
             setRedistributing(false);
-            save(
-              rows.map((x) => {
-                const d = draftOf(x);
-                return {
-                  ...d,
-                  fee: moneyInput(fees[x.id]),
-                  ...(hours ? { hours: String(hours[x.id]), budgetHoursManual: true } : {}),
-                };
-              }),
-              "Fee redistributed",
-            );
+            startTransition(async () => {
+              const r = await saveAll(
+                rows.map((x) => ({
+                  ...payloadOf(x),
+                  feeCents: fees[x.id],
+                  ...(hours ? { budgetHours: hours[x.id], budgetHoursManual: true } : {}),
+                })),
+              );
+              if (!r.ok) return setBanner(r.error ?? "Couldn't redistribute the fee.");
+              toast("Fee redistributed");
+              router.refresh();
+            });
           }}
         />
       )}
@@ -579,9 +293,247 @@ export function PhasesEditor({ p }: { p: ProjectPage }) {
   );
 }
 
-/** For the read-only panel: the rates saved with the mix, not today's. */
-function rowsRoles(x: PhaseRow) {
-  return x.money!.roles.map((r) => ({ id: r.firmRoleId, name: r.roleName, billCents: r.rateCents }));
+/** One phase: details on the left, roles on the right. */
+function PhasePanel({
+  phase,
+  all,
+  edit,
+  onClose,
+  save,
+  onSaved,
+}: {
+  phase: PhaseRow;
+  all: PhaseRow[];
+  edit: NonNullable<ProjectPage["phaseEdit"]>;
+  onClose: () => void;
+  save: (rows: (ReturnType<typeof payloadOf> & { mix?: unknown })[]) => ReturnType<typeof updatePhases>;
+  onSaved: (message: string) => void;
+}) {
+  const m = phase.money!;
+  const [pending, startTransition] = useTransition();
+  const [v, setV] = useState({
+    code: phase.code,
+    name: phase.name,
+    description: phase.description ?? "",
+    feeType: m.feeType,
+    fee: moneyInput(m.feeCents),
+    hours: String(m.budgetHours),
+    budgetHoursManual: m.budgetHoursManual,
+    pct: String(m.percentCompleteBp / 100),
+    status: phase.status,
+    startDate: phase.startDate ?? "",
+    endDate: phase.endDate ?? "",
+    isAdditionalService: m.isAdditionalService,
+  });
+  const [mix, setMix] = useState<MixDraft[]>(() => toDrafts(m.roles.map((r) => ({ firmRoleId: r.firmRoleId, shareBp: r.shareBp }))));
+  const [mixTouched, setMixTouched] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState<string | null>(null);
+  const [confirmArchive, setConfirmArchive] = useState(false);
+  const set = (patch: Partial<typeof v>) => {
+    setV((x) => ({ ...x, ...patch }));
+    setErrors({});
+  };
+
+  const rateOf = (id: string) => edit.roles.find((r) => r.id === id)?.billCents ?? 0;
+  const feeCents = parseMoney(v.fee);
+  const hourly = v.feeType === "hourly";
+  // Hours: typed, else from the roles, else (if the fee changed) the blended rate, else as saved.
+  const autoHours = (() => {
+    const fee = feeCents ?? 0;
+    if (hourly) return hoursNum(v.hours);
+    if (mix.length && (mixTouched || fee !== m.feeCents))
+      return mixHours(fee, mix.map((r) => ({ roleId: r.firmRoleId, shareBp: r.shareBp, rateCents: rateOf(r.firmRoleId) }))).total;
+    if (!mix.length && (mixTouched || fee !== m.feeCents)) return hoursFromFee(fee, edit.blendedBillRateCents) ?? m.budgetHours;
+    return m.budgetHours;
+  })();
+  const budgetHours = v.budgetHoursManual || hourly ? hoursNum(v.hours) : autoHours;
+  const otherFees = all.filter((x) => x.id !== phase.id).reduce((n, x) => n + x.money!.feeCents, 0);
+  const editRow = {
+    id: phase.id,
+    code: v.code,
+    name: v.name,
+    feeType: v.feeType,
+    feeCents: feeCents ?? -1,
+    budgetHours: Number.isFinite(budgetHours) ? budgetHours : -1,
+    percentCompleteBp: Number.isFinite(pctNum(v.pct)) ? pctNum(v.pct) : -1,
+    status: v.status,
+    startDate: v.startDate || null,
+    endDate: v.endDate || null,
+  };
+  const warning = completeWarnings([editRow])[0];
+
+  function submit(archived: boolean) {
+    const others = all.filter((x) => x.id !== phase.id);
+    if (!archived) {
+      // Same checks as the server, with this phase among the others.
+      const list = [...others.map((x) => ({ ...payloadOf(x), feeCents: x.money!.feeCents })), editRow];
+      const problems = phaseEditProblems(list as Parameters<typeof phaseEditProblems>[0], new Map(), formatMoney)[list.length - 1];
+      if (problems) return setErrors(problems);
+      if (!mixReady(mix)) return setFormError("Role shares must add up to 100%, or remove the roles.");
+    }
+    setFormError(null);
+    startTransition(async () => {
+      const mine = {
+        ...payloadOf(phase),
+        code: v.code,
+        name: v.name,
+        description: v.description,
+        feeType: v.feeType,
+        feeCents: feeCents ?? 0,
+        budgetHours,
+        budgetHoursManual: v.budgetHoursManual && !hourly,
+        percentCompleteBp: pctNum(v.pct),
+        status: v.status,
+        startDate: v.startDate,
+        endDate: v.endDate,
+        isAdditionalService: v.isAdditionalService,
+        archived,
+        ...(mixTouched ? { mix: hourly ? [] : fromDrafts(mix) } : {}),
+      };
+      const r = await save(all.map((x) => (x.id === phase.id ? mine : payloadOf(x))));
+      setConfirmArchive(false);
+      if (!r.ok) {
+        const i = all.findIndex((x) => x.id === phase.id);
+        setErrors(r.rowErrors?.[i] ?? {});
+        setFormError(r.error ?? "Couldn't save.");
+        return;
+      }
+      onSaved(archived ? `${phase.code} archived` : `${v.code.trim()} saved`);
+    });
+  }
+
+  const e = (k: string) => errors[k];
+  return (
+    <>
+      <Dialog open onOpenChange={(o) => !o && onClose()}>
+        <DrawerContent
+          title={`Edit ${phase.code} · ${phase.name}`}
+          description={feeCents !== null ? `Project fee becomes ${moneyExact(otherFees + feeCents)}` : undefined}
+          className="max-w-[1040px]!"
+          footer={
+            <>
+              <Button variant="danger" className="mr-auto" onClick={() => setConfirmArchive(true)}>
+                Archive phase
+              </Button>
+              {formError && (
+                <span role="alert" className="text-sm text-red">
+                  {formError}
+                </span>
+              )}
+              <Button onClick={onClose}>Cancel</Button>
+              <Button variant="primary" disabled={pending} onClick={() => submit(false)}>
+                {pending ? "Saving…" : "Save phase"}
+              </Button>
+            </>
+          }
+        >
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+            <section aria-label="Phase details" className="flex flex-col gap-4">
+              <h3 className="cap m-0 text-xs font-semibold text-ink-2">Phase details</h3>
+              <div className="grid grid-cols-[110px_1fr] gap-4">
+                <Input label="Code *" value={v.code} maxLength={12} error={e("code")} onChange={(x) => set({ code: x.target.value })} />
+                <Input label="Name *" value={v.name} maxLength={80} error={e("name")} onChange={(x) => set({ name: x.target.value })} />
+              </div>
+              <Textarea label="Description" value={v.description} maxLength={500} rows={2} onChange={(x) => set({ description: x.target.value })} />
+              <div className="grid grid-cols-2 gap-4">
+                <Select label="Fee type" value={v.feeType} error={e("feeType")} onChange={(x) => set({ feeType: x.target.value as FeeType })}>
+                  {(Object.keys(FEE_TYPE_LABELS) as FeeType[]).map((t) => (
+                    <option key={t} value={t}>
+                      {FEE_TYPE_LABELS[t]}
+                    </option>
+                  ))}
+                </Select>
+                <Input
+                  label="Fee"
+                  value={v.fee}
+                  inputMode="decimal"
+                  error={feeCents === null ? "Enter a fee of $0 or more" : e("feeCents")}
+                  onChange={(x) => set({ fee: x.target.value })}
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Input
+                    label="Budget hours"
+                    value={v.budgetHoursManual || hourly ? v.hours : String(budgetHours)}
+                    inputMode="decimal"
+                    error={e("budgetHours")}
+                    hint={hourly ? "Typed in for hourly phases" : v.budgetHoursManual ? "Typed in" : mix.length ? "From the roles" : "From the fee at the blended rate"}
+                    onChange={(x) => set({ hours: x.target.value, budgetHoursManual: !hourly })}
+                  />
+                  {v.budgetHoursManual && !hourly && (
+                    <button type="button" onClick={() => set({ budgetHoursManual: false })} className="mt-1 cursor-pointer border-0 bg-transparent p-0 text-xs text-blue underline">
+                      Work it out from the fee
+                    </button>
+                  )}
+                </div>
+                {v.feeType === "fixed" ? (
+                  <Input label="% complete" value={v.pct} inputMode="decimal" error={e("percentCompleteBp")} onChange={(x) => set({ pct: x.target.value })} />
+                ) : (
+                  <div />
+                )}
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                <Select label="Status" value={v.status} onChange={(x) => set({ status: x.target.value as PhaseStatus })}>
+                  {STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {PHASE_STATUS[s].label}
+                    </option>
+                  ))}
+                </Select>
+                <Input label="Start" type="date" value={v.startDate} onChange={(x) => set({ startDate: x.target.value })} />
+                <Input label="End" type="date" value={v.endDate} error={e("endDate")} onChange={(x) => set({ endDate: x.target.value })} />
+              </div>
+              {warning && (
+                <div className="flex items-center gap-3 rounded-sm bg-orange-tint px-3 py-2 text-sm text-orange-strong">
+                  {warning.text}
+                  <Button className="ml-auto" onClick={() => set({ pct: "100" })}>
+                    Set to 100%
+                  </Button>
+                </div>
+              )}
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={v.isAdditionalService} onChange={(x) => set({ isAdditionalService: x.target.checked })} className="size-4 accent-ink" />
+                Additional service
+              </label>
+              {e("archived") && <p className="m-0 text-sm text-red">{e("archived")}</p>}
+            </section>
+            <section aria-label="Roles" className="flex flex-col gap-3">
+              <h3 className="cap m-0 text-xs font-semibold text-ink-2">Roles</h3>
+              {hourly ? (
+                <p className="m-0 text-sm text-muted">Hourly phases are billed by the hour, so they have no role split.</p>
+              ) : (
+                <RoleMixEditor
+                  rows={mix}
+                  onChange={(rows) => {
+                    setMix(rows);
+                    setMixTouched(true);
+                  }}
+                  feeCents={feeCents ?? 0}
+                  roles={edit.roles}
+                />
+              )}
+            </section>
+          </div>
+        </DrawerContent>
+      </Dialog>
+      <Dialog open={confirmArchive} onOpenChange={(o) => !o && setConfirmArchive(false)}>
+        <DialogContent
+          title={`Archive ${phase.code}?`}
+          description={`${phase.name} comes off this project and its fee leaves the total. Phases with time or invoices can't be archived; set them to Closed instead.`}
+          footer={
+            <>
+              <Button onClick={() => setConfirmArchive(false)}>Cancel</Button>
+              <Button variant="danger" disabled={pending} onClick={() => submit(true)}>
+                Archive
+              </Button>
+            </>
+          }
+        />
+      </Dialog>
+    </>
+  );
 }
 
 function AddPhaseDialog({

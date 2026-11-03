@@ -1,10 +1,10 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { Fragment, useMemo, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { type MixRow, RoleMixPanel } from "./role-mix-panel";
+import { type MixRow, RoleMixPanel, RoleMixTable } from "./role-mix-panel";
 import { EMPTY_DRAFT, ProjectFields, type ProjectDraft, checkDraft } from "./project-fields";
 import { Input } from "@/components/ui/field";
 import { cn } from "@/lib/cn";
@@ -249,7 +249,8 @@ export function NewProjectForm({
                 const split = r.include && r.feeType !== "hourly";
                 const dot = <span aria-label="edited" role="img" className="size-1.5 rounded-full bg-blue" />;
                 return (
-                  <tr key={r.key} data-phase={r.code} className={cn(!r.include && "opacity-50")}>
+                  <Fragment key={r.key}>
+                  <tr data-phase={r.code} className={cn(!r.include && "opacity-50")}>
                     <td className={cn(cell, "pl-[18px]")}>
                       <input
                         type="checkbox"
@@ -343,20 +344,40 @@ export function NewProjectForm({
                           onBlur={() => draft(r.key, { hours: undefined })}
                           className="num h-8 w-[90px] rounded-sm border border-line-input bg-surface px-2 text-right aria-[invalid=true]:border-red"
                         />
-                        {r.feeType !== "hourly" && (
-                          <button
-                            type="button"
-                            disabled={!r.include}
-                            onClick={() => setMixFor(r.key)}
-                            aria-label={`Roles for ${r.name}`}
-                            className="ml-1 cursor-pointer border-0 bg-transparent p-0 text-xs text-blue underline disabled:cursor-not-allowed disabled:text-faint"
-                          >
-                            Roles{r.mix.length ? ` (${r.mix.length})` : ""}
-                          </button>
-                        )}
                       </span>
                     </td>
                   </tr>
+                  {r.include && r.feeType !== "hourly" && (
+                    <tr data-roles-for={r.code}>
+                      <td colSpan={7} className="border-b border-line-soft px-[18px] pt-0 pb-3 pl-[52px]">
+                        {r.mix.length > 0 && (
+                          <RoleMixTable
+                            label={`Roles for ${r.name}`}
+                            roles={(() => {
+                              const calc = mixHours(plan.fees[r.key], r.mix.map((x) => ({ roleId: x.firmRoleId, shareBp: x.shareBp, rateCents: rateOf(x.firmRoleId) })));
+                              return r.mix.map((x, i) => ({
+                                roleName: options.roles.find((o) => o.id === x.firmRoleId)?.name ?? "Role",
+                                shareBp: x.shareBp,
+                                rateCents: rateOf(x.firmRoleId),
+                                cents: calc.roles[i].cents,
+                                hours: calc.roles[i].hours,
+                              }));
+                            })()}
+                          />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setMixFor(r.key)}
+                          aria-label={`${r.mix.length ? "Edit" : "Add"} roles for ${r.name}`}
+                          className="mt-1 cursor-pointer border-0 bg-transparent p-0 text-xs text-blue underline"
+                        >
+                          {r.mix.length ? "Edit roles" : "Add roles"}
+                        </button>
+                        {r.mix.length === 0 && <span className="ml-2 text-xs text-muted">Hours come from the blended bill rate.</span>}
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 );
               })}
             </tbody>
@@ -414,7 +435,7 @@ export function NewProjectForm({
           )}
           <p className="m-0 text-xs text-muted" data-testid="hours-note">
             {rate
-              ? `Budget hours = phase fee ÷ each role's bill rate (Roles), or the blended bill rate (${formatMoney(rate)}/h) for phases with no roles, to the quarter hour. Type over any phase's hours.`
+              ? `Budget hours = phase fee ÷ each role's bill rate (the roles under each phase), or the blended bill rate (${formatMoney(rate)}/h) for phases with no roles, to the quarter hour. Type over any phase's hours.`
               : "Set up roles and rates in Settings → Rates & roles to fill in budget hours from the fee. Until then, type them in."}
           </p>
           <ul className="m-0 list-none p-0 text-xs text-muted">
