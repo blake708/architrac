@@ -138,6 +138,8 @@ Tests: `src/lib/calc/contacts.test.ts`, `src/lib/contacts/display.test.ts`, `src
 - [x] Given a PM, when they open a drawer, then no Archive control is shown.
 - [x] Given a search with no matches, then the empty message and "Clear search and filters" are shown, and clicking it restores the full list.
 
+- [x] *(Added Blake, 2026-11-03)* Given a company panel, then a People section lists everyone at the company (name, title, main/billing contact, email); clicking a name opens that person. Owners, admins and PMs see **Add person**, which opens New contact with the company filled in and returns to the company after saving.
+
 ## Open questions
 10. *(Added Blake, 2026-11-02)* Until invoices (1.8) exist, a client with nothing billed shows "—" in Billed / fees, not "Paid up". Project counts and lists fill in from 1.4 (projects) and 1.5 (consultants).
 1. **Decided (Blake, 2026-11-02): add `agency`** as its own kind. *(Was: data model addition needed:* add `agency` to enum `company_kind` (mockup filter and pill "Agency" for building departments, planning & zoning). Alternative: map to `other` and label it "Agency" — Blake to choose.

@@ -411,6 +411,7 @@ export function ContactsPage({ view, initial }: { view: ContactsView; initial: C
         onEditCompany={(c) => setCompanyForm({ open: true, company: c })}
         onEditContact={(p) => setContactForm({ open: true, contact: p, preset: null })}
         onAddContact={(id) => setContactForm({ open: true, contact: null, preset: id })}
+        onOpenContact={(p) => setOpen({ type: "contact", id: p.id })}
         onArchiveCompany={(c) => setConfirm({ type: "company", row: c })}
         onArchiveContact={(p) => setConfirm({ type: "contact", row: p })}
       />
@@ -435,9 +436,14 @@ export function ContactsPage({ view, initial }: { view: ContactsView; initial: C
         people={view.contacts}
         onClose={() => setContactForm({ open: false, contact: null, preset: null })}
         onSaved={(id, message) => {
+          const fromCompany = contactForm.preset;
           setContactForm({ open: false, contact: null, preset: null });
-          setTab("people");
-          setOpen({ type: "contact", id });
+          // Added from a company panel: go back to that company's People list.
+          if (fromCompany) setOpen({ type: "company", id: fromCompany });
+          else {
+            setTab("people");
+            setOpen({ type: "contact", id });
+          }
           done(message);
         }}
       />
