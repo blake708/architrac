@@ -91,7 +91,8 @@ const project = (over: Record<string, unknown>) => ({
   ...over,
 });
 const editInput = (over: Record<string, unknown> = {}) => {
-  const { totalFeeCents: _f, totalBudgetHours: _h, phases: _p, ...rest } = project({});
+  const rest: Record<string, unknown> = project({});
+  for (const k of ["totalFeeCents", "totalBudgetHours", "phases"]) delete rest[k];
   return { ...rest, id: mobId, pmMembershipId: pm.membershipId, ...over };
 };
 
