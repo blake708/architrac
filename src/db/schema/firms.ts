@@ -73,6 +73,8 @@ export const firmSettings = pgTable(
     defaultPaymentTermsDays: smallint("default_payment_terms_days")
       .notNull()
       .default(30),
+    /** Markup on new consultants' fees, 1000 = 10% (project-detail, 1.5). */
+    defaultConsultantMarkupBp: integer("default_consultant_markup_bp").notNull().default(1000),
     /** Add-on modules switched on. New firms start with none. */
     modulesEnabled: text("modules_enabled")
       .array()
@@ -90,5 +92,9 @@ export const firmSettings = pgTable(
       sql`${t.timesheetLockDay} between 0 and 6`,
     ),
     check("firm_settings_overhead_rate_bp_min", sql`${t.overheadRateBp} >= 0`),
+    check(
+      "firm_settings_consultant_markup_range",
+      sql`${t.defaultConsultantMarkupBp} between 0 and 10000`,
+    ),
   ],
 );

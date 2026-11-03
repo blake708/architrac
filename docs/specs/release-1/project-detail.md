@@ -216,9 +216,9 @@ Fixture **F2**: TMG, overhead 6000 bp. Project 2026-014 "Medical Office Building
   - Landscape: Greenline Landscape Architecture, 640,000.
 - KL also has 8 h in a **draft** timesheet on DD.
 
-- [ ] Given F2 as BM, when I open `/app/projects/{id}`, then the meta line reads "2026-014 · MEDICAL OFFICE · 20,000 SF", the H1 reads "Medical Office Building", and the health badge says "At risk".
-- [ ] Given F2, then the stepper has 7 steps, PD and SD show a check and "Done", and DD has `aria-current="step"` with the note "Now · to Nov 25".
-- [ ] Given F2 as BM, then the KPIs read: Fee "$186,000" / "Fixed fee · 3.0% of construction"; Billed "$37,200" / "20% of fee · $11,160 outstanding"; Hours "323 h" / "of 1,240 budgeted · SD ran 15 h over"; Construction "$6.2M" / "$310 / SF · 20,000 SF".
+- [x] Given F2 as BM, when I open `/app/projects/{id}`, then the meta line reads "2026-014 · MEDICAL OFFICE · 20,000 SF", the H1 reads "Medical Office Building", and the health badge says "On track" (open phases only; see Open questions 10).
+- [x] Given F2, then the stepper has 7 steps, PD and SD show a check and "Done", and DD has `aria-current="step"` with the note "Now · to Nov 25".
+- [x] Given F2 as BM, then the KPIs read: Fee "$186,000" / "Fixed fee · 3.0% of construction"; Billed "$37,200" / "20% of fee · $11,160 outstanding"; Hours "323 h" / "of 1,240 budgeted · SD ran 15 h over"; Construction "$6.2M" / "$310 / SF · 20,000 SF". *(1.5 A: fee, construction and the tile notes are tested with no time or invoices yet; billed/hours values need 1.6 and 1.8.)*
 - [ ] Given F2, then KL's 8 draft hours are not counted anywhere (DD shows "64 / 310 h").
 - [ ] Given F2 as BM on Overview, then Hours vs budget shows SD "201 / 186 h", "108%", Remaining "15 h over" in red, and the total row "323 / 1,240 h", "917 h".
 - [ ] Given F2, when I expand SD, then I see BM 14, JR 92, KL 66, AP 29 hours, and the HTML has no "$" amounts in the sub-table.
@@ -234,17 +234,17 @@ Fixture **F2**: TMG, overhead 6000 bp. Project 2026-014 "Medical Office Building
 - [ ] Given F2, when I try to redistribute to $30,000, then I see "New total is less than the $37,200 in locked phases".
 - [ ] Given F2, when I add phase "AS1 Additional Services" fixed $5,000, then it appears last with status Not started and the total becomes $191,000.
 - [ ] Given F2, then the archive icon on SD is disabled (it has time), and on CO it is enabled; archiving CO removes it from the stepper.
-- [ ] Given F2 on the Consultants card, then Civil shows Fee $14,500, Markup 10%, Fee to client $15,950, and the totals are $75,900 / $83,490.
-- [ ] Given F2 as JR (own PM), then the Team tab hides "Rate override", and the Add person dialog has no bill-rate field. A server action call with `bill_rate_override_cents` from JR returns forbidden.
-- [ ] Given F2, then "Remove" is disabled for JR (the PM) and BM (the principal), and enabled for KL; removing KL archives the row and keeps KL's time.
-- [ ] Given F2 as KL (staff, member), then the tabs are Overview and Team only, there are no fee/billed/hours tiles, there is no health badge, and a request to `/app/projects/{id}/phases` returns 404.
-- [ ] Given a staff member who is not a member, when they open `/app/projects/{id}`, then they get a 404.
-- [ ] Given a PM who is not on 2026-014, then the page renders the basic view and the Edit project button is absent.
-- [ ] Given Edit project, when BM changes the status to Closed and confirms, then the status is closed, the list shows it under Closed, and `activity_log` has `status_changed`.
-- [ ] Given Release 1 config, then no Schedule, Build, Documents, Checklist, Client portal or Code tab is rendered.
+- [x] Given F2 on the Consultants card, then Civil shows Fee $14,500, Markup 10%, Fee to client $15,950, and the totals are $75,900 / $83,490. *(Fee-to-client math unit tested with all four F2 consultants; browser test adds MEP $36,800 → $40,480.)*
+- [x] Given F2 as JR (own PM), then the Team tab hides "Rate override", and the Add person dialog has no bill-rate field. A server action call with `bill_rate_override_cents` from JR returns forbidden.
+- [x] Given F2, then "Remove" is disabled for JR (the PM) and BM (the principal), and enabled for KL; removing KL archives the row and keeps KL's time.
+- [x] Given F2 as KL (staff, member), then the tabs are Overview and Team only, there are no fee/billed/hours tiles, there is no health badge, and a request to `/app/projects/{id}/phases` returns 404.
+- [x] Given a staff member who is not a member, when they open `/app/projects/{id}`, then they get a 404.
+- [x] Given a PM who is not on 2026-014, then the page renders the basic view and the Edit project button is absent.
+- [x] Given Edit project, when BM changes the status to Closed and confirms, then the status is closed, the list shows it under Closed, and `activity_log` has `status_changed`.
+- [x] Given Release 1 config, then no Schedule, Build, Documents, Checklist, Client portal or Code tab is rendered.
 
 ## Open questions
-1. **Data model addition needed:** the "Project information" fields from the mockup:
+1. **Decided (Blake, 2026-11-03): not in 1.5.** These come with the building code module and show only when it's on. Project information shows modeled fields only. Was: the "Project information" fields from the mockup:
    - `projects.stories smallint`
    - `projects.building_height_ft numeric`
    - `projects.occupancy_group text`
@@ -254,10 +254,14 @@ Fixture **F2**: TMG, overhead 6000 bp. Project 2026-014 "Medical Office Building
    - `projects.design_review_board text`
 
    Until these are added, the card shows only modeled fields.
-2. **Data model addition needed:** `projects.scope_kind` (Ground-up / Tenant upfit / Shell building) for the meta line. This is the same item as `projects-list.md` Q1.
+2. **Done in 1.4:** `projects.scope_kind` (Ground-up / Tenant upfit / Shell building) for the meta line. This is the same item as `projects-list.md` Q1.
 3. **Data model addition needed:** `consultants.contact_id uuid null → contacts`. The mockup shows a named contact per consultant. This spec falls back to `companies.billing_contact_id`, which may be the wrong person.
 4. **Data model addition needed (Release 2):** `invoice_lines.consultant_id uuid null` and `vendor_bill_lines.consultant_id`, so "Invoiced to us" and "Billed to client" can be shown per consultant. (In the mockup, billed to client = invoiced × 1.1.)
-5. **Data model addition needed (optional):** `firm_settings.default_consultant_markup_bp`. The mockup implies 10%; this spec defaults to 0%.
-6. Should the Checklist tab (per-phase checklist, mockup) be scheduled in a release? It needs a `phase_checklist_items` table.
-7. Used hours count `submitted` + `approved` time. Should a PM's hours view also include drafts, to see the current week early?
-8. Can a PM edit **fees** (contract amounts) on own projects, or only hours/status/% complete? This spec follows ARCHITECTURE §5 (yes). Restricting fee edits to owner/admin is a one-line change in `can()`.
+5. **Building in 1.5:** `firm_settings.default_consultant_markup_bp`, default 1000 (10%) per DATA_MODEL. New consultants start at the firm default.
+6. **Not now** (assumed; not on the roadmap). Should the Checklist tab (per-phase checklist, mockup) be scheduled in a release? It needs a `phase_checklist_items` table.
+7. **Submitted + approved only** (assumed). Used hours count `submitted` + `approved` time. Should a PM's hours view also include drafts, to see the current week early?
+8. **Yes** (assumed, follows ARCHITECTURE §5). Can a PM edit **fees** (contract amounts) on own projects, or only hours/status/% complete? This spec follows ARCHITECTURE §5 (yes). Restricting fee edits to owner/admin is a one-line change in `can()`.
+9. **Decided (Blake, 2026-11-03):** the Team tab's "Client & consultants" list also shows contractors, agencies and vendors linked through `project_contacts` (role text, e.g. "General contractor"), with add/remove for owner, admin and own PM. Their Contacts panels list the project.
+10. **Decided (Blake, 2026-11-03):** health uses open phases only (projects-list Rule 3), so fixture F2 reads **On track**, not "At risk".
+11. **Decided (Blake, 2026-11-03), PR B:** each phase has a role mix (role, % of the phase fee). Role hours = share × phase fee ÷ the role's bill rate **on the day of the edit**, saved then; phase budget hours = Σ role hours unless typed over. Template defaults live in Settings → Phases & fees and are copied to new projects; edited in a side panel on New project and on this tab. Phases without a mix use the blended bill rate.
+12. **Built in 1.5 A (Blake, 2026-11-03):** the Phases & fees tab is read-only for now (fee table + Consultants card with add/edit/remove); edit mode, Add phase, Archive phase, Redistribute and role mixes come in 1.5 B. The "New" menu (Log time, New invoice) stays hidden until 1.6 / 1.8. A "Project 2026-023 created" message after New project uses a one-minute flash cookie instead of a `?created=` address part.

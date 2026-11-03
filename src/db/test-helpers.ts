@@ -63,6 +63,8 @@ export type TestFirm = {
   projectPhaseId: string;
   projectMemberId: string;
   projectContactId: string;
+  /** A consultant on that project (the client company, for simplicity). */
+  consultantId: string;
   contactId: string;
 };
 
@@ -159,6 +161,10 @@ export async function createTestFirm(
       "insert into project_contacts (firm_id, project_id, company_id, role) values ($1, $2, $3, 'Owner') returning id",
       [firmId, projectId, company.rows[0].id],
     );
+    const consultant = await c.query<{ id: string }>(
+      "insert into consultants (firm_id, project_id, company_id, discipline, fee_cents, markup_bp) values ($1, $2, $3, 'MEP', 100000, 1000) returning id",
+      [firmId, projectId, company.rows[0].id],
+    );
     const pick = async (q: string) =>
       (await c.query<{ id: string }>(q, [firmId])).rows[0].id;
     return {
@@ -168,6 +174,7 @@ export async function createTestFirm(
       projectPhaseId: phase.rows[0].id,
       projectMemberId: member.rows[0].id,
       projectContactId: link.rows[0].id,
+      consultantId: consultant.rows[0].id,
       firmRoleId,
       rateId: rate.rows[0].id,
       phaseTemplateId: await pick(
@@ -202,7 +209,7 @@ export async function removeTestFirm(pool: Pool, firm: TestFirm) {
       "update companies set primary_contact_id = null, billing_contact_id = null where firm_id = $1",
       [firm.firmId],
     );
-    for (const t of ["project_contacts", "project_members", "project_phases", "projects"])
+    for (const t of ["consultants", "project_contacts", "project_members", "project_phases", "projects"])
       await c.query(`delete from ${t} where firm_id = $1`, [firm.firmId]);
     await c.query("delete from contacts where firm_id = $1", [firm.firmId]);
     await c.query("delete from companies where firm_id = $1", [firm.firmId]);
@@ -230,7 +237,7 @@ export async function removeFirmById(pool: Pool, firmId: string) {
       "update companies set primary_contact_id = null, billing_contact_id = null where firm_id = $1",
       [firmId],
     );
-    for (const t of ["project_contacts", "project_members", "project_phases", "projects"])
+    for (const t of ["consultants", "project_contacts", "project_members", "project_phases", "projects"])
       await c.query(`delete from ${t} where firm_id = $1`, [firmId]);
     await c.query("delete from contacts where firm_id = $1", [firmId]);
     await c.query("delete from companies where firm_id = $1", [firmId]);

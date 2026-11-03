@@ -109,6 +109,16 @@ const MATRIX: Row[] = [
     expected: { owner: true, admin: true, project_manager: "pm", staff: false },
   },
   {
+    row: "Projects: edit details, team, consultants (project-detail spec)",
+    actions: ["projects.edit"],
+    expected: { owner: true, admin: true, project_manager: "pm", staff: false },
+  },
+  {
+    row: "Projects: bill-rate overrides (project-detail spec)",
+    actions: ["projects.rate_override"],
+    expected: OA,
+  },
+  {
     row: "Contacts: view",
     actions: ["contacts.view"],
     expected: { owner: true, admin: true, project_manager: true, staff: true },

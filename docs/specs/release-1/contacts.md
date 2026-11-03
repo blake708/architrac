@@ -127,7 +127,7 @@ Tests: `src/lib/calc/contacts.test.ts`, `src/lib/contacts/display.test.ts`, `src
 - [ ] Given a client whose invoices are all `paid`, then the note reads "Paid up"; given a `draft` or `void` invoice, then it is not counted in billed. *(1.8; math tested.)*
 - [x] Given Coastal Federal Credit Union has `billing_contact_id` null, then its Billing cell shows "◆ No billing contact" in orange and it is counted in the Missing billing contact KPI.
 - [x] Given a client's billing contact has an empty email, then the client is counted as missing a billing contact.
-- [ ] Given Coastal MEP Engineers is consultant on two projects with fees $28,500 and $13,800, then the row shows "$42,300", Projects "2", and the drawer lists both projects with discipline "MEP". *(Needs projects and consultants, 1.4–1.5; fee math tested.)*
+- [x] Given Coastal MEP Engineers is consultant on two projects with fees $28,500 and $13,800, then the row shows "$42,300", Projects "2", and the drawer lists both projects with discipline "MEP". *(1.5: consultant projects and fees come from `consultants`; tested in src/server/projects/page.db.test.ts.)*
 - [x] Given a row is clicked, then the drawer opens, the row background is `#EAF0FB`, and the URL has `company=<id>`; when the page is reloaded with that URL, then the same drawer is open.
 - [x] Given a client company drawer, when "New project" is clicked, then the browser navigates to `/app/projects/new?client=<id>`.
 - [x] Given the Contact form with company = a client and "Billing contact" checked, when saved, then `companies.billing_contact_id` equals the new contact id and two `activity_log` rows are written.

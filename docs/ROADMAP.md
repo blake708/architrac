@@ -28,10 +28,10 @@ Work top to bottom. Each line is roughly one Claude Code session (see `docs/PROM
 ## Release 1 — milestones
 
 - [x] **1.1 Rates & firm setup** — firm_roles, rates, phase_templates, activities, overhead_categories; Settings screens. Spec: `settings-rates-phases.md`. Calc: rate lookup. Added: optional phases and phase descriptions; Settings save each change instantly except phase splits and rates (decision #18). Verified by Blake.
-- [ ] **1.2 Contacts** — companies, contacts. Spec: `contacts.md`.
+- [x] **1.2 Contacts** — companies, contacts. Spec: `contacts.md`. Agency is its own type; CSV import deferred to 1.11; staff view only; PMs see no money. Company panels list their people with Add person (Blake, 2026-11-03). Address lookup via Google Places (ADR 0007). Verified by Blake.
 - [x] **1.3 Team** — people directory, teams. Spec: `team.md`. Built before 1.2 (Blake's call). Also (Blake, 2026-11-02): someone who signs in with a pending invitation but no invite link (lost email, or a test address) is offered "Join {firm}" instead of Create firm. Utilization hours arrive with timesheets (1.6). Verified by Blake.
-- [ ] **1.4 Projects** — list + create (phases from template). Spec: `projects-list.md`.
-- [ ] **1.5 Project detail** — overview, phases & fees, team, consultants, hours vs budget. Spec: `project-detail.md`. Calc: `distributeFee`.
+- [x] **1.4 Projects** — list + create (phases from template). Spec: `projects-list.md`. Health looks at open phases only; editable phase %, hourly phases at 0%, budget hours from the blended bill rate; grouped New project form with address lookup (Blake, 2026-11-03). Verified by Blake.
+- [ ] **1.5 Project detail** — overview, phases & fees, team, consultants, hours vs budget. Spec: `project-detail.md`. Calc: `distributeFee`. Two PRs (Blake, 2026-11-03): **A** project page, Overview, Team (with contractors/agencies/vendors), consultants, Edit project; **B** phase editing, redistribute, role mixes per phase (template defaults, side panel; hours = role share of fee ÷ role bill rate on the day of the edit).
 - [ ] **1.6 Timesheet** — weekly entry with phase + activity. Spec: `timesheet.md`.
 - [ ] **1.7 Approvals** — approval queue, rate freezing. Spec: `timesheet-approval.md`.
 - [ ] **1.8 Invoicing** — builder, PDF, send, payments. Spec: `invoicing.md`. Calc: phase billing.

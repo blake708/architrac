@@ -55,6 +55,12 @@ export const FIRMS = {
     modules: [] as string[],
     createdBy: "etaOwner",
   },
+  /** For project-detail.spec.ts (one project's page), which edits the project. */
+  theta: {
+    name: `${E2E_PREFIX}Theta Partners`,
+    modules: [] as string[],
+    createdBy: "thOwner",
+  },
 } as const;
 export type FirmKey = keyof typeof FIRMS;
 
@@ -214,6 +220,30 @@ export const PEOPLE = {
     firstName: "Kim",
     lastName: "Lee",
     memberships: [{ firm: "eta", role: "staff" }],
+  },
+  thOwner: {
+    email: "architrac-e2e-thowner+clerk_test@example.com",
+    firstName: "Bea",
+    lastName: "Middle",
+    memberships: [{ firm: "theta", role: "owner" }],
+  },
+  thPm: {
+    email: "architrac-e2e-thpm+clerk_test@example.com",
+    firstName: "Jay",
+    lastName: "Ross",
+    memberships: [{ firm: "theta", role: "project_manager" }],
+  },
+  thStaff: {
+    email: "architrac-e2e-thstaff+clerk_test@example.com",
+    firstName: "Kat",
+    lastName: "Lin",
+    memberships: [{ firm: "theta", role: "staff" }],
+  },
+  thOutsider: {
+    email: "architrac-e2e-thout+clerk_test@example.com",
+    firstName: "Abe",
+    lastName: "Pratt",
+    memberships: [{ firm: "theta", role: "staff" }],
   },
 } satisfies Record<string, Person>;
 export type PersonKey = keyof typeof PEOPLE;

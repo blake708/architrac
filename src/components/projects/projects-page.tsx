@@ -101,7 +101,7 @@ export function ProjectsPage({ view, initial }: { view: ProjectsView; initial: L
           </section>
         )}
 
-        <div role="tablist" aria-label="Project status" className="flex gap-6 overflow-x-auto border-b border-line">
+        <div role="tablist" aria-label="Project status" className="flex gap-6 overflow-x-auto overflow-y-hidden border-b border-line">
           {TABS.map((t) => (
             <button
               key={t.key}
@@ -110,7 +110,7 @@ export function ProjectsPage({ view, initial }: { view: ProjectsView; initial: L
               aria-selected={params.status === t.key}
               onClick={() => set({ status: t.key })}
               className={cn(
-                "-mb-px cursor-pointer border-0 border-b-2 bg-transparent px-1 pb-2.5 text-base whitespace-nowrap",
+                "cursor-pointer border-0 border-b-2 bg-transparent px-1 pb-2.5 text-base whitespace-nowrap",
                 params.status === t.key
                   ? "border-ink font-semibold text-ink"
                   : "border-transparent text-ink-3 hover:text-ink",
