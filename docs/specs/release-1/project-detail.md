@@ -216,7 +216,7 @@ Fixture **F2**: TMG, overhead 6000 bp. Project 2026-014 "Medical Office Building
   - Landscape: Greenline Landscape Architecture, 640,000.
 - KL also has 8 h in a **draft** timesheet on DD.
 
-- [ ] Given F2 as BM, when I open `/app/projects/{id}`, then the meta line reads "2026-014 · MEDICAL OFFICE · 20,000 SF", the H1 reads "Medical Office Building", and the health badge says "At risk".
+- [ ] Given F2 as BM, when I open `/app/projects/{id}`, then the meta line reads "2026-014 · MEDICAL OFFICE · 20,000 SF", the H1 reads "Medical Office Building", and the health badge says "On track" (open phases only; see Open questions 10).
 - [ ] Given F2, then the stepper has 7 steps, PD and SD show a check and "Done", and DD has `aria-current="step"` with the note "Now · to Nov 25".
 - [ ] Given F2 as BM, then the KPIs read: Fee "$186,000" / "Fixed fee · 3.0% of construction"; Billed "$37,200" / "20% of fee · $11,160 outstanding"; Hours "323 h" / "of 1,240 budgeted · SD ran 15 h over"; Construction "$6.2M" / "$310 / SF · 20,000 SF".
 - [ ] Given F2, then KL's 8 draft hours are not counted anywhere (DD shows "64 / 310 h").
@@ -244,7 +244,7 @@ Fixture **F2**: TMG, overhead 6000 bp. Project 2026-014 "Medical Office Building
 - [ ] Given Release 1 config, then no Schedule, Build, Documents, Checklist, Client portal or Code tab is rendered.
 
 ## Open questions
-1. **Data model addition needed:** the "Project information" fields from the mockup:
+1. **Decided (Blake, 2026-11-03): not in 1.5.** These come with the building code module and show only when it's on. Project information shows modeled fields only. Was: the "Project information" fields from the mockup:
    - `projects.stories smallint`
    - `projects.building_height_ft numeric`
    - `projects.occupancy_group text`
@@ -254,10 +254,13 @@ Fixture **F2**: TMG, overhead 6000 bp. Project 2026-014 "Medical Office Building
    - `projects.design_review_board text`
 
    Until these are added, the card shows only modeled fields.
-2. **Data model addition needed:** `projects.scope_kind` (Ground-up / Tenant upfit / Shell building) for the meta line. This is the same item as `projects-list.md` Q1.
+2. **Done in 1.4:** `projects.scope_kind` (Ground-up / Tenant upfit / Shell building) for the meta line. This is the same item as `projects-list.md` Q1.
 3. **Data model addition needed:** `consultants.contact_id uuid null → contacts`. The mockup shows a named contact per consultant. This spec falls back to `companies.billing_contact_id`, which may be the wrong person.
 4. **Data model addition needed (Release 2):** `invoice_lines.consultant_id uuid null` and `vendor_bill_lines.consultant_id`, so "Invoiced to us" and "Billed to client" can be shown per consultant. (In the mockup, billed to client = invoiced × 1.1.)
-5. **Data model addition needed (optional):** `firm_settings.default_consultant_markup_bp`. The mockup implies 10%; this spec defaults to 0%.
-6. Should the Checklist tab (per-phase checklist, mockup) be scheduled in a release? It needs a `phase_checklist_items` table.
-7. Used hours count `submitted` + `approved` time. Should a PM's hours view also include drafts, to see the current week early?
-8. Can a PM edit **fees** (contract amounts) on own projects, or only hours/status/% complete? This spec follows ARCHITECTURE §5 (yes). Restricting fee edits to owner/admin is a one-line change in `can()`.
+5. **Building in 1.5:** `firm_settings.default_consultant_markup_bp`, default 1000 (10%) per DATA_MODEL. New consultants start at the firm default.
+6. **Not now** (assumed; not on the roadmap). Should the Checklist tab (per-phase checklist, mockup) be scheduled in a release? It needs a `phase_checklist_items` table.
+7. **Submitted + approved only** (assumed). Used hours count `submitted` + `approved` time. Should a PM's hours view also include drafts, to see the current week early?
+8. **Yes** (assumed, follows ARCHITECTURE §5). Can a PM edit **fees** (contract amounts) on own projects, or only hours/status/% complete? This spec follows ARCHITECTURE §5 (yes). Restricting fee edits to owner/admin is a one-line change in `can()`.
+9. **Decided (Blake, 2026-11-03):** the Team tab's "Client & consultants" list also shows contractors, agencies and vendors linked through `project_contacts` (role text, e.g. "General contractor"), with add/remove for owner, admin and own PM. Their Contacts panels list the project.
+10. **Decided (Blake, 2026-11-03):** health uses open phases only (projects-list Rule 3), so fixture F2 reads **On track**, not "At risk".
+11. **Decided (Blake, 2026-11-03), PR B:** each phase has a role mix (role, % of the phase fee). Role hours = share × phase fee ÷ the role's bill rate **on the day of the edit**, saved then; phase budget hours = Σ role hours unless typed over. Template defaults live in Settings → Phases & fees and are copied to new projects; edited in a side panel on New project and on this tab. Phases without a mix use the blended bill rate.
