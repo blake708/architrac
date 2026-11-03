@@ -300,8 +300,16 @@ test.describe("phases", () => {
     await expect(details.getByLabel("Budget hours")).toHaveValue("442.5");
     await panel.getByRole("button", { name: "Save phase" }).click();
     await expect(page.getByTestId("toast").last()).toHaveText("DD saved");
-    await expect(page.getByRole("table", { name: "Roles for Design Development" })).toContainText("Designer100%$115/h$50,875442.5");
     await expect(row(page, "DD")).toContainText("442.5");
+    await expect(page.getByRole("table", { name: /^Roles for/ })).toHaveCount(0); // no roles table under phases
+
+    // Clicking the hours shows budget vs used by role; Edit phase from there.
+    await row(page, "DD").getByRole("button", { name: "Hours for Design Development" }).click();
+    const hours = page.getByRole("dialog", { name: "Hours · DD Design Development" });
+    await expect(hours).toContainText("0 of 442.5 budgeted hours used");
+    await expect(hours.locator('tr[data-role="Designer"]')).toHaveText(/Designer\s*100%\s*442\.5\s*0\s*442\.5/);
+    await hours.getByRole("button", { name: "Edit phase" }).click();
+    await expect(page.getByRole("dialog", { name: "Edit DD · Design Development" })).toBeVisible();
   });
 
   test("Edit CD's fee; a duplicate code is refused", async ({ page }) => {
@@ -326,7 +334,7 @@ test.describe("phases", () => {
   test("↑/↓ reorder saves right away", async ({ page }) => {
     await signInAs(page, "thOwner", url("/phases"));
     const order = () => page.locator("tbody tr[data-phase]").evaluateAll((rs) => rs.map((r) => r.getAttribute("data-phase")));
-    expect(await order()).toEqual(["PD", "SD", "DD", "CD", "PRM", "CA", "CO"]);
+    await expect.poll(order).toEqual(["PD", "SD", "DD", "CD", "PRM", "CA", "CO"]);
     await row(page, "CA").getByRole("button", { name: "Move Construction Admin up" }).click();
     await expect.poll(order).toEqual(["PD", "SD", "DD", "CD", "CA", "PRM", "CO"]);
     await row(page, "CA").getByRole("button", { name: "Move Construction Admin down" }).click();

@@ -63,6 +63,8 @@ export type PhaseRow = {
     isAdditionalService: boolean;
     /** Role mix with the bill rate and hours saved on the day of the edit. */
     roles: { firmRoleId: string; roleName: string; shareBp: number; rateCents: number; hours: number }[];
+    /** Hours logged on this phase, by each person's billing role (time arrives in 1.6). */
+    usedByRole: { firmRoleId: string | null; roleName: string; hours: number }[];
     /** Hours by person, for the expandable row. No rates or cost. */
     byPerson: { membershipId: string; name: string; initials: string; title: string | null; hours: number }[];
   };
@@ -287,6 +289,18 @@ export async function loadProjectPage(
           .orderBy(asc(projectPhaseRoles.sortOrder))
       : [];
     const inv = await invoiceFacts(db, p.id);
+    // Each person's billing role, to show hours used by role.
+    const usedIds = [...new Set(used.map((u) => u.membershipId))];
+    const roleOfPerson = new Map(
+      (usedIds.length
+        ? await db
+            .select({ id: memberships.id, roleId: memberships.firmRoleId, roleName: firmRoles.name })
+            .from(memberships)
+            .leftJoin(firmRoles, eq(firmRoles.id, memberships.firmRoleId))
+            .where(inArray(memberships.id, usedIds))
+        : []
+      ).map((r) => [r.id, { roleId: r.roleId, roleName: r.roleName ?? "No role" }]),
+    );
     phases = phaseRows.map((ph) => {
       const m = byId.get(ph.id)!;
       const mine = used.filter((u) => u.phaseId === ph.id);
@@ -305,6 +319,17 @@ export async function loadProjectPage(
           roles: mixRows
             .filter((r) => r.phaseId === ph.id)
             .map((r) => ({ firmRoleId: r.firmRoleId, roleName: r.roleName, shareBp: r.shareBp, rateCents: r.rateCents, hours: Number(r.hours) })),
+          usedByRole: (() => {
+            const by = new Map<string, { firmRoleId: string | null; roleName: string; hours: number }>();
+            for (const u of mine) {
+              const r = roleOfPerson.get(u.membershipId) ?? { roleId: null, roleName: "No role" };
+              const k = r.roleId ?? "none";
+              const cur = by.get(k) ?? { firmRoleId: r.roleId, roleName: r.roleName, hours: 0 };
+              cur.hours += u.hours;
+              by.set(k, cur);
+            }
+            return [...by.values()];
+          })(),
           billedCents: projectBilled([{ id: ph.id, feeType: m.feeType }], inv.lines),
           byPerson: [...people].map(([membershipId, hours]) => {
             const who = nameOf.get(membershipId);

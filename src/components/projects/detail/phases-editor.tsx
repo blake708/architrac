@@ -17,11 +17,11 @@ import { FEE_TYPE_LABELS, moneyExact, moneyInput, parseMoney } from "@/lib/proje
 import { addPhase, updatePhases } from "@/server/projects/actions";
 import type { PhaseRow, ProjectPage } from "@/server/projects/page";
 import { PHASE_STATUS } from "../project-bits";
-import { type MixDraft, RoleMixEditor, RoleMixTable, fromDrafts, mixReady, toDrafts } from "../role-mix-panel";
+import { type MixDraft, RoleMixEditor, fromDrafts, mixReady, toDrafts } from "../role-mix-panel";
 
 // Phases & fees (project-detail spec; Blake, 2026-11-03): each phase is
-// edited on its own in a side panel (details left, roles right). Roles show
-// in a small table under each phase. ↑/↓ reorder and save right away.
+// edited on its own in a side panel (details, then roles). Clicking a
+// phase's hours shows budget vs actual hours by role. ↑/↓ save right away.
 
 const th = "cap border-b border-line px-2.5 py-2 text-left text-2xs font-medium whitespace-nowrap text-muted first:pl-[18px] last:pr-[18px]";
 const td = "border-b border-line-soft px-2.5 py-2.5 first:pl-[18px] last:pr-[18px]";
@@ -66,6 +66,7 @@ export function PhasesEditor({ p }: { p: ProjectPage }) {
   const rows = p.phases.filter((x) => x.money);
   const edit = p.phaseEdit;
   const [editing, setEditing] = useState<PhaseRow | null>(null);
+  const [hoursFor, setHoursFor] = useState<PhaseRow | null>(null);
   const [adding, setAdding] = useState(false);
   const [redistributing, setRedistributing] = useState(false);
   const [banner, setBanner] = useState<string | null>(null);
@@ -90,7 +91,6 @@ export function PhasesEditor({ p }: { p: ProjectPage }) {
   const total = p.money?.feeCents ?? 0;
   const billed = rows.reduce((n, x) => n + x.money!.billedCents, 0);
   const pct = (fee: number) => (total > 0 ? `${Math.round((fee * 100) / total)}%` : "—");
-  const cols = canEdit ? 11 : 10;
 
   return (
     <section aria-label="Architectural fee by phase" className="rounded-sm border border-line bg-surface">
@@ -146,8 +146,7 @@ export function PhasesEditor({ p }: { p: ProjectPage }) {
               {rows.map((x, i) => {
                 const m = x.money!;
                 const left = m.feeCents - m.billedCents;
-                const hasRoles = m.roles.length > 0 && m.feeType !== "hourly";
-                const cell = cn(td, hasRoles && "border-b-0");
+                const cell = td;
                 return (
                   <Fragment key={x.id}>
                     <tr data-phase={x.code}>
@@ -163,8 +162,18 @@ export function PhasesEditor({ p }: { p: ProjectPage }) {
                       </td>
                       <td className={cn(cell, "num text-right")}>{pct(m.feeCents)}</td>
                       <td className={cn(cell, "num text-right")}>{fmtHours(m.budgetHours)}</td>
-                      <td className={cn(cell, "num text-right", m.usedHours > m.budgetHours && "text-red")}>
-                        {fmtHours(m.usedHours)} / {fmtHours(m.budgetHours)} h
+                      <td className={cn(cell, "num text-right")}>
+                        <button
+                          type="button"
+                          onClick={() => setHoursFor(x)}
+                          aria-label={`Hours for ${x.name}`}
+                          className={cn(
+                            "num cursor-pointer border-0 bg-transparent p-0 text-right underline decoration-line-input underline-offset-4 hover:decoration-blue",
+                            m.usedHours > m.budgetHours ? "text-red" : "text-blue",
+                          )}
+                        >
+                          {fmtHours(m.usedHours)} / {fmtHours(m.budgetHours)} h
+                        </button>
                       </td>
                       <td className={cn(cell, "num text-right")}>{m.feeType === "fixed" ? `${m.percentCompleteBp / 100}%` : "—"}</td>
                       <td className={cn(cell, "num text-right")}>{formatMoney(m.billedCents)}</td>
@@ -200,16 +209,6 @@ export function PhasesEditor({ p }: { p: ProjectPage }) {
                         </td>
                       )}
                     </tr>
-                    {hasRoles && (
-                      <tr data-roles-for={x.code}>
-                        <td colSpan={cols} className="border-b border-line-soft px-[18px] pt-0 pb-3 pl-[46px]">
-                          <RoleMixTable
-                            label={`Roles for ${x.name}`}
-                            roles={m.roles.map((r) => ({ ...r, cents: Math.round((m.feeCents * r.shareBp) / 10_000) }))}
-                          />
-                        </td>
-                      </tr>
-                    )}
                   </Fragment>
                 );
               })}
@@ -238,6 +237,20 @@ export function PhasesEditor({ p }: { p: ProjectPage }) {
         </div>
       )}
 
+      {hoursFor && (
+        <PhaseHoursPanel
+          phase={hoursFor}
+          onClose={() => setHoursFor(null)}
+          onEdit={
+            canEdit
+              ? () => {
+                  setEditing(hoursFor);
+                  setHoursFor(null);
+                }
+              : undefined
+          }
+        />
+      )}
       {editing && edit && (
         <PhasePanel
           phase={editing}
@@ -293,7 +306,94 @@ export function PhasesEditor({ p }: { p: ProjectPage }) {
   );
 }
 
-/** One phase: details on the left, roles on the right. */
+/** Budget vs hours used, by role (Blake, 2026-11-03). Hours used arrive with timesheets (1.6). */
+function PhaseHoursPanel({ phase, onClose, onEdit }: { phase: PhaseRow; onClose: () => void; onEdit?: () => void }) {
+  const m = phase.money!;
+  // Roles in the mix first (with their budget), then any other role that logged time.
+  const rows = [
+    ...m.roles.map((r) => ({
+      key: r.firmRoleId,
+      role: r.roleName,
+      shareBp: r.shareBp as number | null,
+      budget: r.hours as number | null,
+      used: m.usedByRole.find((u) => u.firmRoleId === r.firmRoleId)?.hours ?? 0,
+    })),
+    ...m.usedByRole
+      .filter((u) => !m.roles.some((r) => r.firmRoleId === u.firmRoleId))
+      .map((u) => ({ key: u.firmRoleId ?? "none", role: u.roleName, shareBp: null, budget: null, used: u.hours })),
+  ];
+  const left = (budget: number | null, used: number) => (budget === null ? "—" : fmtHours(Math.round((budget - used) * 100) / 100));
+  const cellR = "num border-b border-line-soft py-2 text-right";
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DrawerContent
+        title={`Hours · ${phase.code} ${phase.name}`}
+        description={`${fmtHours(m.usedHours)} of ${fmtHours(m.budgetHours)} budgeted hours used`}
+        className="max-w-[600px]!"
+        footer={
+          <>
+            <Button onClick={onClose}>Close</Button>
+            {onEdit && (
+              <Button variant="primary" onClick={onEdit}>
+                Edit phase
+              </Button>
+            )}
+          </>
+        }
+      >
+        {rows.length === 0 ? (
+          <p className="m-0 text-sm text-muted">
+            {m.feeType === "hourly"
+              ? "Hourly phase: no role budget. Hours by role show here once time is logged."
+              : "No roles set for this phase. Add them with Edit phase to see a budget for each role."}
+          </p>
+        ) : (
+          <table className="w-full border-collapse text-sm" aria-label="Hours by role">
+            <thead>
+              <tr className="cap text-left text-2xs text-muted">
+                <th scope="col" className="border-b border-line py-2 font-medium">Role</th>
+                <th scope="col" className="border-b border-line py-2 text-right font-medium">Share</th>
+                <th scope="col" className="border-b border-line py-2 text-right font-medium">Budget</th>
+                <th scope="col" className="border-b border-line py-2 text-right font-medium">Used</th>
+                <th scope="col" className="border-b border-line py-2 text-right font-medium">Remaining</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => {
+                const over = r.budget !== null && r.used > r.budget;
+                return (
+                  <tr key={r.key} data-role={r.role}>
+                    <td className="border-b border-line-soft py-2">{r.role}</td>
+                    <td className={cellR}>{r.shareBp === null ? "—" : `${r.shareBp / 100}%`}</td>
+                    <td className={cellR}>{r.budget === null ? "—" : fmtHours(r.budget)}</td>
+                    <td className={cn(cellR, over && "text-red")}>{fmtHours(r.used)}</td>
+                    <td className={cn(cellR, over && "text-red")}>{left(r.budget, r.used)}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot>
+              <tr className="font-semibold">
+                <td className="py-2">Total</td>
+                <td />
+                <td className="num py-2 text-right">{fmtHours(m.budgetHours)}</td>
+                <td className="num py-2 text-right">{fmtHours(m.usedHours)}</td>
+                <td className={cn("num py-2 text-right", m.usedHours > m.budgetHours && "text-red")}>
+                  {fmtHours(Math.round((m.budgetHours - m.usedHours) * 100) / 100)}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        )}
+        {m.roles.length > 0 && Math.abs(m.roles.reduce((n, r) => n + r.hours, 0) - m.budgetHours) > 0.001 && (
+          <p className="m-0 mt-3 text-xs text-muted">The phase&apos;s budget hours were typed in, so they differ from the roles&apos; total.</p>
+        )}
+      </DrawerContent>
+    </Dialog>
+  );
+}
+
+/** One phase: details first, then its roles. */
 function PhasePanel({
   phase,
   all,
@@ -410,7 +510,7 @@ function PhasePanel({
         <DrawerContent
           title={`Edit ${phase.code} · ${phase.name}`}
           description={feeCents !== null ? `Project fee becomes ${moneyExact(otherFees + feeCents)}` : undefined}
-          className="max-w-[1040px]!"
+          className="max-w-[720px]!"
           footer={
             <>
               <Button variant="danger" className="mr-auto" onClick={() => setConfirmArchive(true)}>
@@ -428,7 +528,7 @@ function PhasePanel({
             </>
           }
         >
-          <div className="grid grid-cols-1 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+          <div className="flex flex-col gap-8">
             <section aria-label="Phase details" className="flex flex-col gap-4">
               <h3 className="cap m-0 text-xs font-semibold text-ink-2">Phase details</h3>
               <div className="grid grid-cols-[110px_1fr] gap-4">
@@ -499,7 +599,7 @@ function PhasePanel({
               </label>
               {e("archived") && <p className="m-0 text-sm text-red">{e("archived")}</p>}
             </section>
-            <section aria-label="Roles" className="flex flex-col gap-3">
+            <section aria-label="Roles" className="flex flex-col gap-3 border-t border-line-soft pt-6">
               <h3 className="cap m-0 text-xs font-semibold text-ink-2">Roles</h3>
               {hourly ? (
                 <p className="m-0 text-sm text-muted">Hourly phases are billed by the hour, so they have no role split.</p>
