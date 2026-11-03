@@ -2,11 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { AddressFields } from "@/components/address/address-fields";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { Input, Select } from "@/components/ui/field";
+import { EMPTY_DRAFT, ProjectFields, type ProjectDraft, checkDraft } from "./project-fields";
+import { Input } from "@/components/ui/field";
 import { cn } from "@/lib/cn";
 import { type FeeType, type PhaseEdit, hoursFromFee, planPhaseFees } from "@/lib/calc/projects";
 import { formatMoney } from "@/lib/format";
@@ -15,17 +14,11 @@ import {
   FEE_TYPE_HELP,
   FEE_TYPE_LABELS,
   PROJECT_MESSAGES,
-  SCOPE_KINDS,
-  SCOPE_LABELS,
-  STANDARD_TYPES,
-  STATUS_LABELS,
-  type ScopeKind,
   moneyExact,
   moneyInput,
   parseMoney,
   phaseProblem,
 } from "@/lib/projects/form";
-import { saveCompany } from "@/server/contacts/actions";
 import { createProject } from "@/server/projects/actions";
 import type { NewProjectOptions } from "@/server/projects/view";
 
@@ -50,9 +43,6 @@ type Row = {
   /** What's in a box while it's being typed in. */
   draft: { fee?: string; pct?: string; hours?: string };
 };
-
-const OTHER = "__other";
-const NEW_CLIENT = "__new";
 
 function parseHours(raw: string): number | null {
   const v = raw.trim().replace(/,/g, "");
@@ -88,28 +78,13 @@ export function NewProjectForm({
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
-  const [clients, setClients] = useState(options.clients);
-  const [d, setD] = useState({
+  const [d, setD] = useState<ProjectDraft>(() => ({
+    ...EMPTY_DRAFT,
     number: options.suggestedNumber,
-    name: "",
     clientCompanyId: presetClientId && options.clients.some((c) => c.id === presetClientId) ? presetClientId : "",
-    clientContactId: "",
-    projectType: "",
-    otherType: "",
-    scopeKind: "" as ScopeKind | "",
-    status: "active" as (typeof CREATE_STATUSES)[number],
     principalMembershipId: options.principals.length === 1 ? options.principals[0].membershipId : "",
     pmMembershipId: options.pms.some((p) => p.membershipId === viewerMembershipId) ? viewerMembershipId : "",
-    addressLine1: "",
-    addressLine2: "",
-    city: "",
-    state: "",
-    postalCode: "",
-    squareFeet: "",
-    construction: "",
-    startDate: "",
-    targetEndDate: "",
-  });
+  }));
   const set = (p: Partial<typeof d>) => setD((x) => ({ ...x, ...p }));
   const [totalFeeText, setTotalFeeText] = useState("0");
   const totalFee = parseMoney(totalFeeText);
@@ -150,17 +125,7 @@ export function NewProjectForm({
   };
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
-  const [newClient, setNewClient] = useState<{ open: boolean; name: string; error: string | null }>({
-    open: false,
-    name: "",
-    error: null,
-  });
 
-  const types = useMemo(
-    () => [...new Set([...STANDARD_TYPES, ...options.types])].sort((a, b) => a.localeCompare(b)),
-    [options.types],
-  );
-  const contacts = d.clientCompanyId ? (options.contactsByClient[d.clientCompanyId] ?? []) : [];
   const included = rows.filter((r) => r.include);
   const sumFee = plan.sumCents;
   const sumHours = included.reduce((n, r) => n + Math.round(hoursOf(r) * 4), 0) / 4;
@@ -186,14 +151,8 @@ export function NewProjectForm({
 
   function submit() {
     setFormError(null);
-    const projectType = d.projectType === OTHER ? d.otherType.trim() : d.projectType;
-    const construction = d.construction.trim() === "" ? null : parseMoney(d.construction);
-    const local: Record<string, string> = {};
-    if (d.projectType === OTHER && (projectType.length < 1 || projectType.length > 60)) local.projectType = "Enter a type (up to 60 characters)";
-    if (construction === null && d.construction.trim() !== "") local.constructionCostCents = PROJECT_MESSAGES.money;
+    const { fields, errors: local } = checkDraft(d);
     if (totalFee === null) local.totalFeeCents = PROJECT_MESSAGES.money;
-    const sqft = d.squareFeet.trim() === "" ? null : Number(d.squareFeet.replace(/,/g, ""));
-    if (sqft !== null && !(Number.isInteger(sqft) && sqft > 0)) local.squareFeet = PROJECT_MESSAGES.squareFeet;
     if (problem === PROJECT_MESSAGES.nteCap) local.phases = problem;
     if (Object.keys(local).length) {
       setErrors(local);
@@ -201,24 +160,7 @@ export function NewProjectForm({
     }
     startTransition(async () => {
       const result = await createProject({
-        number: d.number,
-        name: d.name,
-        clientCompanyId: d.clientCompanyId,
-        clientContactId: d.clientContactId || null,
-        projectType,
-        scopeKind: d.scopeKind || null,
-        status: d.status,
-        principalMembershipId: d.principalMembershipId,
-        pmMembershipId: d.pmMembershipId,
-        addressLine1: d.addressLine1,
-        addressLine2: d.addressLine2,
-        city: d.city,
-        state: d.state,
-        postalCode: d.postalCode,
-        squareFeet: sqft,
-        constructionCostCents: construction,
-        startDate: d.startDate,
-        targetEndDate: d.targetEndDate,
+        ...fields,
         totalFeeCents: totalFee,
         totalBudgetHours: sumHours,
         phases: included.map((r) => ({
@@ -239,39 +181,6 @@ export function NewProjectForm({
     });
   }
 
-  function addClient() {
-    const name = newClient.name.trim();
-    if (!name) {
-      setNewClient((x) => ({ ...x, error: "Enter a name" }));
-      return;
-    }
-    startTransition(async () => {
-      const r = await saveCompany({
-        id: null,
-        name,
-        kind: "client",
-        description: "",
-        phone: "",
-        website: "",
-        addressLine1: "",
-        addressLine2: "",
-        city: "",
-        state: "",
-        postalCode: "",
-        primaryContactId: null,
-        billingContactId: null,
-        notes: "",
-      });
-      if (!r.ok) {
-        setNewClient((x) => ({ ...x, error: r.fieldErrors?.name ?? r.error ?? "Couldn't add the client." }));
-        return;
-      }
-      setClients((c) => [...c, { id: r.data.id, name }].sort((a, b) => a.name.localeCompare(b.name)));
-      set({ clientCompanyId: r.data.id, clientContactId: "" });
-      setNewClient({ open: false, name: "", error: null });
-    });
-  }
-
   const e = (k: string) => errors[k];
   const cell = "border-b border-line-soft px-2 py-1.5";
 
@@ -285,117 +194,14 @@ export function NewProjectForm({
       noValidate
     >
       <Card title="Project details" className="w-full max-w-[720px]">
-        <fieldset className="m-0 border-0 p-0">
-          <legend className="cap float-left mb-3 w-full text-xs font-semibold text-ink-2">Project</legend>
-          <div className="clear-both grid grid-cols-1 gap-4 md:grid-cols-3">
-            <Input label="Project number *" value={d.number} maxLength={20} onChange={(ev) => set({ number: ev.target.value })} error={e("number")} required />
-          <Input label="Project name *" value={d.name} maxLength={200} onChange={(ev) => set({ name: ev.target.value })} error={e("name")} wrapperClassName="md:col-span-2" required />
-          <Select label="Status" value={d.status} onChange={(ev) => set({ status: ev.target.value as typeof d.status })}>
-            {CREATE_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_LABELS[s]}
-              </option>
-            ))}
-          </Select>
-          <Select label="Project type *" value={d.projectType} error={d.projectType === OTHER ? undefined : e("projectType")} onChange={(ev) => set({ projectType: ev.target.value })}>
-            <option value="">Choose a type…</option>
-            {types.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-            <option value={OTHER}>Other…</option>
-          </Select>
-          {d.projectType === OTHER && (
-            <Input label="Other type *" value={d.otherType} maxLength={60} onChange={(ev) => set({ otherType: ev.target.value })} error={e("projectType")} />
-          )}
-          <Select label="Scope" value={d.scopeKind} onChange={(ev) => set({ scopeKind: ev.target.value as ScopeKind | "" })}>
-            <option value="">—</option>
-            {SCOPE_KINDS.map((s) => (
-              <option key={s} value={s}>
-                {SCOPE_LABELS[s]}
-              </option>
-            ))}
-          </Select>
-          </div>
-        </fieldset>
-        <fieldset className="m-0 mt-6 border-0 border-t border-line-soft p-0 pt-5">
-          <legend className="cap float-left mb-3 w-full text-xs font-semibold text-ink-2">Client</legend>
-          <div className="clear-both grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Select
-            label="Client *"
-            value={d.clientCompanyId}
-            error={e("clientCompanyId")}
-            onChange={(ev) => {
-              if (ev.target.value === NEW_CLIENT) setNewClient({ open: true, name: "", error: null });
-              else set({ clientCompanyId: ev.target.value, clientContactId: "" });
-            }}
-          >
-            <option value="">Choose a client…</option>
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-            <option value={NEW_CLIENT}>+ New client…</option>
-          </Select>
-          <Select
-            label="Client contact"
-            value={d.clientContactId}
-            disabled={!d.clientCompanyId}
-            error={e("clientContactId")}
-            onChange={(ev) => set({ clientContactId: ev.target.value })}
-          >
-            <option value="">{d.clientCompanyId && contacts.length === 0 ? "No contacts at this client" : "None"}</option>
-            {contacts.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </Select>
-          </div>
-        </fieldset>
-        <fieldset className="m-0 mt-6 border-0 border-t border-line-soft p-0 pt-5">
-          <legend className="cap float-left mb-3 w-full text-xs font-semibold text-ink-2">People</legend>
-          <div className="clear-both grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Select label="Principal in charge *" value={d.principalMembershipId} error={e("principalMembershipId")} onChange={(ev) => set({ principalMembershipId: ev.target.value })}>
-            <option value="">Choose…</option>
-            {options.principals.map((p) => (
-              <option key={p.membershipId} value={p.membershipId}>
-                {p.name}
-              </option>
-            ))}
-          </Select>
-          <Select label="Project manager *" value={d.pmMembershipId} error={e("pmMembershipId")} onChange={(ev) => set({ pmMembershipId: ev.target.value })}>
-            <option value="">Choose…</option>
-            {options.pms.map((p) => (
-              <option key={p.membershipId} value={p.membershipId}>
-                {p.name}
-              </option>
-            ))}
-          </Select>
-          </div>
-        </fieldset>
-        <fieldset className="m-0 mt-6 border-0 border-t border-line-soft p-0 pt-5">
-          <legend className="cap float-left mb-3 w-full text-xs font-semibold text-ink-2">Site address</legend>
-          <div className="clear-both">
-            <AddressFields
-              lookup={addressLookup}
-              value={{ addressLine1: d.addressLine1, addressLine2: d.addressLine2, city: d.city, state: d.state, postalCode: d.postalCode }}
-              onChange={(patch) => set(patch)}
-              errors={{ addressLine1: e("addressLine1"), addressLine2: e("addressLine2"), city: e("city"), state: e("state"), postalCode: e("postalCode") }}
-            />
-          </div>
-        </fieldset>
-        <fieldset className="m-0 mt-6 border-0 border-t border-line-soft p-0 pt-5">
-          <legend className="cap float-left mb-3 w-full text-xs font-semibold text-ink-2">Size & schedule</legend>
-          <div className="clear-both grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Input label="Square feet" value={d.squareFeet} inputMode="numeric" onChange={(ev) => set({ squareFeet: ev.target.value })} error={e("squareFeet")} />
-          <Input label="Construction estimate" value={d.construction} inputMode="decimal" placeholder="$" onChange={(ev) => set({ construction: ev.target.value })} error={e("constructionCostCents")} />
-          <Input label="Start date" type="date" value={d.startDate} onChange={(ev) => set({ startDate: ev.target.value })} error={e("startDate")} />
-          <Input label="Target end" type="date" value={d.targetEndDate} onChange={(ev) => set({ targetEndDate: ev.target.value })} error={e("targetEndDate")} />
-          </div>
-        </fieldset>
+        <ProjectFields
+          value={d}
+          onChange={set}
+          errors={errors}
+          options={options}
+          statuses={CREATE_STATUSES}
+          addressLookup={addressLookup}
+        />
       </Card>
 
       <Card title="Phases & fees" padded={false}>
@@ -616,35 +422,6 @@ export function NewProjectForm({
         </div>
       </div>
 
-      <Dialog open={newClient.open} onOpenChange={(o) => !o && setNewClient({ open: false, name: "", error: null })}>
-        <DialogContent
-          title="New client"
-          footer={
-            <>
-              <Button type="button" onClick={() => setNewClient({ open: false, name: "", error: null })}>
-                Cancel
-              </Button>
-              <Button type="button" variant="primary" disabled={pending} onClick={addClient}>
-                Add client
-              </Button>
-            </>
-          }
-        >
-          <Input
-            label="Name"
-            value={newClient.name}
-            maxLength={200}
-            error={newClient.error ?? undefined}
-            onChange={(ev) => setNewClient((x) => ({ ...x, name: ev.target.value, error: null }))}
-            onKeyDown={(ev) => {
-              if (ev.key === "Enter") {
-                ev.preventDefault();
-                addClient();
-              }
-            }}
-          />
-        </DialogContent>
-      </Dialog>
     </form>
   );
 }
