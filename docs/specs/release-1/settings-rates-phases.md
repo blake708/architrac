@@ -235,6 +235,8 @@ Tests: `src/lib/calc/rates.test.ts`, `src/lib/settings/work-settings.test.ts`, `
 - [x] Given I am a project manager, when I call the rates server action or open `/app/settings/rates`, then I get access denied and no cost rate appears in the response.
 - [x] Given firm B, when firm A's admin saves rates, then no firm B `rates` rows change (RLS test).
 
+- [x] *(Added Blake, 2026-11-03)* Given a saved default phase, when I click **Roles**, then a side panel sets its role mix (role, % of the phase fee, the role's bill rate). Shares must add up to exactly 100% (or no roles). It saves right away, and new projects start with that mix; hours = share × fee ÷ the role's bill rate.
+
 ## Open questions
 1. **Done in 1.1.** *Data model addition needed:* `firm_roles.description text null` (mockup role note) and `firm_roles.is_billable boolean default true` (mockup shows "Not billable"; storing 0 bill rate alone is ambiguous).
 2. **Done in 1.1.** *Data model addition needed:* `overhead_categories.code text null`, unique per firm when set (`PTO`, `HOL`), so the app can tell the PTO category (holds leave types) from Holiday. The Time mockup also uses `OH` as the overhead group code (not a row).

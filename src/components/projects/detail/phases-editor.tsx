@@ -108,7 +108,16 @@ export function PhasesEditor({ p }: { p: ProjectPage }) {
   const [adding, setAdding] = useState(false);
   const [redistributing, setRedistributing] = useState(false);
 
-  const set = (key: string, patch: Partial<Draft>) => setDrafts((ds) => ds!.map((d) => (d.key === key ? { ...d, ...patch } : d)));
+  const set = (key: string, patch: Partial<Draft>) => {
+    const i = drafts?.findIndex((d) => d.key === key) ?? -1;
+    if (i >= 0 && rowErrors[i]) {
+      const rest = { ...rowErrors };
+      delete rest[i];
+      setRowErrors(rest);
+      if (Object.keys(rest).length === 0 && !banner?.stale) setBanner(null);
+    }
+    setDrafts((ds) => ds!.map((d) => (d.key === key ? { ...d, ...patch } : d)));
+  };
   const move = (i: number, by: -1 | 1) =>
     setDrafts((ds) => {
       const next = [...ds!];
@@ -285,7 +294,7 @@ export function PhasesEditor({ p }: { p: ProjectPage }) {
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1080px] border-collapse text-sm">
+          <table className="w-full min-w-[1040px] border-collapse text-sm">
             <thead className="bg-surface-2">
               <tr>
                 {drafts && <th scope="col" className={th}><span className="sr-only">Order</span></th>}
@@ -294,7 +303,7 @@ export function PhasesEditor({ p }: { p: ProjectPage }) {
                 <th scope="col" className={cn(th, "text-right")}>Fee</th>
                 <th scope="col" className={cn(th, "text-right")}>% of total</th>
                 <th scope="col" className={cn(th, "text-right")}>Budget hours</th>
-                <th scope="col" className={cn(th, "text-right")}>Hours used / budget</th>
+                {!drafts && <th scope="col" className={cn(th, "text-right")}>Hours used / budget</th>}
                 <th scope="col" className={cn(th, "text-right")}>% complete</th>
                 {drafts ? (
                   <th scope="col" colSpan={2} className={cn(th, "text-right")}>Start / end</th>
@@ -370,7 +379,7 @@ export function PhasesEditor({ p }: { p: ProjectPage }) {
                       <td className={td}>
                         <span className="flex gap-1.5">
                           <input aria-label={`${d.name} code`} value={d.code} maxLength={12} disabled={d.archived} aria-invalid={!!err(i, "code") || undefined} onChange={(e) => set(d.key, { code: e.target.value })} className={cn(input, "w-[64px]")} />
-                          <input aria-label={`${d.code} name`} value={d.name} maxLength={80} disabled={d.archived} aria-invalid={!!err(i, "name") || undefined} onChange={(e) => set(d.key, { name: e.target.value })} className={cn(input, "w-[200px]")} />
+                          <input aria-label={`${d.code} name`} value={d.name} maxLength={80} disabled={d.archived} aria-invalid={!!err(i, "name") || undefined} onChange={(e) => set(d.key, { name: e.target.value })} className={cn(input, "w-[170px]")} />
                         </span>
                         <label className="mt-1 flex items-center gap-1.5 text-xs text-muted">
                           <input type="checkbox" checked={d.isAdditionalService} disabled={d.archived} onChange={(e) => set(d.key, { isAdditionalService: e.target.checked })} className="size-3.5 accent-ink" />
@@ -435,7 +444,6 @@ export function PhasesEditor({ p }: { p: ProjectPage }) {
                         </span>
                         {err(i, "budgetHours") && <p className="m-0 mt-1 text-xs text-red">{err(i, "budgetHours")}</p>}
                       </td>
-                      <td className={cn(td, "num text-right text-muted")}>—</td>
                       <td className={cn(td, "text-right")}>
                         {d.feeType === "fixed" ? (
                           <span className="inline-flex items-center gap-1">
@@ -456,7 +464,7 @@ export function PhasesEditor({ p }: { p: ProjectPage }) {
                         {err(i, "percentCompleteBp") && <p className="m-0 mt-1 text-xs text-red">{err(i, "percentCompleteBp")}</p>}
                       </td>
                       <td className={cn(td, "text-right")} colSpan={2}>
-                        <span className="flex justify-end gap-1.5">
+                        <span className="flex flex-col items-end gap-1">
                           <input type="date" aria-label={`${d.name} start date`} value={d.startDate} disabled={d.archived} onChange={(e) => set(d.key, { startDate: e.target.value })} className={cn(input, "w-[132px]")} />
                           <input type="date" aria-label={`${d.name} end date`} value={d.endDate} disabled={d.archived} aria-invalid={!!err(i, "endDate") || undefined} onChange={(e) => set(d.key, { endDate: e.target.value })} className={cn(input, "w-[132px]")} />
                         </span>
@@ -495,12 +503,20 @@ export function PhasesEditor({ p }: { p: ProjectPage }) {
                 <td className="num px-2.5 py-2.5 text-right" data-testid="phase-hours-total">
                   {fmtHours(drafts ? live!.hours : rows.reduce((n, x) => n + x.money!.budgetHours, 0))}
                 </td>
-                <td className="num px-2.5 py-2.5 text-right">
-                  {fmtHours(rows.reduce((n, x) => n + x.money!.usedHours, 0))} h
-                </td>
+                {!drafts && (
+                  <td className="num px-2.5 py-2.5 text-right">
+                    {fmtHours(rows.reduce((n, x) => n + x.money!.usedHours, 0))} h
+                  </td>
+                )}
                 <td />
-                <td className="num px-2.5 py-2.5 text-right">{formatMoney(billed)}</td>
-                <td className="num px-2.5 py-2.5 text-right">{formatMoneySigned((drafts ? live!.fee : total) - billed)}</td>
+                {drafts ? (
+                  <td colSpan={2} />
+                ) : (
+                  <>
+                    <td className="num px-2.5 py-2.5 text-right">{formatMoney(billed)}</td>
+                    <td className="num px-2.5 py-2.5 text-right">{formatMoneySigned(total - billed)}</td>
+                  </>
+                )}
                 <td />
                 {drafts && <td />}
               </tr>

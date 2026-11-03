@@ -260,7 +260,17 @@ The backbone: time, budgets, invoices and the snapshot all hang off this.
 | status | enum `phase_status` | `upcoming`, `current`, `complete`, `closed` (closed = no new time) |
 | start_date, end_date | date null | |
 | percent_complete_bp | integer | for fixed-fee billing (PM sets it) |
+| budget_hours_manual | boolean | hours were typed in; fee changes and role mixes leave them alone (1.5) |
+| is_additional_service | boolean | beyond the base contract; invoices can group these (1.5) |
 | archived_at | timestamptz null | |
+
+### phase_template_roles  (a default phase's role mix, Settings → Phases & fees)
+| id, firm_id, phase_template_id, firm_role_id | share_bp (of the phase fee; a mix adds up to exactly 10000) | sort_order | archived_at; one active row per role per template |
+
+### project_phase_roles  (a project phase's role mix)
+| id, firm_id, project_phase_id, firm_role_id | share_bp | rate_cents (the role's **bill** rate on the day of the edit) | hours (share × phase fee ÷ rate, to the quarter hour) | sort_order | archived_at |
+
+Phase budget hours = Σ role hours unless `budget_hours_manual`. A phase with no mix uses the firm's blended bill rate. Changing a phase's fee recalculates its role hours at that day's rates (Blake, 2026-11-03).
 
 ### project_members
 | id, firm_id, project_id, membership_id | project_role text ("PM", "Principal", "PA", "Designer") | bill_rate_override_cents null | archived_at; one active row per person per project |
@@ -381,8 +391,7 @@ The screen specs found fields the model above doesn't have yet. **Add each one w
 |---|---|---|---|
 | 0.5 | users | preferences jsonb (menu rail collapsed, etc.) | Rail state follows the person across devices (app-shell) |
 | Code module (later) | projects | stories, building_height_ft, occupancy_group, construction_type, sprinklered, delivery_method, design_review_board | Building facts; added with the building code add-on and shown only when it is on (Blake, 2026-11-03). Not in 1.5 |
-| 1.5 | project_phases | is_additional_service boolean, planned_cost_rate_cents bigint null | Additional-service phases; projected profit (project-detail, timesheet) |
-| 1.5 | **phase_template_roles**, **project_phase_roles** (new) | id, firm_id, phase_template_id / project_phase_id, firm_role_id, share_bp (of the phase fee), hours override null | Role mix per phase: hours = role's share of the fee ÷ the role's bill rate. Template defaults are copied to new projects (Blake, 2026-11-03) |
+| 2 | project_phases | planned_cost_rate_cents bigint null | Projected profit (project-snapshot). Moved from 1.5 (Blake, 2026-11-03) |
 | 1.6 | **timesheet_rows** (new) | id, firm_id, timesheet_id, row_type (`project`/`overhead`/`leave`), project_id, project_phase_id, overhead_category_id, activity_id, billable, sort_order | Rows exist before they have hours ("Add row", "Copy last week") (timesheet) |
 | 1.6 | time_entries | timesheet_row_id fk; while the timesheet is `draft`, activity_id may be null and the check becomes "not both phase and overhead category"; submit enforces completeness | (timesheet) |
 | 1.6 | firm_settings | timesheet_due_time time (09:00) | Reminder timing (timesheet) |
