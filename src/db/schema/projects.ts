@@ -3,6 +3,7 @@ import {
   type AnyPgColumn,
   type PgTableExtraConfigValue,
   bigint,
+  boolean,
   check,
   date,
   foreignKey,
@@ -210,5 +211,50 @@ export const projectContacts = pgTable(
       columns: [t.firmId, t.contactId],
       foreignColumns: [contacts.firmId, contacts.id],
     }),
+  ],
+);
+
+/** A project's sub-consultants (project-detail, 1.5). */
+export const consultants = pgTable(
+  "consultants",
+  {
+    id: id(),
+    firmId: uuid("firm_id")
+      .notNull()
+      .references(() => firms.id),
+    projectId: uuid("project_id").notNull(),
+    companyId: uuid("company_id").notNull(),
+    /** The person at the consultant we deal with. */
+    contactId: uuid("contact_id"),
+    /** "Civil", "Structural", "MEP", "Landscape" or the firm's own. */
+    discipline: text("discipline").notNull(),
+    feeCents: bigint("fee_cents", { mode: "number" }).notNull().default(0),
+    /** Markup when billed through to the client, 1000 = 10%. */
+    markupBp: integer("markup_bp").notNull().default(0),
+    /** Their fee is billed to the client through our invoices. */
+    billedThrough: boolean("billed_through").notNull().default(true),
+    ...timestamps,
+    archivedAt: archivedAt(),
+  },
+  (t): PgTableExtraConfigValue[] => [
+    index("consultants_project_idx").on(t.firmId, t.projectId),
+    index("consultants_company_idx").on(t.firmId, t.companyId),
+    foreignKey({
+      name: "consultants_project_same_firm_fk",
+      columns: [t.firmId, t.projectId],
+      foreignColumns: [projects.firmId, projects.id],
+    }),
+    foreignKey({
+      name: "consultants_company_same_firm_fk",
+      columns: [t.firmId, t.companyId],
+      foreignColumns: [companies.firmId, companies.id],
+    }),
+    foreignKey({
+      name: "consultants_contact_same_firm_fk",
+      columns: [t.firmId, t.contactId],
+      foreignColumns: [contacts.firmId, contacts.id],
+    }),
+    check("consultants_fee_nonneg", sql`${t.feeCents} >= 0`),
+    check("consultants_markup_range", sql`${t.markupBp} between 0 and 10000`),
   ],
 );

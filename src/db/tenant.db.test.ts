@@ -7,6 +7,7 @@ import {
   activities,
   activityLog,
   companies,
+  consultants,
   contacts,
   projectContacts,
   projectMembers,
@@ -477,6 +478,28 @@ const cases: TableCase[] = [
     insertForB: (db) =>
       db.insert(projectContacts).values({ firmId: B.firmId, projectId: B.projectId, companyId: B.companyId }),
   },
+  {
+    table: "consultants",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: consultants.firmId })
+        .from(consultants)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) =>
+      db
+        .update(consultants)
+        .set({ discipline: "hacked" })
+        .where(eq(consultants.id, B.consultantId))
+        .returning(),
+    readB: (db) =>
+      db
+        .select({ v: consultants.discipline })
+        .from(consultants)
+        .where(eq(consultants.id, B.consultantId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db.insert(consultants).values({ firmId: B.firmId, projectId: B.projectId, companyId: B.companyId, discipline: "Sneaky" }),
+  },
 ];
 
 describe("database role", () => {
@@ -581,6 +604,16 @@ describe("other guards", () => {
       ),
       /foreign key/,
     );
+  });
+
+  it("a consultant can't use another firm's project, company or contact", async () => {
+    const base = { firmId: A.firmId, discipline: "MEP" };
+    for (const v of [
+      { ...base, projectId: B.projectId, companyId: A.companyId },
+      { ...base, projectId: A.projectId, companyId: B.companyId },
+      { ...base, projectId: A.projectId, companyId: A.companyId, contactId: B.contactId },
+    ])
+      await expectDbError(withFirm(A.firmId, (db) => db.insert(consultants).values(v)), /foreign key/);
   });
 
   it("a contact can't belong to another firm's company", async () => {
