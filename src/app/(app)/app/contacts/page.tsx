@@ -6,6 +6,7 @@ import { ToastProvider } from "@/components/ui/toast";
 import { withFirm } from "@/db/tenant";
 import { requireSession } from "@/lib/auth/session";
 import { COMPANY_KINDS, type CompanyKind } from "@/lib/contacts/form";
+import { lookupEnabled } from "@/server/address/google";
 import { loadContacts } from "@/server/contacts/view";
 
 // Contacts (contacts spec): everyone can look things up; owners, admins and
@@ -32,7 +33,7 @@ export default async function ContactsRoute({
   };
   return (
     <ToastProvider>
-      <ContactsPage view={view} initial={initial} />
+      <ContactsPage view={view} initial={initial} addressLookup={lookupEnabled()} />
     </ToastProvider>
   );
 }

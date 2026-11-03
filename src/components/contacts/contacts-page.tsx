@@ -40,7 +40,16 @@ const th =
   "border-b border-line px-2.5 py-2.5 text-2xs font-medium whitespace-nowrap text-muted first:pl-[18px] last:pr-[18px] text-left";
 
 /** The Contacts page (contacts spec). */
-export function ContactsPage({ view, initial }: { view: ContactsView; initial: ContactsParams }) {
+export function ContactsPage({
+  view,
+  initial,
+  addressLookup,
+}: {
+  view: ContactsView;
+  initial: ContactsParams;
+  /** Google address lookup is set up. */
+  addressLookup: boolean;
+}) {
   const router = useRouter();
   const toast = useToast();
   const [tab, setTab] = useState(initial.tab);
@@ -420,6 +429,7 @@ export function ContactsPage({ view, initial }: { view: ContactsView; initial: C
         company={companyForm.company}
         companies={view.companies}
         people={view.contacts}
+        addressLookup={addressLookup}
         onClose={() => setCompanyForm({ open: false, company: null })}
         onSaved={(id, message) => {
           setCompanyForm({ open: false, company: null });

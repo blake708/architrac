@@ -140,6 +140,8 @@ Tests: `src/lib/calc/contacts.test.ts`, `src/lib/contacts/display.test.ts`, `src
 
 - [x] *(Added Blake, 2026-11-03)* Given a company panel, then a People section lists everyone at the company (name, title, main/billing contact, email); clicking a name opens that person. Owners, admins and PMs see **Add person**, which opens New contact with the company filled in and returns to the company after saving.
 
+- [x] *(Added Blake, 2026-11-03)* Given Google address lookup is set up, when I type a street in the company form, then real US addresses are suggested and picking one fills street, suite/unit, city, state and ZIP (ADR 0007). Without the key the fields are plain inputs. *(Parsing and Google calls unit tested; manual entry browser tested.)*
+
 ## Open questions
 10. *(Added Blake, 2026-11-02)* Until invoices (1.8) exist, a client with nothing billed shows "—" in Billed / fees, not "Paid up". Project counts and lists fill in from 1.4 (projects) and 1.5 (consultants).
 1. **Decided (Blake, 2026-11-02): add `agency`** as its own kind. *(Was: data model addition needed:* add `agency` to enum `company_kind` (mockup filter and pill "Agency" for building departments, planning & zoning). Alternative: map to `other` and label it "Agency" — Blake to choose.

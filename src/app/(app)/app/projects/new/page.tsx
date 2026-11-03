@@ -6,6 +6,7 @@ import { can } from "@/lib/auth/permissions";
 import { requireSession } from "@/lib/auth/session";
 import { PROJECT_MESSAGES } from "@/lib/projects/form";
 import { firmDisplayName } from "@/lib/settings/firm-profile";
+import { lookupEnabled } from "@/server/address/google";
 import { loadNewProjectOptions } from "@/server/projects/view";
 
 // New project (projects-list spec, "New project flow"): owners, admins, PMs.
@@ -26,6 +27,7 @@ export default async function NewProjectRoute({
         options={options}
         viewerMembershipId={membership.appRole === "project_manager" ? membership.id : ""}
         presetClientId={typeof sp.client === "string" ? sp.client : null}
+        addressLookup={lookupEnabled()}
       />
     </main>
   );

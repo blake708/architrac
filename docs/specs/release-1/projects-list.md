@@ -78,6 +78,8 @@ All filters live in the URL so a filtered list can be bookmarked. The page is a 
 A single page with two Cards and a sticky footer holding **Cancel** (secondary, returns to `/app/projects`) and **Create project** (primary).
 
 ### Card 1: Project details
+*(Changed by Blake, 2026-11-03.)* Fields are grouped under labeled sections: **Project** (number, name, status, type, scope) · **Client** (client, client contact) · **People** (principal, PM) · **Site address** (street with Google lookup, suite/unit, city, state, ZIP; ADR 0007) · **Size & schedule** (square feet, construction estimate, start, target end).
+
 | Field | Column | Control / rule |
 |---|---|---|
 | Project number * | `number` | Input, prefilled by Rule 5. Pattern `^[A-Za-z0-9-]{1,20}$`. Unique per firm, compared case-insensitively. |

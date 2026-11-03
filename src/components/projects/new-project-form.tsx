@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
+import { AddressFields } from "@/components/address/address-fields";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -93,10 +94,13 @@ export function NewProjectForm({
   options,
   viewerMembershipId,
   presetClientId,
+  addressLookup,
 }: {
   options: NewProjectOptions;
   viewerMembershipId: string;
   presetClientId: string | null;
+  /** Google address lookup is set up (GOOGLE_MAPS_API_KEY). */
+  addressLookup: boolean;
 }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
@@ -286,10 +290,44 @@ export function NewProjectForm({
       noValidate
     >
       <Card title="Project details">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-          <Input label="Project number *" value={d.number} maxLength={20} onChange={(ev) => set({ number: ev.target.value })} error={e("number")} required />
-          <Input label="Project name *" value={d.name} maxLength={200} onChange={(ev) => set({ name: ev.target.value })} error={e("name")} wrapperClassName="lg:col-span-2" required />
-          <Select
+        <fieldset className="m-0 border-0 p-0">
+          <legend className="cap float-left mb-3 w-full text-xs font-semibold text-ink-2">Project</legend>
+          <div className="clear-both grid grid-cols-1 gap-4 md:grid-cols-3">
+            <Input label="Project number *" value={d.number} maxLength={20} onChange={(ev) => set({ number: ev.target.value })} error={e("number")} required />
+          <Input label="Project name *" value={d.name} maxLength={200} onChange={(ev) => set({ name: ev.target.value })} error={e("name")} wrapperClassName="md:col-span-2" required />
+          <Select label="Status" value={d.status} onChange={(ev) => set({ status: ev.target.value as typeof d.status })}>
+            {CREATE_STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {STATUS_LABELS[s]}
+              </option>
+            ))}
+          </Select>
+          <Select label="Project type *" value={d.projectType} error={d.projectType === OTHER ? undefined : e("projectType")} onChange={(ev) => set({ projectType: ev.target.value })}>
+            <option value="">Choose a type…</option>
+            {types.map((t) => (
+              <option key={t} value={t}>
+                {t}
+              </option>
+            ))}
+            <option value={OTHER}>Other…</option>
+          </Select>
+          {d.projectType === OTHER && (
+            <Input label="Other type *" value={d.otherType} maxLength={60} onChange={(ev) => set({ otherType: ev.target.value })} error={e("projectType")} />
+          )}
+          <Select label="Scope" value={d.scopeKind} onChange={(ev) => set({ scopeKind: ev.target.value as ScopeKind | "" })}>
+            <option value="">—</option>
+            {SCOPE_KINDS.map((s) => (
+              <option key={s} value={s}>
+                {SCOPE_LABELS[s]}
+              </option>
+            ))}
+          </Select>
+          </div>
+        </fieldset>
+        <fieldset className="m-0 mt-6 border-0 border-t border-line-soft p-0 pt-5">
+          <legend className="cap float-left mb-3 w-full text-xs font-semibold text-ink-2">Client</legend>
+          <div className="clear-both grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Select
             label="Client *"
             value={d.clientCompanyId}
             error={e("clientCompanyId")}
@@ -320,34 +358,12 @@ export function NewProjectForm({
               </option>
             ))}
           </Select>
-          <Select label="Status" value={d.status} onChange={(ev) => set({ status: ev.target.value as typeof d.status })}>
-            {CREATE_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {STATUS_LABELS[s]}
-              </option>
-            ))}
-          </Select>
-          <Select label="Project type *" value={d.projectType} error={d.projectType === OTHER ? undefined : e("projectType")} onChange={(ev) => set({ projectType: ev.target.value })}>
-            <option value="">Choose a type…</option>
-            {types.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-            <option value={OTHER}>Other…</option>
-          </Select>
-          {d.projectType === OTHER && (
-            <Input label="Other type *" value={d.otherType} maxLength={60} onChange={(ev) => set({ otherType: ev.target.value })} error={e("projectType")} />
-          )}
-          <Select label="Scope" value={d.scopeKind} onChange={(ev) => set({ scopeKind: ev.target.value as ScopeKind | "" })}>
-            <option value="">—</option>
-            {SCOPE_KINDS.map((s) => (
-              <option key={s} value={s}>
-                {SCOPE_LABELS[s]}
-              </option>
-            ))}
-          </Select>
-          <Select label="Principal in charge *" value={d.principalMembershipId} error={e("principalMembershipId")} onChange={(ev) => set({ principalMembershipId: ev.target.value })}>
+          </div>
+        </fieldset>
+        <fieldset className="m-0 mt-6 border-0 border-t border-line-soft p-0 pt-5">
+          <legend className="cap float-left mb-3 w-full text-xs font-semibold text-ink-2">People</legend>
+          <div className="clear-both grid grid-cols-1 gap-4 md:grid-cols-2">
+            <Select label="Principal in charge *" value={d.principalMembershipId} error={e("principalMembershipId")} onChange={(ev) => set({ principalMembershipId: ev.target.value })}>
             <option value="">Choose…</option>
             {options.principals.map((p) => (
               <option key={p.membershipId} value={p.membershipId}>
@@ -363,18 +379,28 @@ export function NewProjectForm({
               </option>
             ))}
           </Select>
-          <Input label="Address" value={d.addressLine1} maxLength={200} onChange={(ev) => set({ addressLine1: ev.target.value })} error={e("addressLine1")} wrapperClassName="lg:col-span-2" />
-          <Input label="Address line 2" value={d.addressLine2} maxLength={200} onChange={(ev) => set({ addressLine2: ev.target.value })} />
-          <Input label="City" value={d.city} maxLength={100} onChange={(ev) => set({ city: ev.target.value })} />
-          <div className="grid grid-cols-2 gap-4">
-            <Input label="State" value={d.state} maxLength={2} onChange={(ev) => set({ state: ev.target.value })} error={e("state")} />
-            <Input label="ZIP" value={d.postalCode} maxLength={10} inputMode="numeric" onChange={(ev) => set({ postalCode: ev.target.value })} error={e("postalCode")} />
           </div>
-          <Input label="Square feet" value={d.squareFeet} inputMode="numeric" onChange={(ev) => set({ squareFeet: ev.target.value })} error={e("squareFeet")} />
+        </fieldset>
+        <fieldset className="m-0 mt-6 border-0 border-t border-line-soft p-0 pt-5">
+          <legend className="cap float-left mb-3 w-full text-xs font-semibold text-ink-2">Site address</legend>
+          <div className="clear-both">
+            <AddressFields
+              lookup={addressLookup}
+              value={{ addressLine1: d.addressLine1, addressLine2: d.addressLine2, city: d.city, state: d.state, postalCode: d.postalCode }}
+              onChange={(patch) => set(patch)}
+              errors={{ addressLine1: e("addressLine1"), addressLine2: e("addressLine2"), city: e("city"), state: e("state"), postalCode: e("postalCode") }}
+            />
+          </div>
+        </fieldset>
+        <fieldset className="m-0 mt-6 border-0 border-t border-line-soft p-0 pt-5">
+          <legend className="cap float-left mb-3 w-full text-xs font-semibold text-ink-2">Size & schedule</legend>
+          <div className="clear-both grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
+            <Input label="Square feet" value={d.squareFeet} inputMode="numeric" onChange={(ev) => set({ squareFeet: ev.target.value })} error={e("squareFeet")} />
           <Input label="Construction estimate" value={d.construction} inputMode="decimal" placeholder="$" onChange={(ev) => set({ construction: ev.target.value })} error={e("constructionCostCents")} />
           <Input label="Start date" type="date" value={d.startDate} onChange={(ev) => set({ startDate: ev.target.value })} error={e("startDate")} />
           <Input label="Target end" type="date" value={d.targetEndDate} onChange={(ev) => set({ targetEndDate: ev.target.value })} error={e("targetEndDate")} />
-        </div>
+          </div>
+        </fieldset>
       </Card>
 
       <Card title="Phases & fees" padded={false}>

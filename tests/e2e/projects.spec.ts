@@ -80,6 +80,12 @@ async function fillDetails(page: Page, number: string) {
   await page.getByLabel("Principal in charge *").selectOption({ label: "Eli Owner" });
   await page.getByLabel("Project manager *").selectOption({ label: "Jo Rivera" });
   await page.getByLabel("Construction estimate").fill("6,200,000");
+  // Typed by hand (the Google lookup is off in tests).
+  await page.getByLabel("Street address").fill("40 Calhoun St");
+  await page.getByLabel("Suite / unit").fill("Suite 200");
+  await page.getByLabel("City").fill("Charleston");
+  await page.getByLabel("State").fill("SC");
+  await page.getByLabel("ZIP").fill("29401");
 }
 
 test.describe("owner", () => {
@@ -87,6 +93,8 @@ test.describe("owner", () => {
     await signInAs(page, "etaOwner", "/app/projects/new");
     const year = new Date().getFullYear();
     await expect(page.getByLabel("Project number *")).toHaveValue(year === 2026 ? "2026-012" : `${year}-001`);
+    for (const group of ["Project", "Client", "People", "Site address", "Size & schedule"])
+      await expect(page.getByRole("group", { name: group, exact: true })).toBeVisible();
     await fillDetails(page, "2026-014");
 
     // Rule 6–7, example A: the seed split.
@@ -148,6 +156,10 @@ test.describe("owner", () => {
       "select 1 from activity_log a join projects p on p.id = a.entity_id where p.firm_id = :firm and p.number = '2026-014' and a.action = 'created'",
     );
     expect(logs).toHaveLength(1);
+    const [site] = await query<{ address_line1: string; address_line2: string; city: string; state: string; postal_code: string }>(
+      "select address_line1, address_line2, city, state, postal_code from projects where firm_id = :firm and number = '2026-014'",
+    );
+    expect(site).toEqual({ address_line1: "40 Calhoun St", address_line2: "Suite 200", city: "Charleston", state: "SC", postal_code: "29401" });
   });
 
   test("a number already used is refused", async ({ page }) => {
