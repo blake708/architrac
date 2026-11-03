@@ -31,12 +31,18 @@ export default async function globalSetup() {
     const clerkUserIds: Record<string, string> = {};
     const userIds: Record<string, string> = {};
     for (const [key, p] of Object.entries(PEOPLE)) {
-      const u = await clerk.users.createUser({
-        emailAddress: [p.email],
-        firstName: p.firstName,
-        lastName: p.lastName,
-        skipPasswordRequirement: true,
-      });
+      const u = await clerk.users
+        .createUser({
+          emailAddress: [p.email],
+          firstName: p.firstName,
+          lastName: p.lastName,
+          skipPasswordRequirement: true,
+        })
+        .catch((err: { errors?: { longMessage?: string; message?: string }[] }) => {
+          // Say which test person Clerk refused, and why.
+          const why = err.errors?.map((e) => e.longMessage ?? e.message).join("; ");
+          throw new Error(`Couldn't create test user ${key} (${p.email}): ${why ?? err}`);
+        });
       clerkUserIds[key] = u.id;
       const row = await pool.query<{ id: string }>(
         `insert into users (clerk_user_id, email, first_name, last_name, initials)

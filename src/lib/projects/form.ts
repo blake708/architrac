@@ -62,7 +62,7 @@ export const PROJECT_MESSAGES = {
   noPhases: "Include at least one phase",
   nteCap: "Not-to-exceed phases need a cap",
   feeSum: (phases: number, total: number) =>
-    `Phase fees add up to ${formatMoney(phases, { cents: true })}; total fee is ${formatMoney(total, { cents: true })}`,
+    `Phase fees add up to ${moneyExact(phases)}; total fee is ${moneyExact(total)}`,
   hoursSum: (phases: number, total: number) =>
     `Phase hours add up to ${phases}; total budget hours is ${total}`,
   long: "Too long",
@@ -71,6 +71,9 @@ export const PROJECT_MESSAGES = {
   badPerson: "That person can't be picked here",
   created: (number: string) => `Project ${number} created`,
 } as const;
+
+/** "$190,000" when whole dollars, "$1,000.01" otherwise. */
+export const moneyExact = (cents: number) => formatMoney(cents, { cents: cents % 100 !== 0 });
 
 const optText = (max: number) =>
   z

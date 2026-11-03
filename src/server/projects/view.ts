@@ -355,3 +355,77 @@ export async function loadNewProjectOptions(db: TenantDb, timezone: string): Pro
     templates: templates.map((t) => ({ ...t, feeType: t.feeType as FeeType })),
   };
 }
+
+// ---------------------------------------------------------------------------
+// Project page (placeholder until project-detail, 1.5)
+
+export type ProjectSummary = {
+  id: string;
+  number: string;
+  name: string;
+  clientName: string;
+  status: ProjectStatus;
+  phaseText: string;
+  phases: {
+    id: string;
+    code: string;
+    name: string;
+    description: string | null;
+    feeType: FeeType;
+    status: PhaseStatus;
+    budgetHours: number;
+    /** Only for people who may see this project's money. */
+    feeCents?: number;
+  }[];
+  feeCents?: number;
+};
+
+/** One project, or null if it doesn't exist or this viewer can't see it. */
+export async function loadProjectSummary(db: TenantDb, viewer: Viewer, id: string): Promise<ProjectSummary | null> {
+  if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
+  const [p] = await db
+    .select({
+      id: projects.id,
+      number: projects.number,
+      name: projects.name,
+      clientName: companies.name,
+      status: projects.status,
+      pm: projects.pmMembershipId,
+      principal: projects.principalMembershipId,
+    })
+    .from(projects)
+    .innerJoin(companies, eq(companies.id, projects.clientCompanyId))
+    .where(and(eq(projects.id, id), isNull(projects.archivedAt)));
+  if (!p) return null;
+  const assigned = (await assignedProjectIds(db, viewer.membershipId)).has(p.id);
+  // Staff who aren't on the project get "not found", so it isn't revealed.
+  if (!can(viewer, "projects.view", { isAssigned: assigned })) return null;
+
+  const own = p.pm === viewer.membershipId || p.principal === viewer.membershipId;
+  const money = can(viewer, "projects.view_fees", { isProjectManager: own });
+  const rows = await db
+    .select()
+    .from(projectPhases)
+    .where(and(eq(projectPhases.projectId, p.id), isNull(projectPhases.archivedAt)))
+    .orderBy(asc(projectPhases.sortOrder));
+  const phases = rows.map((r) => ({
+    id: r.id,
+    code: r.code,
+    name: r.name,
+    description: r.description,
+    feeType: r.feeType as FeeType,
+    status: r.status,
+    budgetHours: Number(r.budgetHours),
+    ...(money ? { feeCents: r.feeCents } : {}),
+  }));
+  return {
+    id: p.id,
+    number: p.number,
+    name: p.name,
+    clientName: p.clientName,
+    status: p.status,
+    phaseText: phaseText(p.status, phases.map((x, i) => ({ ...x, sortOrder: i }))),
+    phases,
+    ...(money ? { feeCents: projectFee(rows) } : {}),
+  };
+}

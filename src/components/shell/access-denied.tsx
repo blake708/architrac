@@ -6,10 +6,16 @@ import { PageHeader } from "@/components/ui/page-header";
  * Shown inside the shell when the person's role can't open a page.
  * The page decides this on the server and renders this instead of its data.
  */
-export function AccessDenied({ firmName }: { firmName: string }) {
+export function AccessDenied({
+  firmName,
+  title = "You don't have access to this page",
+}: {
+  firmName: string;
+  title?: string;
+}) {
   return (
     <PageHeader
-      title="You don't have access to this page"
+      title={title}
       description={`Ask an owner or admin of ${firmName} if you need it.`}
       actions={
         <Link href="/app" className={buttonClasses("secondary")}>

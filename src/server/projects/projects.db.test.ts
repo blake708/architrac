@@ -229,7 +229,7 @@ describe("creating a project", () => {
       errors.push(r.ok ? null : r.fieldErrors?.phases);
     }
     expect(errors).toEqual([
-      "Phase fees add up to $1.00; total fee is $1.01",
+      "Phase fees add up to $1; total fee is $1.01",
       "Phase hours add up to 1; total budget hours is 2",
       PROJECT_MESSAGES.nteCap,
       PROJECT_MESSAGES.noPhases,
