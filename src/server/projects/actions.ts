@@ -1,6 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { cookies } from "next/headers";
+import { FLASH_COOKIE, FLASH_MAX_AGE_SECONDS } from "@/lib/flash/flash";
+import { PROJECT_MESSAGES } from "@/lib/projects/form";
 import { requireSession } from "@/lib/auth/session";
 import { actorFrom } from "@/server/settings/common";
 import { createProjectCore } from "./create";
@@ -22,6 +25,12 @@ export async function createProject(input: unknown) {
   if (result.ok) {
     revalidatePath("/app/projects");
     revalidatePath("/app/contacts");
+    // "Project 2026-023 created" shows on the project's page.
+    (await cookies()).set(FLASH_COOKIE, PROJECT_MESSAGES.created(result.data.number), {
+      maxAge: FLASH_MAX_AGE_SECONDS,
+      path: "/",
+      sameSite: "lax",
+    });
   }
   return result;
 }

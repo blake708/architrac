@@ -177,7 +177,7 @@ export function NewProjectForm({
         setFormError(result.error ?? (result.fieldErrors ? "Fix the fields marked in red." : null));
         return;
       }
-      router.push(`/app/projects/${result.data.id}?created=${encodeURIComponent(result.data.number)}`);
+      router.push(`/app/projects/${result.data.id}`);
     });
   }
 

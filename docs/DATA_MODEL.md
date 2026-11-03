@@ -77,6 +77,7 @@ One row per firm.
 |---|---|---|
 | firm_id | uuid pk fk | |
 | overhead_rate_bp | integer | 6000 = 60% (mockup default) |
+| default_consultant_markup_bp | integer | 1000 = 10%; new consultants start here (1.5) |
 | include_overhead_default | boolean | default true; the snapshot switch starts here |
 | week_starts_on | smallint | 0 = Sunday, 1 = Monday |
 | timesheet_increment_minutes | smallint | 15 |
@@ -268,7 +269,7 @@ The backbone: time, budgets, invoices and the snapshot all hang off this.
 | id, firm_id, project_id, company_id | contact_id null | role text null ("General contractor") | archived_at |
 
 ### consultants  (project's sub-consultants)
-| id, firm_id, project_id, company_id | discipline text ("MEP", "Structural", "Civil") | fee_cents | markup_bp | billed_through boolean |
+| id, firm_id, project_id, company_id (kind consultant) | contact_id null (falls back to the company's billing contact) | discipline text ("MEP", "Structural", "Civil") | fee_cents ≥ 0 | markup_bp 0–10000 (new ones start at `firm_settings.default_consultant_markup_bp`) | billed_through boolean | archived_at |
 
 ### timesheets
 One per person per week.
@@ -381,9 +382,7 @@ The screen specs found fields the model above doesn't have yet. **Add each one w
 | 0.5 | users | preferences jsonb (menu rail collapsed, etc.) | Rail state follows the person across devices (app-shell) |
 | Code module (later) | projects | stories, building_height_ft, occupancy_group, construction_type, sprinklered, delivery_method, design_review_board | Building facts; added with the building code add-on and shown only when it is on (Blake, 2026-11-03). Not in 1.5 |
 | 1.5 | project_phases | is_additional_service boolean, planned_cost_rate_cents bigint null | Additional-service phases; projected profit (project-detail, timesheet) |
-| 1.5 | consultants | contact_id | (project-detail) |
 | 1.5 | **phase_template_roles**, **project_phase_roles** (new) | id, firm_id, phase_template_id / project_phase_id, firm_role_id, share_bp (of the phase fee), hours override null | Role mix per phase: hours = role's share of the fee ÷ the role's bill rate. Template defaults are copied to new projects (Blake, 2026-11-03) |
-| 1.5 | firm_settings | default_consultant_markup_bp (1000) | Default markup for new consultants (project-detail). `budget_planning_rate_cents` dropped: hours come from the blended bill rate and role mixes (Blake, 2026-11-03) |
 | 1.6 | **timesheet_rows** (new) | id, firm_id, timesheet_id, row_type (`project`/`overhead`/`leave`), project_id, project_phase_id, overhead_category_id, activity_id, billable, sort_order | Rows exist before they have hours ("Add row", "Copy last week") (timesheet) |
 | 1.6 | time_entries | timesheet_row_id fk; while the timesheet is `draft`, activity_id may be null and the check becomes "not both phase and overhead category"; submit enforces completeness | (timesheet) |
 | 1.6 | firm_settings | timesheet_due_time time (09:00) | Reminder timing (timesheet) |

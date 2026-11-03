@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { PhaseStepper } from "@/components/projects/detail/phase-stepper";
 import { ProjectHeader } from "@/components/projects/detail/project-header";
 import { ProjectNav } from "@/components/projects/detail/project-nav";
+import { FlashToast } from "@/components/ui/flash-toast";
 import { ToastProvider } from "@/components/ui/toast";
 import { getEditOptions, getProjectPage } from "@/server/projects/page-cache";
 
@@ -22,6 +23,7 @@ export default async function ProjectLayout({
   const edit = p.canEdit ? await getEditOptions() : null;
   return (
     <ToastProvider>
+      <FlashToast />
       <main>
         <ProjectHeader p={p} edit={edit} />
         <PhaseStepper phases={p.phases} />

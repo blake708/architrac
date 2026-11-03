@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CreatedToast } from "@/components/projects/created-toast";
 import { HoursTable } from "@/components/projects/detail/hours-table";
 import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
@@ -19,15 +18,8 @@ import { getProjectPage } from "@/server/projects/page-cache";
 // Overview tab (project-detail spec, Data shown → Overview). Money tiles and
 // the hours table are only in the financial view; the loader leaves the
 // numbers out for everyone else.
-export default async function ProjectOverview({
-  params,
-  searchParams,
-}: {
-  params: Promise<{ id: string }>;
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+export default async function ProjectOverview({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const sp = await searchParams;
   const p = await getProjectPage(id);
   if (!p) notFound();
 
@@ -44,7 +36,6 @@ export default async function ProjectOverview({
 
   return (
     <>
-      <CreatedToast number={typeof sp.created === "string" ? sp.created : null} />
       <section aria-label="Project summary" className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3">
         {p.money && (
           <>
