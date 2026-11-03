@@ -19,7 +19,7 @@ Decisions Blake needs to make. Each has a recommendation; the specs currently fo
 | 6 | Email provider: Postmark or Resend? | Postmark: best deliverability for invoices | invoicing, ARCHITECTURE | |
 | 7 | Must phase fee shares total 100% before a phase template can be saved? (The mockup only warns.) | Yes, block saving | settings-rates-phases | **Block saving** (Blake, 2026-11-02). Only default phases count; optional phases have no share |
 | 8 | Project profit to date: based on **billed** (mockup) or **earned** (% complete × fee)? | Show both in Release 2: earned for profitability, billed for cash. Release 1 has no profit display | project-snapshot | |
-| 9 | Project health: does a phase that finished over budget keep the project "At risk" until it closes? | No: flag it at phase level only; project health looks at open phases | projects-list | |
+| 9 | Project health: does a phase that finished over budget keep the project "At risk" until it closes? | No: flag it at phase level only; project health looks at open phases | projects-list || **Open phases only** (Blake, 2026-11-03): a finished phase that ran over is flagged on the phase (1.5), not the project |
 | 10 | A firm with one owner: who approves that person's overhead time? | A firm setting "allow self-approval of own time" (off by default) | timesheet-approval | |
 | 11 | Do contractors get missing-timesheet reminders? | Yes, if their membership is active | timesheet-approval | |
 | 12 | Retainers in Release 1 handled as a negative adjustment line on an invoice? | Yes, until Accounting (Release 2) adds proper retainer tracking | invoicing | |

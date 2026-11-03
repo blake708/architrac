@@ -86,7 +86,7 @@ A single page with two Cards and a sticky footer holding **Cancel** (secondary, 
 | Client contact | `client_contact_id` | Select of `contacts` where `company_id` = the chosen client. Disabled until a client is picked. |
 | Project type * | `project_type` | Select: Medical office, Restaurant, Retail, Office, plus the distinct existing values, plus "Other…" (reveals a text input, 1–60 chars) |
 | Status | `status` | Select: Active (default), Pursuit, On hold. Closed is not offered on create. |
-| Principal in charge * | `principal_membership_id` | Select of active memberships with `app_role in ('owner','admin')` |
+| Principal in charge * | `principal_membership_id` | Select of active memberships marked **Principal** on the Team page (`is_principal`); if none are marked, owners and admins (Blake, 2026-11-03) |
 | Project manager * | `pm_membership_id` | Select of active memberships with `app_role in ('owner','admin','project_manager')`. Defaults to the viewer when the viewer is a PM. |
 | Address | `address_line1`, `address_line2`, `city`, `state`, `postal_code` | See Open questions (column names) |
 | Square feet | `square_feet` | Integer > 0, optional |
@@ -156,10 +156,11 @@ These go in `src/lib/calc/` with unit tests. Money is in cents, and rounding is 
    - *MOB:* 930,000 (2026-097) + 1,674,000 (2026-109) + 1,116,000 (2026-121) = 3,720,000¢ = **$37,200**. That is 37,200 / 186,000 = **20%**. The draft DD invoice ($13,950) is excluded.
 3. **Health** `projectHealth(project, phases, usedHoursByPhase)`. "Used hours" is defined in `project-detail.md` Rule 2.
    - Status is not `active`: return `on_hold` / `closed` / `pursuit`.
-   - **over_budget** if Σ used > Σ budget_hours (only when Σ budget > 0), **or** any `current` phase has used > budget_hours.
-   - Else **at_risk** if any `complete`/`closed` phase finished with used > budget_hours, **or** any `current` phase with budget > 0 has used ≥ 90% of budget (the design-system orange threshold).
+   - Only **open** phases (`current`, `upcoming`) count, plus the project total (decided by Blake, 2026-11-03, OPEN_DECISIONS #9). A phase that finished over budget is flagged on the phase (project-detail), not the project.
+   - **over_budget** if Σ used > Σ budget_hours (only when Σ budget > 0), **or** any open phase has used > budget_hours.
+   - Else **at_risk** if any open phase with budget > 0 has used ≥ 90% of budget (the design-system orange threshold).
    - Else **on_track**.
-   - *MOB:* used 323 h ≤ 1,240 h budgeted, and DD (current) is 64 ≤ 310 h, so the project is not over budget. SD is complete at 201 > 186 h, so the result is **At risk** (matches the mockup).
+   - *MOB:* used 323 h ≤ 1,240 h budgeted, and DD (current) is 64 ≤ 310 h. SD finished at 201 > 186 h, but finished phases don't count, so the result is **On track** (the mockup shows At risk under the old rule).
 4. **Phase text**
    - Project `closed`: "Closed out".
    - Project `pursuit`: "Pursuit · not started".
@@ -214,31 +215,31 @@ Fixture **F1** (firm TMG):
   - 2026-011 "Pine Street Bistro": active, PM BM, principal BM, fee 4,100,000¢ in one Fixed phase (status `current`), budget 300 h, 0 h used, no invoices. KL is a project_member.
   - 2025-004 "Westside Tire & Service": closed, PM JR.
 
-- [ ] Given F1 as BM, when I open `/app/projects`, then the Active tab shows 2 rows ordered 2026-014 then 2026-011, and the tabs read Active 2 · On hold 0 · Closed 1 · All 3.
-- [ ] Given F1 as BM, then the KPI band shows Active fees $227,000, Billed to date $37,200 with the note "16% of active fees", Left to bill $189,800, and Flagged 1.
-- [ ] Given F1 as BM, then the 2026-014 row shows Fee $186,000, Billed 20%, Constr. est. $6.2M, Phase text "Design Development", and Health "At risk".
-- [ ] Given F1, when I search "palmetto", then only 2026-014 is listed; when I search "2025-004" on the All tab, then only Westside is listed.
-- [ ] Given F1, when I search "zzz", then the message `No projects match "zzz".` is shown.
-- [ ] Given F1, when I toggle sort to "Largest fee", then 2026-014 is listed before 2026-011, and the URL contains `sort=fee`.
-- [ ] Given F1 as JR (PM), then there is no KPI band, 2026-014 shows its fee and health, and 2026-011 shows `—` for Fee, Billed and Health.
-- [ ] Given F1 as KL (staff), then only 2026-011 is listed, the Fee/Billed/Health columns are absent, and the page's server response contains no `fee_cents` values.
-- [ ] Given F1 as KL, when I request `/app/projects/new`, then I get a 403.
-- [ ] Given F1 in 2026, when BM opens `/app/projects/new`, then the number field is prefilled "2026-015".
-- [ ] Given the seed phase templates and a total fee of $186,000 with 1,240 budget hours, when the form renders, then the phase fees are $9,300 / $27,900 / $46,500 / $65,100 / $9,300 / $27,900 / $0 and the hours are 62 / 186 / 310 / 434 / 62 / 186 / 0.
-- [ ] Given total $1,000.01 and no edits, then CD = $350.01 and the footer sum = $1,000.01.
-- [ ] Given total $186,000 and CA edited to $20,000, then CD = $68,352.97 and Σ = $186,000.00.
-- [ ] Given every included row edited so that Σ = $190,000 against a $186,000 total, then Save is disabled and **Use $190,000 as total** makes Save available.
-- [ ] Given a Not-to-exceed row with fee $0, when I click Create, then I see the error "Not-to-exceed phases need a cap" and nothing is saved.
-- [ ] Given a valid form with Close Out unchecked and status Active, when I click Create, then 6 `project_phases` rows exist with sort_order 1–6, PD is `current` and the rest are `upcoming`, PM and principal `project_members` rows exist, one `activity_log` row exists, and I land on `/app/projects/{id}`.
-- [ ] Given an existing project 2026-015, when I submit number "2026-015", then the field error "Number already used" is shown.
-- [ ] Given firm B has projects, when a TMG user loads `/app/projects`, then none of firm B's projects appear (RLS).
+- [x] Given F1 as BM, when I open `/app/projects`, then the Active tab shows 2 rows ordered 2026-014 then 2026-011, and the tabs read Active 2 · On hold 0 · Closed 1 · All 3.
+- [ ] Given F1 as BM, then the KPI band shows Active fees $227,000, Billed to date $37,200 with the note "16% of active fees", Left to bill $189,800, and Flagged 1. *(Needs invoices (1.8) and time (1.6). Today: Active fees $227,000, Billed $0, Flagged 0 are tested.)*
+- [x] Given F1 as BM, then the 2026-014 row shows Fee $186,000, Billed 20%, Constr. est. $6.2M, Phase text "Design Development", and Health "At risk". *(Fee, Constr. est., phase text checked; Billed and Health need invoices (1.8) and time (1.6). Health is now On track: see Rule 3.)*
+- [x] Given F1, when I search "palmetto", then only 2026-014 is listed; when I search "2025-004" on the All tab, then only Westside is listed.
+- [x] Given F1, when I search "zzz", then the message `No projects match "zzz".` is shown.
+- [x] Given F1, when I toggle sort to "Largest fee", then 2026-014 is listed before 2026-011, and the URL contains `sort=fee`.
+- [x] Given F1 as JR (PM), then there is no KPI band, 2026-014 shows its fee and health, and 2026-011 shows `—` for Fee, Billed and Health.
+- [x] Given F1 as KL (staff), then only 2026-011 is listed, the Fee/Billed/Health columns are absent, and the page's server response contains no `fee_cents` values.
+- [x] Given F1 as KL, when I request `/app/projects/new`, then I get a 403. *(Shown in the shell as an access-denied page, like Settings, rather than an HTTP 403.)*
+- [x] Given F1 in 2026, when BM opens `/app/projects/new`, then the number field is prefilled "2026-015".
+- [x] Given the seed phase templates and a total fee of $186,000 with 1,240 budget hours, when the form renders, then the phase fees are $9,300 / $27,900 / $46,500 / $65,100 / $9,300 / $27,900 / $0 and the hours are 62 / 186 / 310 / 434 / 62 / 186 / 0.
+- [x] Given total $1,000.01 and no edits, then CD = $350.01 and the footer sum = $1,000.01.
+- [x] Given total $186,000 and CA edited to $20,000, then CD = $68,352.97 and Σ = $186,000.00.
+- [x] Given every included row edited so that Σ = $190,000 against a $186,000 total, then Save is disabled and **Use $190,000 as total** makes Save available. *(Tested by editing CA past the total.)*
+- [x] Given a Not-to-exceed row with fee $0, when I click Create, then I see the error "Not-to-exceed phases need a cap" and nothing is saved.
+- [x] Given a valid form with Close Out unchecked and status Active, when I click Create, then 6 `project_phases` rows exist with sort_order 1–6, PD is `current` and the rest are `upcoming`, PM and principal `project_members` rows exist, one `activity_log` row exists, and I land on `/app/projects/{id}`.
+- [x] Given an existing project 2026-015, when I submit number "2026-015", then the field error "Number already used" is shown.
+- [x] Given firm B has projects, when a TMG user loads `/app/projects`, then none of firm B's projects appear (RLS).
 
 ## Open questions
-1. **Data model addition needed:** `projects.scope_kind` enum (`ground_up`, `tenant_upfit`, `shell_building`, `other`). The mockup shows it under Type (e.g. "Ground-up"), and the project header shows it too.
-2. **Data model addition needed:** `projects.closed_on date null`, set when status becomes `closed`. It is needed for "N CLOSED THIS YEAR" in the meta line and for later reports.
-3. **Data model clarification:** "address fields" on `projects` is not spelled out. This spec assumes `address_line1`, `address_line2`, `city`, `state`, `postal_code`, matching `companies`. Confirm.
+1. **Done (1.4):** `projects.scope_kind` enum (`ground_up`, `tenant_upfit`, `shell_building`, `other`). The mockup shows it under Type (e.g. "Ground-up"), and the project header shows it too.
+2. **Done (1.4, column only):** `projects.closed_on date null`, set when status becomes `closed`. It is needed for "N CLOSED THIS YEAR" in the meta line and for later reports.
+3. **Done (1.4): yes, matching `companies`.** "address fields" on `projects` is not spelled out. This spec assumes `address_line1`, `address_line2`, `city`, `state`, `postal_code`, matching `companies`. Confirm.
 4. **Optional data model addition:** `firm_settings.budget_planning_rate_cents`, so budget hours can be suggested as fee ÷ rate. The mockup's numbers imply $150/h ($186,000 ÷ 1,240 h). Without it, the user types the total budget hours.
-5. Health rule (Rule 3): a project that finished one phase over budget stays "At risk" until it closes. Is that the intent, or should at_risk only look at current phases? Should a PM be able to set health manually? That would need `projects.health_override`.
-6. PM visibility: should PMs see fee and billed amounts on projects they don't manage? This spec hides them.
+5. **Decided (Blake, 2026-11-03): open phases only**; no manual override for now. Was: Health rule (Rule 3): a project that finished one phase over budget stays "At risk" until it closes. Is that the intent, or should at_risk only look at current phases? Should a PM be able to set health manually? That would need `projects.health_override`.
+6. **Decided (Blake, 2026-11-03): own projects only** (PM or principal). Was: PM visibility: should PMs see fee and billed amounts on projects they don't manage? This spec hides them.
 7. Billed follows `invoicing.md` and **includes** `written_off` invoices, so a write-off doesn't lower "billed". Confirm that is wanted for the % billed bar, or whether written-off amounts should be shown separately (Release 2 Accounting).
-8. Should Close Out (template share 0%) be included by default on new projects?
+8. **Decided (Blake, 2026-11-03): yes, checked by default.** Was: Should Close Out (template share 0%) be included by default on new projects?
