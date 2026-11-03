@@ -4,8 +4,11 @@ import {
   companies,
   consultants,
   contacts,
+  firmRoles,
   firmSettings,
   memberships,
+  phaseTemplates,
+  projectPhaseRoles,
   projectContacts,
   projectMembers,
   projectPhases,
@@ -26,8 +29,10 @@ import {
   projectFee,
   projectHealth,
 } from "@/lib/calc/projects";
+import { todayIn } from "@/lib/format";
 import { initials as initialsFrom } from "@/lib/initials";
 import type { ScopeKind } from "@/lib/projects/form";
+import { type MixInput, type RoleRate, billRates, templateMixes } from "./roles";
 import { type Viewer, activePeople, assignedProjectIds, pmChoices, principalChoices } from "./view";
 
 // One project's page (project-detail spec). Two views:
@@ -54,6 +59,10 @@ export type PhaseRow = {
     usedHours: number;
     percentCompleteBp: number;
     billedCents: number;
+    budgetHoursManual: boolean;
+    isAdditionalService: boolean;
+    /** Role mix with the bill rate and hours saved on the day of the edit. */
+    roles: { firmRoleId: string; roleName: string; shareBp: number; rateCents: number; hours: number }[];
     /** Hours by person, for the expandable row. No rates or cost. */
     byPerson: { membershipId: string; name: string; initials: string; title: string | null; hours: number }[];
   };
@@ -137,6 +146,14 @@ export type ProjectPage = {
   financial: boolean;
   canEdit: boolean;
   canSetOverride: boolean;
+  /** For Edit phases, Add phase and Redistribute (financial + canEdit only). Bill rates only. */
+  phaseEdit?: {
+    loadedAt: string;
+    roles: RoleRate[];
+    blendedBillRateCents: number | null;
+    optionalTemplates: { id: string; code: string; name: string; description: string | null; feeType: FeeType; mix: MixInput }[];
+    templateShareByCode: Record<string, number>;
+  };
   /** For Edit project (only when canEdit). */
   edit?: {
     clientContactId: string | null;
@@ -175,7 +192,13 @@ async function invoiceFacts(db: TenantDb, projectId: string) {
   return { lines: [] as Parameters<typeof projectBilled>[1], outstandingCents: 0 };
 }
 
-export async function loadProjectPage(db: TenantDb, viewer: Viewer, id: string): Promise<ProjectPage | null> {
+export async function loadProjectPage(
+  db: TenantDb,
+  viewer: Viewer,
+  id: string,
+  firm: { id: string; timezone: string } | null = null,
+): Promise<ProjectPage | null> {
+  const loadedAt = new Date().toISOString();
   if (!/^[0-9a-f-]{36}$/i.test(id)) return null;
   const [p] = await db
     .select()
@@ -242,10 +265,27 @@ export async function loadProjectPage(db: TenantDb, viewer: Viewer, id: string):
         feeCents: projectPhases.feeCents,
         budgetHours: projectPhases.budgetHours,
         percentCompleteBp: projectPhases.percentCompleteBp,
+        budgetHoursManual: projectPhases.budgetHoursManual,
+        isAdditionalService: projectPhases.isAdditionalService,
       })
       .from(projectPhases)
       .where(and(eq(projectPhases.projectId, p.id), isNull(projectPhases.archivedAt)));
     const byId = new Map(moneyRows.map((m) => [m.id, m]));
+    const mixRows = moneyRows.length
+      ? await db
+          .select({
+            phaseId: projectPhaseRoles.projectPhaseId,
+            firmRoleId: projectPhaseRoles.firmRoleId,
+            roleName: firmRoles.name,
+            shareBp: projectPhaseRoles.shareBp,
+            rateCents: projectPhaseRoles.rateCents,
+            hours: projectPhaseRoles.hours,
+          })
+          .from(projectPhaseRoles)
+          .innerJoin(firmRoles, eq(firmRoles.id, projectPhaseRoles.firmRoleId))
+          .where(and(inArray(projectPhaseRoles.projectPhaseId, moneyRows.map((m) => m.id)), isNull(projectPhaseRoles.archivedAt)))
+          .orderBy(asc(projectPhaseRoles.sortOrder))
+      : [];
     const inv = await invoiceFacts(db, p.id);
     phases = phaseRows.map((ph) => {
       const m = byId.get(ph.id)!;
@@ -260,6 +300,11 @@ export async function loadProjectPage(db: TenantDb, viewer: Viewer, id: string):
           budgetHours: Number(m.budgetHours),
           usedHours: mine.reduce((n, u) => n + u.hours, 0),
           percentCompleteBp: m.percentCompleteBp,
+          budgetHoursManual: m.budgetHoursManual,
+          isAdditionalService: m.isAdditionalService,
+          roles: mixRows
+            .filter((r) => r.phaseId === ph.id)
+            .map((r) => ({ firmRoleId: r.firmRoleId, roleName: r.roleName, shareBp: r.shareBp, rateCents: r.rateCents, hours: Number(r.hours) })),
           billedCents: projectBilled([{ id: ph.id, feeType: m.feeType }], inv.lines),
           byPerson: [...people].map(([membershipId, hours]) => {
             const who = nameOf.get(membershipId);
@@ -469,7 +514,28 @@ export async function loadProjectPage(db: TenantDb, viewer: Viewer, id: string):
     };
   }
 
+  let phaseEdit: ProjectPage["phaseEdit"];
+  if (canEdit && financial && firm) {
+    const rates = await billRates(db, firm.id, todayIn(firm.timezone));
+    const templates = await db
+      .select()
+      .from(phaseTemplates)
+      .where(isNull(phaseTemplates.archivedAt))
+      .orderBy(asc(phaseTemplates.sortOrder));
+    const mixes = await templateMixes(db);
+    phaseEdit = {
+      loadedAt,
+      roles: rates.roles,
+      blendedBillRateCents: rates.blended,
+      optionalTemplates: templates
+        .filter((t) => t.isOptional)
+        .map((t) => ({ id: t.id, code: t.code, name: t.name, description: t.description, feeType: t.defaultFeeType, mix: mixes.get(t.id) ?? [] })),
+      templateShareByCode: Object.fromEntries(templates.filter((t) => !t.isOptional).map((t) => [t.code.toLowerCase(), t.defaultFeeShareBp])),
+    };
+  }
+
   return {
+    phaseEdit,
     id: p.id,
     number: p.number,
     name: p.name,
