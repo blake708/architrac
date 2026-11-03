@@ -1,6 +1,7 @@
 "use client";
 
 import { useId, useState, useTransition } from "react";
+import { AddressFields } from "@/components/address/address-fields";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
@@ -32,6 +33,7 @@ export function CompanyDialog({
   company,
   companies,
   people,
+  addressLookup,
   onClose,
   onSaved,
 }: {
@@ -40,6 +42,8 @@ export function CompanyDialog({
   company: CompanyRow | null;
   companies: CompanyRow[];
   people: ContactRow[];
+  /** Google address lookup is set up. */
+  addressLookup: boolean;
   onClose: () => void;
   onSaved: (id: string, message: string) => void;
 }) {
@@ -51,6 +55,7 @@ export function CompanyDialog({
           company={company}
           companies={companies}
           people={people}
+          addressLookup={addressLookup}
           onClose={onClose}
           onSaved={onSaved}
         />
@@ -63,12 +68,14 @@ function CompanyBody({
   company,
   companies,
   people,
+  addressLookup,
   onClose,
   onSaved,
 }: {
   company: CompanyRow | null;
   companies: CompanyRow[];
   people: ContactRow[];
+  addressLookup: boolean;
   onClose: () => void;
   onSaved: (id: string, message: string) => void;
 }) {
@@ -160,13 +167,13 @@ function CompanyBody({
           <Input label="Phone" type="tel" value={v.phone} onChange={(e) => set({ phone: e.target.value })} error={errors.phone} />
           <Input label="Website" value={v.website} onChange={(e) => set({ website: e.target.value })} error={webBad ? "Enter a website like www.example.com" : errors.website} />
         </div>
-        <Input label="Address" value={v.addressLine1} onChange={(e) => set({ addressLine1: e.target.value })} />
-        <Input label="Suite / unit" value={v.addressLine2} onChange={(e) => set({ addressLine2: e.target.value })} />
-        <div className="grid grid-cols-[1fr_80px_130px] gap-4">
-          <Input label="City" value={v.city} onChange={(e) => set({ city: e.target.value })} />
-          <Input label="State" maxLength={2} value={v.state} onChange={(e) => set({ state: e.target.value.toUpperCase() })} error={errors.state} />
-          <Input label="ZIP" inputMode="numeric" value={v.postalCode} onChange={(e) => set({ postalCode: e.target.value })} error={zipBad ? "Enter a 5-digit ZIP or ZIP+4" : errors.postalCode} />
-        </div>
+        <AddressFields
+          lookup={addressLookup}
+          streetLabel="Address"
+          value={{ addressLine1: v.addressLine1, addressLine2: v.addressLine2, city: v.city, state: v.state, postalCode: v.postalCode }}
+          onChange={(patch) => set(patch.state === undefined ? patch : { ...patch, state: patch.state.toUpperCase() })}
+          errors={{ state: errors.state, postalCode: zipBad ? "Enter a 5-digit ZIP or ZIP+4" : errors.postalCode }}
+        />
         {company ? (
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Select label="Main contact" value={v.primaryContactId} onChange={(e) => set({ primaryContactId: e.target.value })} error={errors.primaryContactId}>

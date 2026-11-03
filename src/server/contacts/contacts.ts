@@ -1,5 +1,5 @@
-import { and, eq, isNull, or } from "drizzle-orm";
-import { activityLog, companies, contacts } from "@/db/schema";
+import { and, eq, inArray, isNull, or } from "drizzle-orm";
+import { activityLog, companies, contacts, projects } from "@/db/schema";
 import { type TenantDb, withFirm } from "@/db/tenant";
 import { can } from "@/lib/auth/permissions";
 import {
@@ -75,13 +75,19 @@ async function activeCompany(db: TenantDb, id: string) {
   return row ?? null;
 }
 
-/**
- * Open projects (pursuit, active, on hold) where this company is the client.
- * Projects arrive in milestone 1.4; until then there are none.
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- reads projects from 1.4
+/** Open projects (pursuit, active, on hold) where this company is the client. */
 async function openProjectsAsClient(db: TenantDb, companyId: string): Promise<number> {
-  return 0;
+  const rows = await db
+    .select({ id: projects.id })
+    .from(projects)
+    .where(
+      and(
+        eq(projects.clientCompanyId, companyId),
+        isNull(projects.archivedAt),
+        inArray(projects.status, ["pursuit", "active", "on_hold"]),
+      ),
+    );
+  return rows.length;
 }
 
 // ---------- Company ----------

@@ -134,9 +134,13 @@ Tests: `src/lib/calc/contacts.test.ts`, `src/lib/contacts/display.test.ts`, `src
 - [x] Given the Company form, when postal code "2940" is entered, then Save is disabled with "Enter a 5-digit ZIP or ZIP+4".
 - [x] Given an existing company "Oakmont Health", when a user creates "oakmont health ", then a duplicate warning shows and Save still works.
 - [x] Given a contact is a company's billing contact, when an owner archives it, then the action is blocked with "Choose another billing contact for {company} first."
-- [ ] Given a company is client on an active project, when an owner archives it, then the action is blocked; given it is client only on closed projects, then it is archived and disappears from the list. *(The open-project block needs projects, 1.4; archiving itself is tested.)*
+- [x] Given a company is client on an active project, when an owner archives it, then the action is blocked; given it is client only on closed projects, then it is archived and disappears from the list. *(Open-project block tested in 1.4: src/server/projects/projects.db.test.ts.)*
 - [x] Given a PM, when they open a drawer, then no Archive control is shown.
 - [x] Given a search with no matches, then the empty message and "Clear search and filters" are shown, and clicking it restores the full list.
+
+- [x] *(Added Blake, 2026-11-03)* Given a company panel, then a People section lists everyone at the company (name, title, main/billing contact, email); clicking a name opens that person. Owners, admins and PMs see **Add person**, which opens New contact with the company filled in and returns to the company after saving.
+
+- [x] *(Added Blake, 2026-11-03)* Given Google address lookup is set up, when I type a street in the company form, then real US addresses are suggested and picking one fills street, suite/unit, city, state and ZIP (ADR 0007). Without the key the fields are plain inputs. *(Parsing and Google calls unit tested; manual entry browser tested.)*
 
 ## Open questions
 10. *(Added Blake, 2026-11-02)* Until invoices (1.8) exist, a client with nothing billed shows "—" in Billed / fees, not "Paid up". Project counts and lists fill in from 1.4 (projects) and 1.5 (consultants).

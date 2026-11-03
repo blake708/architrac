@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Button, buttonClasses } from "@/components/ui/button";
 import { Dialog, DrawerContent } from "@/components/ui/dialog";
+import { PlusIcon } from "@/components/ui/icons";
 import { addressLines, moneyCell, personName } from "@/lib/contacts/display";
 import {
   CONTACT_MESSAGES,
@@ -88,6 +89,60 @@ function Projects({ projects }: { projects: CompanyRow["projects"] }) {
   );
 }
 
+/** Everyone at the company, with a shortcut to add another (Blake, 2026-11-03). */
+function People({
+  people,
+  mainId,
+  billingId,
+  canEdit,
+  onOpen,
+  onAdd,
+}: {
+  people: ContactRow[];
+  mainId: string | null;
+  billingId: string | null;
+  canEdit: boolean;
+  onOpen: (p: ContactRow) => void;
+  onAdd: () => void;
+}) {
+  return (
+    <section className="mt-6" aria-label="People">
+      <div className="mb-2 flex items-center gap-2">
+        <h3 className="cap m-0 text-xs font-semibold">People</h3>
+        <span className="num text-xs text-muted">{people.length}</span>
+        {canEdit && (
+          <Button className="ml-auto" icon={<PlusIcon />} onClick={onAdd}>
+            Add person
+          </Button>
+        )}
+      </div>
+      {people.length === 0 ? (
+        <p className="m-0 text-sm text-muted">No people yet</p>
+      ) : (
+        <ul className="m-0 flex list-none flex-col p-0 text-sm">
+          {people.map((p) => {
+            const roles = [p.id === mainId && "Main contact", p.id === billingId && "Billing contact"].filter(Boolean);
+            return (
+              <li key={p.id} className="border-b border-line-soft py-2 last:border-b-0">
+                <button
+                  type="button"
+                  onClick={() => onOpen(p)}
+                  className="cursor-pointer border-0 bg-transparent p-0 text-left font-medium text-blue underline"
+                >
+                  {personName(p)}
+                </button>
+                {p.title && <span className="text-muted"> · {p.title}</span>}
+                {roles.length > 0 && <div className="text-xs text-muted">{roles.join(" · ")}</div>}
+                {p.email && <div className="text-xs text-muted">{p.email}</div>}
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </section>
+  );
+}
+
 /** The company or person panel (contacts spec, Layout §6). */
 export function ContactsDrawer({
   open,
@@ -99,6 +154,7 @@ export function ContactsDrawer({
   onEditCompany,
   onEditContact,
   onAddContact,
+  onOpenContact,
   onArchiveCompany,
   onArchiveContact,
 }: {
@@ -112,6 +168,7 @@ export function ContactsDrawer({
   onEditCompany: (c: CompanyRow) => void;
   onEditContact: (p: ContactRow) => void;
   onAddContact: (companyId: string) => void;
+  onOpenContact: (p: ContactRow) => void;
   onArchiveCompany: (c: CompanyRow) => void;
   onArchiveContact: (p: ContactRow) => void;
 }) {
@@ -151,16 +208,11 @@ export function ContactsDrawer({
               {view.canEdit && (
                 <Button onClick={() => onEditCompany(c)}>Edit</Button>
               )}
-              {view.canEdit &&
-                (c.kind === "client" ? (
-                  <Link href={`/app/projects/new?client=${c.id}`} className={buttonClasses("primary")}>
-                    New project
-                  </Link>
-                ) : (
-                  <Button variant="primary" onClick={() => onAddContact(c.id)}>
-                    Add contact
-                  </Button>
-                ))}
+              {view.canEdit && c.kind === "client" && (
+                <Link href={`/app/projects/new?client=${c.id}`} className={buttonClasses("primary")}>
+                  New project
+                </Link>
+              )}
             </>
           }
         >
@@ -212,6 +264,14 @@ export function ContactsDrawer({
             )}
             <Row label="Notes">{c.notes ? <span className="whitespace-pre-wrap">{c.notes}</span> : dash}</Row>
           </dl>
+          <People
+            people={view.contacts.filter((p) => p.companyId === c.id)}
+            mainId={c.primaryContactId}
+            billingId={c.billingContactId}
+            canEdit={view.canEdit}
+            onOpen={onOpenContact}
+            onAdd={() => onAddContact(c.id)}
+          />
           <Projects projects={c.projects} />
         </DrawerContent>
       </Dialog>

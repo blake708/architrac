@@ -49,6 +49,12 @@ export const FIRMS = {
     modules: [] as string[],
     createdBy: "zetaOwner",
   },
+  /** For projects.spec.ts (Projects list and New project), which adds projects. */
+  eta: {
+    name: `${E2E_PREFIX}Eta Architecture`,
+    modules: [] as string[],
+    createdBy: "etaOwner",
+  },
 } as const;
 export type FirmKey = keyof typeof FIRMS;
 
@@ -190,6 +196,24 @@ export const PEOPLE = {
     firstName: "Zia",
     lastName: "Staff",
     memberships: [{ firm: "zeta", role: "staff" }],
+  },
+  etaOwner: {
+    email: "architrac-e2e-etaowner+clerk_test@example.com",
+    firstName: "Eli",
+    lastName: "Owner",
+    memberships: [{ firm: "eta", role: "owner" }],
+  },
+  etaPm: {
+    email: "architrac-e2e-etapm+clerk_test@example.com",
+    firstName: "Jo",
+    lastName: "Rivera",
+    memberships: [{ firm: "eta", role: "project_manager" }],
+  },
+  etaStaff: {
+    email: "architrac-e2e-etastaff+clerk_test@example.com",
+    firstName: "Kim",
+    lastName: "Lee",
+    memberships: [{ firm: "eta", role: "staff" }],
   },
 } satisfies Record<string, Person>;
 export type PersonKey = keyof typeof PEOPLE;

@@ -115,6 +115,34 @@ test.describe("owner", () => {
     await expect(panel.getByRole("link", { name: "New project" })).toHaveAttribute("href", /\/app\/projects\/new\?client=/);
   });
 
+  test("a company panel lists its people; Add person fills in the company", async ({ page }) => {
+    await signInAs(page, "zetaOwner", "/app/contacts");
+    await companyRow(page, "Palmetto Medical Properties").click();
+    const palmetto = page.getByRole("dialog", { name: "Palmetto Medical Properties" });
+    const people = palmetto.getByRole("region", { name: "People" });
+    await expect(people).toContainText("Jo Banks");
+    await expect(people).toContainText("Billing contact");
+    await expect(people).toContainText("jo@palmettomed.com");
+    await page.keyboard.press("Escape");
+
+    await companyRow(page, "Coastal MEP Engineers").click();
+    const mep = page.getByRole("dialog", { name: "Coastal MEP Engineers" });
+    await expect(mep.getByRole("region", { name: "People" })).toContainText("No people yet");
+    await mep.getByRole("button", { name: "Add person" }).click();
+    const d = page.getByRole("dialog", { name: "New contact" });
+    await expect(d.getByLabel("Company")).toHaveValue(
+      (await query<{ id: string }>("select id from companies where firm_id = :firm and name = 'Coastal MEP Engineers'"))[0].id,
+    );
+    await d.getByLabel("First name").fill("Ravi");
+    await d.getByLabel("Last name").fill("Kumar");
+    await d.getByRole("button", { name: "Add contact" }).click();
+    // Back on the company, with the new person listed; clicking opens them.
+    const list = page.getByRole("dialog", { name: "Coastal MEP Engineers" }).getByRole("region", { name: "People" });
+    await expect(list).toContainText("Ravi Kumar");
+    await list.getByRole("button", { name: "Ravi Kumar" }).click();
+    await expect(page.getByRole("dialog", { name: "Ravi Kumar" })).toBeVisible();
+  });
+
   test("archiving the billing contact is blocked", async ({ page }) => {
     await signInAs(page, "zetaOwner", "/app/contacts?tab=people");
     await contactRow(page, "Jo Banks").click();
@@ -136,6 +164,8 @@ test.describe("other roles", () => {
     const panel = page.getByRole("dialog", { name: "Palmetto Medical Properties" });
     await expect(panel.getByRole("button", { name: "Edit" })).toHaveCount(0);
     await expect(panel.getByRole("link", { name: "New project" })).toHaveCount(0);
+    await expect(panel.getByRole("region", { name: "People" })).toContainText("Jo Banks");
+    await expect(panel.getByRole("button", { name: "Add person" })).toHaveCount(0);
   });
 
   test("PM: can edit, can't archive, no money", async ({ page }) => {

@@ -228,18 +228,20 @@ New firms get the default phases, activities and categories from the database fu
 | column | type | notes |
 |---|---|---|
 | id, firm_id | | |
-| number | text | firm's project number, unique per firm ("2026-014") |
+| number | text | firm's project number, unique per firm ignoring case ("2026-014") |
 | name | text | "Medical Office Building" |
 | client_company_id | uuid fk | |
 | client_contact_id | uuid fk null | |
 | status | enum `project_status` | `pursuit`, `active`, `on_hold`, `closed` |
-| project_type | text | Medical office, Restaurant, Retail, Office |
-| address fields | text | |
+| project_type | text | Medical office, Restaurant, Retail, Office, or the firm's own |
+| scope_kind | enum `scope_kind` null | `ground_up`, `tenant_upfit`, `shell` (shown under the type) |
+| address_line1, address_line2, city, state, postal_code | text null | as in `companies` |
 | square_feet | integer null | |
 | construction_cost_cents | bigint null | |
 | principal_membership_id | uuid fk | Principal in Charge |
 | pm_membership_id | uuid fk | |
-| start_date, target_end_date | date | |
+| start_date, target_end_date | date null | end ≥ start |
+| closed_on | date null | set when status becomes `closed` |
 | quickbooks_customer_id | text null | sub-customer/job in QuickBooks |
 | proposal_id | uuid fk null | set when converted from a won proposal (Release 3) |
 
@@ -249,6 +251,7 @@ The backbone: time, budgets, invoices and the snapshot all hang off this.
 |---|---|---|
 | id, firm_id, project_id | | |
 | code, name | text | copied from template, editable |
+| description | text null | copied from the template, editable |
 | sort_order | smallint | |
 | fee_type | enum `fee_type` | `fixed`, `hourly`, `nte` (not-to-exceed) |
 | fee_cents | bigint | fixed: the fee; nte: the cap; hourly: estimate (may be 0) |
@@ -256,9 +259,13 @@ The backbone: time, budgets, invoices and the snapshot all hang off this.
 | status | enum `phase_status` | `upcoming`, `current`, `complete`, `closed` (closed = no new time) |
 | start_date, end_date | date null | |
 | percent_complete_bp | integer | for fixed-fee billing (PM sets it) |
+| archived_at | timestamptz null | |
 
 ### project_members
-| id, firm_id, project_id, membership_id | project_role text ("PM", "PA", "Designer") | bill_rate_override_cents null |
+| id, firm_id, project_id, membership_id | project_role text ("PM", "Principal", "PA", "Designer") | bill_rate_override_cents null | archived_at; one active row per person per project |
+
+### project_contacts  (contractors, agencies, vendors on a project)
+| id, firm_id, project_id, company_id | contact_id null | role text null ("General contractor") | archived_at |
 
 ### consultants  (project's sub-consultants)
 | id, firm_id, project_id, company_id | discipline text ("MEP", "Structural", "Civil") | fee_cents | markup_bp | billed_through boolean |
@@ -372,11 +379,10 @@ The screen specs found fields the model above doesn't have yet. **Add each one w
 | Milestone | Table | Addition | Why (spec) |
 |---|---|---|---|
 | 0.5 | users | preferences jsonb (menu rail collapsed, etc.) | Rail state follows the person across devices (app-shell) |
-| 1.4 | project_phases | description text null, copied from the template | (settings-rates-phases rule 10a, projects-list) |
-| 1.4–1.5 | **project_contacts** (new) | id, firm_id, project_id, company_id, contact_id null, role text | Contractors/agencies/vendors linked to projects (contacts; moved from 1.2 because it needs `projects`, Blake, 2026-11-02) |
-| 1.4 | projects | scope_kind enum (`ground_up`,`tenant_upfit`,`shell`), closed_on date, stories, building_height_ft, occupancy_group, construction_type, sprinklered, delivery_method, design_review_board; address columns named as in `companies` | (projects-list, project-detail) |
+| 1.5 | projects | stories, building_height_ft, occupancy_group, construction_type, sprinklered, delivery_method, design_review_board | Building facts on the project page (project-detail). scope_kind, closed_on and the address columns were added in 1.4 |
 | 1.5 | project_phases | is_additional_service boolean, planned_cost_rate_cents bigint null | Additional-service phases; projected profit (project-detail, timesheet) |
 | 1.5 | consultants | contact_id | (project-detail) |
+| 1.5 | **phase_template_roles**, **project_phase_roles** (new) | id, firm_id, phase_template_id / project_phase_id, firm_role_id, share_bp (of the phase fee), hours override null | Role mix per phase: hours = role's share of the fee ÷ the role's bill rate. Template defaults are copied to new projects (Blake, 2026-11-03) |
 | 1.5 | firm_settings | default_consultant_markup_bp (1000), budget_planning_rate_cents (15000) | Defaults for new projects (project-detail) |
 | 1.6 | **timesheet_rows** (new) | id, firm_id, timesheet_id, row_type (`project`/`overhead`/`leave`), project_id, project_phase_id, overhead_category_id, activity_id, billable, sort_order | Rows exist before they have hours ("Add row", "Copy last week") (timesheet) |
 | 1.6 | time_entries | timesheet_row_id fk; while the timesheet is `draft`, activity_id may be null and the check becomes "not both phase and overhead category"; submit enforces completeness | (timesheet) |

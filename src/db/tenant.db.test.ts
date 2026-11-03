@@ -8,6 +8,10 @@ import {
   activityLog,
   companies,
   contacts,
+  projectContacts,
+  projectMembers,
+  projectPhases,
+  projects,
   firmRoles,
   firmSettings,
   firms,
@@ -385,6 +389,94 @@ const cases: TableCase[] = [
     insertForB: (db) =>
       db.insert(contacts).values({ firmId: B.firmId, firstName: "Sneaky" }),
   },
+  {
+    table: "projects",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: projects.firmId })
+        .from(projects)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) =>
+      db
+        .update(projects)
+        .set({ name: "hacked" })
+        .where(eq(projects.id, B.projectId))
+        .returning(),
+    readB: (db) =>
+      db
+        .select({ v: projects.name })
+        .from(projects)
+        .where(eq(projects.id, B.projectId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db.insert(projects).values({ firmId: B.firmId, number: "X-1", name: "Sneaky", clientCompanyId: B.companyId, projectType: "Office", principalMembershipId: B.membershipId, pmMembershipId: B.membershipId }),
+  },
+  {
+    table: "project_phases",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: projectPhases.firmId })
+        .from(projectPhases)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) =>
+      db
+        .update(projectPhases)
+        .set({ name: "hacked" })
+        .where(eq(projectPhases.id, B.projectPhaseId))
+        .returning(),
+    readB: (db) =>
+      db
+        .select({ v: projectPhases.name })
+        .from(projectPhases)
+        .where(eq(projectPhases.id, B.projectPhaseId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db.insert(projectPhases).values({ firmId: B.firmId, projectId: B.projectId, code: "X", name: "Sneaky", sortOrder: 9, feeType: "fixed" }),
+  },
+  {
+    table: "project_members",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: projectMembers.firmId })
+        .from(projectMembers)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) =>
+      db
+        .update(projectMembers)
+        .set({ projectRole: "hacked" })
+        .where(eq(projectMembers.id, B.projectMemberId))
+        .returning(),
+    readB: (db) =>
+      db
+        .select({ v: projectMembers.projectRole })
+        .from(projectMembers)
+        .where(eq(projectMembers.id, B.projectMemberId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db.insert(projectMembers).values({ firmId: B.firmId, projectId: B.projectId, membershipId: B.membershipId, projectRole: "PA" }),
+  },
+  {
+    table: "project_contacts",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: projectContacts.firmId })
+        .from(projectContacts)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) =>
+      db
+        .update(projectContacts)
+        .set({ role: "hacked" })
+        .where(eq(projectContacts.id, B.projectContactId))
+        .returning(),
+    readB: (db) =>
+      db
+        .select({ v: projectContacts.role })
+        .from(projectContacts)
+        .where(eq(projectContacts.id, B.projectContactId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db.insert(projectContacts).values({ firmId: B.firmId, projectId: B.projectId, companyId: B.companyId }),
+  },
 ];
 
 describe("database role", () => {
@@ -449,6 +541,43 @@ describe("other guards", () => {
           .update(memberships)
           .set({ firmRoleId: B.firmRoleId })
           .where(eq(memberships.id, A.membershipId)),
+      ),
+      /foreign key/,
+    );
+  });
+
+  it("a project can't use another firm's client or people", async () => {
+    const base = { firmId: A.firmId, number: "X-2", name: "X", projectType: "Office" };
+    await expectDbError(
+      withFirm(A.firmId, (db) =>
+        db.insert(projects).values({ ...base, clientCompanyId: B.companyId, principalMembershipId: A.membershipId, pmMembershipId: A.membershipId }),
+      ),
+      /foreign key/,
+    );
+    await expectDbError(
+      withFirm(A.firmId, (db) =>
+        db.insert(projects).values({ ...base, clientCompanyId: A.companyId, principalMembershipId: A.membershipId, pmMembershipId: B.membershipId }),
+      ),
+      /foreign key/,
+    );
+  });
+
+  it("a phase or team row can't hang off another firm's project", async () => {
+    await expectDbError(
+      withFirm(A.firmId, (db) =>
+        db.insert(projectPhases).values({ firmId: A.firmId, projectId: B.projectId, code: "X", name: "X", sortOrder: 1, feeType: "fixed" }),
+      ),
+      /foreign key/,
+    );
+    await expectDbError(
+      withFirm(A.firmId, (db) =>
+        db.insert(projectMembers).values({ firmId: A.firmId, projectId: A.projectId, membershipId: B.membershipId, projectRole: "PA" }),
+      ),
+      /foreign key/,
+    );
+    await expectDbError(
+      withFirm(A.firmId, (db) =>
+        db.insert(projectContacts).values({ firmId: A.firmId, projectId: A.projectId, companyId: B.companyId }),
       ),
       /foreign key/,
     );

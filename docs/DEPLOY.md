@@ -50,6 +50,7 @@ Set each for **Production** and **Preview**:
 | `ENCRYPTION_KEY` | A **new** key just for production. Never change it later: stored integration tokens couldn't be read anymore |
 | `NEXT_PUBLIC_APP_URL` | The production URL, e.g. `https://architrac.vercel.app` |
 | `NEXT_PUBLIC_SENTRY_DSN` | Sentry → project → Settings → Client Keys (DSN) |
+| `GOOGLE_MAPS_API_KEY` | Google Cloud → APIs & Services → Credentials (ADR 0007). Optional: without it, address fields are plain inputs |
 
 Don't set `DATABASE_URL` in Vercel. The workflows pass it to each deployment.
 

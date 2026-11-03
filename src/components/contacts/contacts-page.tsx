@@ -40,7 +40,16 @@ const th =
   "border-b border-line px-2.5 py-2.5 text-2xs font-medium whitespace-nowrap text-muted first:pl-[18px] last:pr-[18px] text-left";
 
 /** The Contacts page (contacts spec). */
-export function ContactsPage({ view, initial }: { view: ContactsView; initial: ContactsParams }) {
+export function ContactsPage({
+  view,
+  initial,
+  addressLookup,
+}: {
+  view: ContactsView;
+  initial: ContactsParams;
+  /** Google address lookup is set up. */
+  addressLookup: boolean;
+}) {
   const router = useRouter();
   const toast = useToast();
   const [tab, setTab] = useState(initial.tab);
@@ -411,6 +420,7 @@ export function ContactsPage({ view, initial }: { view: ContactsView; initial: C
         onEditCompany={(c) => setCompanyForm({ open: true, company: c })}
         onEditContact={(p) => setContactForm({ open: true, contact: p, preset: null })}
         onAddContact={(id) => setContactForm({ open: true, contact: null, preset: id })}
+        onOpenContact={(p) => setOpen({ type: "contact", id: p.id })}
         onArchiveCompany={(c) => setConfirm({ type: "company", row: c })}
         onArchiveContact={(p) => setConfirm({ type: "contact", row: p })}
       />
@@ -419,6 +429,7 @@ export function ContactsPage({ view, initial }: { view: ContactsView; initial: C
         company={companyForm.company}
         companies={view.companies}
         people={view.contacts}
+        addressLookup={addressLookup}
         onClose={() => setCompanyForm({ open: false, company: null })}
         onSaved={(id, message) => {
           setCompanyForm({ open: false, company: null });
@@ -435,9 +446,14 @@ export function ContactsPage({ view, initial }: { view: ContactsView; initial: C
         people={view.contacts}
         onClose={() => setContactForm({ open: false, contact: null, preset: null })}
         onSaved={(id, message) => {
+          const fromCompany = contactForm.preset;
           setContactForm({ open: false, contact: null, preset: null });
-          setTab("people");
-          setOpen({ type: "contact", id });
+          // Added from a company panel: go back to that company's People list.
+          if (fromCompany) setOpen({ type: "company", id: fromCompany });
+          else {
+            setTab("people");
+            setOpen({ type: "contact", id });
+          }
           done(message);
         }}
       />
