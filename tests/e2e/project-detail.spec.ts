@@ -335,10 +335,14 @@ test.describe("phases", () => {
     await signInAs(page, "thOwner", url("/phases"));
     const order = () => page.locator("tbody tr[data-phase]").evaluateAll((rs) => rs.map((r) => r.getAttribute("data-phase")));
     await expect.poll(order).toEqual(["PD", "SD", "DD", "CD", "PRM", "CA", "CO"]);
+    // Each click saves, then the table reloads; that can take a while on CI.
+    const slow = { timeout: 15_000 };
     await row(page, "CA").getByRole("button", { name: "Move Construction Admin up" }).click();
-    await expect.poll(order).toEqual(["PD", "SD", "DD", "CD", "CA", "PRM", "CO"]);
+    await expect.poll(order, slow).toEqual(["PD", "SD", "DD", "CD", "CA", "PRM", "CO"]);
+    await expect(row(page, "CA").getByRole("button", { name: "Move Construction Admin down" })).toBeEnabled(slow);
     await row(page, "CA").getByRole("button", { name: "Move Construction Admin down" }).click();
-    await expect.poll(order).toEqual(["PD", "SD", "DD", "CD", "PRM", "CA", "CO"]);
+    await expect.poll(order, slow).toEqual(["PD", "SD", "DD", "CD", "PRM", "CA", "CO"]);
+    await expect(page.getByRole("region", { name: "Architectural fee by phase" }).getByRole("alert")).toHaveCount(0);
   });
 
   test("someone else saved first: the save is refused", async ({ page }) => {
