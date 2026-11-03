@@ -56,6 +56,9 @@ export type TestFirm = {
   phaseTemplateId: string;
   overheadCategoryId: string;
   activityId: string;
+  /** A client company with one contact (its billing contact). */
+  companyId: string;
+  contactId: string;
 };
 
 /**
@@ -122,9 +125,23 @@ export async function createTestFirm(
       "insert into rates (firm_id, firm_role_id, bill_rate_cents, cost_rate_cents, effective_from) values ($1, $2, 11500, 4400, '2026-01-01') returning id",
       [firmId, firmRoleId],
     );
+    const company = await c.query<{ id: string }>(
+      "insert into companies (firm_id, name, kind) values ($1, $2, 'client') returning id",
+      [firmId, `${label} Client Co`],
+    );
+    const contact = await c.query<{ id: string }>(
+      "insert into contacts (firm_id, company_id, first_name, last_name, email) values ($1, $2, 'Bill', 'Payer', 'bill@example.com') returning id",
+      [firmId, company.rows[0].id],
+    );
+    await c.query("update companies set billing_contact_id = $1 where id = $2", [
+      contact.rows[0].id,
+      company.rows[0].id,
+    ]);
     const pick = async (q: string) =>
       (await c.query<{ id: string }>(q, [firmId])).rows[0].id;
     return {
+      companyId: company.rows[0].id,
+      contactId: contact.rows[0].id,
       firmRoleId,
       rateId: rate.rows[0].id,
       phaseTemplateId: await pick(
@@ -155,6 +172,12 @@ export async function removeTestFirm(pool: Pool, firm: TestFirm) {
       "update teams set leader_membership_id = null where firm_id = $1",
       [firm.firmId],
     );
+    await c.query(
+      "update companies set primary_contact_id = null, billing_contact_id = null where firm_id = $1",
+      [firm.firmId],
+    );
+    await c.query("delete from contacts where firm_id = $1", [firm.firmId]);
+    await c.query("delete from companies where firm_id = $1", [firm.firmId]);
     await c.query("delete from rates where firm_id = $1", [firm.firmId]);
     await c.query("delete from activities where firm_id = $1", [firm.firmId]);
     await c.query("delete from overhead_categories where firm_id = $1", [firm.firmId]);
@@ -175,6 +198,12 @@ export async function removeTestFirm(pool: Pool, firm: TestFirm) {
 /** Remove a firm made by the code under test (e.g. createFirm), and its rows. */
 export async function removeFirmById(pool: Pool, firmId: string) {
   await asFirm(pool, firmId, async (c) => {
+    await c.query(
+      "update companies set primary_contact_id = null, billing_contact_id = null where firm_id = $1",
+      [firmId],
+    );
+    await c.query("delete from contacts where firm_id = $1", [firmId]);
+    await c.query("delete from companies where firm_id = $1", [firmId]);
     await c.query("delete from rates where firm_id = $1", [firmId]);
     await c.query("delete from activities where firm_id = $1", [firmId]);
     await c.query("delete from overhead_categories where firm_id = $1", [firmId]);

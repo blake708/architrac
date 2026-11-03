@@ -60,8 +60,14 @@ export async function cleanE2eData() {
           "update teams set leader_membership_id = null where firm_id = $1",
           [id],
         );
+        await c.query(
+          "update companies set primary_contact_id = null, billing_contact_id = null where firm_id = $1",
+          [id],
+        );
         for (const table of [
           "activity_log",
+          "contacts",
+          "companies",
           "rates",
           "activities",
           "overhead_categories",

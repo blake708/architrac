@@ -100,6 +100,7 @@ const RULES = {
   // Contacts
   "contacts.view": EVERYONE,
   "contacts.edit": { ...OWNER_ADMIN, project_manager: true },
+  "contacts.archive": OWNER_ADMIN,
   // Delete (archive) firm
   "firm.archive": OWNER_ONLY,
 } satisfies Record<string, Rule>;

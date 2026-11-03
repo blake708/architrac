@@ -27,3 +27,13 @@ export const feeType = pgEnum("fee_type", ["fixed", "hourly", "nte"]);
 
 /** Which timesheet rows an activity is offered on (DATA_MODEL → activities). */
 export const activityScope = pgEnum("activity_scope", ["project", "overhead"]);
+
+/** What a company is to the firm (contacts spec; `agency` added in 1.2). */
+export const companyKind = pgEnum("company_kind", [
+  "client",
+  "consultant",
+  "contractor",
+  "agency",
+  "vendor",
+  "other",
+]);
