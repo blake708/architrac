@@ -79,7 +79,7 @@ All filters live in the URL so a filtered list can be bookmarked. The page is a 
 
 **Step 1** has two columns: **Project details** (Card 1 below) on the left, and a **Phases** card on the right. The Phases card is a checklist of every non-archived `phase_templates` row: default phases first and checked, then optional phases (e.g. Additional Services) unchecked with an "Optional" tag. Each item shows code, name and description. **Next** runs the server's own checks on the project fields and needs at least one phase checked ("Include at least one phase"). A field's error clears as soon as it's edited. A server error on a step-1 field (e.g. "Number already used") returns you to step 1.
 
-**Step 2** has, in order: the **Estimate** card, **Phases & fees** (Card 2 below, checked phases only) and **Consultants**.
+**Step 2** has, in order: the **Estimate** card, **Phases & fees** (Card 2 below, checked phases only) and **Consultants**. The three cards share one column up to 960px wide. In Phases & fees, a line separates each phase, and its roles sit in a grey area under it (like the project snapshot's detail rows).
 
 ### Estimate (step 2)
 - Picks ranges for the project's type and scope, in this order:

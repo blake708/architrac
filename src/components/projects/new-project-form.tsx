@@ -158,8 +158,20 @@ export function NewProjectForm({
   const set = (p: Partial<typeof d>) => {
     setD((x) => ({ ...x, ...p }));
     // A field's error goes away as soon as it's edited.
-    const keys = Object.keys(p).flatMap((k) => (k === "construction" ? ["constructionCostCents"] : k === "otherType" ? ["projectType"] : [k]));
-    setErrors((er) => (keys.some((k) => k in er) ? Object.fromEntries(Object.entries(er).filter(([k]) => !keys.includes(k))) : er));
+    const keys = Object.keys(p).flatMap((k) =>
+      k === "construction"
+        ? ["constructionCostCents"]
+        : k === "otherType"
+          ? ["projectType"]
+          : [k],
+    );
+    setErrors((er) =>
+      keys.some((k) => k in er)
+        ? Object.fromEntries(
+            Object.entries(er).filter(([k]) => !keys.includes(k)),
+          )
+        : er,
+    );
   };
   const [totalFeeText, setTotalFeeText] = useState("0");
   const totalFee = parseMoney(totalFeeText);
@@ -341,7 +353,7 @@ export function NewProjectForm({
   }
 
   const e = (k: string) => errors[k];
-  const cell = "border-b border-line-soft px-2 py-1.5";
+  const cell = "border-t border-line px-2 py-2";
   const dot = (
     <span
       aria-label="edited"
@@ -447,7 +459,7 @@ export function NewProjectForm({
       )}
 
       {step === 2 && (
-        <>
+        <div className="flex max-w-[960px] flex-col gap-5">
           <EstimateCard
             sources={options.benchmarks}
             projectType={fields.projectType}
@@ -504,7 +516,7 @@ export function NewProjectForm({
               </div>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[880px] border-collapse text-sm">
+              <table className="w-full min-w-[760px] border-collapse text-sm">
                 <thead className="bg-surface-2">
                   <tr className="text-left text-2xs font-medium text-muted">
                     <th
@@ -557,7 +569,7 @@ export function NewProjectForm({
                     const label = r.name.trim() || "New phase";
                     return (
                       <Fragment key={r.key}>
-                        <tr data-phase={r.code}>
+                        <tr data-phase={r.code} className="font-medium">
                           <td className={cn(cell, "pl-[18px]")}>
                             <input
                               aria-label={`${label} code`}
@@ -583,7 +595,7 @@ export function NewProjectForm({
                               onChange={(ev) =>
                                 editRow(r.key, { name: ev.target.value })
                               }
-                              className="h-8 w-full min-w-[180px] rounded-sm border border-line-input bg-surface px-2 aria-[invalid=true]:border-red"
+                              className="h-8 w-full min-w-[160px] rounded-sm border border-line-input bg-surface px-2 aria-[invalid=true]:border-red"
                             />
                           </td>
                           <td className={cell}>
@@ -731,7 +743,7 @@ export function NewProjectForm({
                           <tr data-roles-for={r.code}>
                             <td
                               colSpan={7}
-                              className="border-b border-line-soft px-[18px] pt-1 pb-3 pl-[34px]"
+                              className="border-t border-line-soft bg-surface-2 px-[18px] pt-2 pb-3 pl-10"
                             >
                               <InlineRoles
                                 phaseName={label}
@@ -755,7 +767,7 @@ export function NewProjectForm({
                   })}
                 </tbody>
                 <tfoot>
-                  <tr className="font-semibold">
+                  <tr className="border-t border-line bg-surface-2 font-semibold">
                     <td colSpan={3} className="px-2 py-2.5 pl-[18px]">
                       Total
                     </td>
@@ -892,7 +904,7 @@ export function NewProjectForm({
             archFeeCents={sumFee}
             errors={errors}
           />
-        </>
+        </div>
       )}
 
       <div className="sticky bottom-0 z-10 -mx-4 border-t border-line bg-surface md:-mx-page-x">

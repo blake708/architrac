@@ -83,27 +83,27 @@ export function InlineRoles({
     <div className="flex flex-col gap-1.5">
       {mix.length > 0 && (
         <table
-          className="w-auto border-collapse text-xs [&_td]:py-0.5 [&_td]:pr-3 [&_th]:pr-3"
+          className="w-[568px] table-fixed border-collapse text-xs [&_td]:py-0.5 [&_td]:pr-3 [&_th]:pr-3"
           aria-label={`Roles for ${phaseName}`}
         >
           <thead>
             <tr className="cap text-left text-2xs text-muted">
-              <th scope="col" className="py-1 font-medium">
+              <th scope="col" className="w-[180px] py-1 font-medium">
                 Role
               </th>
-              <th scope="col" className="py-1 text-right font-medium">
+              <th scope="col" className="w-[84px] py-1 text-right font-medium">
                 Share
               </th>
-              <th scope="col" className="py-1 text-right font-medium">
+              <th scope="col" className="w-[80px] py-1 text-right font-medium">
                 Hours
               </th>
-              <th scope="col" className="py-1 text-right font-medium">
+              <th scope="col" className="w-[76px] py-1 text-right font-medium">
                 Rate
               </th>
-              <th scope="col" className="py-1 text-right font-medium">
+              <th scope="col" className="w-[84px] py-1 text-right font-medium">
                 Fee
               </th>
-              <th scope="col" className="py-1">
+              <th scope="col" className="w-[64px] py-1">
                 <span className="sr-only">Remove</span>
               </th>
             </tr>
@@ -130,7 +130,7 @@ export function InlineRoles({
                       aria-label={`${phaseName} role ${i + 1}`}
                       value={m.firmRoleId}
                       onChange={(e) => set(i, { firmRoleId: e.target.value })}
-                      className="h-7 rounded-sm border border-line-input bg-surface px-1"
+                      className="h-7 w-full rounded-sm border border-line-input bg-surface px-1"
                     >
                       <option value="">Choose…</option>
                       {roles

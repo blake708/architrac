@@ -109,7 +109,11 @@ test.describe("owner", () => {
     await signInAs(page, "etaOwner", "/app/settings/phases");
     const card = page.getByRole("region", { name: "Project type ranges" });
     await card.getByRole("button", { name: "Add range" }).click();
-    await card.getByLabel("Range 1 project type").fill("Medical office");
+    // A dropdown of project types; "Other…" opens a box to type a new one.
+    await card.getByLabel("Range 1 project type").selectOption({ label: "Other…" });
+    await expect(card.getByLabel("Range 1 other type")).toBeVisible();
+    await card.getByLabel("Range 1 project type").selectOption("Medical office");
+    await expect(card.getByLabel("Range 1 other type")).toHaveCount(0);
     await card.getByLabel("Range 1 scope").selectOption({ label: "Ground-up" });
     await card.getByLabel("Range 1 cost per SF low").fill("330");
     await card.getByLabel("Range 1 cost per SF high").fill("290");
