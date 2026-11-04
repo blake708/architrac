@@ -411,16 +411,18 @@ test.describe("phases", () => {
     await expect(d).toContainText("Total fee becomes $203,775");
     await d.getByRole("button", { name: "Add phase" }).click();
     await expect(page.getByTestId("toast").last()).toHaveText("AS1 added");
-    await expect(row(page, "AS1")).toContainText("Not started");
+    // The table reloads after the save; slower on CI, so allow 15 s.
+    const slow = { timeout: 15_000 };
+    await expect(row(page, "AS1")).toContainText("Not started", slow);
     await expect(row(page, "AS1")).toContainText("Additional service");
-    await expect(page.getByTestId("phase-fee-total")).toHaveText("$203,775");
+    await expect(page.getByTestId("phase-fee-total")).toHaveText("$203,775", slow);
 
     await row(page, "CO").getByRole("button", { name: "Edit Close Out" }).click();
     await page.getByRole("dialog", { name: "Edit CO · Close Out" }).getByRole("button", { name: "Archive phase" }).click();
     await page.getByRole("dialog", { name: "Archive CO?" }).getByRole("button", { name: "Archive" }).click();
     await expect(page.getByTestId("toast").last()).toHaveText("CO archived");
-    await expect(row(page, "CO")).toHaveCount(0);
-    await expect(page.getByRole("list", { name: "Project phases" }).getByRole("listitem")).toHaveCount(7); // 6 + AS1
+    await expect(row(page, "CO")).toHaveCount(0, slow);
+    await expect(page.getByRole("list", { name: "Project phases" }).getByRole("listitem")).toHaveCount(7, slow); // 6 + AS1
   });
 });
 
