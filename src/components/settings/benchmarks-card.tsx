@@ -25,6 +25,8 @@ type Draft = {
   key: string;
   id: string | null;
   projectType: string;
+  /** "Other…" picked: the type is typed into a box instead. */
+  other: boolean;
   scopeKind: ScopeKind | "";
   costLow: string;
   costHigh: string;
@@ -32,6 +34,7 @@ type Draft = {
   feeHigh: string;
 };
 
+const OTHER = "__other";
 const pctText = (bp: number) => String(bp / 100);
 /** "3" / "2.85%" → basis points; null if it isn't a % with up to 2 decimals. */
 function parsePct(raw: string): number | null {
@@ -44,6 +47,7 @@ const toDraft = (r: BenchmarkRow, i: number): Draft => ({
   key: r.id ?? `new-${i}`,
   id: r.id,
   projectType: r.projectType,
+  other: false,
   scopeKind: r.scopeKind ?? "",
   costLow: moneyInput(r.costPerSfLowCents),
   costHigh: moneyInput(r.costPerSfHighCents),
@@ -63,6 +67,13 @@ export function BenchmarksCard({
   const [rows, setRows] = useState(saved);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pending, startTransition] = useTransition();
+  const typeOptions = useMemo(
+    () =>
+      [...new Set([...types, ...saved.map((r) => r.projectType)])].sort(
+        (a, b) => a.localeCompare(b),
+      ),
+    [types, saved],
+  );
   const dirty = useMemo(
     () => JSON.stringify(rows) !== JSON.stringify(saved),
     [rows, saved],
@@ -134,11 +145,6 @@ export function BenchmarksCard({
           uses these until you have 3 similar past projects.
         </span>
       </header>
-      <datalist id="range-types">
-        {types.map((t) => (
-          <option key={t} value={t} />
-        ))}
-      </datalist>
       {rows.length > 0 && (
         <div className="overflow-x-auto">
           <table
@@ -178,17 +184,44 @@ export function BenchmarksCard({
                 return (
                   <tr key={r.key} data-range={r.projectType}>
                     <td className="border-b border-line-soft px-2 py-1.5 pl-[18px] align-top">
-                      <input
+                      <select
                         aria-label={`Range ${i + 1} project type`}
-                        list="range-types"
-                        value={r.projectType}
-                        maxLength={60}
-                        aria-invalid={!!err(i, "projectType") || undefined}
+                        value={r.other ? OTHER : r.projectType}
+                        aria-invalid={
+                          (!r.other && !!err(i, "projectType")) || undefined
+                        }
                         onChange={(e) =>
-                          set(r.key, { projectType: e.target.value })
+                          set(
+                            r.key,
+                            e.target.value === OTHER
+                              ? { other: true, projectType: "" }
+                              : { other: false, projectType: e.target.value },
+                          )
                         }
                         className={cn(box, "w-full min-w-[160px]")}
-                      />
+                      >
+                        <option value="">Choose…</option>
+                        {typeOptions.map((t) => (
+                          <option key={t} value={t}>
+                            {t}
+                          </option>
+                        ))}
+                        <option value={OTHER}>Other…</option>
+                      </select>
+                      {r.other && (
+                        <input
+                          aria-label={`Range ${i + 1} other type`}
+                          placeholder="Type of project"
+                          value={r.projectType}
+                          maxLength={60}
+                          autoFocus
+                          aria-invalid={!!err(i, "projectType") || undefined}
+                          onChange={(e) =>
+                            set(r.key, { projectType: e.target.value })
+                          }
+                          className={cn(box, "mt-1.5 w-full min-w-[160px]")}
+                        />
+                      )}
                       {rowErrors.length > 0 && (
                         <p className="m-0 mt-1 text-[12.5px] text-red">
                           {rowErrors[0]}
@@ -294,6 +327,7 @@ export function BenchmarksCard({
                 key: `new-${Date.now()}`,
                 id: null,
                 projectType: "",
+                other: false,
                 scopeKind: "",
                 costLow: "",
                 costHigh: "",

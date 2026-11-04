@@ -195,7 +195,7 @@ All seeded default phases have `description = null` and `is_optional = false`. N
 
 ### Project type ranges (Settings → Phases, below the phase lists; Blake, 2026-11-04)
 - A card titled "Project type ranges", with the help text "Construction cost per SF and fee as a % of construction. New project uses these until you have 3 similar past projects."
-- Rows: project type (text, with suggestions from the standard and existing types), scope (Any scope / Ground-up / Tenant upfit / Shell building), cost/SF low – high (dollars), fee % low – high, Remove. Plus **Add range** and **Save ranges** (its own button, enabled when something changed; toast "Project type ranges saved").
+- Rows: project type (a dropdown of the standard and existing types; "Other…" opens a box to type a new one), scope (Any scope / Ground-up / Tenant upfit / Shell building), cost/SF low – high (dollars), fee % low – high, Remove. Plus **Add range** and **Save ranges** (its own button, enabled when something changed; toast "Project type ranges saved").
 - Rules (`src/lib/settings/benchmarks.ts`, checked again on the server):
   - type 1–60 chars;
   - cost/SF > $0 and high ≥ low;
