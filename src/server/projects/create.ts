@@ -2,6 +2,7 @@ import { and, eq, inArray, isNull, sql } from "drizzle-orm";
 import {
   activityLog,
   companies,
+  consultants as consultantsTable,
   contacts,
   phaseTemplates,
   projectMembers,
@@ -42,8 +43,13 @@ export async function createProjectCore(
 ): Promise<CreateProjectResult> {
   if (!can(actor.member, "projects.create")) return { ok: false, error: PROJECT_MESSAGES.forbidden };
   const parsed = createProjectSchema.safeParse(raw);
-  if (!parsed.success) return { ok: false, fieldErrors: fieldErrorsOf(parsed.error.issues) };
-  const { phases, totalFeeCents, totalBudgetHours, ...p } = parsed.data;
+  if (!parsed.success) {
+    // Consultant rows keep their row number ("consultants.1.feeCents") so the page can mark the row.
+    const fieldErrors = fieldErrorsOf(parsed.error.issues.filter((i) => i.path[0] !== "consultants"));
+    for (const i of parsed.error.issues.filter((x) => x.path[0] === "consultants")) fieldErrors[i.path.join(".")] ??= i.message;
+    return { ok: false, fieldErrors };
+  }
+  const { phases, consultants, totalFeeCents, totalBudgetHours, ...p } = parsed.data;
 
   try {
     const result = await withFirm(actor.firmId, async (db) => {
@@ -84,6 +90,35 @@ export async function createProjectCore(
         throw new Refused(PROJECT_MESSAGES.badPerson, "principalMembershipId");
       if (!pmChoices(people).some((x) => x.membershipId === p.pmMembershipId))
         throw new Refused(PROJECT_MESSAGES.badPerson, "pmMembershipId");
+
+      // Consultants must be the firm's consultant companies, and their contacts.
+      const consultantIds = [...new Set(consultants.map((c) => c.companyId))];
+      const okCompanies = new Set(
+        consultantIds.length
+          ? (
+              await db
+                .select({ id: companies.id })
+                .from(companies)
+                .where(and(inArray(companies.id, consultantIds), eq(companies.kind, "consultant"), isNull(companies.archivedAt)))
+            ).map((r) => r.id)
+          : [],
+      );
+      const contactIds = consultants.flatMap((c) => (c.contactId ? [c.contactId] : []));
+      const contactCompany = new Map(
+        contactIds.length
+          ? (
+              await db
+                .select({ id: contacts.id, companyId: contacts.companyId })
+                .from(contacts)
+                .where(and(inArray(contacts.id, contactIds), isNull(contacts.archivedAt)))
+            ).map((r) => [r.id, r.companyId])
+          : [],
+      );
+      consultants.forEach((c, i) => {
+        if (!okCompanies.has(c.companyId)) throw new Refused(PROJECT_MESSAGES.notConsultant, `consultants.${i}.companyId`);
+        if (c.contactId && contactCompany.get(c.contactId) !== c.companyId)
+          throw new Refused(PROJECT_MESSAGES.badCompanyContact, `consultants.${i}.contactId`);
+      });
 
       // Descriptions come from the firm's own templates, never the browser.
       const templateIds = phases.flatMap((x) => (x.templateId ? [x.templateId] : []));
@@ -126,6 +161,23 @@ export async function createProjectCore(
         }
       }
 
+      // Consultant fees (separate from the architectural fee), each logged.
+      if (consultants.length) {
+        const added = await db
+          .insert(consultantsTable)
+          .values(consultants.map((c) => ({ firmId: actor.firmId, projectId: project.id, ...c })))
+          .returning({ id: consultantsTable.id });
+        for (const [i, row] of added.entries())
+          await db.insert(activityLog).values({
+            firmId: actor.firmId,
+            actorUserId: actor.userId,
+            entityType: "consultant",
+            entityId: row.id,
+            action: "created",
+            changes: consultants[i],
+          });
+      }
+
       const members = [{ membershipId: p.pmMembershipId, projectRole: "PM" }];
       if (p.principalMembershipId !== p.pmMembershipId)
         members.push({ membershipId: p.principalMembershipId, projectRole: "Principal" });
@@ -144,6 +196,7 @@ export async function createProjectCore(
           name: p.name,
           status: p.status,
           phaseCount: phases.length,
+          consultantCount: consultants.length,
           totalFeeCents,
           totalBudgetHours,
         },

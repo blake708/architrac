@@ -6,6 +6,7 @@ import { settingsClerk } from "@/server/auth/clerk";
 import { actorFrom } from "./common";
 import { updateFirmProfileCore } from "./firm-profile";
 import { updateModulesCore } from "./modules";
+import { saveBenchmarksCore } from "./benchmarks";
 import { savePhasesCore } from "./phases";
 import {
   addRoleCore,
@@ -98,4 +99,8 @@ export async function archiveRole(roleId: unknown) {
 
 export async function saveTimeLists(form: unknown) {
   return saveTimeListsCore(await actor(), form);
+}
+
+export async function saveBenchmarks(input: unknown) {
+  return saveBenchmarksCore(await actor(), input);
 }

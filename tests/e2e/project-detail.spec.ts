@@ -267,18 +267,30 @@ test.describe("phases", () => {
 
   test("New project: the template's mix sets SD's hours", async ({ page }) => {
     await signInAs(page, "thOwner", "/app/projects/new");
+    // Step 1 (nothing is saved in this test).
+    await page.getByLabel("Project name *").fill("Mix check");
+    await page.getByLabel("Client *").selectOption({ label: "Palmetto Medical Properties" });
+    await page.getByLabel("Project type *").selectOption("Medical office");
+    await page.getByLabel("Principal in charge *").selectOption({ label: "Bea Middle" });
+    await page.getByLabel("Project manager *").selectOption({ label: "Jay Ross" });
+    await page.getByRole("button", { name: "Next: fees" }).click();
+    await expect(page.getByRole("region", { name: "Estimate" }).getByTestId("estimate-empty")).toContainText("No ranges for medical office yet");
+
     await page.getByLabel("Total fee *").fill("186,000");
     const sd = page.locator('tr[data-phase="SD"]');
     // $27,900: 20% Principal = $5,580 ÷ $185 = 30.25 h; 80% Designer = $22,320 ÷ $115 = 194 h
     const sdRoles = page.getByRole("table", { name: "Roles for Schematic Design" });
-    await expect(sdRoles).toContainText("Principal20%$185/h$5,58030.25");
-    await expect(sdRoles).toContainText("Designer80%$115/h$22,320194");
+    await expect(sdRoles.getByLabel("Schematic Design Principal share")).toHaveValue("20");
+    await expect(sdRoles.getByLabel("Schematic Design Principal hours")).toHaveValue("30.25");
+    await expect(sdRoles.getByLabel("Schematic Design Designer hours")).toHaveValue("194");
+    await expect(sdRoles).toContainText("$5,580");
     await expect(sd.getByLabel(/budget hours$/)).toHaveValue("224.25");
-    await page.getByRole("button", { name: "Edit roles for Schematic Design" }).click();
-    const panel = page.getByRole("dialog", { name: /Roles · SD/ });
-    await expect(panel.getByTestId("mix-hours")).toHaveText("224.25");
-    await panel.getByRole("button", { name: "Cancel" }).click();
-    await expect(page.getByRole("button", { name: "Add roles for Design Development" })).toBeVisible();
+    // Typing hours moves the share: 40 h × $185 = $7,400 of $27,900 = 26.52%.
+    await sdRoles.getByLabel("Schematic Design Principal hours").fill("40");
+    await expect(sdRoles.getByLabel("Schematic Design Principal share")).toHaveValue("26.52");
+    await expect(page.getByTestId("roles-total-Schematic Design")).toHaveText("106.52%");
+    await expect(page.getByRole("button", { name: "Create project" })).toBeDisabled();
+    await expect(page.getByRole("button", { name: "Add role to Design Development" })).toBeVisible();
   });
 
   test("Redistribute: $200,000 with PD and SD locked", async ({ page }) => {
