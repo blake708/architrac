@@ -103,6 +103,15 @@ const quarterHours = z
   .max(999_999)
   .refine((h) => Number.isInteger(h * 4), { error: PROJECT_MESSAGES.hours });
 
+/** A phase's role mix: each role once, shares adding up to exactly 100% (or no mix). */
+export const mixSchema = z
+  .array(z.object({ firmRoleId: z.uuid(), shareBp: z.number().int().min(0).max(10_000) }))
+  .max(20)
+  .refine((rows) => new Set(rows.map((r) => r.firmRoleId)).size === rows.length, { error: "Each role once" })
+  .refine((rows) => rows.length === 0 || rows.reduce((n, r) => n + r.shareBp, 0) === 10_000, {
+    error: "Role shares must add up to 100%",
+  });
+
 export const phaseRowSchema = z.object({
   /** The template it came from (its description is copied on the server). */
   templateId: z.uuid().nullable(),
@@ -111,6 +120,9 @@ export const phaseRowSchema = z.object({
   feeType: z.enum(["fixed", "hourly", "nte"]),
   feeCents: cents,
   budgetHours: quarterHours,
+  /** Hours were typed in (a later fee change leaves them alone). */
+  budgetHoursManual: z.boolean().default(false),
+  mix: mixSchema.default([]),
 });
 export type PhaseRowInput = z.input<typeof phaseRowSchema>;
 

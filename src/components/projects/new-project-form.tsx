@@ -1,12 +1,14 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useTransition } from "react";
+import { Fragment, useMemo, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { type MixRow, RoleMixPanel, RoleMixTable } from "./role-mix-panel";
 import { EMPTY_DRAFT, ProjectFields, type ProjectDraft, checkDraft } from "./project-fields";
 import { Input } from "@/components/ui/field";
 import { cn } from "@/lib/cn";
+import { mixHours } from "@/lib/calc/phase-edit";
 import { type FeeType, type PhaseEdit, hoursFromFee, planPhaseFees } from "@/lib/calc/projects";
 import { formatMoney } from "@/lib/format";
 import {
@@ -40,6 +42,8 @@ type Row = {
   edit: PhaseEdit;
   /** Hours typed over the calculated ones (always typed for hourly phases). */
   hoursEdit: number | null;
+  /** Role mix (starts from the template's default). Empty = blended bill rate. */
+  mix: MixRow[];
   /** What's in a box while it's being typed in. */
   draft: { fee?: string; pct?: string; hours?: string };
 };
@@ -101,6 +105,7 @@ export function NewProjectForm({
       include: true,
       edit: null,
       hoursEdit: null,
+      mix: t.mix,
       draft: {},
     })),
   );
@@ -121,8 +126,11 @@ export function NewProjectForm({
     if (!r.include) return 0;
     if (r.hoursEdit !== null) return r.hoursEdit;
     if (r.feeType === "hourly") return 0;
+    if (r.mix.length) return mixHours(plan.fees[r.key], r.mix.map((m) => ({ roleId: m.firmRoleId, shareBp: m.shareBp, rateCents: rateOf(m.firmRoleId) }))).total;
     return hoursFromFee(plan.fees[r.key], rate) ?? 0;
   };
+  const rateOf = (roleId: string) => options.roles.find((x) => x.id === roleId)?.billCents ?? 0;
+  const [mixFor, setMixFor] = useState<string | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -170,6 +178,8 @@ export function NewProjectForm({
           feeType: r.feeType,
           feeCents: plan.fees[r.key],
           budgetHours: hoursOf(r),
+          budgetHoursManual: r.hoursEdit !== null,
+          mix: r.feeType === "hourly" ? [] : r.mix,
         })),
       });
       if (!result.ok) {
@@ -239,7 +249,8 @@ export function NewProjectForm({
                 const split = r.include && r.feeType !== "hourly";
                 const dot = <span aria-label="edited" role="img" className="size-1.5 rounded-full bg-blue" />;
                 return (
-                  <tr key={r.key} data-phase={r.code} className={cn(!r.include && "opacity-50")}>
+                  <Fragment key={r.key}>
+                  <tr data-phase={r.code} className={cn(!r.include && "opacity-50")}>
                     <td className={cn(cell, "pl-[18px]")}>
                       <input
                         type="checkbox"
@@ -336,6 +347,37 @@ export function NewProjectForm({
                       </span>
                     </td>
                   </tr>
+                  {r.include && r.feeType !== "hourly" && (
+                    <tr data-roles-for={r.code}>
+                      <td colSpan={7} className="border-b border-line-soft px-[18px] pt-0 pb-3 pl-[52px]">
+                        {r.mix.length > 0 && (
+                          <RoleMixTable
+                            label={`Roles for ${r.name}`}
+                            roles={(() => {
+                              const calc = mixHours(plan.fees[r.key], r.mix.map((x) => ({ roleId: x.firmRoleId, shareBp: x.shareBp, rateCents: rateOf(x.firmRoleId) })));
+                              return r.mix.map((x, i) => ({
+                                roleName: options.roles.find((o) => o.id === x.firmRoleId)?.name ?? "Role",
+                                shareBp: x.shareBp,
+                                rateCents: rateOf(x.firmRoleId),
+                                cents: calc.roles[i].cents,
+                                hours: calc.roles[i].hours,
+                              }));
+                            })()}
+                          />
+                        )}
+                        <button
+                          type="button"
+                          onClick={() => setMixFor(r.key)}
+                          aria-label={`${r.mix.length ? "Edit" : "Add"} roles for ${r.name}`}
+                          className="mt-1 cursor-pointer border-0 bg-transparent p-0 text-xs text-blue underline"
+                        >
+                          {r.mix.length ? "Edit roles" : "Add roles"}
+                        </button>
+                        {r.mix.length === 0 && <span className="ml-2 text-xs text-muted">Hours come from the blended bill rate.</span>}
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 );
               })}
             </tbody>
@@ -393,7 +435,7 @@ export function NewProjectForm({
           )}
           <p className="m-0 text-xs text-muted" data-testid="hours-note">
             {rate
-              ? `Budget hours = phase fee ÷ blended bill rate (${formatMoney(rate)}/h), to the quarter hour. Type over any phase's hours.`
+              ? `Budget hours = phase fee ÷ each role's bill rate (the roles under each phase), or the blended bill rate (${formatMoney(rate)}/h) for phases with no roles, to the quarter hour. Type over any phase's hours.`
               : "Set up roles and rates in Settings → Rates & roles to fill in budget hours from the fee. Until then, type them in."}
           </p>
           <ul className="m-0 list-none p-0 text-xs text-muted">
@@ -405,6 +447,25 @@ export function NewProjectForm({
           </ul>
         </div>
       </Card>
+
+      {mixFor &&
+        (() => {
+          const r = rows.find((x) => x.key === mixFor)!;
+          return (
+            <RoleMixPanel
+              title={`Roles · ${r.code} ${r.name}`}
+              feeCents={plan.fees[r.key]}
+              mix={r.mix}
+              roles={options.roles}
+              onClose={() => setMixFor(null)}
+              onSave={(mix) => {
+                // A new mix sets the hours again, unless they were typed in.
+                editRow(r.key, { mix, hoursEdit: null, draft: {} });
+                setMixFor(null);
+              }}
+            />
+          );
+        })()}
 
       <div className="sticky bottom-0 z-10 -mx-4 border-t border-line bg-surface md:-mx-page-x">
         {formError && (

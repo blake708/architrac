@@ -1,6 +1,9 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { type MixRow, type RoleOption, RoleMixPanel } from "@/components/projects/role-mix-panel";
+import { useToast } from "@/components/ui/toast";
+import { saveTemplateMix } from "@/server/projects/actions";
 import { useMemo, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { controlClasses } from "@/components/ui/field";
@@ -62,7 +65,17 @@ function FieldError({ id, message }: { id: string; message?: string }) {
 }
 
 /** Settings → Phases & fees (settings-rates-phases spec, section A). */
-export function PhasesFormView({ initial }: { initial: PhasesForm }) {
+export function PhasesFormView({
+  initial,
+  roleMix,
+}: {
+  initial: PhasesForm;
+  /** Role mixes per saved phase, and roles with today's bill rate. */
+  roleMix: { roles: RoleOption[]; mixes: Record<string, MixRow[]> };
+}) {
+  const [mixes, setMixes] = useState(roleMix.mixes);
+  const [mixFor, setMixFor] = useState<{ id: string; name: string } | null>(null);
+  const roleToast = useToast();
   const router = useRouter();
   const [saved, setSaved] = useState(() => withKeys(initial));
   const [rows, setRows] = useState(saved);
@@ -173,6 +186,8 @@ export function PhasesFormView({ initial }: { initial: PhasesForm }) {
                   onChange={(patch) => update("defaults", r.key, patch)}
                   onMove={(by) => move("defaults", i, by)}
                   onRemove={() => remove("defaults", r.key)}
+                  roleCount={r.id ? (mixes[r.id]?.length ?? 0) : null}
+                  onRoles={() => r.id && setMixFor({ id: r.id, name: r.name })}
                 />
               ))}
             </tbody>
@@ -237,6 +252,8 @@ export function PhasesFormView({ initial }: { initial: PhasesForm }) {
                     onChange={(patch) => update("optional", r.key, patch)}
                     onMove={(by) => move("optional", i, by)}
                     onRemove={() => remove("optional", r.key)}
+                  roleCount={r.id ? (mixes[r.id]?.length ?? 0) : null}
+                  onRoles={() => r.id && setMixFor({ id: r.id, name: r.name })}
                   />
                 ))}
               </tbody>
@@ -253,6 +270,22 @@ export function PhasesFormView({ initial }: { initial: PhasesForm }) {
           </Button>
         </div>
       </section>
+      {mixFor && (
+        <RoleMixPanel
+          title={`Roles · ${mixFor.name}`}
+          feeCents={null}
+          mix={mixes[mixFor.id] ?? []}
+          roles={roleMix.roles}
+          onClose={() => setMixFor(null)}
+          onSave={async (mix) => {
+            const r = await saveTemplateMix({ templateId: mixFor.id, mix });
+            if (!r.ok) return roleToast(r.error ?? "Couldn't save the roles.", "error");
+            setMixes((m) => ({ ...m, [mixFor.id]: mix }));
+            setMixFor(null);
+            roleToast(`Roles saved for ${mixFor.name}`);
+          }}
+        />
+      )}
     </form>
   );
 }
@@ -294,6 +327,8 @@ function PhaseRows({
   onChange,
   onMove,
   onRemove,
+  roleCount,
+  onRoles,
 }: {
   list: PhaseList;
   row: Keyed;
@@ -304,6 +339,9 @@ function PhaseRows({
   onChange: (patch: Partial<PhaseRow>) => void;
   onMove: (by: -1 | 1) => void;
   onRemove: () => void;
+  /** Roles in the saved mix; null for a phase that isn't saved yet. */
+  roleCount: number | null;
+  onRoles: () => void;
 }) {
   const at = `${list}.${index}`;
   const label = row.name.trim() || "New phase";
@@ -414,7 +452,17 @@ function PhaseRows({
             </button>
           </span>
         </td>
-        <td className={td}>
+        <td className={cn(td, "whitespace-nowrap")}>
+          <button
+            type="button"
+            onClick={onRoles}
+            disabled={roleCount === null}
+            title={roleCount === null ? "Save the phase first" : undefined}
+            aria-label={`Roles for ${label}`}
+            className="mr-2 h-8 cursor-pointer border-0 bg-transparent px-1 text-sm text-blue hover:underline disabled:cursor-not-allowed disabled:text-faint focus-visible:outline-2 focus-visible:outline-blue"
+          >
+            Roles{roleCount ? ` (${roleCount})` : ""}
+          </button>
           <button
             type="button"
             onClick={onRemove}

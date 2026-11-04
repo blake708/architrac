@@ -27,6 +27,7 @@ import {
 import { blendedBillRateCents } from "@/lib/calc/rates";
 import { todayIn } from "@/lib/format";
 import { loadRates } from "@/server/settings/rates";
+import { templateMixes } from "./roles";
 import { initials } from "@/lib/initials";
 import type { ScopeKind } from "@/lib/projects/form";
 
@@ -250,6 +251,8 @@ export type TemplateRow = {
   name: string;
   feeType: FeeType;
   shareBp: number;
+  /** Default role mix (Settings → Phases & fees). */
+  mix: { firmRoleId: string; shareBp: number }[];
 };
 
 export type NewProjectOptions = {
@@ -262,6 +265,8 @@ export type NewProjectOptions = {
   templates: TemplateRow[];
   /** Firm-wide blended bill rate for budget hours; null if rates aren't set up. Bill only, never cost. */
   blendedBillRateCents: number | null;
+  /** Billable roles with today's bill rate (for role mixes). Never cost. */
+  roles: { id: string; name: string; billCents: number }[];
 };
 
 /** Active people in the firm with their app role and principal flag. */
@@ -339,6 +344,7 @@ export async function loadNewProjectOptions(
   // Only the single blended bill rate leaves this function (Blake,
   // 2026-11-03: PMs may see bill rates; cost stays owner/admin only).
   const rateView = await loadRates(db, firmId, today);
+  const mixes = await templateMixes(db);
   const blended = blendedBillRateCents(
     rateView.roles.map((r) => ({ billCents: r.billCents, costCents: r.costCents, people: r.people })),
   );
@@ -367,7 +373,8 @@ export async function loadNewProjectOptions(
     principals: principalChoices(people).map(strip),
     pms: pmChoices(people).map(strip),
     types: typeRows.map((r) => r.t),
-    templates: templates.map((t) => ({ ...t, feeType: t.feeType as FeeType })),
+    templates: templates.map((t) => ({ ...t, feeType: t.feeType as FeeType, mix: mixes.get(t.id) ?? [] })),
     blendedBillRateCents: blended,
+    roles: rateView.roles.filter((r) => r.isBillable).map((r) => ({ id: r.id, name: r.name, billCents: r.billCents })),
   };
 }

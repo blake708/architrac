@@ -78,6 +78,30 @@ test.beforeAll(async () => {
       where (select count(*) from ph) > 0 and (select count(*) from ravi) > 0 and (select count(*) from gc) > 0
     `);
   }
+  // Roles and rates (Principal $185 for Bea, Designer $115 for Jay and Kat)
+  // and an optional "Additional Services" template, once.
+  const [{ r }] = await query<{ r: number }>("select count(*)::int as r from firm_roles where firm_id = :firm");
+  if (r === 0) {
+    await query(`
+      with pr as (
+        insert into firm_roles (firm_id, name, sort_order) values (:firm, 'Principal', 1) returning id
+      ), de as (
+        insert into firm_roles (firm_id, name, sort_order) values (:firm, 'Designer', 2) returning id
+      ), rt as (
+        insert into rates (firm_id, firm_role_id, bill_rate_cents, cost_rate_cents, effective_from)
+        select :firm, id, 18500, 9500, date '2026-01-01' from pr
+        union all select :firm, id, 11500, 4400, date '2026-01-01' from de
+        returning 1
+      ), opt as (
+        insert into phase_templates (firm_id, code, name, description, is_optional, default_fee_type, sort_order)
+        values (:firm, 'AS', 'Additional Services', 'Work beyond the base contract', true, 'fixed', 50) returning 1
+      )
+      update memberships set firm_role_id = case
+          when id = ${membership(PEOPLE.thOwner.email)} then (select id from pr)
+          else (select id from de) end
+      where firm_id = :firm and (select count(*) from rt) > 0 and (select count(*) from opt) > 0
+    `);
+  }
   const [p] = await query<{ id: string }>("select id from projects where firm_id = :firm and number = '2026-014'");
   projectId = p.id;
 });
@@ -156,7 +180,8 @@ test.describe("owner", () => {
     const e = page.getByRole("dialog", { name: "Edit consultant" });
     await e.getByLabel("Billed through to the client").uncheck();
     await e.getByRole("button", { name: "Save consultant" }).click();
-    await expect(mep).toContainText("Not billed through");
+    await expect(toast(page)).toHaveText("MEP saved");
+    await expect(mep).toContainText("Not billed through", { timeout: 15_000 });
   });
 
   test("Team: add a person with a rate override; add a contractor", async ({ page }) => {
@@ -184,11 +209,178 @@ test.describe("owner", () => {
     await l.getByLabel("Company *").selectOption({ label: "Holder Builders · Contractor" });
     await l.getByLabel("Role on this project").fill("General contractor");
     await l.getByRole("button", { name: "Add company" }).click();
-    await expect(outside.locator('li[data-company="Holder Builders"]')).toContainText("General contractor");
+    await expect(toast(page)).toHaveText("Holder Builders added");
+    // The list refreshes from the server, which can be slow while every test runs.
+    await expect(outside.locator('li[data-company="Holder Builders"]')).toContainText("General contractor", { timeout: 15_000 });
 
     // The Overview's activity shows what happened.
     await page.goto(url());
     await expect(page.getByTestId("activity")).toContainText("created MEP");
+  });
+});
+
+test.describe("phases", () => {
+  const row = (page: Page, code: string) => page.locator(`tr[data-phase="${code}"]`);
+
+  test("Settings: a default role mix for Schematic Design", async ({ page }) => {
+    await signInAs(page, "thOwner", "/app/settings/phases");
+    await page.getByRole("button", { name: "Roles for Schematic Design" }).click();
+    const panel = page.getByRole("dialog", { name: "Roles · Schematic Design" });
+    await panel.getByRole("button", { name: "Add role" }).click();
+    await panel.getByLabel("Role 1").selectOption({ label: "Principal" });
+    await panel.getByLabel("Principal share").fill("20");
+    await expect(panel.getByRole("button", { name: "Save roles" })).toBeDisabled(); // 20% isn't 100%
+    await panel.getByRole("button", { name: "Add role" }).click(); // the rest (80%) goes to the next role
+    await expect(panel.getByTestId("mix-total")).toHaveText("100%");
+    await panel.getByRole("button", { name: "Save roles" }).click();
+    await expect(page.getByTestId("toast").last()).toHaveText("Roles saved for Schematic Design");
+    await expect(page.getByRole("button", { name: "Roles for Schematic Design" })).toHaveText("Roles (2)");
+  });
+
+  test("New project: the template's mix sets SD's hours", async ({ page }) => {
+    await signInAs(page, "thOwner", "/app/projects/new");
+    await page.getByLabel("Total fee *").fill("186,000");
+    const sd = page.locator('tr[data-phase="SD"]');
+    // $27,900: 20% Principal = $5,580 ÷ $185 = 30.25 h; 80% Designer = $22,320 ÷ $115 = 194 h
+    const sdRoles = page.getByRole("table", { name: "Roles for Schematic Design" });
+    await expect(sdRoles).toContainText("Principal20%$185/h$5,58030.25");
+    await expect(sdRoles).toContainText("Designer80%$115/h$22,320194");
+    await expect(sd.getByLabel(/budget hours$/)).toHaveValue("224.25");
+    await page.getByRole("button", { name: "Edit roles for Schematic Design" }).click();
+    const panel = page.getByRole("dialog", { name: /Roles · SD/ });
+    await expect(panel.getByTestId("mix-hours")).toHaveText("224.25");
+    await panel.getByRole("button", { name: "Cancel" }).click();
+    await expect(page.getByRole("button", { name: "Add roles for Design Development" })).toBeVisible();
+  });
+
+  test("Redistribute: $200,000 with PD and SD locked", async ({ page }) => {
+    await signInAs(page, "thOwner", url("/phases"));
+    await page.getByRole("button", { name: "Redistribute fee" }).click();
+    const d = page.getByRole("dialog", { name: "Redistribute fee" });
+    await expect(d.getByLabel("Lock PD")).toBeChecked();
+    await expect(d.getByLabel("Lock SD")).toBeChecked();
+    await d.getByLabel("New total fee").fill("30,000");
+    await expect(d.getByRole("alert")).toHaveText("New total is less than the $37,200 in locked phases");
+    await d.getByLabel("New total fee").fill("200,000");
+    await expect(d.getByTestId("preview-DD")).toHaveText("$46,500 → $50,875");
+    await expect(d.getByTestId("preview-CD")).toHaveText("$65,100 → $71,225");
+    await expect(d.getByTestId("preview-PRM")).toHaveText("$9,300 → $10,175");
+    await expect(d.getByTestId("preview-CA")).toHaveText("$27,900 → $30,525");
+    await expect(d.getByTestId("preview-PD")).toHaveText("$9,300");
+    await d.getByRole("button", { name: "Apply" }).click();
+    await expect(page.getByTestId("toast").last()).toHaveText("Fee redistributed");
+    await expect(page.getByTestId("phase-fee-total")).toHaveText("$200,000");
+  });
+
+  test("Edit one phase: details on the left, roles on the right", async ({ page }) => {
+    await signInAs(page, "thOwner", url("/phases"));
+    await row(page, "DD").getByRole("button", { name: "Edit Design Development" }).click();
+    const panel = page.getByRole("dialog", { name: "Edit DD · Design Development" });
+    const details = panel.getByRole("region", { name: "Phase details" });
+    const roles = panel.getByRole("region", { name: "Roles" });
+
+    // Quarter hours are checked before saving; then back to working it out.
+    await details.getByLabel("Budget hours").fill("310.3");
+    await panel.getByRole("button", { name: "Save phase" }).click();
+    await expect(details.getByText("Use quarter hours")).toBeVisible();
+    await details.getByRole("button", { name: "Work it out from the fee" }).click();
+
+    // Complete at 30% offers a one-click fix.
+    await details.getByLabel("Status").selectOption("complete");
+    await expect(details.getByText("DD is complete at 30%. Set to 100%?")).toBeVisible();
+    await details.getByRole("button", { name: "Set to 100%" }).click();
+    await expect(details.getByLabel("% complete")).toHaveValue("100");
+    await details.getByLabel("Status").selectOption("current");
+
+    // A role mix on the right sets the hours: $50,875 at $115 = 442.39 → 442.5 h.
+    await roles.getByRole("button", { name: "Add role" }).click();
+    await roles.getByLabel("Role 1").selectOption({ label: "Designer" });
+    await expect(roles.getByTestId("mix-total")).toHaveText("100%");
+    await expect(roles.getByTestId("mix-hours")).toHaveText("442.5");
+    await expect(details.getByLabel("Budget hours")).toHaveValue("442.5");
+    await panel.getByRole("button", { name: "Save phase" }).click();
+    await expect(page.getByTestId("toast").last()).toHaveText("DD saved");
+    await expect(row(page, "DD")).toContainText("442.5");
+    await expect(page.getByRole("table", { name: /^Roles for/ })).toHaveCount(0); // no roles table under phases
+
+    // Clicking the hours shows budget vs used by role; Edit phase from there.
+    await row(page, "DD").getByRole("button", { name: "Hours for Design Development" }).click();
+    const hours = page.getByRole("dialog", { name: "Hours · DD Design Development" });
+    await expect(hours).toContainText("0 of 442.5 budgeted hours used");
+    await expect(hours.locator('tr[data-role="Designer"]')).toHaveText(/Designer\s*100%\s*442\.5\s*0\s*442\.5/);
+    await hours.getByRole("button", { name: "Edit phase" }).click();
+    await expect(page.getByRole("dialog", { name: "Edit DD · Design Development" })).toBeVisible();
+  });
+
+  test("Edit CD's fee; a duplicate code is refused", async ({ page }) => {
+    await signInAs(page, "thOwner", url("/phases"));
+    await row(page, "CD").getByRole("button", { name: "Edit Construction Documents" }).click();
+    const panel = page.getByRole("dialog", { name: "Edit CD · Construction Documents" });
+    await panel.getByLabel("Code *").fill("dd");
+    await panel.getByRole("button", { name: "Save phase" }).click();
+    await expect(panel.getByText("Another phase already uses this code")).toBeVisible();
+    await panel.getByLabel("Code *").fill("CD");
+    await panel.getByLabel("Fee", { exact: true }).fill("70,000");
+    await expect(panel).toContainText("Project fee becomes $198,775");
+    await panel.getByRole("button", { name: "Save phase" }).click();
+    await expect(page.getByTestId("toast").last()).toHaveText("CD saved");
+    await expect(page.getByTestId("phase-fee-total")).toHaveText("$198,775");
+    const [log] = await query<{ changes: { feeCents: { before: number; after: number } } }>(
+      "select a.changes from activity_log a join project_phases p on p.id = a.entity_id where a.firm_id = :firm and p.code = 'CD' and a.action = 'updated' order by a.created_at desc limit 1",
+    );
+    expect(log.changes.feeCents).toEqual({ before: 7_122_500, after: 7_000_000 });
+  });
+
+  test("↑/↓ reorder saves right away", async ({ page }) => {
+    await signInAs(page, "thOwner", url("/phases"));
+    const order = () => page.locator("tbody tr[data-phase]").evaluateAll((rs) => rs.map((r) => r.getAttribute("data-phase")));
+    await expect.poll(order).toEqual(["PD", "SD", "DD", "CD", "PRM", "CA", "CO"]);
+    // Each click saves, then the table reloads; that can take a while on CI.
+    const slow = { timeout: 15_000 };
+    await row(page, "CA").getByRole("button", { name: "Move Construction Admin up" }).click();
+    await expect.poll(order, slow).toEqual(["PD", "SD", "DD", "CD", "CA", "PRM", "CO"]);
+    await expect(row(page, "CA").getByRole("button", { name: "Move Construction Admin down" })).toBeEnabled(slow);
+    await row(page, "CA").getByRole("button", { name: "Move Construction Admin down" }).click();
+    await expect.poll(order, slow).toEqual(["PD", "SD", "DD", "CD", "PRM", "CA", "CO"]);
+    await expect(page.getByRole("region", { name: "Architectural fee by phase" }).getByRole("alert")).toHaveCount(0);
+  });
+
+  test("someone else saved first: the save is refused", async ({ page }) => {
+    await signInAs(page, "thOwner", url("/phases"));
+    await row(page, "PRM").getByRole("button", { name: "Edit Permitting" }).click();
+    const panel = page.getByRole("dialog", { name: "Edit PRM · Permitting" });
+    await panel.getByLabel("Name *").fill("Permits");
+    // Another session saves meanwhile.
+    await query("update project_phases set updated_at = now() + interval '1 minute' where firm_id = :firm and code = 'CA'");
+    await panel.getByRole("button", { name: "Save phase" }).click();
+    await expect(panel.getByText("Someone else changed these phases. Reload to see their changes.")).toBeVisible();
+    const [prm] = await query<{ name: string }>("select name from project_phases where firm_id = :firm and code = 'PRM'");
+    expect(prm.name).toBe("Permitting");
+    await query("update project_phases set updated_at = now() where firm_id = :firm and code = 'CA'");
+  });
+
+  test("Add phase from a template; archive Close Out", async ({ page }) => {
+    await signInAs(page, "thOwner", url("/phases"));
+    await page.getByRole("button", { name: "Add phase" }).click();
+    const d = page.getByRole("dialog", { name: "Add phase" });
+    await d.getByLabel("Start from").selectOption({ label: "AS · Additional Services" });
+    await expect(d.getByLabel("Description")).toHaveValue("Work beyond the base contract");
+    await expect(d.getByLabel("Additional service")).toBeChecked();
+    await d.getByLabel("Code *").fill("AS1");
+    await d.getByLabel("Fee", { exact: true }).fill("5,000");
+    await expect(d).toContainText("Total fee becomes $203,775");
+    await d.getByRole("button", { name: "Add phase" }).click();
+    await expect(page.getByTestId("toast").last()).toHaveText("AS1 added");
+    await expect(row(page, "AS1")).toContainText("Not started");
+    await expect(row(page, "AS1")).toContainText("Additional service");
+    await expect(page.getByTestId("phase-fee-total")).toHaveText("$203,775");
+
+    await row(page, "CO").getByRole("button", { name: "Edit Close Out" }).click();
+    await page.getByRole("dialog", { name: "Edit CO · Close Out" }).getByRole("button", { name: "Archive phase" }).click();
+    await page.getByRole("dialog", { name: "Archive CO?" }).getByRole("button", { name: "Archive" }).click();
+    await expect(page.getByTestId("toast").last()).toHaveText("CO archived");
+    await expect(row(page, "CO")).toHaveCount(0);
+    await expect(page.getByRole("list", { name: "Project phases" }).getByRole("listitem")).toHaveCount(7); // 6 + AS1
   });
 });
 
@@ -208,7 +400,7 @@ test.describe("other roles", () => {
     await expect(tiles(page)).not.toContainText("Architectural fee");
     await expect(page.getByRole("region", { name: "Hours vs budget" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Edit project" })).toHaveCount(0);
-    expect(await page.content()).not.toMatch(/feeCents|18600000|rateOverrideCents/);
+    expect(await page.content()).not.toMatch(/feeCents|rateOverrideCents|rateCents|budgetHours/);
     await page.goto(url("/phases"));
     await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
   });

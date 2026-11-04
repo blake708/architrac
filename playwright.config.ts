@@ -16,6 +16,9 @@ export default defineConfig({
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
+  // Locally every browser shares one dev server; more than 4 at once makes
+  // it slow enough for tests to time out. CI sets its own.
+  workers: process.env.CI ? undefined : 4,
   reporter: process.env.CI ? "github" : "list",
   // Creates throwaway test people and firms in the Clerk development instance
   // and dev database, and removes them afterwards (tests/e2e/support).

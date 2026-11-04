@@ -65,10 +65,16 @@ export default async function globalSetup() {
       FirmKey,
       (typeof FIRMS)[FirmKey],
     ][]) {
-      const org = await clerk.organizations.createOrganization({
-        name: f.name,
-        createdBy: clerkUserIds[creatorOf(key)],
-      });
+      const org = await clerk.organizations
+        .createOrganization({
+          name: f.name,
+          createdBy: clerkUserIds[creatorOf(key)],
+        })
+        .catch((err: { errors?: { longMessage?: string; message?: string }[] }) => {
+          // Say which test firm Clerk refused, and why.
+          const why = err.errors?.map((e) => e.longMessage ?? e.message).join("; ");
+          throw new Error(`Couldn't create test firm ${key} (${f.name}): ${why ?? err}`);
+        });
       orgIds[key] = org.id;
       const slug = `e2e-${key}-${randomBytes(3).toString("hex")}`;
       const firm = await pool.query<{ id: string }>(

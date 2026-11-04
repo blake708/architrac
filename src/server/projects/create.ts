@@ -17,6 +17,8 @@ import {
   type SettingsActor,
   isUniqueViolation,
 } from "@/server/settings/common";
+import { todayIn } from "@/lib/format";
+import { billRates, writePhaseMix } from "./roles";
 import { activePeople, pmChoices, principalChoices } from "./view";
 
 // createProject (projects-list spec, "Save"). Owners, admins and PMs.
@@ -36,6 +38,7 @@ export type CreateProjectResult = ActionResult<string, { id: string; number: str
 export async function createProjectCore(
   actor: SettingsActor,
   raw: unknown,
+  timezone = "America/New_York",
 ): Promise<CreateProjectResult> {
   if (!can(actor.member, "projects.create")) return { ok: false, error: PROJECT_MESSAGES.forbidden };
   const parsed = createProjectSchema.safeParse(raw);
@@ -97,7 +100,7 @@ export async function createProjectCore(
         .values({ firmId: actor.firmId, ...p, createdBy: actor.userId })
         .returning({ id: projects.id, number: projects.number });
 
-      await db.insert(projectPhases).values(
+      const created = await db.insert(projectPhases).values(
         phases.map((x, i) => ({
           firmId: actor.firmId,
           projectId: project.id,
@@ -109,8 +112,19 @@ export async function createProjectCore(
           feeCents: x.feeCents,
           budgetHours: String(x.budgetHours),
           status: p.status === "active" && i === 0 ? ("current" as const) : ("upcoming" as const),
+          budgetHoursManual: x.budgetHoursManual,
         })),
-      );
+      ).returning({ id: projectPhases.id, sortOrder: projectPhases.sortOrder });
+
+      // Role mixes: today's bill rates and the hours they give are saved.
+      if (phases.some((x) => x.mix.length)) {
+        const { roles } = await billRates(db, actor.firmId, todayIn(timezone));
+        const rates = new Map(roles.map((r) => [r.id, r.billCents]));
+        for (const row of created) {
+          const x = phases[row.sortOrder - 1];
+          if (x.mix.length) await writePhaseMix(db, actor.firmId, row.id, x.feeCents, x.mix, rates);
+        }
+      }
 
       const members = [{ membershipId: p.pmMembershipId, projectRole: "PM" }];
       if (p.principalMembershipId !== p.pmMembershipId)

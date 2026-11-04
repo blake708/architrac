@@ -21,7 +21,8 @@ import { archivedAt, id, timestamps } from "./columns";
 import { companies, contacts } from "./contacts";
 import { feeType, phaseStatus, projectStatus, scopeKind } from "./enums";
 import { firms } from "./firms";
-import { memberships, users } from "./people";
+import { phaseTemplates } from "./firm-setup";
+import { firmRoles, memberships, users } from "./people";
 
 // Projects and their phases (projects-list spec, milestone 1.4). Every link
 // stays inside one firm (composite keys), so Firm A can never point at
@@ -123,6 +124,10 @@ export const projectPhases = pgTable(
     endDate: date("end_date"),
     /** For fixed-fee billing; the PM sets it. 2500 = 25%. */
     percentCompleteBp: integer("percent_complete_bp").notNull().default(0),
+    /** Budget hours were typed in, so fee changes and role mixes leave them alone. */
+    budgetHoursManual: boolean("budget_hours_manual").notNull().default(false),
+    /** An additional service beyond the base contract (invoices can group these, 1.8). */
+    isAdditionalService: boolean("is_additional_service").notNull().default(false),
     ...timestamps,
     archivedAt: archivedAt(),
   },
@@ -256,5 +261,86 @@ export const consultants = pgTable(
     }),
     check("consultants_fee_nonneg", sql`${t.feeCents} >= 0`),
     check("consultants_markup_range", sql`${t.markupBp} between 0 and 10000`),
+  ],
+);
+
+/**
+ * A default phase's role mix (Settings → Phases & fees): each role's share
+ * of the phase fee. Copied to new projects. Shares add up to 100%.
+ */
+export const phaseTemplateRoles = pgTable(
+  "phase_template_roles",
+  {
+    id: id(),
+    firmId: uuid("firm_id")
+      .notNull()
+      .references(() => firms.id),
+    phaseTemplateId: uuid("phase_template_id").notNull(),
+    firmRoleId: uuid("firm_role_id").notNull(),
+    /** Share of the phase fee, 3000 = 30%. */
+    shareBp: integer("share_bp").notNull(),
+    sortOrder: smallint("sort_order").notNull().default(0),
+    ...timestamps,
+    archivedAt: archivedAt(),
+  },
+  (t): PgTableExtraConfigValue[] => [
+    uniqueIndex("phase_template_roles_one_active")
+      .on(t.phaseTemplateId, t.firmRoleId)
+      .where(sql`${t.archivedAt} is null`),
+    index("phase_template_roles_template_idx").on(t.firmId, t.phaseTemplateId),
+    foreignKey({
+      name: "phase_template_roles_template_same_firm_fk",
+      columns: [t.firmId, t.phaseTemplateId],
+      foreignColumns: [phaseTemplates.firmId, phaseTemplates.id],
+    }),
+    foreignKey({
+      name: "phase_template_roles_role_same_firm_fk",
+      columns: [t.firmId, t.firmRoleId],
+      foreignColumns: [firmRoles.firmId, firmRoles.id],
+    }),
+    check("phase_template_roles_share_range", sql`${t.shareBp} between 0 and 10000`),
+  ],
+);
+
+/**
+ * A project phase's role mix. The role's bill rate and hours are saved on
+ * the day of the edit (Blake, 2026-11-03), so a later rate change doesn't
+ * quietly move the budget. Hours = share × phase fee ÷ rate, to the quarter.
+ */
+export const projectPhaseRoles = pgTable(
+  "project_phase_roles",
+  {
+    id: id(),
+    firmId: uuid("firm_id")
+      .notNull()
+      .references(() => firms.id),
+    projectPhaseId: uuid("project_phase_id").notNull(),
+    firmRoleId: uuid("firm_role_id").notNull(),
+    shareBp: integer("share_bp").notNull(),
+    /** The role's bill rate when the hours were worked out (0 = no rate then). */
+    rateCents: bigint("rate_cents", { mode: "number" }).notNull().default(0),
+    hours: numeric("hours", { precision: 8, scale: 2 }).notNull().default("0"),
+    sortOrder: smallint("sort_order").notNull().default(0),
+    ...timestamps,
+    archivedAt: archivedAt(),
+  },
+  (t): PgTableExtraConfigValue[] => [
+    uniqueIndex("project_phase_roles_one_active")
+      .on(t.projectPhaseId, t.firmRoleId)
+      .where(sql`${t.archivedAt} is null`),
+    index("project_phase_roles_phase_idx").on(t.firmId, t.projectPhaseId),
+    foreignKey({
+      name: "project_phase_roles_phase_same_firm_fk",
+      columns: [t.firmId, t.projectPhaseId],
+      foreignColumns: [projectPhases.firmId, projectPhases.id],
+    }),
+    foreignKey({
+      name: "project_phase_roles_role_same_firm_fk",
+      columns: [t.firmId, t.firmRoleId],
+      foreignColumns: [firmRoles.firmId, firmRoles.id],
+    }),
+    check("project_phase_roles_share_range", sql`${t.shareBp} between 0 and 10000`),
+    check("project_phase_roles_rate_nonneg", sql`${t.rateCents} >= 0`),
+    check("project_phase_roles_hours_nonneg", sql`${t.hours} >= 0`),
   ],
 );

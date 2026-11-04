@@ -11,7 +11,7 @@ import { loadNewProjectOptions } from "./view";
 export const getProjectPage = cache(async (id: string) => {
   const { firm, membership } = await requireSession();
   const viewer = { membershipId: membership.id, appRole: membership.appRole, active: membership.active };
-  return withFirm(firm.id, (db) => loadProjectPage(db, viewer, id));
+  return withFirm(firm.id, (db) => loadProjectPage(db, viewer, id, { id: firm.id, timezone: firm.timezone }));
 });
 
 /** Choices for Edit project (only loaded for people who can edit). */

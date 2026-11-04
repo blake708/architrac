@@ -34,7 +34,9 @@ export async function cleanE2eData() {
     limit: 100,
   });
   for (const org of orgs.data) {
-    if (org.name.startsWith(E2E_PREFIX)) {
+    // A test may rename its firm (settings.spec sets the display name "TMG"),
+    // so also match the slug, which keeps the "e2e-" from the original name.
+    if (org.name.startsWith(E2E_PREFIX) || org.slug?.startsWith("e2e-")) {
       await clerk.organizations.deleteOrganization(org.id);
     }
   }
@@ -66,6 +68,8 @@ export async function cleanE2eData() {
         );
         for (const table of [
           "activity_log",
+          "project_phase_roles",
+          "phase_template_roles",
           "consultants",
           "project_contacts",
           "project_members",

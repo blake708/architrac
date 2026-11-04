@@ -16,12 +16,15 @@ import {
   saveMemberCore,
   updateProjectCore,
 } from "./edit";
+import { addPhaseCore, updatePhasesCore } from "./phases";
+import { saveTemplateMixCore } from "./roles";
 
 // Projects server actions (projects-list spec, Actions). Who is asking comes
 // from the session; createProjectCore checks the role first.
 
 export async function createProject(input: unknown) {
-  const result = await createProjectCore(actorFrom(await requireSession()), input);
+  const session = await requireSession();
+  const result = await createProjectCore(actorFrom(session), input, session.firm.timezone);
   if (result.ok) {
     revalidatePath("/app/projects");
     revalidatePath("/app/contacts");
@@ -69,4 +72,22 @@ export async function addLink(input: unknown) {
 }
 export async function removeLink(input: unknown) {
   return done(idOf(input, "projectId"), await removeLinkCore(actorFrom(await requireSession()), input));
+}
+
+// ---------- Phases (project-detail spec, 1.5 B) ----------
+
+export async function updatePhases(input: unknown) {
+  const session = await requireSession();
+  return done(idOf(input, "projectId"), await updatePhasesCore(actorFrom(session), input, session.firm.timezone));
+}
+export async function addPhase(input: unknown) {
+  const session = await requireSession();
+  return done(idOf(input, "projectId"), await addPhaseCore(actorFrom(session), input, session.firm.timezone));
+}
+
+/** Settings → Phases & fees: a default phase's role mix. */
+export async function saveTemplateMix(input: unknown) {
+  const result = await saveTemplateMixCore(actorFrom(await requireSession()), input);
+  if (result.ok) revalidatePath("/app/settings/phases");
+  return result;
 }
