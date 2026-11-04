@@ -129,24 +129,52 @@ test.describe("owner", () => {
     await expect(tiles(page)).toContainText("Hours0 hof 1,240 budgeted");
     await expect(tiles(page)).toContainText("Construction estimate$6.2M$310 / SF · 20,000 SF");
 
-    const hours = page.getByRole("region", { name: "Hours vs budget" });
-    await expect(hours.locator("tfoot")).toContainText("0 / 1,240 h");
-    await expect(hours.locator("tfoot")).toContainText("1,240 h");
-    // Hourly phases: no bar, "Hourly" under Remaining.
-    const co = hours.locator('tr[data-phase="CO"]');
+    // Owner/admin get the Project snapshot, not Hours vs budget.
+    await expect(page.getByRole("region", { name: "Hours vs budget" })).toHaveCount(0);
+    const snap = page.getByRole("region", { name: "Project snapshot" });
+    const total = snap.getByTestId("snapshot-total");
+    await expect(total).toContainText("0 / 1,240 h");
+    await expect(total).toContainText("$186,000");
+    // Hourly phases: no bar.
+    const co = snap.locator('tbody[data-phase="CO"]');
     await expect(co.getByRole("img")).toHaveCount(0);
     await expect(co).toContainText("Hourly");
     // Every bar starts in the same place and is the same width.
     const boxes = await Promise.all(
-      ["PD", "SD", "DD", "CD", "PRM", "CA"].map((c) => hours.locator(`tr[data-phase="${c}"]`).getByRole("img").boundingBox()),
+      ["PD", "SD", "DD", "CD", "PRM", "CA"].map((c) => snap.locator(`tbody[data-phase="${c}"]`).getByRole("img").boundingBox()),
     );
     expect(new Set(boxes.map((b) => Math.round(b!.x))).size).toBe(1);
     expect(new Set(boxes.map((b) => Math.round(b!.width))).size).toBe(1);
+    // No time yet: nothing billed, no cost, profit "Not started", projected from the budget.
+    const cd = snap.locator('tbody[data-phase="CD"]');
+    await expect(cd).toContainText("Not started");
+    await expect(cd).toContainText(/\d+% margin/);
+
+    // The overhead switch starts at the firm default (on), flips the cost column and the address, without a reload.
+    const sw = snap.getByRole("switch", { name: "Include overhead" });
+    await expect(sw).toHaveAttribute("aria-checked", "true");
+    await expect(snap.getByTestId("cost-head")).toHaveText("Cost + overhead");
+    await expect(snap).toContainText("60% of labor");
+    let requests = 0;
+    page.on("request", (r) => {
+      if (r.url().includes(projectId)) requests++;
+    });
+    await sw.click();
+    await expect(snap.getByTestId("cost-head")).toHaveText("Labor cost");
+    await expect(page).toHaveURL(/overhead=off/);
+    await expect(snap).toContainText("Overhead isn't included, so true profit is lower.");
+    expect(requests).toBe(0);
+
+    // Clicking a phase shows the note (no people yet).
+    await cd.getByRole("button", { name: "Construction Documents" }).click();
+    await expect(cd.getByRole("button", { name: "Construction Documents" })).toHaveAttribute("aria-expanded", "true");
+    await expect(cd).toContainText("No time logged yet. Budget: 434 h at a planned");
+    await page.reload();
+    await expect(snap.getByTestId("cost-head")).toHaveText("Labor cost");
+
     // The tab bar only scrolls sideways.
     const nav = tabs(page).locator("ul");
     expect(await nav.evaluate((el) => el.scrollHeight - el.clientHeight)).toBe(0);
-    await hours.getByRole("button", { name: "Show hours by person for Schematic Design" }).click();
-    await expect(hours.getByText("No time logged yet")).toBeVisible();
 
     // Release 1 shows only these tabs.
     await expect(tabs(page).getByRole("link")).toHaveText(["Overview", "Phases & fees", "Team"]);
@@ -385,6 +413,17 @@ test.describe("phases", () => {
 });
 
 test.describe("other roles", () => {
+  test("the PM: Hours vs budget, never cost or profit", async ({ page }) => {
+    await signInAs(page, "thPm", url());
+    const hours = page.getByRole("region", { name: "Hours vs budget" });
+    await expect(hours.getByTestId("hours-total")).toContainText("$203,775");
+    await expect(hours.locator('tbody[data-phase="CD"]')).toContainText("$70,000");
+    await hours.getByRole("button", { name: "Schematic Design" }).click();
+    await expect(hours.getByText("No time logged yet")).toBeVisible();
+    await expect(page.getByRole("region", { name: "Project snapshot" })).toHaveCount(0);
+    expect(await page.content()).not.toMatch(/Cost \+ overhead|Labor cost|Profit|Include overhead|costCents|plannedRate/);
+  });
+
   test("the PM: no rate overrides anywhere", async ({ page }) => {
     await signInAs(page, "thPm", url("/team"));
     await expect(page.getByRole("list", { name: "Firm team" })).not.toContainText("Rate override");
@@ -399,6 +438,7 @@ test.describe("other roles", () => {
     await expect(page.getByTestId("project-health")).toHaveCount(0);
     await expect(tiles(page)).not.toContainText("Architectural fee");
     await expect(page.getByRole("region", { name: "Hours vs budget" })).toHaveCount(0);
+    await expect(page.getByRole("region", { name: "Project snapshot" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Edit project" })).toHaveCount(0);
     expect(await page.content()).not.toMatch(/feeCents|rateOverrideCents|rateCents|budgetHours/);
     await page.goto(url("/phases"));

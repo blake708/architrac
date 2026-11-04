@@ -18,14 +18,14 @@ Decisions Blake needs to make. Each has a recommendation; the specs currently fo
 | 5 | Invoice numbering at year end: does the prefix change to "2027-" automatically, and does the counter reset to 1? | Prefix rolls over automatically; counter keeps counting (no reset), which avoids duplicate-looking numbers | invoicing | |
 | 6 | Email provider: Postmark or Resend? | Postmark: best deliverability for invoices | invoicing, ARCHITECTURE | |
 | 7 | Must phase fee shares total 100% before a phase template can be saved? (The mockup only warns.) | Yes, block saving | settings-rates-phases | **Block saving** (Blake, 2026-11-02). Only default phases count; optional phases have no share |
-| 8 | Project profit to date: based on **billed** (mockup) or **earned** (% complete × fee)? | Show both in Release 2: earned for profitability, billed for cash. Release 1 has no profit display | project-snapshot | |
+| 8 | Project profit to date: based on **billed** (mockup) or **earned** (% complete × fee)? | Show both in Release 2: earned for profitability, billed for cash. Release 1 has no profit display | project-snapshot | **Billed**, as in the mockup (Blake, 2026-11-04) |
 | 9 | Project health: does a phase that finished over budget keep the project "At risk" until it closes? | No: flag it at phase level only; project health looks at open phases | projects-list || **Open phases only** (Blake, 2026-11-03): a finished phase that ran over is flagged on the phase (1.5), not the project |
 | 10 | A firm with one owner: who approves that person's overhead time? | A firm setting "allow self-approval of own time" (off by default) | timesheet-approval | |
 | 11 | Do contractors get missing-timesheet reminders? | Yes, if their membership is active | timesheet-approval | |
 | 12 | Retainers in Release 1 handled as a negative adjustment line on an invoice? | Yes, until Accounting (Release 2) adds proper retainer tracking | invoicing | |
 | 13 | Historical invoices (e.g. 2026-097, 2026-109, 2026-121): how do they get in so "previously billed" is right? | Import them from Bubble as `sent`/`paid` invoices with lines by phase, during milestone 1.11 | invoicing, migration | |
 | 14 | QuickBooks: confirm TMG's setup (customers = clients with jobs, not QBO Projects), the sync start date, income accounts/items, and whether "custom transaction numbers" is on | Clients mode; start at cut-over month | quickbooks-sync | |
-| 15 | Show Close Out phase ($0 fee) in the snapshot? | Show it; hours on Close Out are real cost | project-snapshot | |
+| 15 | Show Close Out phase ($0 fee) in the snapshot? | Show it; hours on Close Out are real cost | project-snapshot | **Shown** (built that way in 1.5 C, 2026-11-04) |
 | 16 | Over-hours flag on timesheets at 44 h (40 + 4): fixed or a firm setting? | Firm setting, default 44 | timesheet | |
 | 17 | Are notes required on billable time? | Optional in Release 1 | timesheet | |
 | 18 | Settings: Save button or save each change instantly? | Mixed | settings-firm, settings-rates-phases | **Mixed** (Blake, 2026-11-02): instant everywhere except Phases & fees (100% rule) and the Roles & rates table (effective date) |
