@@ -190,7 +190,7 @@ async function usedHours(db: TenantDb, projectId: string): Promise<{ phaseId: st
 
 /** This project's counted invoice lines and open balance. Invoices arrive in 1.8. */
 // eslint-disable-next-line @typescript-eslint/no-unused-vars -- reads invoices from 1.8
-async function invoiceFacts(db: TenantDb, projectId: string) {
+export async function invoiceFacts(db: TenantDb, projectId: string) {
   return { lines: [] as Parameters<typeof projectBilled>[1], outstandingCents: 0 };
 }
 

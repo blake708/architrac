@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { HoursTable } from "@/components/projects/detail/hours-table";
+import { ProjectSnapshot } from "@/components/projects/detail/project-snapshot";
 import { Avatar } from "@/components/ui/avatar";
 import { Card } from "@/components/ui/card";
 import { KpiTile } from "@/components/ui/kpi-tile";
@@ -13,15 +14,24 @@ import {
   pctOfConstruction,
 } from "@/lib/calc/project-detail";
 import { formatDate, formatMoney, formatMoneyShort } from "@/lib/format";
-import { getProjectPage } from "@/server/projects/page-cache";
+import { getProjectPage, getProjectSnapshot } from "@/server/projects/page-cache";
 
-// Overview tab (project-detail spec, Data shown → Overview). Money tiles and
-// the hours table are only in the financial view; the loader leaves the
-// numbers out for everyone else.
-export default async function ProjectOverview({ params }: { params: Promise<{ id: string }> }) {
+// Overview tab (project-detail spec, Data shown → Overview). Money tiles are
+// only in the financial view. Owner/admin get the Project snapshot (profit by
+// phase); a PM on their own project gets Hours vs budget; staff get neither.
+export default async function ProjectOverview({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const { id } = await params;
   const p = await getProjectPage(id);
   if (!p) notFound();
+  const snapshot = await getProjectSnapshot(id);
+  const oh = (await searchParams).overhead;
+  const overheadOn = oh === "on" ? true : oh === "off" ? false : (snapshot?.includeOverheadDefault ?? false);
 
   const phases = p.phases.filter((x) => x.money);
   const used = phases.reduce((n, x) => n + x.money!.usedHours, 0);
@@ -63,7 +73,11 @@ export default async function ProjectOverview({ params }: { params: Promise<{ id
         />
       </section>
 
-      {p.financial && <HoursTable projectId={p.id} phases={p.phases} />}
+      {snapshot ? (
+        <ProjectSnapshot projectId={p.id} data={snapshot} overheadOn={overheadOn} />
+      ) : (
+        p.financial && <HoursTable projectId={p.id} phases={p.phases} />
+      )}
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-[2fr_1fr]">
         <Card title="Project information">
