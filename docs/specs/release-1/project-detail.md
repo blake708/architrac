@@ -66,7 +66,7 @@ Tabs not built yet are **not rendered at all** (no disabled tabs). Later release
 | KPI "Billed" | `projectBilled` (projects-list Rule 2) | Note: `{billedPct}% of fee · {outstanding} outstanding`. Outstanding = Σ (`invoices.total_cents − amount_paid_cents`) for this project's invoices with status `sent` or `partially_paid`. MOB: "20% of fee · $11,160 outstanding". If 0: "· nothing outstanding" |
 | KPI "Hours" | Σ used hours (Rule 2) | Value "323 h". Note: "of 1,240 budgeted", plus ` · {code} ran {n} h over` for the phase with the largest overage (tie → first by sort_order) when any phase is over. MOB: "of 1,240 budgeted · SD ran 15 h over" |
 | KPI "Construction estimate" | `construction_cost_cents` | `formatMoneyShort` → "$6.2M". Note: `${round(cost/sf)} / SF · {sf} SF` when SF set. MOB: "$310 / SF · 20,000 SF". All roles see this tile |
-| **Hours vs budget** card | Rule 2–4 | Financial view only. Columns: Phase (name + status Badge) · Hours used / budget (bar 230px + "58 / 62 h" left and "94%" right) · Remaining · % complete. Total row. Footer link "Phases & fees" → `/phases` |
+| **Hours vs budget** card | Rule 2–4 | PMs on their own projects (owner/admin see the Project snapshot instead, 1.5 C). Styled like the snapshot (Blake, 2026-11-04): Phase (chevron, name, status Badge under it) · Hours · used / budget (bar, then "58 / 62 h" left and "94%" right) · Fee · Billed ("{pct}% of fee") · Remaining · % complete. Total row, legend footer, "Phases & fees" link in the header |
 | Row expand (chevron, `aria-expanded`) | Counted entries grouped by membership | Sub-table: Avatar + `memberships.title`, hours. **No rates or cost** (that's the R2 snapshot) |
 | Project information | `projects` + joins | `<dl>` grid: Client, Client contact ("First Last · title"), Address (full), Building ("20,000 SF"), Start date, Target end, Principal in charge, Project manager. Dates `MMM D, YYYY`. Null → "—" |
 | Team (mini card) | `project_members` (active) + used hours per member on this project | Avatar, `memberships.title`, "{h} h logged" (hours hidden in basic view). "View all" → `/team` |
@@ -178,7 +178,7 @@ All math lives in `src/lib/calc/`. Money is in cents; rounding is half away from
 - **Save errors:** row errors appear in red under the input. Edit mode stays open with values kept. A banner summarizes "2 phases need attention".
 
 ## Out of scope (for this release)
-- **Project snapshot** (hours, billed, cost, profit by phase, overhead switch): **Release 2**, `docs/specs/release-2/project-snapshot.md`. In R2 it replaces the Hours vs budget card for owner/admin; PMs keep the R1 card.
+- **Project snapshot** (hours, billed, cost, profit by phase, overhead switch): built early in 1.5 C (Blake, 2026-11-04), `docs/specs/release-2/project-snapshot.md`. It replaces the Hours vs budget card for owner/admin; PMs keep the R1 card.
 - **Client portal tab**: **Release 2** (portal_access, portal_requests, shared_documents).
 - **Documents tab**: **Release 2** (`documents`).
 - **Schedule tab** and the Overview "Coming up" card and "Next milestone" KPI: **Release 3** (`tasks`), mockup `Main.dc.html`.

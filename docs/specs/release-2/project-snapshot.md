@@ -2,10 +2,10 @@
 
 | | |
 |---|---|
-| **Release** | 2 (written in Release 1 so the math is fixed early) |
+| **Release** | Built early in 1.5 C (Blake, 2026-11-04); originally Release 2 |
 | **Route** | Section on the Overview tab: `/app/projects/[projectId]`, anchor `#snapshot` |
 | **Mockup** | `mockup/Project.dc.html`: "Project snapshot" section on the Overview tab (JS block "Project snapshot") |
-| **Status** | Draft |
+| **Status** | Built (cost, billed and profit to date need 1.6 time and 1.8 invoices) |
 
 ## Purpose
 Principals use the snapshot to see, phase by phase, how many hours went in, what was billed, what that labor cost and whether the project is making money. They can flip between labor-only cost and true cost with firm overhead. It is the main profitability view for a project.
@@ -100,7 +100,7 @@ Notation:
    - Projected margin = `rnd(projected × 100 / fee_cents)`.
    - When `fee_cents = 0`, show "—" for both, with the note "No fee" (e.g. Close Out, or an hourly phase with no estimate).
    - For NTE phases the fee is the cap. For hourly phases it is the estimate.
-9. **Planned cost rate** = `project_phases.planned_cost_rate_cents` when it is set. Otherwise fall back, in order:
+9. **Planned cost rate (as built, Blake 2026-11-04):** from the phase's role mix, Σ(role budget hours × the role's current cost rate) ÷ Σ role hours. A phase with no roles uses the firm average cost rate (each role's current cost rate weighted by its active people), and the detail note says "(estimated)". No `planned_cost_rate_cents` column. *Original draft, kept for reference:* `project_phases.planned_cost_rate_cents` when it is set. Otherwise fall back, in order:
    - (a) the phase's actual blended rate `laborCost/used` (F = 10000), if used > 0;
    - (b) the project's blended rate Σ laborCost / Σ used, if > 0;
    - (c) the simple mean of current `cost_rate_cents` for active memberships with a rate.
@@ -222,18 +222,18 @@ How the projected values were reached (off):
 ## Acceptance tests
 Unit tests (`src/lib/calc/snapshot.test.ts`) use fixture F2 from `release-1/project-detail.md`, plus `planned_cost_rate_cents` PD 7000, SD 5800, DD 5200, CD 5000, Permitting 6000, CA 6600.
 
-- [ ] Given F2 with the switch off, when the snapshot is computed, then the phase costs are 417,200 / 1,144,600 / 392,000 / 0 / 0 / 0 / 0, and the total cost is 1,953,800.
-- [ ] Given F2 with the switch on (OH 6000), then the phase costs are 667,520 / 1,831,360 / 627,200 and the total cost is 3,126,080.
-- [ ] Given F2 with the switch off, then profit to date is PD 512,800 (55%), SD 1,645,400 (59%), DD −392,000 ("Work not billed yet"), and CD "Not started"; the total profit is 1,766,200.
-- [ ] Given F2 with the switch on, then profit to date is PD 262,480 (28%), SD 958,640 (34%), DD −627,200; the total profit is 593,920.
-- [ ] Given F2 with the switch off, then projected is PD 512,800 final, SD 1,645,400 final, DD 2,978,800 (64%), CD 4,340,000 (67%), Permitting 558,000 (60%), CA 1,562,400 (56%), CO "—"; the total is 11,597,400 (62%).
-- [ ] Given F2 with the switch on, then projected is DD 1,976,080 (42%), CD 3,038,000 (47%), Permitting 334,800 (36%), CA 825,840 (30%); the total is 7,395,840 (40%).
-- [ ] Given F2, then for SD the person costs sum exactly to the phase cost in both modes.
-- [ ] Given F2, then the SD remaining hours are 0 even though used > budget, because the phase is complete.
-- [ ] Given DD changed to 320 h used (over its 310 h budget) and still current, then remaining = 0 and the note reads "10 h over budget and still in progress."
-- [ ] Given one entry of 0.25 h at 4401¢, then the cost is 1,100 off and 1,760 on.
-- [ ] Given `rnd(-2.5)`, then the result is −3.
-- [ ] Given DD has `planned_cost_rate_cents = null`, then the planned rate falls back to 392,000 / 64 = 6,125¢, and the note says "(estimated)".
+- [x] Given F2 with the switch off, when the snapshot is computed, then the phase costs are 417,200 / 1,144,600 / 392,000 / 0 / 0 / 0 / 0, and the total cost is 1,953,800.
+- [x] Given F2 with the switch on (OH 6000), then the phase costs are 667,520 / 1,831,360 / 627,200 and the total cost is 3,126,080.
+- [x] Given F2 with the switch off, then profit to date is PD 512,800 (55%), SD 1,645,400 (59%), DD −392,000 ("Work not billed yet"), and CD "Not started"; the total profit is 1,766,200.
+- [x] Given F2 with the switch on, then profit to date is PD 262,480 (28%), SD 958,640 (34%), DD −627,200; the total profit is 593,920.
+- [x] Given F2 with the switch off, then projected is PD 512,800 final, SD 1,645,400 final, DD 2,978,800 (64%), CD 4,340,000 (67%), Permitting 558,000 (60%), CA 1,562,400 (56%), CO "—"; the total is 11,597,400 (62%).
+- [x] Given F2 with the switch on, then projected is DD 1,976,080 (42%), CD 3,038,000 (47%), Permitting 334,800 (36%), CA 825,840 (30%); the total is 7,395,840 (40%).
+- [x] Given F2, then for SD the person costs sum exactly to the phase cost in both modes.
+- [x] Given F2, then the SD remaining hours are 0 even though used > budget, because the phase is complete.
+- [x] Given DD changed to 320 h used (over its 310 h budget) and still current, then remaining = 0 and the note reads "10 h over budget and still in progress."
+- [x] Given one entry of 0.25 h at 4401¢, then the cost is 1,100 off and 1,760 on.
+- [x] Given `rnd(-2.5)`, then the result is −3.
+- [x] *(Replaced by Rule 9 as built)* Given a phase with roles, the planned rate is the hours-weighted role cost rate; with no roles it is the firm average and the note says "(estimated)" (`snapshot.test.ts`, `snapshot.db.test.ts`).
 - [ ] Given a submitted (unapproved) 2 h entry by KL on DD with no frozen rate, then the cost uses KL's rate effective on the work date (4400) and DD's cost becomes 400,800 off.
 - [ ] Given a submitted entry whose person has no rate, then its hours count, its cost is 0, and the footer warns "2 h have no cost rate".
 
@@ -246,8 +246,8 @@ End-to-end (Playwright):
 - [ ] Given F2, then the Close Out row is shown with Fee $0 and Projected "—", and the totals still equal the table above.
 
 ## Open questions
-1. **Data model addition needed:** `project_phases.planned_cost_rate_cents bigint null`. The mockup uses a "planned blended cost rate for remaining hours" (PLAN_RATE) per phase. Confirm the fallback order in Rule 9, or whether to require the field.
-2. Should profit to date use **billed**, as the mockup does (which makes DD look −$6,272 until it is invoiced), or **earned** (fixed: fee × % complete)? Earned gives DD at 30% = $13,950 earned, so a +$7,678 profit with overhead. This spec follows the mockup and uses billed.
+1. **Decided (Blake, 2026-11-04): no column; planned rate from the phase's roles** (Rule 9). Was: **Data model addition needed:** `project_phases.planned_cost_rate_cents bigint null`. The mockup uses a "planned blended cost rate for remaining hours" (PLAN_RATE) per phase. Confirm the fallback order in Rule 9, or whether to require the field.
+2. **Decided: billed** (Blake, 2026-11-04). Should profit to date use **billed**, as the mockup does (which makes DD look −$6,272 until it is invoiced), or **earned** (fixed: fee × % complete)? Earned gives DD at 30% = $13,950 earned, so a +$7,678 profit with overhead. This spec follows the mockup and uses billed.
 3. Should snapshot cost include project expenses and consultant (vendor bill) costs once Accounting exists, or stay labor-only?
 4. Should the overhead switch remember each user's last choice (`memberships` preference), or always start at the firm default? This spec uses the firm default plus the URL.
 5. Written-off invoices count as billed (matching `invoicing.md`), which overstates profit when a write-off happens. Should a written-off balance be subtracted from billed in the snapshot? This ties to Release 2 Accounting write-off handling.
