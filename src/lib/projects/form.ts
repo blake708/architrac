@@ -79,6 +79,8 @@ export const PROJECT_MESSAGES = {
   notLinkable: "Pick a contractor, agency, vendor or other company",
   badCompanyContact: "That contact doesn't work for this company",
   alreadyLinked: "That company is already on this project",
+  codeUsed: "Another phase already uses this code",
+  consultantRow: "Fix the consultant marked in red",
 } as const;
 
 /** "$190,000" when whole dollars, "$1,000.01" otherwise. */
@@ -168,12 +170,26 @@ const projectFields = {
     targetEndDate: isoDate,
 };
 
+const pct2 = z.number().int().min(0).max(10_000);
+
+/** A consultant's fee on a project (also added on New project, Blake 2026-11-04). */
+export const consultantRowSchema = z.object({
+  companyId: z.uuid({ error: "Pick a consultant" }),
+  contactId: z.uuid().nullable(),
+  discipline: z.string().trim().min(1, { error: "Pick a discipline" }).max(40, { error: PROJECT_MESSAGES.long }),
+  feeCents: cents,
+  markupBp: pct2,
+  billedThrough: z.boolean(),
+});
+
 export const createProjectSchema = z
   .object({
     ...projectFields,
     totalFeeCents: cents,
     totalBudgetHours: quarterHours,
     phases: z.array(phaseRowSchema).max(50),
+    /** Consultant fees, separate from the architectural fee. */
+    consultants: z.array(consultantRowSchema).max(30).default([]),
   })
   .superRefine((v, ctx) => {
     const issue = (path: string, message: string) => ctx.addIssue({ code: "custom", path: [path], message });
@@ -181,6 +197,8 @@ export const createProjectSchema = z
       issue("targetEndDate", PROJECT_MESSAGES.dates);
     const problem = phaseProblem(v);
     if (problem) issue("phases", problem);
+    const codes = v.phases.map((p) => p.code.trim().toLowerCase());
+    if (new Set(codes).size !== codes.length) issue("phases", PROJECT_MESSAGES.codeUsed);
   });
 export type CreateProjectInput = z.input<typeof createProjectSchema>;
 
@@ -196,7 +214,6 @@ export type UpdateProjectInput = z.input<typeof updateProjectSchema>;
 export const DISCIPLINES = ["Civil", "Structural", "MEP", "Landscape"];
 export const PROJECT_ROLES = ["Principal", "PM", "PA", "Designer", "Interior designer"];
 
-const pct2 = z.number().int().min(0).max(10_000);
 
 export const memberSchema = z.object({
   /** Set when editing an existing team row. */
@@ -208,15 +225,9 @@ export const memberSchema = z.object({
   billRateOverrideCents: cents.nullable().optional(),
 });
 
-export const consultantSchema = z.object({
+export const consultantSchema = consultantRowSchema.extend({
   id: z.uuid().nullable(),
   projectId: z.uuid(),
-  companyId: z.uuid({ error: "Pick a consultant" }),
-  contactId: z.uuid().nullable(),
-  discipline: z.string().trim().min(1, { error: "Pick a discipline" }).max(40, { error: PROJECT_MESSAGES.long }),
-  feeCents: cents,
-  markupBp: pct2,
-  billedThrough: z.boolean(),
 });
 
 export const linkSchema = z.object({

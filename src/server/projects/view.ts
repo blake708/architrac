@@ -2,6 +2,7 @@ import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import {
   companies,
   contacts,
+  firmSettings,
   memberships,
   phaseTemplates,
   projectMembers,
@@ -27,6 +28,7 @@ import {
 import { blendedBillRateCents } from "@/lib/calc/rates";
 import { todayIn } from "@/lib/format";
 import { loadRates } from "@/server/settings/rates";
+import { type BenchmarkSources, loadBenchmarkSources } from "./estimate";
 import { templateMixes } from "./roles";
 import { initials } from "@/lib/initials";
 import type { ScopeKind } from "@/lib/projects/form";
@@ -251,6 +253,9 @@ export type TemplateRow = {
   name: string;
   feeType: FeeType;
   shareBp: number;
+  description: string | null;
+  /** Optional phases start unchecked on New project (Blake, 2026-11-04). */
+  isOptional: boolean;
   /** Default role mix (Settings → Phases & fees). */
   mix: { firmRoleId: string; shareBp: number }[];
 };
@@ -267,6 +272,9 @@ export type NewProjectOptions = {
   blendedBillRateCents: number | null;
   /** Billable roles with today's bill rate (for role mixes). Never cost. */
   roles: { id: string; name: string; billCents: number }[];
+  /** Ranges for the estimate on Phases & fees (ranges only, never one project). */
+  benchmarks: BenchmarkSources;
+  defaultConsultantMarkupBp: number;
 };
 
 /** Active people in the firm with their app role and principal flag. */
@@ -333,10 +341,12 @@ export async function loadNewProjectOptions(
         name: phaseTemplates.name,
         feeType: phaseTemplates.defaultFeeType,
         shareBp: phaseTemplates.defaultFeeShareBp,
+        description: phaseTemplates.description,
+        isOptional: phaseTemplates.isOptional,
       })
       .from(phaseTemplates)
-      .where(and(eq(phaseTemplates.isOptional, false), isNull(phaseTemplates.archivedAt)))
-      .orderBy(asc(phaseTemplates.sortOrder)),
+      .where(isNull(phaseTemplates.archivedAt))
+      .orderBy(asc(phaseTemplates.isOptional), asc(phaseTemplates.sortOrder)),
   ]);
 
   const today = todayIn(timezone);
@@ -345,6 +355,8 @@ export async function loadNewProjectOptions(
   // 2026-11-03: PMs may see bill rates; cost stays owner/admin only).
   const rateView = await loadRates(db, firmId, today);
   const mixes = await templateMixes(db);
+  const benchmarks = await loadBenchmarkSources(db);
+  const [settings] = await db.select({ markup: firmSettings.defaultConsultantMarkupBp }).from(firmSettings);
   const blended = blendedBillRateCents(
     rateView.roles.map((r) => ({ billCents: r.billCents, costCents: r.costCents, people: r.people })),
   );
@@ -376,5 +388,7 @@ export async function loadNewProjectOptions(
     templates: templates.map((t) => ({ ...t, feeType: t.feeType as FeeType, mix: mixes.get(t.id) ?? [] })),
     blendedBillRateCents: blended,
     roles: rateView.roles.filter((r) => r.isBillable).map((r) => ({ id: r.id, name: r.name, billCents: r.billCents })),
+    benchmarks,
+    defaultConsultantMarkupBp: settings?.markup ?? 1000,
   };
 }

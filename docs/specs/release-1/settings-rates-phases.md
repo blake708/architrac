@@ -193,6 +193,18 @@ All seeded default phases have `description = null` and `is_optional = false`. N
 - **Error state:** validation errors inline next to the field or list (`#B42318`, 12.5px) plus a summary banner "Fix the highlighted items, then save." Server failure: "Couldn't save. Nothing was changed." The transaction rolls back.
 - **Permission-denied state:** PM/staff → `<AccessDenied>`; direct server-action calls return 403 and write nothing.
 
+### Project type ranges (Settings → Phases, below the phase lists; Blake, 2026-11-04)
+- A card titled "Project type ranges", with the help text "Construction cost per SF and fee as a % of construction. New project uses these until you have 3 similar past projects."
+- Rows: project type (text, with suggestions from the standard and existing types), scope (Any scope / Ground-up / Tenant upfit / Shell building), cost/SF low – high (dollars), fee % low – high, Remove. Plus **Add range** and **Save ranges** (its own button, enabled when something changed; toast "Project type ranges saved").
+- Rules (`src/lib/settings/benchmarks.ts`, checked again on the server):
+  - type 1–60 chars;
+  - cost/SF > $0 and high ≥ low;
+  - fee % 0.01–100 and high ≥ low;
+  - one range per type + scope, ignoring case.
+- Errors show under the row's type.
+- Owner/admin only (`settings.edit`). The list is saved as a whole: removed rows are archived, and every create, update and archive goes to `activity_log` as entity `project_type_benchmark`.
+- Table `project_type_benchmarks` (migration 0009, RLS).
+
 ## Out of scope (for this release)
 - Phase checklist items (mockup "{n} items" links) — needs a checklist table; later release.
 - Per-person rate overrides (`rates.membership_id`) — Release 1 Team spec.

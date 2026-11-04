@@ -26,6 +26,9 @@ export default defineConfig({
   globalTeardown: "./tests/e2e/support/global-teardown.ts",
   // Signing in and first page compiles in dev mode are slow.
   timeout: 60_000,
+  // CI's machine is slower, and saves wait on the database and Clerk: give
+  // every check up to 15 s there (5 s locally, so slow code still shows up).
+  expect: { timeout: process.env.CI ? 15_000 : 5_000 },
   use: {
     baseURL,
     // In CI keep a full trace of any failure (screens, network, clicks).

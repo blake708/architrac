@@ -226,7 +226,7 @@ export async function removeTestFirm(pool: Pool, firm: TestFirm) {
       "update companies set primary_contact_id = null, billing_contact_id = null where firm_id = $1",
       [firm.firmId],
     );
-    for (const t of ["project_phase_roles", "phase_template_roles", "consultants", "project_contacts", "project_members", "project_phases", "projects"])
+    for (const t of ["project_type_benchmarks", "project_phase_roles", "phase_template_roles", "consultants", "project_contacts", "project_members", "project_phases", "projects"])
       await c.query(`delete from ${t} where firm_id = $1`, [firm.firmId]);
     await c.query("delete from contacts where firm_id = $1", [firm.firmId]);
     await c.query("delete from companies where firm_id = $1", [firm.firmId]);
@@ -254,7 +254,7 @@ export async function removeFirmById(pool: Pool, firmId: string) {
       "update companies set primary_contact_id = null, billing_contact_id = null where firm_id = $1",
       [firmId],
     );
-    for (const t of ["project_phase_roles", "phase_template_roles", "consultants", "project_contacts", "project_members", "project_phases", "projects"])
+    for (const t of ["project_type_benchmarks", "project_phase_roles", "phase_template_roles", "consultants", "project_contacts", "project_members", "project_phases", "projects"])
       await c.query(`delete from ${t} where firm_id = $1`, [firmId]);
     await c.query("delete from contacts where firm_id = $1", [firmId]);
     await c.query("delete from companies where firm_id = $1", [firmId]);

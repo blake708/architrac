@@ -75,7 +75,31 @@ Inside the app shell (MenuRail with Projects active, TopHeader title "PROJECTS")
 All filters live in the URL so a filtered list can be bookmarked. The page is a Server Component that reads `searchParams`. Only the search box and the create form are client components.
 
 ## New project flow (`/app/projects/new`)
-A single page with two Cards and a sticky footer holding **Cancel** (secondary, returns to `/app/projects`) and **Create project** (primary).
+*(Changed by Blake, 2026-11-04: two steps.)* A caption shows "Step 1 of 2 · Project and phases" or "Step 2 of 2 · Fees, roles and consultants". The sticky footer holds **Cancel** + **Next: fees** on step 1, and **Back** + **Create project** on step 2. Back keeps everything typed.
+
+**Step 1** has two columns: **Project details** (Card 1 below) on the left, and a **Phases** card on the right. The Phases card is a checklist of every non-archived `phase_templates` row: default phases first and checked, then optional phases (e.g. Additional Services) unchecked with an "Optional" tag. Each item shows code, name and description. **Next** runs the server's own checks on the project fields and needs at least one phase checked ("Include at least one phase"). A field's error clears as soon as it's edited. A server error on a step-1 field (e.g. "Number already used") returns you to step 1.
+
+**Step 2** has, in order: the **Estimate** card, **Phases & fees** (Card 2 below, checked phases only) and **Consultants**.
+
+### Estimate (step 2)
+- Picks ranges for the project's type and scope, in this order:
+  1. past projects with the same type and scope;
+  2. past projects with the same type;
+  3. a Settings range with the same type and scope;
+  4. a Settings range for the type, any scope.
+- **Past projects** are the firm's non-archived, non-pursuit projects that have square feet, a construction cost and a fee (Σ phase fees). There must be at least 3. The range is the middle half (25th–75th percentile) of cost per SF and of fee ÷ construction; typical is the median. Only the range is sent to the page, never one project's numbers.
+- **Settings ranges** come from Settings → Phases → Project type ranges; typical is the midpoint.
+- **Construction cost:** low–high = cost/SF × square feet, rounded to $100, shown short ("$5.8M–$6.6M"), then "Typical $6.2M · $290–$330 / SF × 20,000 SF". **Use $6.2M** fills the construction estimate; it's only shown while that field is blank. Without square feet, a note asks for them.
+- **Architectural fee:** "2.8%–3.4% of construction", then dollars over the entered construction estimate (or else the typical estimate), rounded to $100: "$174k–$211k · typical $192,200 (3.1% of your $6.2M estimate)". Then "Your total fee is below / within / above the range." **Use $192,200** sets the total fee and clears phase edits, so it spreads by template share.
+- No range found: "No ranges for {type} yet. They come from 3 or more similar past projects, or add a range in Settings → Phases." The link is shown to owner/admin only.
+- Source line, e.g. "From 4 past ground-up medical office projects (middle half)" or "From Settings → Phases: medical office, any scope".
+- Calculation: `src/lib/calc/benchmarks.ts`. Server: `src/server/projects/estimate.ts`.
+
+### Consultants (step 2)
+- Rows with: discipline (text with suggestions Civil / Structural / MEP / Landscape), consultant (Contacts companies of kind consultant, plus "+ New consultant…" which adds a company by name inline), contact (that company's people), fee, markup % (defaults to `firm_settings.default_consultant_markup_bp`), "Billed through us", and fee to client (project-detail Rule 7). Plus Remove and **Add consultant**.
+- Footer: "Architectural fee $X + consultants $Y = $Z to the client".
+- Consultant fees are separate from the architectural fee and the 100% rule.
+- Rows are checked on the page and on the server. Errors are keyed `consultants.{row}.{field}` and shown on the row.
 
 ### Card 1: Project details
 *(Changed by Blake, 2026-11-03.)* Fields are grouped under labeled sections: **Project** (number, name, status, type, scope) · **Client** (client, client contact) · **People** (principal, PM) · **Site address** (street with Google lookup, suite/unit, city, state, ZIP; ADR 0007) · **Size & schedule** (square feet, construction estimate, start, target end).
@@ -99,11 +123,11 @@ A single page with two Cards and a sticky footer holding **Cancel** (secondary, 
 - Inputs above the table:
   - **Total fee** * (money, ≥ $0, default $0).
   - **Total budget hours** (≥ 0, multiple of 0.25, default 0).
-- The table is generated from `phase_templates` (firm's own, `is_optional = false`, `archived_at is null`, ordered by `sort_order`). One row per template, with these columns. Optional phases are not included; they're added later from the project's Phases & fees. Each created `project_phases` row copies the template's `description` (settings-rates-phases rule 10a).
+- *(Changed 2026-11-04.)* The table shows the phases checked on step 1 (template order), then any **custom phases** added with **+ Add custom phase**. A custom phase starts blank (code and name typed, 1–12 / 1–80 chars) at $0 and can be removed. Its fee/% edits count toward 100% like any other. Codes must be unique in the project, ignoring case: "Another phase already uses this code", checked on the page and the server. Each created `project_phases` row copies its template's `description` (settings-rates-phases rule 10a). Custom phases have none.
 
 | Column | Behavior |
 |---|---|
-| Include | Checkbox, checked by default. Unchecked rows are greyed out and not created. Their fee and hours drop out of the split. |
+| *(Include)* | Moved to step 1's Phases checklist (2026-11-04) |
 | Code | Text input, prefilled from `phase_templates.code`, 1–12 chars |
 | Name | Text input, prefilled from `phase_templates.name`, 1–80 chars |
 | Fee type | Select: Fixed / Hourly / Not-to-exceed. Prefilled from `default_fee_type`. |
@@ -117,7 +141,7 @@ A single page with two Cards and a sticky footer holding **Cancel** (secondary, 
 - **Share is editable.** Typing a % sets that phase's fee to % × total. Typing a fee shows its new %. Either edit marks the row (blue dot). A %-edited phase keeps its % when the total changes; a fee-edited phase keeps its dollars. Unedited checked phases rebalance by template share, so checked phases total **100%** (footer shows Σ %).
 - **Unchecked and hourly phases are 0% and $0.** Hourly phases are billed by the hour: their fee box is disabled and their budget hours are typed in. The server refuses an hourly phase with a fee.
 - **Budget hours = phase fee ÷ the firm's blended bill rate** (settings-rates-phases rule 3), rounded to the quarter hour (`hoursFromFee`). Typing a phase's hours overrides it (blue dot). **Total budget hours** is a read-only sum (no longer typed). Without rates set up, hours are typed and a note points to Settings → Rates & roles. Only the blended *bill* rate is sent to the page; PMs may see bill rates (OPEN_DECISIONS #4), never cost.
-- **Coming in 1.5:** each phase gets a role mix (e.g. 20% Principal, 30% PA, 50% Designer) with defaults on the phase templates, edited in a side panel; hours then come from each role's own bill rate.
+- **Roles under each phase** *(1.5 B; inline since 2026-11-04)*: rows of role, share %, hours, bill rate, fee, Remove, plus "+ Add role". The template's default mix fills in. Typing a % sets the hours (share × fee ÷ bill rate, quarter hours); typing hours sets the % (hours × bill rate ÷ fee, `shareFromHours`). Shares must total 100% (or no roles); otherwise "Roles add up to X%; they need to make 100%." and Create is disabled. Hourly phases have no roles.
 - Link button **Reset to template split**: clears every edited flag and recalculates.
 - Help text under the table, by fee type:
   - Fixed: "Fixed: the fee for the phase."
@@ -251,3 +275,4 @@ Fixture **F1** (firm TMG):
 6. **Decided (Blake, 2026-11-03): own projects only** (PM or principal). Was: PM visibility: should PMs see fee and billed amounts on projects they don't manage? This spec hides them.
 7. Billed follows `invoicing.md` and **includes** `written_off` invoices, so a write-off doesn't lower "billed". Confirm that is wanted for the % billed bar, or whether written-off amounts should be shown separately (Release 2 Accounting).
 8. **Decided (Blake, 2026-11-03): yes, checked by default.** Was: Should Close Out (template share 0%) be included by default on new projects?
+9. **Decided (Blake, 2026-11-04): New project in two steps**, with an estimate from past projects or Settings ranges, inline roles (type % or hours), custom phases and consultants. The full comparables-based fee estimator stays in Release 3 (New Proposal) and builds on these ranges. Pursuit projects don't count as past projects (they aren't signed). Should closed projects count more than active ones once there's history (after the Bubble import, 1.11)?

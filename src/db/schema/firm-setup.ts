@@ -16,7 +16,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { archivedAt, id, timestamps } from "./columns";
-import { activityScope, feeType } from "./enums";
+import { activityScope, feeType, scopeKind } from "./enums";
 import { firms } from "./firms";
 import { firmRoles, memberships, users } from "./people";
 
@@ -183,6 +183,49 @@ export const activities = pgTable(
     check(
       "activities_scope_category",
       sql`(${t.appliesTo} = 'overhead') = (${t.overheadCategoryId} is not null)`,
+    ),
+  ],
+);
+
+/**
+ * Construction cost per SF and fee % ranges per project type (and optionally
+ * scope), typed in Settings → Phases. New project's estimate uses them when
+ * the firm has fewer than 3 similar past projects (Blake, 2026-11-04).
+ * Null scope = any scope.
+ */
+export const projectTypeBenchmarks = pgTable(
+  "project_type_benchmarks",
+  {
+    id: id(),
+    firmId: uuid("firm_id")
+      .notNull()
+      .references(() => firms.id),
+    projectType: text("project_type").notNull(),
+    scopeKind: scopeKind("scope_kind"),
+    costPerSfLowCents: bigint("cost_per_sf_low_cents", { mode: "number" }).notNull(),
+    costPerSfHighCents: bigint("cost_per_sf_high_cents", { mode: "number" }).notNull(),
+    /** Architectural fee as a share of construction cost, 300 = 3%. */
+    feeLowBp: integer("fee_low_bp").notNull(),
+    feeHighBp: integer("fee_high_bp").notNull(),
+    createdBy: uuid("created_by").references(() => users.id),
+    ...timestamps,
+    archivedAt: archivedAt(),
+  },
+  (t): PgTableExtraConfigValue[] => [
+    // One active range per type for "any scope", and one per type + scope.
+    uniqueIndex("project_type_benchmarks_any_scope_unique")
+      .on(t.firmId, sql`lower(${t.projectType})`)
+      .where(sql`${t.archivedAt} is null and ${t.scopeKind} is null`),
+    uniqueIndex("project_type_benchmarks_scope_unique")
+      .on(t.firmId, sql`lower(${t.projectType})`, t.scopeKind)
+      .where(sql`${t.archivedAt} is null and ${t.scopeKind} is not null`),
+    check(
+      "project_type_benchmarks_cost_range",
+      sql`${t.costPerSfLowCents} > 0 and ${t.costPerSfHighCents} >= ${t.costPerSfLowCents}`,
+    ),
+    check(
+      "project_type_benchmarks_fee_range",
+      sql`${t.feeLowBp} > 0 and ${t.feeHighBp} >= ${t.feeLowBp} and ${t.feeHighBp} <= 10000`,
     ),
   ],
 );

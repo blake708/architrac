@@ -142,7 +142,8 @@ test.describe("managing people", () => {
     await d.getByLabel("Team").selectOption({ label: "Commercial studio" });
     await d.getByLabel("Weekly hours").fill("24");
     await d.getByRole("button", { name: "Send invite" }).click();
-    await expect(toast(page)).toHaveText(`Invite sent to ${INVITEE}`);
+    // The invite goes through Clerk, which can be slow on CI.
+    await expect(toast(page)).toHaveText(`Invite sent to ${INVITEE}`, { timeout: 15_000 });
     const nia = personRow(page, "Nia New");
     await expect(nia).toContainText("Invited");
     await expect(nia).toContainText("Commercial studio");
@@ -157,7 +158,7 @@ test.describe("managing people", () => {
     await d.getByLabel("First name").fill("Kim");
     await d.getByLabel("Last name").fill("Lee");
     await d.getByRole("button", { name: "Send invite" }).click();
-    await expect(d.getByText("Already on the team")).toBeVisible();
+    await expect(d.getByText("Already on the team")).toBeVisible({ timeout: 15_000 });
   });
 
   test("edit profile: phone and principal show in the panel", async ({ page }) => {
