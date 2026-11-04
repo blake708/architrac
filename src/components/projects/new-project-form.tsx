@@ -138,6 +138,8 @@ export function NewProjectForm({
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [step, setStep] = useState<1 | 2>(1);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [formError, setFormError] = useState<string | null>(null);
   const [d, setD] = useState<ProjectDraft>(() => ({
     ...EMPTY_DRAFT,
     number: options.suggestedNumber,
@@ -153,7 +155,12 @@ export function NewProjectForm({
       ? viewerMembershipId
       : "",
   }));
-  const set = (p: Partial<typeof d>) => setD((x) => ({ ...x, ...p }));
+  const set = (p: Partial<typeof d>) => {
+    setD((x) => ({ ...x, ...p }));
+    // A field's error goes away as soon as it's edited.
+    const keys = Object.keys(p).flatMap((k) => (k === "construction" ? ["constructionCostCents"] : k === "otherType" ? ["projectType"] : [k]));
+    setErrors((er) => (keys.some((k) => k in er) ? Object.fromEntries(Object.entries(er).filter(([k]) => !keys.includes(k))) : er));
+  };
   const [totalFeeText, setTotalFeeText] = useState("0");
   const totalFee = parseMoney(totalFeeText);
   const rate = options.blendedBillRateCents;
@@ -219,8 +226,6 @@ export function NewProjectForm({
       ).total;
     return hoursFromFee(plan.fees[r.key], rate) ?? 0;
   };
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [formError, setFormError] = useState<string | null>(null);
 
   const included = rows.filter((r) => r.include);
   const sumFee = plan.sumCents;

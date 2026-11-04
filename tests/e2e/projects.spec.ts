@@ -142,6 +142,7 @@ test.describe("owner", () => {
     await expect(page.getByText("Enter a project name")).toBeVisible();
     await expect(page.getByTestId("step")).toContainText("Step 1 of 2");
     await fillDetails(page, "2026-014");
+    await expect(page.getByText("Enter a project name")).toHaveCount(0); // errors clear as you fix them
     for (const c of ALL) await expect(pick(page, c)).toBeChecked();
     for (const c of ALL) await pick(page, c).uncheck();
     await next(page).click();

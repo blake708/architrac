@@ -173,6 +173,20 @@ Firm's standard phase list. Default phases are copied to every new project; opti
 
 Seed codes: PD, SD, DD, CD, PRM (Permitting), CA, CO (Close Out). Full seed values: `docs/specs/release-1/settings-rates-phases.md` → Seed values.
 
+### project_type_benchmarks  (Settings → Phases → Project type ranges; 1.5 D)
+Ranges New project's estimate uses when the firm has fewer than 3 similar past projects.
+| column | type | notes |
+|---|---|---|
+| id, firm_id | | |
+| project_type | text | matched to `projects.project_type` ignoring case |
+| scope_kind | enum `scope_kind` null | null = any scope |
+| cost_per_sf_low_cents, cost_per_sf_high_cents | bigint | low > 0, high ≥ low |
+| fee_low_bp, fee_high_bp | integer | fee as a share of construction cost; 300 = 3%; low > 0, high ≥ low, ≤ 10000 |
+| created_by | uuid fk users null | |
+| created_at, updated_at, archived_at | timestamptz | |
+
+Unique among non-archived rows: (firm, lower(type)) where scope is null, and (firm, lower(type), scope) where it isn't.
+
 ### activities
 Activities a person picks on a timesheet row.
 | column | type | notes |
