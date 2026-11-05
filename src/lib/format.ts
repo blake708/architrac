@@ -83,3 +83,11 @@ export function todayIn(timeZone: string, now: Date = new Date()): string {
     day: "2-digit",
   }).format(now);
 }
+
+/**
+ * Hours on time screens: up to 2 decimals, trailing zeros dropped
+ * (1.5, 2, 0.25, 6.75). Quarter hours need two (timesheet spec, question 10).
+ */
+export function formatHours(hours: number): string {
+  return String(Math.round(hours * 100) / 100);
+}

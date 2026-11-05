@@ -81,7 +81,9 @@ One row per firm.
 | include_overhead_default | boolean | default true; the snapshot switch starts here |
 | week_starts_on | smallint | 0 = Sunday, 1 = Monday |
 | timesheet_increment_minutes | smallint | 15 |
-| timesheet_lock_day | smallint | day of week timesheets are due |
+| timesheet_lock_day | smallint | day of week timesheets are due (the first one on or after the week's 5th day) |
+| timesheet_due_time | time | 09:00; time of day they're due, firm time zone (1.6, decision #21) |
+| billable_notes_required | boolean | false; billable days with hours need a note to submit (1.6, decision #17) |
 | invoice_prefix | text | "2026-" |
 | next_invoice_number | integer | 128 in the seed (2026-121 … 2026-127 already exist) |
 | default_payment_terms_days | smallint | 30 |
@@ -295,35 +297,49 @@ Phase budget hours = Σ role hours unless `budget_hours_manual`. A phase with no
 ### consultants  (project's sub-consultants)
 | id, firm_id, project_id, company_id (kind consultant) | contact_id null (falls back to the company's billing contact) | discipline text ("MEP", "Structural", "Civil") | fee_cents ≥ 0 | markup_bp 0–10000 (new ones start at `firm_settings.default_consultant_markup_bp`) | billed_through boolean | archived_at |
 
-### timesheets
-One per person per week.
+### timesheets  (1.6)
+One per person per week. Created on the first write for that week, never on view.
 | column | type | notes |
 |---|---|---|
 | id, firm_id, membership_id | | |
 | week_start | date | unique (membership_id, week_start) |
-| status | enum `timesheet_status` | `draft`, `submitted`, `approved`, `rejected` |
-| submitted_at, approved_at | timestamptz null | |
-| approved_by | uuid fk null | |
-| rejection_note | text null | |
+| status | enum `timesheet_status` | `draft`, `submitted` (with team leader), `leader_approved` (with principal), `approved`, `rejected` (returned) — decision #3 (b) |
+| submitted_at | timestamptz null | |
+| reviewer_membership_id | uuid fk null | team leader at submission; null = skipped straight to a principal |
+| leader_approved_at, leader_approved_by | timestamptz / uuid fk users, null | written by 1.7 |
+| approved_at, approved_by | timestamptz / uuid fk users, null | written by 1.7 |
+| rejected_at, rejected_by, rejection_note | null | written by 1.7 |
 
-### time_entries
-One row per person × day × (project phase or overhead category) × activity.
+### timesheet_rows  (1.6)
+A line on the weekly grid; exists before it has hours.
 | column | type | notes |
 |---|---|---|
 | id, firm_id, timesheet_id | | |
-| work_date | date | |
-| project_id | uuid fk null | null = overhead |
-| project_phase_id | uuid fk null | required when project_id is set |
-| overhead_category_id | uuid fk null | required when project_id is null |
-| activity_id | uuid fk | required |
-| hours | numeric(5,2) | > 0, multiple of 0.25 |
-| note | text | |
-| billable | boolean | default true for project time |
-| bill_rate_cents | bigint null | **frozen on approval** from the rate lookup |
-| cost_rate_cents | bigint null | **frozen on approval** |
-| invoice_id | uuid fk null | set when billed; billed entries are locked |
+| sort_order | smallint | |
+| row_type | enum `timesheet_row_type` null | `project`, `overhead`, `leave`; null = not picked yet |
+| project_id, project_phase_id | uuid fk null | project rows |
+| overhead_category_id | uuid fk null | overhead and leave rows |
+| activity_id | uuid fk null | |
+| billable | boolean | project rows only |
+| archived_at | | removed rows, and empty rows on submit |
 
-Check constraint: exactly one of (`project_phase_id`, `overhead_category_id`) is set.
+### time_entries  (1.6)
+One per row per day. Copies the row's selection so reports read this table alone.
+| column | type | notes |
+|---|---|---|
+| id, firm_id, timesheet_id, timesheet_row_id | | unique (timesheet_row_id, work_date) while not archived |
+| work_date | date | |
+| project_id, project_phase_id | uuid fk null | |
+| overhead_category_id | uuid fk null | |
+| activity_id | uuid fk null | may be empty on a draft (decision #19); submit requires it |
+| hours | numeric(5,2) | > 0, ≤ 24, multiple of 0.25 (check constraint) |
+| note | text null | ≤ 500 chars |
+| billable | boolean | only with a project |
+| bill_rate_cents, cost_rate_cents | bigint null | **frozen on approval** (1.7) |
+| archived_at | | cleared days and removed rows |
+| invoice_id | — | added in 1.8 with invoices |
+
+Checks: not both phase and overhead category; not both project and overhead category. Drafts count in hours used everywhere (decision #20).
 
 ### invoices
 | column | type | notes |
@@ -406,12 +422,12 @@ The screen specs found fields the model above doesn't have yet. **Add each one w
 | 0.5 | users | preferences jsonb (menu rail collapsed, etc.) | Rail state follows the person across devices (app-shell) |
 | Code module (later) | projects | stories, building_height_ft, occupancy_group, construction_type, sprinklered, delivery_method, design_review_board | Building facts; added with the building code add-on and shown only when it is on (Blake, 2026-11-03). Not in 1.5 |
 | 2 | project_phases | planned_cost_rate_cents bigint null | Projected profit (project-snapshot). Moved from 1.5 (Blake, 2026-11-03) |
-| 1.6 | **timesheet_rows** (new) | id, firm_id, timesheet_id, row_type (`project`/`overhead`/`leave`), project_id, project_phase_id, overhead_category_id, activity_id, billable, sort_order | Rows exist before they have hours ("Add row", "Copy last week") (timesheet) |
-| 1.6 | time_entries | timesheet_row_id fk; while the timesheet is `draft`, activity_id may be null and the check becomes "not both phase and overhead category"; submit enforces completeness | (timesheet) |
-| 1.6 | firm_settings | timesheet_due_time time (09:00) | Reminder timing (timesheet) |
+| 1.6 ✓ | **timesheet_rows** (new) | id, firm_id, timesheet_id, row_type (`project`/`overhead`/`leave`), project_id, project_phase_id, overhead_category_id, activity_id, billable, sort_order | Rows exist before they have hours ("Add row", "Copy last week") (timesheet) |
+| 1.6 ✓ | time_entries | timesheet_row_id fk; while the timesheet is `draft`, activity_id may be null and the check becomes "not both phase and overhead category"; submit enforces completeness | (timesheet) |
+| 1.6 ✓ | firm_settings | timesheet_due_time time (09:00); billable_notes_required boolean | Due time (#21), required notes (#17) (timesheet) |
 | 1.7 | time_entries | ~~approved_at, approved_by~~ not needed: decision #3 is (b), approval is per timesheet (Blake, 2026-11-02) | (timesheet-approval) |
-| 1.6–1.7 | timesheet_status enum, timesheets | add `leader_approved`; `reviewer_membership_id` (team leader at submission), `leader_approved_at`, `leader_approved_by` | Two-step approval, decision #3 (b) (Blake, 2026-11-02) |
-| 1.7 | timesheets | rejected_at, rejected_by | "Returned by JR on Oct 20" (timesheet-approval) |
+| 1.6 ✓ | timesheet_status enum, timesheets | add `leader_approved`; `reviewer_membership_id` (team leader at submission), `leader_approved_at`, `leader_approved_by` | Two-step approval, decision #3 (b) (Blake, 2026-11-02) |
+| 1.6 ✓ | timesheets | rejected_at, rejected_by (added early; written by 1.7) | "Returned by JR on Oct 20" (timesheet-approval) |
 | 1.7 | activity_log | actions `approved`, `reopened`, `reminder_sent` | (timesheet-approval) |
 | 1.8 | invoice_status enum | add `in_review`; invoices.reviewed_by, reviewed_at | Review step before sending (invoicing) |
 | 1.8 | invoices | number nullable until sent, unique (firm_id, number) where not null; memo, sent_to text[], include_time_detail, voided_at, voided_by, void_reason | Numbers assigned at send, no gaps (invoicing) |

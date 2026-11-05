@@ -61,6 +61,12 @@ export const FIRMS = {
     modules: [] as string[],
     createdBy: "thOwner",
   },
+  /** For time.spec.ts (weekly timesheet), which logs hours. */
+  iota: {
+    name: `${E2E_PREFIX}Iota Time`,
+    modules: [] as string[],
+    createdBy: "ioOwner",
+  },
 } as const;
 export type FirmKey = keyof typeof FIRMS;
 
@@ -244,6 +250,18 @@ export const PEOPLE = {
     firstName: "Abe",
     lastName: "Pratt",
     memberships: [{ firm: "theta", role: "staff" }],
+  },
+  ioOwner: {
+    email: "architrac-e2e-ioowner+clerk_test@example.com",
+    firstName: "Bo",
+    lastName: "Mason",
+    memberships: [{ firm: "iota", role: "owner" }],
+  },
+  ioStaff: {
+    email: "architrac-e2e-iostaff+clerk_test@example.com",
+    firstName: "Kit",
+    lastName: "Lowe",
+    memberships: [{ firm: "iota", role: "staff" }],
   },
 } satisfies Record<string, Person>;
 export type PersonKey = keyof typeof PEOPLE;

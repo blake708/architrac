@@ -6,6 +6,7 @@ import {
   pgTable,
   smallint,
   text,
+  time,
   uuid,
 } from "drizzle-orm/pg-core";
 import { archivedAt, id, timestamps } from "./columns";
@@ -68,6 +69,10 @@ export const firmSettings = pgTable(
       .default(15),
     /** Day of week timesheets are due (0 = Sunday). */
     timesheetLockDay: smallint("timesheet_lock_day").notNull().default(1),
+    /** Time of day timesheets are due, in the firm's time zone (decision #21). "09:00:00" */
+    timesheetDueTime: time("timesheet_due_time").notNull().default("09:00"),
+    /** Billable days with hours need a note before submit (decision #17). */
+    billableNotesRequired: boolean("billable_notes_required").notNull().default(false),
     invoicePrefix: text("invoice_prefix").notNull().default(""),
     nextInvoiceNumber: integer("next_invoice_number").notNull().default(1),
     defaultPaymentTermsDays: smallint("default_payment_terms_days")

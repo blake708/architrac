@@ -32,6 +32,7 @@ import { type BenchmarkSources, loadBenchmarkSources } from "./estimate";
 import { templateMixes } from "./roles";
 import { initials } from "@/lib/initials";
 import type { ScopeKind } from "@/lib/projects/form";
+import { hoursByPhase } from "@/server/time/used";
 
 // Projects list and New project data (projects-list spec). Who sees what:
 // - staff only get projects they're assigned to, and no money at all;
@@ -88,10 +89,9 @@ const personOf = (u: {
   initials: u.initials || initials(nameOf(u)),
 });
 
-/** Hours logged per phase. Time entries arrive in 1.6; until then none. */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- reads time_entries from 1.6
-async function usedHoursByPhase(db: TenantDb, projectIds: string[]): Promise<Map<string, number>> {
-  return new Map();
+/** Hours logged per phase, drafts included (decision #20). */
+function usedHoursByPhase(db: TenantDb, projectIds: string[]): Promise<Map<string, number>> {
+  return hoursByPhase(db, projectIds);
 }
 
 /** Invoice lines per project. Invoices arrive in 1.8; until then none. */

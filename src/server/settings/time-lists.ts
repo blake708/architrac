@@ -16,6 +16,7 @@ import {
   forbidden,
 } from "./common";
 import { STALE_MESSAGE } from "./phases";
+import { hoursByCategory } from "@/server/time/used";
 
 // Settings → Time & approvals → "Timesheet phases & activities"
 // (settings-rates-phases spec, section C and rule 11). Nothing is deleted:
@@ -30,12 +31,10 @@ export const PTO_CODE = "PTO";
 
 /**
  * Hours logged to each overhead phase, for the "{hours} h are logged…"
- * question. Time entries arrive in milestone 1.6; until then this is empty
- * and removing a phase doesn't ask.
+ * question (drafts included).
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- reads time_entries from 1.6
-export async function loggedHoursByCategory(db: Tx): Promise<Map<string, number>> {
-  return new Map();
+export function loggedHoursByCategory(db: Tx): Promise<Map<string, number>> {
+  return hoursByCategory(db);
 }
 
 export async function loadTimeLists(db: Tx): Promise<TimeListsForm> {
