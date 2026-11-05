@@ -10,6 +10,8 @@
 
 > **⚠ Revise before building (Open Decision #3, Blake, 2026-11-02):** timesheets are approved by the person's **team leader, then a principal** (option b), not per project by PMs. This spec was written for option (a). Rework approvals, statuses (`leader_approved`), the reviewer snapshot (`timesheets.reviewer_membership_id`) and permissions before starting this milestone.
 
+> **⚠ Also (Blake, 2026-11-05):** principals' own timesheets have **no reviewer** (decision #22), and the route is a **custom review workflow each firm sets** in Settings, with team leader → principal as the default (decision #23). See Open questions 9–11.
+
 ## Purpose
 Project managers approve submitted time on the projects they run; owners and admins approve overhead, leave and anything a PM can't, and can approve everything. Approval freezes bill and cost rates onto each time entry so later rate changes never rewrite history. Admins also chase people who haven't submitted.
 
@@ -159,3 +161,6 @@ Server actions live in `src/server/time/approval-actions.ts`; each: `requireRole
 6. Firms with only one owner/admin can't get that person's overhead approved. Add a firm setting "Allow owners to approve their own time"? (TMG has two principals, so not blocking for TMG.)
 7. Include `employment_type='contract'` people in missing-timesheet reminders? Spec: yes, all active memberships.
 8. Over-hours threshold is `capacity + 4` (mockup "Over 44 h"); make it a firm setting?
+9. **Custom review workflows (#23).** What can a firm set? For example: one step or two; who fills each step (team leader, principal, project PM, a named person); whether a step can be skipped. Is it one route for the whole firm, or one per team? Does this need new tables (e.g. `review_steps`)?
+10. **Principal sheets (#22).** Does submitting a principal's sheet approve it at once (status `approved`, rates frozen, `approved_by` = themselves), or does it skip approval some other way? Does this replace question 6?
+11. What happens to sheets already waiting when a firm changes its workflow? Proposed: they keep the route they were submitted with (like the saved reviewer today).
