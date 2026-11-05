@@ -158,8 +158,10 @@ function StatusBadge({ look, tone, children }: { look: string; tone: string; chi
   );
 }
 
-const selectBase =
-  "h-[30px] w-full cursor-pointer rounded-sm border bg-surface px-1.5 text-[12.5px] focus-visible:outline-2 focus-visible:outline-blue disabled:cursor-not-allowed disabled:bg-surface-2";
+/** Shared select look; height and text size are added per use (cn doesn't merge). */
+const selectFrame =
+  "w-full cursor-pointer rounded-sm border bg-surface px-1.5 focus-visible:outline-2 focus-visible:outline-blue disabled:cursor-not-allowed disabled:bg-surface-2";
+const selectBase = `${selectFrame} h-[30px] text-[12.5px]`;
 const selectTone = (empty: boolean) => (empty ? "border-orange text-orange-strong" : "border-line-input text-ink");
 
 /** First line of a set row: number + name. */
@@ -390,8 +392,9 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
   }
 
   const days = view.dates.map((d) => ({ iso: d, ...dayHeader(d), weekend: [0, 6].includes(new Date(`${d}T00:00:00Z`).getUTCDay()) }));
-  const th = "border-b border-line px-2 py-2.5 text-left text-2xs font-medium text-muted";
-  const td = "border-b border-line-soft px-2 py-2.5 align-top";
+  // Padding and alignment are set per cell (cn joins classes, it doesn't merge them).
+  const th = "border-b border-line py-2.5 text-2xs font-medium text-muted";
+  const td = "border-b border-line-soft py-2.5 align-top";
   const hasRows = view.rows.length > 0;
 
   return (
@@ -428,16 +431,16 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
           <table ref={tableRef} className="w-full min-w-[960px] table-fixed border-collapse">
             <thead>
               <tr className="bg-surface-2">
-                <th scope="col" className={cn(th, "pl-5")}>Project · phase · activity</th>
-                <th scope="col" className={cn(th, "w-[104px]")}>Billing</th>
+                <th scope="col" className={cn(th, "pr-2 pl-5 text-left")}>Project · phase · activity</th>
+                <th scope="col" className={cn(th, "w-[104px] px-2 text-left")}>Billing</th>
                 {days.map((d) => (
-                  <th key={d.iso} scope="col" className={cn(th, "w-[58px] text-center", d.weekend && "bg-line-soft/60")}>
+                  <th key={d.iso} scope="col" className={cn(th, "w-[58px] px-0 text-center")}>
                     <span className="block">{d.dow}</span>
                     <span className="num block text-2xs font-normal tracking-normal normal-case">{d.date}</span>
                   </th>
                 ))}
-                <th scope="col" className={cn(th, "w-[76px] pr-3 text-right")}>Total</th>
-                <th scope="col" className={cn(th, "w-[44px]")}>
+                <th scope="col" className={cn(th, "w-[76px] pr-3 pl-2 text-right")}>Total</th>
+                <th scope="col" className={cn(th, "w-[44px] px-2")}>
                   <span className="sr-only">Remove</span>
                 </th>
               </tr>
@@ -467,7 +470,7 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
                 const total = rowTotal(row);
                 return (
                   <tr key={row.id}>
-                    <td className={cn(td, "pl-5")}>
+                    <td className={cn(td, "pr-2 pl-5")}>
                       {!row.rowType ? (
                         editable ? (
                           <label className="flex flex-col">
@@ -476,7 +479,7 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
                               data-new-row
                               value=""
                               onChange={(e) => onPick(row, e.target.value)}
-                              className={cn(selectBase, "h-[34px] border-line-input text-sm")}
+                              className={cn(selectFrame, "h-[34px] border-line-input text-sm")}
                             >
                               {projectOptions}
                             </select>
@@ -505,7 +508,7 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
                         </span>
                       )}
                     </td>
-                    <td className={td}>
+                    <td className={cn(td, "px-2")}>
                       {row.rowType && (
                         <button
                           type="button"
@@ -543,8 +546,8 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
                         />
                       </td>
                     ))}
-                    <td className={cn(td, "num pr-3 text-right text-[13px] font-semibold")}>{formatHours(total)}</td>
-                    <td className={cn(td, "pr-4 text-right")}>
+                    <td className={cn(td, "num pr-3 pl-2 text-right text-[13px] font-semibold")}>{formatHours(total)}</td>
+                    <td className={cn(td, "pr-4 pl-2 text-right")}>
                       {editable && (
                         <button
                           type="button"
