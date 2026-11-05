@@ -3,6 +3,10 @@ import {
   type CalcRow,
   billableNote,
   canRecall,
+  cleanNote,
+  copyMessage,
+  copyPlan,
+  needsNote,
   dayLimitMessage,
   dueDate,
   isEditable,
@@ -251,5 +255,71 @@ describe("status (rules 2, 14, 18)", () => {
     expect(submitRoute("jr", { membershipId: "jr", active: true })).toEqual({ status: "leader_approved", reviewerMembershipId: null });
     expect(submitRoute("kl", { membershipId: "jr", active: false })).toEqual({ status: "leader_approved", reviewerMembershipId: null });
     expect(submitRoute("kl", null)).toEqual({ status: "leader_approved", reviewerMembershipId: null });
+  });
+});
+
+describe("copy last week (rule 13)", () => {
+  const src = (p: Partial<CalcRow> & { categoryInactive?: boolean; projectActive?: boolean }) => ({
+    ...row({ hours: [0], ...p }),
+    categoryInactive: p.categoryInactive ?? false,
+    projectActive: p.projectActive ?? true,
+  });
+
+  it("copies open rows and skips a closed phase, with the spec's toast", () => {
+    const dd = src({ projectNumber: "2026-014", phaseName: "Design Development", projectPhaseId: "dd", activityId: "meet", hours: [2] });
+    const pre = src({ projectNumber: "2026-017", phaseName: "Pre-Design", projectPhaseId: "pre", closed: true });
+    const plan = copyPlan([dd, pre], []);
+    expect(plan.copy).toEqual([dd]);
+    expect(copyMessage({ ...plan, copied: plan.copy.length })).toBe("Copied 1 row. Skipped 1: 2026-017 Pre-Design is closed.");
+  });
+
+  it("doesn't add a row this week already has, nor the same row twice", () => {
+    const a = src({ projectPhaseId: "dd", activityId: "meet", billable: true });
+    const same = src({ projectPhaseId: "dd", activityId: "meet", billable: true });
+    const nonBill = src({ projectPhaseId: "dd", activityId: "meet", billable: false });
+    const here = row({ projectPhaseId: "dd", activityId: "meet", billable: true, hours: [1] });
+    const plan = copyPlan([a, same, nonBill], [here]);
+    expect(plan.copy).toEqual([nonBill]);
+    expect(plan.alreadyHere).toBe(2);
+    expect(copyMessage({ ...plan, copied: 1 })).toBe("Copied 1 row.");
+    const none = copyPlan([a], [here]);
+    expect(copyMessage({ ...none, copied: 0 })).toBe("Last week's rows are already on this timesheet.");
+  });
+
+  it("skips inactive projects, activities and overhead phases; ignores unchosen rows", () => {
+    const hold = src({ projectNumber: "2026-020", projectName: "Clinic", projectActive: false });
+    const act = src({ activityName: "Site visits", activityInactive: true });
+    const oh = src({ rowType: "overhead", projectPhaseId: null, overheadCategoryId: "m", categoryName: "Marketing", categoryInactive: true });
+    const blank = src({ rowType: null, projectPhaseId: null, activityId: null });
+    const plan = copyPlan([hold, act, oh, blank], []);
+    expect(plan.copy).toEqual([]);
+    expect(plan.skipped).toEqual(["2026-020 Clinic isn't active.", "Site visits is no longer offered.", "Marketing is no longer offered."]);
+    expect(copyMessage({ ...plan, copied: 0 })).toBe(
+      "Nothing copied. Skipped 3: 2026-020 Clinic isn't active. Site visits is no longer offered. Marketing is no longer offered.",
+    );
+  });
+
+  it("says when there's nothing to copy", () => {
+    expect(copyMessage({ copied: 0, skipped: [], alreadyHere: 0 })).toBe("There's no timesheet for last week to copy.");
+  });
+});
+
+describe("notes (rule 10h)", () => {
+  it("trims notes and saves blanks as none", () => {
+    expect(cleanNote("  Coordination call  ")).toBe("Coordination call");
+    expect(cleanNote("   ")).toBeNull();
+    expect(cleanNote(null)).toBeNull();
+  });
+
+  it("needs a note only on billable days with hours", () => {
+    const r = row({ hours: [2, 0, 1], notes: [null, null, "Call", null, null, null, null] });
+    expect([0, 1, 2].map((d) => needsNote(r, d))).toEqual([true, false, false]);
+    expect(needsNote({ ...r, billable: false }, 0)).toBe(false);
+  });
+
+  it("blocks submit when required, and only then", () => {
+    const r = row({ hours: [2, 0, 1], notes: [null, null, "Call", null, null, null, null], activityId: "a" });
+    expect(submitProblems([r], { ...check, billableNotesRequired: true })).toContain("1 billable day needs a note before you can submit.");
+    expect(submitProblems([r], check)).toEqual([]);
   });
 });

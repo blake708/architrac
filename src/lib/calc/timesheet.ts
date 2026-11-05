@@ -285,9 +285,7 @@ export function submitProblems(rows: CalcRow[], check: SubmitCheck): string[] {
   if (check.today < check.dates[0]) out.push("You can't submit a week that hasn't started.");
 
   if (check.billableNotesRequired) {
-    const missing = withHours
-      .filter((r) => r.billable)
-      .reduce((n, r) => n + r.hours.filter((v, i) => v > 0 && !r.notes[i]?.trim()).length, 0);
+    const missing = withHours.reduce((n, r) => n + r.hours.filter((_, i) => needsNote(r, i)).length, 0);
     if (missing)
       out.push(`${missing} billable ${plural(missing, "day needs", "days need")} a note before you can submit.`);
   }
@@ -326,4 +324,90 @@ export function submitRoute(
   if (leader && leader.active && leader.membershipId !== membershipId)
     return { status: "submitted", reviewerMembershipId: leader.membershipId };
   return { status: "leader_approved", reviewerMembershipId: null };
+}
+
+// ---------- Copy last week (rule 13) ----------
+
+/** A row from last week, with what's needed to decide if it can be copied. */
+export type CopySource = CalcRow & {
+  /** The overhead phase or leave type is switched off. */
+  categoryInactive: boolean;
+  /** The project is active (not on hold, in pursuit or closed). */
+  projectActive: boolean;
+};
+
+export type CopyPlan<T extends CopySource> = {
+  copy: T[];
+  /** Why rows were left out, one sentence each. */
+  skipped: string[];
+  /** Rows left out because this week already has the same row. */
+  alreadyHere: number;
+};
+
+/** Why a row can't be copied, or null when it can. */
+function copyBlocker(r: CopySource): string | null {
+  if (r.rowType === "project") {
+    const label = r.projectNumber ?? "That project";
+    if (r.closed) return `${[label, r.phaseName ?? r.projectName].filter(Boolean).join(" ")} is closed.`;
+    if (!r.projectActive) return `${[label, r.projectName].filter(Boolean).join(" ")} isn't active.`;
+  } else if (r.categoryInactive) {
+    return `${r.categoryName ?? "That phase"} is no longer offered.`;
+  }
+  if (r.activityId && r.activityInactive) return `${r.activityName ?? "That activity"} is no longer offered.`;
+  return null;
+}
+
+/**
+ * Rule 13: which of last week's rows to add (selection and billing only,
+ * never hours or notes). Rows that were never chosen are ignored; rows this
+ * week already has (same rule 10e key) aren't added twice.
+ */
+export function copyPlan<T extends CopySource>(source: T[], existing: CalcRow[]): CopyPlan<T> {
+  const keys = new Set(existing.filter((r) => r.rowType).map(rowKey));
+  const plan: CopyPlan<T> = { copy: [], skipped: [], alreadyHere: 0 };
+  for (const r of source) {
+    if (!r.rowType) continue;
+    const blocked = copyBlocker(r);
+    if (blocked) {
+      plan.skipped.push(blocked);
+      continue;
+    }
+    const key = rowKey(r);
+    if (keys.has(key)) {
+      plan.alreadyHere += 1;
+      continue;
+    }
+    keys.add(key);
+    plan.copy.push(r);
+  }
+  return plan;
+}
+
+export const COPY_NO_SOURCE = "There's no timesheet for last week to copy.";
+
+/** The toast after Copy last week. */
+export function copyMessage(plan: Pick<CopyPlan<CopySource>, "skipped" | "alreadyHere"> & { copied: number }): string {
+  if (plan.copied === 0 && plan.skipped.length === 0 && plan.alreadyHere === 0) return COPY_NO_SOURCE;
+  const head =
+    plan.copied > 0
+      ? `Copied ${plan.copied} ${plural(plan.copied, "row", "rows")}.`
+      : plan.alreadyHere > 0
+        ? "Last week's rows are already on this timesheet."
+        : "Nothing copied.";
+  return plan.skipped.length ? `${head} Skipped ${plan.skipped.length}: ${plan.skipped.join(" ")}` : head;
+}
+
+// ---------- Notes ----------
+
+export const NOTE_TOO_LONG = `Notes can be up to ${NOTE_MAX} characters.`;
+
+/** A note as saved: trimmed, empty → null. */
+export function cleanNote(text: string | null): string | null {
+  const t = (text ?? "").trim();
+  return t ? t : null;
+}
+
+/** Billable days with hours and no note, when notes are required (rule 10h). */
+export function needsNote(r: Pick<CalcRow, "billable" | "hours" | "notes">, day: number): boolean {
+  return r.billable && r.hours[day] > 0 && !r.notes[day]?.trim();
 }
