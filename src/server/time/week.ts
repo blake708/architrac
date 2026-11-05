@@ -14,12 +14,14 @@ import {
 import type { TenantDb } from "@/db/tenant";
 import {
   type CalcRow,
+  type NotesRule,
   type RowType,
   type TimesheetStatus,
   addDays,
   canRecall,
   dueDate,
   isEditable,
+  isHourlyFee,
   weekDates,
   weekStartOf,
   zonedInstant,
@@ -41,7 +43,7 @@ export type TimeContext = {
   lockDay: number;
   /** "09:00:00" */
   dueTime: string;
-  billableNotesRequired: boolean;
+  notesRule: NotesRule;
 };
 
 export type PhaseOption = {
@@ -100,7 +102,7 @@ export type TimesheetView = {
   rejectionNote: string | null;
   targetHours: number;
   targetUtilizationPct: number | null;
-  billableNotesRequired: boolean;
+  notesRule: NotesRule;
   rows: ViewRow[];
   options: TimesheetOptions;
 };
@@ -284,6 +286,7 @@ export async function loadWeek(
       activityName: activity?.name ?? null,
       closed: (project?.closed ?? false) || phase?.status === "closed",
       activityInactive: activity ? !activity.active : false,
+      hourly: isHourlyFee(phase?.feeType),
       categoryInactive: category ? !category.active : false,
     };
   });
@@ -316,7 +319,7 @@ export async function loadWeek(
     rejectionNote: sheet?.rejectionNote ?? null,
     targetHours: Number(me?.capacity ?? 40),
     targetUtilizationPct: me?.target == null ? null : me.target / 100,
-    billableNotesRequired: ctx.billableNotesRequired,
+    notesRule: ctx.notesRule,
     rows,
     options: {
       myProjects: active.filter((p) => mine.has(p.id)).map((p) => ({ id: p.id, label: label(p) })),

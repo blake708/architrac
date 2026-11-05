@@ -83,7 +83,7 @@ One row per firm.
 | timesheet_increment_minutes | smallint | 15 |
 | timesheet_lock_day | smallint | day of week timesheets are due (the first one on or after the week's 5th day) |
 | timesheet_due_time | time | 09:00; time of day they're due, firm time zone (1.6, decision #21) |
-| billable_notes_required | boolean | false; billable days with hours need a note to submit (1.6, decision #17) |
+| timesheet_notes_rule | enum `timesheet_notes_rule` | `optional` (default), `hourly` (billable days on `hourly`/`nte` phases need a note to submit), `all` (every billable day with hours does). 1.6, decisions #17 and #24; replaced `billable_notes_required` (migrations 0011–0012) |
 | invoice_prefix | text | "2026-" |
 | next_invoice_number | integer | 128 in the seed (2026-121 … 2026-127 already exist) |
 | default_payment_terms_days | smallint | 30 |
@@ -424,7 +424,7 @@ The screen specs found fields the model above doesn't have yet. **Add each one w
 | 2 | project_phases | planned_cost_rate_cents bigint null | Projected profit (project-snapshot). Moved from 1.5 (Blake, 2026-11-03) |
 | 1.6 ✓ | **timesheet_rows** (new) | id, firm_id, timesheet_id, row_type (`project`/`overhead`/`leave`), project_id, project_phase_id, overhead_category_id, activity_id, billable, sort_order | Rows exist before they have hours ("Add row", "Copy last week") (timesheet) |
 | 1.6 ✓ | time_entries | timesheet_row_id fk; while the timesheet is `draft`, activity_id may be null and the check becomes "not both phase and overhead category"; submit enforces completeness | (timesheet) |
-| 1.6 ✓ | firm_settings | timesheet_due_time time (09:00); billable_notes_required boolean | Due time (#21), required notes (#17) (timesheet) |
+| 1.6 ✓ | firm_settings | timesheet_due_time time (09:00); timesheet_notes_rule enum (optional), replacing billable_notes_required (#24) | Due time (#21), required notes (#17) (timesheet) |
 | 1.7 | time_entries | ~~approved_at, approved_by~~ not needed: decision #3 is (b), approval is per timesheet (Blake, 2026-11-02) | (timesheet-approval) |
 | 1.6 ✓ | timesheet_status enum, timesheets | add `leader_approved`; `reviewer_membership_id` (team leader at submission), `leader_approved_at`, `leader_approved_by` | Two-step approval, decision #3 (b) (Blake, 2026-11-02) |
 | 1.6 ✓ | timesheets | rejected_at, rejected_by (added early; written by 1.7) | "Returned by JR on Oct 20" (timesheet-approval) |

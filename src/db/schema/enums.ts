@@ -71,3 +71,9 @@ export const timesheetStatus = pgEnum("timesheet_status", [
 
 /** What a timesheet row is for. Null on a row nobody has picked yet. */
 export const timesheetRowType = pgEnum("timesheet_row_type", ["project", "overhead", "leave"]);
+
+/**
+ * When billable time needs a note before submit (decisions #17, #24):
+ * never, only on hourly and not-to-exceed phases, or on all billable time.
+ */
+export const timesheetNotesRule = pgEnum("timesheet_notes_rule", ["optional", "hourly", "all"]);

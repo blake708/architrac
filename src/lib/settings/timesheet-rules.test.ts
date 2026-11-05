@@ -24,11 +24,13 @@ describe("timesheet rules (decisions #17, #21)", () => {
   });
 
   it("accepts only half-hour times and days 0–6", () => {
-    const ok = { lockDay: 1, dueTime: "09:00", billableNotesRequired: false };
+    const ok = { lockDay: 1, dueTime: "09:00", notesRule: "optional" };
     expect(timesheetRulesSchema.safeParse(ok).success).toBe(true);
     expect(timesheetRulesSchema.safeParse({ ...ok, dueTime: "09:15" }).success).toBe(false);
     expect(timesheetRulesSchema.safeParse({ ...ok, dueTime: "24:00" }).success).toBe(false);
     expect(timesheetRulesSchema.safeParse({ ...ok, lockDay: 7 }).success).toBe(false);
+    expect(timesheetRulesSchema.safeParse({ ...ok, notesRule: "hourly" }).success).toBe(true);
+    expect(timesheetRulesSchema.safeParse({ ...ok, notesRule: "sometimes" }).success).toBe(false);
   });
 
   it("shows an example due date", () => {

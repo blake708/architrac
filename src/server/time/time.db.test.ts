@@ -47,7 +47,7 @@ const actorFor = (firm: TestFirm, m: { userId: string; membershipId: string }, e
   weekStartsOn: 1,
   lockDay: 1,
   dueTime: "09:00:00",
-  billableNotesRequired: false,
+  notesRule: "optional",
   member: { appRole: "staff", active: true },
   ...extra,
 });
@@ -329,12 +329,50 @@ describe("submit and recall", () => {
     ok(await updateRowCore(klA, { rowId, change: { type: "pick", pick: { kind: "project", projectId: A.projectId } } }));
     ok(await updateRowCore(klA, { rowId, change: { type: "activity", id: ids.meetings } }));
     ok(await setHoursCore(klA, { rowId, workDate: week, hours: 8 }));
-    expect(await submitTimesheetCore({ ...klA, billableNotesRequired: true }, { weekStart: week })).toMatchObject({
+    expect(await submitTimesheetCore({ ...klA, notesRule: "all" }, { weekStart: week })).toMatchObject({
       ok: false,
       error: "1 billable day needs a note before you can submit.",
     });
     ok(await setNoteCore(klA, { rowId, workDate: week, note: "Owner meeting" }));
-    ok(await submitTimesheetCore({ ...klA, billableNotesRequired: true }, { weekStart: week }));
+    ok(await submitTimesheetCore({ ...klA, notesRule: "all" }, { weekStart: week }));
+  });
+});
+
+describe("notes required on hourly phases only (decision #24)", () => {
+  const week = "2026-06-22";
+  let nte: string;
+  afterAll(async () => {
+    await q("update project_phases set archived_at = now() where id = $1", [nte]);
+  });
+
+  it("a fixed-fee phase doesn't need notes; a not-to-exceed phase does", async () => {
+    nte = (
+      await q<{ id: string }>(
+        "insert into project_phases (firm_id, project_id, code, name, sort_order, fee_type, status) values ($1, $2, 'CA', 'Construction Admin', 6, 'nte', 'current') returning id",
+        [A.firmId, A.projectId],
+      )
+    )[0].id;
+    const hourly = { ...klA, notesRule: "hourly" as const };
+    const fixedRow = await newRow(klA, week);
+    ok(await updateRowCore(klA, { rowId: fixedRow, change: { type: "pick", pick: { kind: "project", projectId: A.projectId } } }));
+    ok(await updateRowCore(klA, { rowId: fixedRow, change: { type: "phase", id: A.projectPhaseId } }));
+    ok(await updateRowCore(klA, { rowId: fixedRow, change: { type: "activity", id: ids.meetings } }));
+    ok(await setHoursCore(klA, { rowId: fixedRow, workDate: week, hours: 4 }));
+    const nteRow = await newRow(klA, week);
+    ok(await updateRowCore(klA, { rowId: nteRow, change: { type: "pick", pick: { kind: "project", projectId: A.projectId } } }));
+    ok(await updateRowCore(klA, { rowId: nteRow, change: { type: "phase", id: nte } }));
+    const v = ok(await updateRowCore(klA, { rowId: nteRow, change: { type: "activity", id: ids.meetings } }));
+    expect(v.rows.find((r) => r.id === nteRow)?.hourly).toBe(true);
+    expect(v.rows.find((r) => r.id === fixedRow)?.hourly).toBe(false);
+    ok(await setHoursCore(klA, { rowId: nteRow, workDate: addDays(week, 1), hours: 2 }));
+
+    expect(await submitTimesheetCore(hourly, { weekStart: week })).toMatchObject({
+      ok: false,
+      error: "1 billable day on hourly phases needs a note before you can submit.",
+    });
+    ok(await setNoteCore(klA, { rowId: nteRow, workDate: addDays(week, 1), note: "Site visit" }));
+    // The fixed-fee day still has no note, and that's fine.
+    ok(await submitTimesheetCore(hourly, { weekStart: week }));
   });
 });
 

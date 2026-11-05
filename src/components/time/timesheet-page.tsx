@@ -203,7 +203,7 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
   const problems = submitProblems(view.rows, {
     dates: view.dates,
     today: view.today,
-    billableNotesRequired: view.billableNotesRequired,
+    notesRule: view.notesRule,
   });
   const warning = editable ? shortWarning(totals.weekTotal, view.targetHours) : null;
   const status = statusView(view);
@@ -538,7 +538,7 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
                           day={`${d.dow} ${d.date}`}
                           title={title}
                           readOnly={!editable}
-                          missing={view.billableNotesRequired && needsNote(row, i)}
+                          missing={needsNote(row, i, view.notesRule)}
                           onSave={(text) => commitNote(row, i, text)}
                         />
                       </td>

@@ -6,6 +6,7 @@ import {
   cleanNote,
   copyMessage,
   copyPlan,
+  isHourlyFee,
   needsNote,
   dayLimitMessage,
   dueDate,
@@ -44,6 +45,7 @@ function row(p: Partial<CalcRow> & { hours: number[] }): CalcRow {
     activityName: "Activity",
     closed: false,
     activityInactive: false,
+    hourly: false,
     ...p,
     hours,
   };
@@ -58,7 +60,7 @@ const seed = () => [
   row({ rowType: "overhead", projectPhaseId: null, overheadCategoryId: "oh1", projectNumber: null, projectName: null, phaseName: null, categoryName: "Marketing", activityName: "Proposals", billable: false, hours: [1, 0, 1, 1, 1.5] }),
 ];
 const dates = weekDates("2026-10-12");
-const check = { dates, today: "2026-10-14", billableNotesRequired: false };
+const check = { dates, today: "2026-10-14", notesRule: "optional" as const };
 
 describe("weeks and due dates (rule 1)", () => {
   it("finds the Monday week of a Wednesday, and Sunday weeks too", () => {
@@ -226,7 +228,7 @@ describe("submit checks (rule 10)", () => {
       row({ rowType: "overhead", projectPhaseId: null, overheadCategoryId: "oh", billable: false, hours: [1] }),
     ];
     expect(submitProblems(rows, check)).toEqual([]);
-    expect(submitProblems(rows, { ...check, billableNotesRequired: true })).toEqual([
+    expect(submitProblems(rows, { ...check, notesRule: "all" as const })).toEqual([
       "1 billable day needs a note before you can submit.",
     ]);
   });
@@ -311,15 +313,32 @@ describe("notes (rule 10h)", () => {
     expect(cleanNote(null)).toBeNull();
   });
 
-  it("needs a note only on billable days with hours", () => {
+  it("needs a note only on billable days with hours, as the firm's rule says", () => {
     const r = row({ hours: [2, 0, 1], notes: [null, null, "Call", null, null, null, null] });
-    expect([0, 1, 2].map((d) => needsNote(r, d))).toEqual([true, false, false]);
-    expect(needsNote({ ...r, billable: false }, 0)).toBe(false);
+    expect([0, 1, 2].map((d) => needsNote(r, d, "all"))).toEqual([true, false, false]);
+    expect(needsNote({ ...r, billable: false }, 0, "all")).toBe(false);
+    expect(needsNote(r, 0, "optional")).toBe(false);
+    // Hourly phases only: a fixed-fee phase doesn't need one; an hourly one does.
+    expect(needsNote(r, 0, "hourly")).toBe(false);
+    expect(needsNote({ ...r, hourly: true }, 0, "hourly")).toBe(true);
+  });
+
+  it("counts hourly and not-to-exceed fees as hourly", () => {
+    expect(["hourly", "nte", "fixed", null].map(isHourlyFee)).toEqual([true, true, false, false]);
+  });
+
+  it("with hourly phases only, blocks submit just for the hourly row", () => {
+    const fixed = row({ hours: [2], activityId: "a1" });
+    const hourly = row({ hours: [0, 3, 1], activityId: "a2", hourly: true });
+    expect(submitProblems([fixed, hourly], { ...check, notesRule: "hourly" })).toEqual([
+      "2 billable days on hourly phases need a note before you can submit.",
+    ]);
+    expect(submitProblems([fixed], { ...check, notesRule: "hourly" })).toEqual([]);
   });
 
   it("blocks submit when required, and only then", () => {
     const r = row({ hours: [2, 0, 1], notes: [null, null, "Call", null, null, null, null], activityId: "a" });
-    expect(submitProblems([r], { ...check, billableNotesRequired: true })).toContain("1 billable day needs a note before you can submit.");
+    expect(submitProblems([r], { ...check, notesRule: "all" as const })).toContain("1 billable day needs a note before you can submit.");
     expect(submitProblems([r], check)).toEqual([]);
   });
 });

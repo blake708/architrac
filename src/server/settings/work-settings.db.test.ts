@@ -630,14 +630,14 @@ describe("Timesheets card (decisions #17, #21)", () => {
   const rules = (firm: TestFirm) => withFirm(firm.firmId, loadTimesheetRules);
 
   it("starts at Monday 9:00 AM with notes optional", async () => {
-    expect(await rules(A)).toEqual({ lockDay: 1, dueTime: "09:00", billableNotesRequired: false });
+    expect(await rules(A)).toEqual({ lockDay: 1, dueTime: "09:00", notesRule: "optional" });
   });
 
-  it("an owner sets Friday 5:00 PM and required notes; it's logged; other firms keep theirs", async () => {
-    const next = { lockDay: 5, dueTime: "17:00", billableNotesRequired: true };
+  it("an owner sets Friday 5:00 PM and notes on hourly phases; it's logged; other firms keep theirs", async () => {
+    const next = { lockDay: 5, dueTime: "17:00", notesRule: "hourly" };
     expect(await saveTimesheetRulesCore(ownerA(), next)).toEqual({ ok: true, data: { rules: next } });
     expect(await rules(A)).toEqual(next);
-    expect(await rules(B)).toEqual({ lockDay: 1, dueTime: "09:00", billableNotesRequired: false });
+    expect(await rules(B)).toEqual({ lockDay: 1, dueTime: "09:00", notesRule: "optional" });
     const [log] = await withFirm(A.firmId, (db) =>
       db
         .select()
@@ -648,18 +648,18 @@ describe("Timesheets card (decisions #17, #21)", () => {
     expect(log.changes).toEqual({
       timesheet_lock_day: { before: 1, after: 5 },
       timesheet_due_time: { before: "09:00", after: "17:00" },
-      billable_notes_required: { before: false, after: true },
+      timesheet_notes_rule: { before: "optional", after: "hourly" },
     });
     // Back to the defaults for the other tests.
-    expect((await saveTimesheetRulesCore(ownerA(), { lockDay: 1, dueTime: "09:00", billableNotesRequired: false })).ok).toBe(true);
+    expect((await saveTimesheetRulesCore(ownerA(), { lockDay: 1, dueTime: "09:00", notesRule: "optional" })).ok).toBe(true);
   });
 
   it("refuses a project manager and a quarter-past time", async () => {
-    expect(await saveTimesheetRulesCore(actorFor(A, A, "project_manager"), { lockDay: 5, dueTime: "17:00", billableNotesRequired: true })).toEqual({
+    expect(await saveTimesheetRulesCore(actorFor(A, A, "project_manager"), { lockDay: 5, dueTime: "17:00", notesRule: "hourly" })).toEqual({
       ok: false,
       error: FORBIDDEN_MESSAGE,
     });
-    expect((await saveTimesheetRulesCore(ownerA(), { lockDay: 5, dueTime: "17:15", billableNotesRequired: true })).ok).toBe(false);
+    expect((await saveTimesheetRulesCore(ownerA(), { lockDay: 5, dueTime: "17:15", notesRule: "hourly" })).ok).toBe(false);
     expect((await rules(A)).dueTime).toBe("09:00");
   });
 });

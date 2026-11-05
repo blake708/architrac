@@ -561,7 +561,7 @@ export async function submitTimesheetCore(actor: TimeActor, raw: unknown, now: D
     const problems = submitProblems(view.rows, {
       dates: view.dates,
       today: view.today,
-      billableNotesRequired: actor.billableNotesRequired,
+      notesRule: actor.notesRule,
     });
     if (problems.length) throw new TimeError(problems[0]);
 

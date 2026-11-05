@@ -14,7 +14,7 @@ export async function loadTimesheetRules(db: TenantDb): Promise<TimesheetRules> 
   return {
     lockDay: s.timesheetLockDay,
     dueTime: shortTime(s.timesheetDueTime),
-    billableNotesRequired: s.billableNotesRequired,
+    notesRule: s.timesheetNotesRule,
   };
 }
 
@@ -31,13 +31,13 @@ export async function saveTimesheetRulesCore(
       const before = await loadTimesheetRules(db);
       await db
         .update(firmSettings)
-        .set({ timesheetLockDay: next.lockDay, timesheetDueTime: next.dueTime, billableNotesRequired: next.billableNotesRequired })
+        .set({ timesheetLockDay: next.lockDay, timesheetDueTime: next.dueTime, timesheetNotesRule: next.notesRule })
         .where(eq(firmSettings.firmId, actor.firmId));
       const changes: Record<string, { before: unknown; after: unknown }> = {};
       if (before.lockDay !== next.lockDay) changes.timesheet_lock_day = { before: before.lockDay, after: next.lockDay };
       if (before.dueTime !== next.dueTime) changes.timesheet_due_time = { before: before.dueTime, after: next.dueTime };
-      if (before.billableNotesRequired !== next.billableNotesRequired)
-        changes.billable_notes_required = { before: before.billableNotesRequired, after: next.billableNotesRequired };
+      if (before.notesRule !== next.notesRule)
+        changes.timesheet_notes_rule = { before: before.notesRule, after: next.notesRule };
       if (Object.keys(changes).length)
         await db.insert(activityLog).values({
           firmId: actor.firmId,

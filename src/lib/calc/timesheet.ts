@@ -150,6 +150,8 @@ export type CalcRow = {
   closed: boolean;
   /** The activity is switched off (rule 5). */
   activityInactive: boolean;
+  /** The phase is billed hourly or not-to-exceed (for the notes rule, #24). */
+  hourly: boolean;
 };
 
 export const rowTotal = (r: Pick<CalcRow, "hours">) => r.hours.reduce((a, b) => a + b, 0);
@@ -240,7 +242,7 @@ export type SubmitCheck = {
   dates: string[];
   /** Today in the firm's time zone. */
   today: string;
-  billableNotesRequired: boolean;
+  notesRule: NotesRule;
 };
 
 /**
@@ -284,11 +286,13 @@ export function submitProblems(rows: CalcRow[], check: SubmitCheck): string[] {
 
   if (check.today < check.dates[0]) out.push("You can't submit a week that hasn't started.");
 
-  if (check.billableNotesRequired) {
-    const missing = withHours.reduce((n, r) => n + r.hours.filter((_, i) => needsNote(r, i)).length, 0);
-    if (missing)
-      out.push(`${missing} billable ${plural(missing, "day needs", "days need")} a note before you can submit.`);
-  }
+  const missing = withHours.reduce((n, r) => n + r.hours.filter((_, i) => needsNote(r, i, check.notesRule)).length, 0);
+  if (missing)
+    out.push(
+      check.notesRule === "hourly"
+        ? `${missing} billable ${plural(missing, "day", "days")} on hourly phases ${plural(missing, "needs", "need")} a note before you can submit.`
+        : `${missing} billable ${plural(missing, "day needs", "days need")} a note before you can submit.`,
+    );
   return out;
 }
 
@@ -407,7 +411,18 @@ export function cleanNote(text: string | null): string | null {
   return t ? t : null;
 }
 
-/** Billable days with hours and no note, when notes are required (rule 10h). */
-export function needsNote(r: Pick<CalcRow, "billable" | "hours" | "notes">, day: number): boolean {
-  return r.billable && r.hours[day] > 0 && !r.notes[day]?.trim();
+/**
+ * When billable time needs a note (decisions #17, #24): never, only on
+ * hourly and not-to-exceed phases, or on all billable time. Non-billable
+ * time (overhead, leave, non-billable project rows) never does.
+ */
+export type NotesRule = "optional" | "hourly" | "all";
+
+/** Rule 10h: this day has hours, no note, and the firm's rule asks for one. */
+export function needsNote(r: Pick<CalcRow, "billable" | "hourly" | "hours" | "notes">, day: number, rule: NotesRule): boolean {
+  if (rule === "optional" || !r.billable || (rule === "hourly" && !r.hourly)) return false;
+  return r.hours[day] > 0 && !r.notes[day]?.trim();
 }
+
+/** Fee types billed by the hour: hourly and not-to-exceed (decision #24). */
+export const isHourlyFee = (feeType: string | null | undefined) => feeType === "hourly" || feeType === "nte";

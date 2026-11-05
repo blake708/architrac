@@ -124,7 +124,7 @@ All writes are Server Actions in `src/server/time/actions.ts`: `addRow`, `update
     - e. No duplicate rows (same phase-or-category + activity + billable) with hours, else `Two rows are both <project> · <phase> · <activity>. Combine them.`
     - f. No day > 24 h (defensive; rule 7 should prevent it).
     - g. The week has started: `today ≥ week_start` in firm timezone, else `You can't submit a week that hasn't started.`
-    - h. When `firm_settings.billable_notes_required` is on: every billable day with hours has a note, else `<n> billable day(s) need(s) a note before you can submit.` (decision #17)
+    - h. Notes (`firm_settings.timesheet_notes_rule`, decisions #17 and #24): `all` → every billable day with hours has a note, else `<n> billable day(s) need(s) a note before you can submit.`; `hourly` → only billable days on phases with fee type `hourly` or `nte`, else `<n> billable day(s) on hourly phases need(s) a note before you can submit.`; `optional` → never. Non-billable time never needs a note.
     - Rows with no hours are ignored by a–e and deleted (archived) on submit.
     - Short of target is a **warning only**: `7.5 hours short of 40. Add the missing time, or log PTO or a holiday before submitting.`
 11. **Totals** (pure functions in `src/lib/calc/timesheet.ts`): `rowTotal = Σ row hours`; `dayTotal[d] = Σ hours on d`; `weekTotal = Σ dayTotal`; `billable = Σ hours where billable`; `billablePct = weekTotal ? round(billable / weekTotal × 100) : 0`; bar billable width = `min(100, billable / target × 100)%`, non-billable width = `max(0, min(100, weekTotal / target × 100) − billable width)%`.
@@ -211,7 +211,7 @@ All resolved (Blake, 2026-11-05):
 4. **Additional service** — `project_phases.is_additional_service` already exists (1.5).
 5. **Due time** — `firm_settings.timesheet_due_time`, a firm setting (decision #21).
 6. **`rejected_at` / `rejected_by`** — added now with the other approval columns; written by 1.7.
-7. **Notes on billable time** — firm setting `firm_settings.billable_notes_required` (decision #17).
+7. **Notes on billable time** — firm setting `firm_settings.timesheet_notes_rule`: optional, hourly phases, or all phases (decisions #17, #24).
 8. **Leave label** — `LEAVE <category name>`.
 9. **Approval route** — team leader, then principal (decision #3 b). See the note at the top.
 10. **Hours format** — `formatHours` shows up to 2 decimals on time screens.

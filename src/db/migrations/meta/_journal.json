@@ -78,6 +78,20 @@
       "when": 1793891944047,
       "tag": "0010_timesheets",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1793913403626,
+      "tag": "0011_notes_rule",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1793913406125,
+      "tag": "0012_notes_rule_drop",
+      "breakpoints": true
     }
   ]
 }

@@ -183,9 +183,9 @@ test("a note saves on a day with hours; days without hours are off", async ({ pa
     .toBe("Owner meeting");
 });
 
-test.describe("firm settings: due Friday 5 PM, notes required", () => {
+test.describe("firm settings: due Friday 5 PM, which notes are required", () => {
   test.afterAll(async () => {
-    await query("update firm_settings set timesheet_lock_day = 1, timesheet_due_time = '09:00', billable_notes_required = false where firm_id = :firm");
+    await query("update firm_settings set timesheet_lock_day = 1, timesheet_due_time = '09:00', timesheet_notes_rule = 'optional' where firm_id = :firm");
   });
 
   test("an owner changes them in Settings and the timesheet follows", async ({ browser }) => {
@@ -193,14 +193,14 @@ test.describe("firm settings: due Friday 5 PM, notes required", () => {
     await signInAs(owner, "ioOwner", "/app/settings/time");
     await owner.getByLabel("Due day").selectOption({ label: "Friday" });
     await owner.getByLabel("Due time").selectOption({ label: "5:00 PM" });
-    await owner.getByLabel("Notes on billable time").selectOption({ label: "Required" });
+    await owner.getByLabel("Notes on billable time").selectOption({ label: "Required on all phases" });
     await expect(owner.getByTestId("due-example")).toContainText("is due Fri");
     await expect(owner.getByTestId("due-example")).toContainText("at 5:00 PM.");
     await expect
-      .poll(async () => (await query<{ d: number; t: string; n: boolean }>(
-        "select timesheet_lock_day as d, timesheet_due_time::text as t, billable_notes_required as n from firm_settings where firm_id = :firm",
+      .poll(async () => (await query<{ d: number; t: string; n: string }>(
+        "select timesheet_lock_day as d, timesheet_due_time::text as t, timesheet_notes_rule::text as n from firm_settings where firm_id = :firm",
       ))[0])
-      .toEqual({ d: 5, t: "17:00:00", n: true });
+      .toEqual({ d: 5, t: "17:00:00", n: "all" });
     await owner.close();
 
     const page = await browser.newPage();
@@ -208,6 +208,10 @@ test.describe("firm settings: due Friday 5 PM, notes required", () => {
     await expect(page.getByText("Week of Oct 12 – Oct 18, 2026 · Due Fri Oct 16, 5:00 PM")).toBeVisible();
     // Mon has a note; Tue (1.25 h, billable) doesn't.
     await expect(page.getByTestId("submit-blocker")).toHaveText("1 billable day needs a note before you can submit.");
+    // Hourly phases only: Design Development is a fixed fee, so no note is needed.
+    await query("update firm_settings set timesheet_notes_rule = 'hourly' where firm_id = :firm");
+    await page.reload();
+    await expect(page.getByTestId("submit-blocker")).toHaveCount(0);
     await page.close();
   });
 

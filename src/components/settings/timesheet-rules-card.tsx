@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Select } from "@/components/ui/field";
 import {
   DUE_TIMES,
+  NOTES_RULE_OPTIONS,
   type TimesheetRules,
   dueDayOptions,
   dueExample,
@@ -73,16 +74,15 @@ export function TimesheetRulesCard({
         </Select>
         <Select
           label="Notes on billable time"
-          value={rules.billableNotesRequired ? "required" : "optional"}
-          onChange={(e) => change({ billableNotesRequired: e.target.value === "required" })}
-          hint={
-            rules.billableNotesRequired
-              ? "Timesheets can't be submitted until every billable day with hours has a note."
-              : "People can add a note to any day with hours."
-          }
+          value={rules.notesRule}
+          onChange={(e) => change({ notesRule: e.target.value as TimesheetRules["notesRule"] })}
+          hint={NOTES_RULE_OPTIONS.find((o) => o.value === rules.notesRule)?.hint}
         >
-          <option value="optional">Optional</option>
-          <option value="required">Required</option>
+          {NOTES_RULE_OPTIONS.map((o) => (
+            <option key={o.value} value={o.value}>
+              {o.label}
+            </option>
+          ))}
         </Select>
       </div>
       <p className="m-0 mt-4 text-[12.5px] text-muted" data-testid="due-example">

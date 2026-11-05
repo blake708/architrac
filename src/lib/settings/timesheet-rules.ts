@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { addDays, dayOfWeek, dueDate } from "@/lib/calc/timesheet";
+import { type NotesRule, addDays, dayOfWeek, dueDate } from "@/lib/calc/timesheet";
 import { dayHeader, weekRange } from "@/lib/time/display";
 
 // Settings → Time & approvals → "Timesheets" card: when timesheets are due
@@ -11,7 +11,7 @@ export type TimesheetRules = {
   lockDay: number;
   /** "09:00" */
   dueTime: string;
-  billableNotesRequired: boolean;
+  notesRule: NotesRule;
 };
 
 const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
@@ -19,7 +19,7 @@ const DAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Frid
 export const timesheetRulesSchema = z.object({
   lockDay: z.number().int().min(0).max(6),
   dueTime: z.string().regex(/^([01]\d|2[0-3]):(00|30)$/),
-  billableNotesRequired: z.boolean(),
+  notesRule: z.enum(["optional", "hourly", "all"]),
 });
 
 /** "09:00:00" (as the database returns it) → "09:00". */
@@ -58,3 +58,18 @@ export function dueExample(weekStart: string, rules: Pick<TimesheetRules, "lockD
   const d = dayHeader(dueDate(weekStart, rules.lockDay));
   return `The week of ${weekRange(weekStart)} is due ${d.dow} ${d.date} at ${timeLabel(rules.dueTime)}.`;
 }
+
+/** The choices for "Notes on billable time", with what each one means. */
+export const NOTES_RULE_OPTIONS: { value: NotesRule; label: string; hint: string }[] = [
+  { value: "optional", label: "Optional", hint: "People can add a note to any day with hours." },
+  {
+    value: "hourly",
+    label: "Required on hourly phases",
+    hint: "Billable days on hourly and not-to-exceed phases need a note before the timesheet can be submitted.",
+  },
+  {
+    value: "all",
+    label: "Required on all phases",
+    hint: "Every billable day with hours needs a note before the timesheet can be submitted.",
+  },
+];
