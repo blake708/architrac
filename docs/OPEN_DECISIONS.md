@@ -27,5 +27,8 @@ Decisions Blake needs to make. Each has a recommendation; the specs currently fo
 | 14 | QuickBooks: confirm TMG's setup (customers = clients with jobs, not QBO Projects), the sync start date, income accounts/items, and whether "custom transaction numbers" is on | Clients mode; start at cut-over month | quickbooks-sync | |
 | 15 | Show Close Out phase ($0 fee) in the snapshot? | Show it; hours on Close Out are real cost | project-snapshot | **Shown** (built that way in 1.5 C, 2026-11-04) |
 | 16 | Over-hours flag on timesheets at 44 h (40 + 4): fixed or a firm setting? | Firm setting, default 44 | timesheet | |
-| 17 | Are notes required on billable time? | Optional in Release 1 | timesheet | |
+| 17 | Are notes required on billable time? | Optional in Release 1 | timesheet | **A firm setting** (Blake, 2026-11-05): Settings → Time & approvals → "Notes on billable time", Optional (default) or Required. Required blocks submit until every billable day with hours has a note |
+| 19 | Draft hours: real `time_entries` as they're typed, or kept on the row until submit? | Real entries, so reports can see them | timesheet, DATA_MODEL | **Real entries** (Blake, 2026-11-05) |
+| 20 | Project "hours used" (budget vs hours, snapshot hours): count drafts? | Submitted and approved only | project-detail, project-snapshot | **Drafts count too** (Blake, 2026-11-05): every non-archived entry. The snapshot costs unapproved hours at the rate in force on the work date until approval freezes it |
+| 21 | Timesheet due time: fixed 9:00 AM or a firm setting? | Fixed in Release 1 | timesheet | **A firm setting** (Blake, 2026-11-05): `firm_settings.timesheet_due_time`, default 09:00, beside the due day in Settings → Time & approvals |
 | 18 | Settings: Save button or save each change instantly? | Mixed | settings-firm, settings-rates-phases | **Mixed** (Blake, 2026-11-02): instant everywhere except Phases & fees (100% rule) and the Roles & rates table (effective date) |
