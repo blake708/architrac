@@ -18,10 +18,12 @@ import type { TimesheetView } from "./week";
 import {
   type TimeActor,
   addRowCore,
+  copyLastWeekCore,
   loadWeekCore,
   recallTimesheetCore,
   removeRowCore,
   setHoursCore,
+  setNoteCore,
   submitTimesheetCore,
   updateRowCore,
 } from "./write";
@@ -330,6 +332,100 @@ describe("submit and recall", () => {
     expect(await submitTimesheetCore({ ...klA, billableNotesRequired: true }, { weekStart: week })).toMatchObject({
       ok: false,
       error: "1 billable day needs a note before you can submit.",
+    });
+    ok(await setNoteCore(klA, { rowId, workDate: week, note: "Owner meeting" }));
+    ok(await submitTimesheetCore({ ...klA, billableNotesRequired: true }, { weekStart: week }));
+  });
+});
+
+describe("notes", () => {
+  const week = "2026-07-27";
+  let rowId: string;
+  beforeAll(async () => {
+    rowId = await newRow(klA, week);
+    ok(await updateRowCore(klA, { rowId, change: { type: "pick", pick: { kind: "project", projectId: A.projectId } } }));
+    ok(await setHoursCore(klA, { rowId, workDate: week, hours: 2 }));
+  });
+
+  it("saves a trimmed note on a day with hours, and clears it", async () => {
+    let v = ok(await setNoteCore(klA, { rowId, workDate: week, note: "  Coordination call  " }));
+    expect(v.rows.find((r) => r.id === rowId)?.notes[0]).toBe("Coordination call");
+    v = ok(await setNoteCore(klA, { rowId, workDate: week, note: "" }));
+    expect(v.rows.find((r) => r.id === rowId)?.notes[0]).toBeNull();
+  });
+
+  it("refuses 501 characters, and a day with no hours", async () => {
+    expect(await setNoteCore(klA, { rowId, workDate: week, note: "x".repeat(501) })).toMatchObject({
+      ok: false,
+      error: "Notes can be up to 500 characters.",
+    });
+    ok(await setNoteCore(klA, { rowId, workDate: week, note: "x".repeat(500) }));
+    expect(await setNoteCore(klA, { rowId, workDate: addDays(week, 1), note: "Site visit" })).toMatchObject({
+      ok: false,
+      error: "Add hours to this day before adding a note.",
+    });
+  });
+
+  it("another person's note is not found", async () => {
+    expect(await setNoteCore(bm, { rowId, workDate: week, note: "Hi" })).toMatchObject({ ok: false, error: "That timesheet wasn't found." });
+  });
+});
+
+describe("copy last week (rule 13)", () => {
+  const last = "2026-07-06";
+  const week = "2026-07-13";
+  let preDesign: string;
+
+  beforeAll(async () => {
+    preDesign = (
+      await q<{ id: string }>(
+        "insert into project_phases (firm_id, project_id, code, name, sort_order, fee_type, status) values ($1, $2, 'PD', 'Pre-Design', 5, 'fixed', 'current') returning id",
+        [A.firmId, A.projectId],
+      )
+    )[0].id;
+    const dd = await newRow(klA, last);
+    ok(await updateRowCore(klA, { rowId: dd, change: { type: "pick", pick: { kind: "project", projectId: A.projectId } } }));
+    ok(await updateRowCore(klA, { rowId: dd, change: { type: "activity", id: ids.meetings } }));
+    ok(await setHoursCore(klA, { rowId: dd, workDate: last, hours: 3 }));
+    ok(await setNoteCore(klA, { rowId: dd, workDate: last, note: "Kickoff" }));
+    const pd = await newRow(klA, last);
+    ok(await updateRowCore(klA, { rowId: pd, change: { type: "pick", pick: { kind: "project", projectId: A.projectId } } }));
+    ok(await updateRowCore(klA, { rowId: pd, change: { type: "phase", id: preDesign } }));
+    ok(await updateRowCore(klA, { rowId: pd, change: { type: "activity", id: ids.meetings } }));
+    await q("update project_phases set status = 'closed' where id = $1", [preDesign]);
+  });
+
+  afterAll(async () => {
+    await q("update project_phases set archived_at = now() where id = $1", [preDesign]);
+  });
+
+  it("adds the open rows without hours or notes, and says what it skipped", async () => {
+    const r = await copyLastWeekCore(klA, { weekStart: week });
+    expect(r).toMatchObject({ ok: true, message: "Copied 1 row. Skipped 1: 2026-001 Pre-Design is closed." });
+    const v = ok(r);
+    expect(v.rows).toHaveLength(1);
+    expect(v.rows[0]).toMatchObject({ projectPhaseId: A.projectPhaseId, activityId: ids.meetings, billable: true });
+    expect(v.rows[0].hours.every((h) => h === 0)).toBe(true);
+    expect(v.rows[0].notes.every((n) => n === null)).toBe(true);
+  });
+
+  it("doesn't duplicate a row this week already has", async () => {
+    const r = await copyLastWeekCore(klA, { weekStart: week });
+    expect(r).toMatchObject({ ok: true, message: "Last week's rows are already on this timesheet. Skipped 1: 2026-001 Pre-Design is closed." });
+  });
+
+  it("with no timesheet last week, says so and starts nothing", async () => {
+    expect(await copyLastWeekCore(klA, { weekStart: "2026-06-08" })).toMatchObject({
+      ok: true,
+      message: "There's no timesheet for last week to copy.",
+    });
+    expect(await q("select id from timesheets where week_start = '2026-06-08'")).toHaveLength(0);
+  });
+
+  it("can't copy onto a submitted week", async () => {
+    expect(await copyLastWeekCore(klA, { weekStart: "2026-08-10" })).toMatchObject({
+      ok: false,
+      error: "This timesheet is submitted and can't be changed.",
     });
   });
 });
