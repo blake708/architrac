@@ -1,0 +1,1 @@
+ALTER TABLE "firm_settings" DROP COLUMN "billable_notes_required";

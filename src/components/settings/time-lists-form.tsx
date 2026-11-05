@@ -19,6 +19,8 @@ import {
 import { saveTimeLists } from "@/server/settings/actions";
 import { ErrorBanner } from "./error-banner";
 import { blurOnEnter, useInstantSave } from "./form-state";
+import { TimesheetRulesCard } from "./timesheet-rules-card";
+import type { TimesheetRules } from "@/lib/settings/timesheet-rules";
 
 const FORM_ID = "time-lists-form";
 
@@ -228,7 +230,14 @@ const removeAt = <T,>(list: readonly T[], i: number) =>
  * (settings-rates-phases spec, section C). Every change saves straight away
  * (decided 2026-11-02); a new overhead phase waits for its first activity.
  */
-export function TimeListsFormView({ initial }: { initial: TimeListsForm }) {
+export function TimeListsFormView({
+  initial,
+  rules,
+}: {
+  initial: TimeListsForm;
+  /** The "Timesheets" card above the lists (decisions #17, #21). */
+  rules?: { initial: TimesheetRules; weekStartsOn: number; exampleWeek: string };
+}) {
   const [form, setFormState] = useState(() => withKeys(initial));
   const [errors, setErrors] = useState<TimeListErrors>({});
   const [banner, setBanner] = useState<string | null>(null);
@@ -309,6 +318,7 @@ export function TimeListsFormView({ initial }: { initial: TimeListsForm }) {
       noValidate
       className="flex max-w-[960px] flex-col gap-4"
     >
+      {rules && <TimesheetRulesCard {...rules} save={save} />}
       {banner && <ErrorBanner message={banner} />}
       <section
         aria-labelledby="ts-lists-title"

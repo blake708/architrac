@@ -166,3 +166,90 @@ test("History lists the week", async ({ page }) => {
   await row.click();
   await expect(page).toHaveURL(`/app/time/week/${WEEK}`);
 });
+
+test("a note saves on a day with hours; days without hours are off", async ({ page }) => {
+  await signInAs(page, "ioStaff", `/app/time/week/${WEEK}`);
+  // The note icon sits under each day with hours; Wed has none, so no icon.
+  await expect(page.getByRole("button", { name: "Add note, Wed Oct 14, 2026-014 Medical Office Building" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Add note, Mon Oct 12, 2026-014 Medical Office Building" }).click();
+  const box = page.getByRole("dialog", { name: "Note, Mon Oct 12, 2026-014 Medical Office Building" });
+  await box.getByLabel("Note").fill("Owner meeting");
+  await box.getByRole("button", { name: "Save" }).click();
+  await expect(box).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Note, Mon Oct 12, 2026-014 Medical Office Building" })).toBeVisible();
+  await expect(page.getByRole("status").filter({ hasText: /^Saved / })).toBeVisible({ timeout: 15_000 });
+  await expect
+    .poll(async () => (await query<{ note: string | null }>("select note from time_entries where firm_id = :firm and work_date = '2026-10-12' and archived_at is null"))[0]?.note)
+    .toBe("Owner meeting");
+});
+
+test.describe("firm settings: due Friday 5 PM, which notes are required", () => {
+  test.afterAll(async () => {
+    await query("update firm_settings set timesheet_lock_day = 1, timesheet_due_time = '09:00', timesheet_notes_rule = 'optional' where firm_id = :firm");
+  });
+
+  test("an owner changes them in Settings and the timesheet follows", async ({ browser }) => {
+    const owner = await browser.newPage();
+    await signInAs(owner, "ioOwner", "/app/settings/time");
+    await owner.getByLabel("Due day").selectOption({ label: "Friday" });
+    await owner.getByLabel("Due time").selectOption({ label: "5:00 PM" });
+    await owner.getByLabel("Notes on billable time").selectOption({ label: "Required on all phases" });
+    await expect(owner.getByTestId("due-example")).toContainText("is due Fri");
+    await expect(owner.getByTestId("due-example")).toContainText("at 5:00 PM.");
+    await expect
+      .poll(async () => (await query<{ d: number; t: string; n: string }>(
+        "select timesheet_lock_day as d, timesheet_due_time::text as t, timesheet_notes_rule::text as n from firm_settings where firm_id = :firm",
+      ))[0])
+      .toEqual({ d: 5, t: "17:00:00", n: "all" });
+    await owner.close();
+
+    const page = await browser.newPage();
+    await signInAs(page, "ioStaff", `/app/time/week/${WEEK}`);
+    await expect(page.getByText("Week of Oct 12 – Oct 18, 2026 · Due Fri Oct 16, 5:00 PM")).toBeVisible();
+    // Mon has a note; Tue (1.25 h, billable) doesn't.
+    await expect(page.getByTestId("submit-blocker")).toHaveText("1 billable day needs a note before you can submit.");
+    // Hourly phases only: Design Development is a fixed fee, so no note is needed.
+    await query("update firm_settings set timesheet_notes_rule = 'hourly' where firm_id = :firm");
+    await page.reload();
+    await expect(page.getByTestId("submit-blocker")).toHaveCount(0);
+    await page.close();
+  });
+
+  test("staff can't open the Settings page", async ({ page }) => {
+    await signInAs(page, "ioStaff", "/app/settings/time");
+    await expect(page.getByLabel("Due day")).toHaveCount(0);
+  });
+});
+
+test("Copy last week adds last week's rows without hours", async ({ page }) => {
+  await signInAs(page, "ioStaff", "/app/time/week/2026-10-19");
+  await expect(page.getByText("Add a row, or copy last week's rows.")).toBeVisible();
+  await page.getByRole("button", { name: "Copy last week" }).last().click();
+  await expect(page.getByText("Copied 1 row.")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByLabel("2026-014 Medical Office Building, Mon Oct 19")).toHaveValue("");
+  // Copying again doesn't duplicate it.
+  await page.getByRole("button", { name: "Copy last week" }).first().click();
+  await expect(page.getByText("Last week's rows are already on this timesheet.")).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByLabel("2026-014 Medical Office Building, Mon Oct 19")).toHaveCount(1);
+});
+
+test("when the network drops, saving retries, then Retry saves it", async ({ page }) => {
+  test.setTimeout(90_000);
+  await signInAs(page, "ioStaff", "/app/time/week/2026-10-19");
+  const cell = page.getByLabel("2026-014 Medical Office Building, Tue Oct 20");
+  await expect(cell).toBeEnabled();
+  // Server actions are POSTs with a Next-Action header: drop them.
+  await page.route("**/*", (route) =>
+    route.request().method() === "POST" && route.request().headers()["next-action"] ? route.abort("internetdisconnected") : route.continue(),
+  );
+  await cell.fill("3");
+  await cell.blur();
+  await expect(page.getByText("Couldn't save. Retrying…")).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByText("Couldn't save. Check your connection.")).toBeVisible({ timeout: 30_000 });
+  await page.unroute("**/*");
+  await page.getByRole("button", { name: "Retry" }).click();
+  await expect(page.getByRole("status").filter({ hasText: /^Saved / })).toBeVisible({ timeout: 15_000 });
+  await expect
+    .poll(async () => (await query<{ hours: string }>("select hours from time_entries where firm_id = :firm and work_date = '2026-10-20' and archived_at is null"))[0]?.hours)
+    .toBe("3.00");
+});

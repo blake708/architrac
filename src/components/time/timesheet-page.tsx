@@ -4,13 +4,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog";
 import { CloseIcon } from "@/components/ui/icons";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/components/ui/toast";
 import {
   DAYS_IN_WEEK,
   HOURS_INPUT_ERROR,
   MAX_DAY_HOURS,
+  NOTE_MAX,
   billableNote,
+  cleanNote,
   dayLimitMessage,
+  needsNote,
   parseHoursInput,
   phaseSummary,
   rowTotal,
@@ -24,9 +28,11 @@ import { formatHours } from "@/lib/format";
 import { dayHeader, returnedLine, statusView } from "@/lib/time/display";
 import {
   addRow,
+  copyLastWeek,
   recallTimesheet,
   removeRow,
   setHours,
+  setNote,
   submitTimesheet,
   updateRow,
 } from "@/server/time/actions";
@@ -152,8 +158,10 @@ function StatusBadge({ look, tone, children }: { look: string; tone: string; chi
   );
 }
 
-const selectBase =
-  "h-[30px] w-full cursor-pointer rounded-sm border bg-surface px-1.5 text-[12.5px] focus-visible:outline-2 focus-visible:outline-blue disabled:cursor-not-allowed disabled:bg-surface-2";
+/** Shared select look; height and text size are added per use (cn doesn't merge). */
+const selectFrame =
+  "w-full cursor-pointer rounded-sm border bg-surface px-1.5 focus-visible:outline-2 focus-visible:outline-blue disabled:cursor-not-allowed disabled:bg-surface-2";
+const selectBase = `${selectFrame} h-[30px] text-[12.5px]`;
 const selectTone = (empty: boolean) => (empty ? "border-orange text-orange-strong" : "border-line-input text-ink");
 
 /** First line of a set row: number + name. */
@@ -197,7 +205,7 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
   const problems = submitProblems(view.rows, {
     dates: view.dates,
     today: view.today,
-    billableNotesRequired: view.billableNotesRequired,
+    notesRule: view.notesRule,
   });
   const warning = editable ? shortWarning(totals.weekTotal, view.targetHours) : null;
   const status = statusView(view);
@@ -246,11 +254,31 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
       toast(dayLimitMessage(view.dates[day], others + hours), "error");
       return false;
     }
-    patchRow(row.id, { hours: row.hours.map((h, i) => (i === day ? hours : h)) });
+    patchRow(row.id, {
+      hours: row.hours.map((h, i) => (i === day ? hours : h)),
+      // Clearing a day clears its note with it.
+      ...(hours ? {} : { notes: row.notes.map((n, i) => (i === day ? null : n)) }),
+    });
     const workDate = view.dates[day];
     push({ run: () => setHours({ rowId: row.id, workDate, hours: hours || null }) });
     return true;
   };
+
+  const commitNote = (row: ViewRow, day: number, text: string) => {
+    const note = cleanNote(text);
+    if ((row.notes[day] ?? null) === note) return;
+    patchRow(row.id, { notes: row.notes.map((n, i) => (i === day ? note : n)) });
+    const workDate = view.dates[day];
+    push({ run: () => setNote({ rowId: row.id, workDate, note }) });
+  };
+
+  const onCopy = () =>
+    push({
+      run: () => copyLastWeek({ weekStart: view.weekStart }),
+      then: (r) => {
+        if (r.ok && r.message) toast(r.message);
+      },
+    });
 
   const doRemove = (row: ViewRow) => {
     setView((v) => ({ ...v, rows: v.rows.filter((r) => r.id !== row.id) }));
@@ -364,8 +392,9 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
   }
 
   const days = view.dates.map((d) => ({ iso: d, ...dayHeader(d), weekend: [0, 6].includes(new Date(`${d}T00:00:00Z`).getUTCDay()) }));
-  const th = "border-b border-line px-2 py-2.5 text-left text-2xs font-medium text-muted";
-  const td = "border-b border-line-soft px-2 py-2.5 align-top";
+  // Padding and alignment are set per cell (cn joins classes, it doesn't merge them).
+  const th = "border-b border-line py-2.5 text-2xs font-medium text-muted";
+  const td = "border-b border-line-soft py-2.5 align-top";
   const hasRows = view.rows.length > 0;
 
   return (
@@ -384,6 +413,7 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
           <SaveIndicator save={save} onRetry={() => void retry()} />
           {editable && (
             <div className="ml-auto flex flex-wrap gap-2">
+              <Button onClick={onCopy}>Copy last week</Button>
               <Button onClick={onAddRow}>Add row</Button>
             </div>
           )}
@@ -401,16 +431,16 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
           <table ref={tableRef} className="w-full min-w-[960px] table-fixed border-collapse">
             <thead>
               <tr className="bg-surface-2">
-                <th scope="col" className={cn(th, "pl-5")}>Project · phase · activity</th>
-                <th scope="col" className={cn(th, "w-[104px]")}>Billing</th>
+                <th scope="col" className={cn(th, "pr-2 pl-5 text-left")}>Project · phase · activity</th>
+                <th scope="col" className={cn(th, "w-[104px] px-2 text-left")}>Billing</th>
                 {days.map((d) => (
-                  <th key={d.iso} scope="col" className={cn(th, "w-[58px] text-center", d.weekend && "bg-line-soft/60")}>
+                  <th key={d.iso} scope="col" className={cn(th, "w-[58px] px-0 text-center")}>
                     <span className="block">{d.dow}</span>
                     <span className="num block text-2xs font-normal tracking-normal normal-case">{d.date}</span>
                   </th>
                 ))}
-                <th scope="col" className={cn(th, "w-[76px] pr-3 text-right")}>Total</th>
-                <th scope="col" className={cn(th, "w-[44px]")}>
+                <th scope="col" className={cn(th, "w-[76px] pr-3 pl-2 text-right")}>Total</th>
+                <th scope="col" className={cn(th, "w-[44px] px-2")}>
                   <span className="sr-only">Remove</span>
                 </th>
               </tr>
@@ -420,11 +450,16 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
                 <tr>
                   <td colSpan={DAYS_IN_WEEK + 4} className="px-5 py-10 text-center">
                     <p className="m-0 font-semibold">No time this week yet</p>
-                    <p className="m-0 mt-1 text-sm text-muted">{editable ? "Add a row to start." : "Nothing was logged this week."}</p>
+                    <p className="m-0 mt-1 text-sm text-muted">
+                      {editable ? "Add a row, or copy last week's rows." : "Nothing was logged this week."}
+                    </p>
                     {editable && (
-                      <Button variant="primary" className="mt-3" onClick={onAddRow}>
-                        Add row
-                      </Button>
+                      <div className="mt-3 flex justify-center gap-2">
+                        <Button variant="primary" onClick={onAddRow}>
+                          Add row
+                        </Button>
+                        <Button onClick={onCopy}>Copy last week</Button>
+                      </div>
                     )}
                   </td>
                 </tr>
@@ -435,7 +470,7 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
                 const total = rowTotal(row);
                 return (
                   <tr key={row.id}>
-                    <td className={cn(td, "pl-5")}>
+                    <td className={cn(td, "pr-2 pl-5")}>
                       {!row.rowType ? (
                         editable ? (
                           <label className="flex flex-col">
@@ -444,7 +479,7 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
                               data-new-row
                               value=""
                               onChange={(e) => onPick(row, e.target.value)}
-                              className={cn(selectBase, "h-[34px] border-line-input text-sm")}
+                              className={cn(selectFrame, "h-[34px] border-line-input text-sm")}
                             >
                               {projectOptions}
                             </select>
@@ -473,7 +508,7 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
                         </span>
                       )}
                     </td>
-                    <td className={td}>
+                    <td className={cn(td, "px-2")}>
                       {row.rowType && (
                         <button
                           type="button"
@@ -500,10 +535,19 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
                           onCommit={(h) => commitHours(row, i, h)}
                           onInvalid={() => toast(HOURS_INPUT_ERROR, "error")}
                         />
+                        <NoteButton
+                          note={row.notes[i]}
+                          show={row.hours[i] > 0 && (editable || !!row.notes[i])}
+                          day={`${d.dow} ${d.date}`}
+                          title={title}
+                          readOnly={!editable}
+                          missing={needsNote(row, i, view.notesRule)}
+                          onSave={(text) => commitNote(row, i, text)}
+                        />
                       </td>
                     ))}
-                    <td className={cn(td, "num pr-3 text-right text-[13px] font-semibold")}>{formatHours(total)}</td>
-                    <td className={cn(td, "pr-4 text-right")}>
+                    <td className={cn(td, "num pr-3 pl-2 text-right text-[13px] font-semibold")}>{formatHours(total)}</td>
+                    <td className={cn(td, "pr-4 pl-2 text-right")}>
                       {editable && (
                         <button
                           type="button"
@@ -735,10 +779,120 @@ function HoursCell({
         )}
       />
       {hint && (
-        <span role="status" className="absolute top-full mt-0.5 text-[11px] whitespace-nowrap text-muted">
+        <span role="status" className="absolute top-full z-10 mt-0.5 rounded-sm bg-surface px-1 text-[11px] whitespace-nowrap text-muted">
           {hint}
         </span>
       )}
     </span>
+  );
+}
+
+function NoteIcon({ filled }: { filled: boolean }) {
+  return (
+    <svg viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="size-[13px]">
+      <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z" />
+    </svg>
+  );
+}
+
+/**
+ * The note for one day (rule 10h): a small icon under the hours that opens a
+ * box to write it. Only on days with hours; at most 500 characters. Faint =
+ * no note, blue = has a note, orange = the firm requires one and it's missing.
+ */
+function NoteButton({
+  note,
+  show,
+  day,
+  title,
+  readOnly,
+  missing,
+  onSave,
+}: {
+  note: string | null;
+  show: boolean;
+  /** "Mon Oct 12" */
+  day: string;
+  title: string;
+  readOnly: boolean;
+  missing: boolean;
+  onSave: (text: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState(note ?? "");
+
+  // Keep the slot so rows line up whether or not a day has hours.
+  if (!show) return <span aria-hidden="true" className="block h-5" />;
+
+  const save = () => {
+    onSave(text);
+    setOpen(false);
+  };
+
+  return (
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        if (next) setText(note ?? "");
+        setOpen(next);
+      }}
+    >
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={`${note || readOnly ? "Note" : "Add note"}, ${day}, ${title}`}
+          title={note ?? (missing ? "A note is required" : "Add a note")}
+          className={cn(
+            "mx-auto mt-1 flex h-4 w-6 cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent hover:bg-line-soft",
+            missing ? "text-orange-strong" : note ? "text-blue" : "text-faint hover:text-ink-3",
+          )}
+        >
+          <NoteIcon filled={!!note} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent label={`Note, ${day}, ${title}`} align="center" className="w-[300px]">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="cap text-2xs font-semibold text-ink">Note · {day}</span>
+            <span className="truncate text-[11.5px] text-muted">{title}</span>
+          </div>
+          {readOnly ? (
+            <p className="m-0 text-sm whitespace-pre-wrap text-ink-2">{note}</p>
+          ) : (
+            <>
+              <textarea
+                aria-label="Note"
+                autoFocus
+                rows={3}
+                maxLength={NOTE_MAX}
+                value={text}
+                placeholder={missing ? "Required for billable time" : "What was this time for?"}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    save();
+                  }
+                }}
+                className="w-full resize-none rounded-sm border border-line-input bg-surface px-2.5 py-2 text-sm text-ink placeholder:text-faint focus:outline-2 focus:-outline-offset-1 focus:outline-blue"
+              />
+              <div className="flex items-center justify-between gap-2">
+                <span className="num text-[11.5px] text-muted">
+                  {text.length}/{NOTE_MAX}
+                </span>
+                <span className="flex gap-1.5">
+                  <Button variant="ghost" onClick={() => setOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button variant="primary" onClick={save}>
+                    Save
+                  </Button>
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }

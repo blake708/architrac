@@ -11,7 +11,7 @@ export function timeActorFrom({ firm, settings, user, membership }: FirmSession)
     weekStartsOn: settings.weekStartsOn,
     lockDay: settings.timesheetLockDay,
     dueTime: settings.timesheetDueTime,
-    billableNotesRequired: settings.billableNotesRequired,
+    notesRule: settings.timesheetNotesRule,
     member: { appRole: membership.appRole, active: membership.active },
   };
 }

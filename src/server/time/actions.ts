@@ -4,9 +4,11 @@ import { requireSession } from "@/lib/auth/session";
 import { timeActorFrom } from "./actor";
 import {
   addRowCore,
+  copyLastWeekCore,
   recallTimesheetCore,
   removeRowCore,
   setHoursCore,
+  setNoteCore,
   submitTimesheetCore,
   updateRowCore,
 } from "./write";
@@ -33,4 +35,10 @@ export async function submitTimesheet(input: unknown) {
 }
 export async function recallTimesheet(input: unknown) {
   return recallTimesheetCore(await actor(), input);
+}
+export async function setNote(input: unknown) {
+  return setNoteCore(await actor(), input);
+}
+export async function copyLastWeek(input: unknown) {
+  return copyLastWeekCore(await actor(), input);
 }

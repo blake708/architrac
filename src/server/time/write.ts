@@ -1,4 +1,4 @@
-import { and, eq, isNull, max, ne, sql } from "drizzle-orm";
+import { and, eq, inArray, isNull, max, ne, sql } from "drizzle-orm";
 import { z } from "zod";
 import {
   activities,
@@ -15,10 +15,16 @@ import {
 import { type TenantDb, withFirm } from "@/db/tenant";
 import { requireCan } from "@/lib/auth/permissions";
 import {
+  COPY_NO_SOURCE,
   MAX_DAY_HOURS,
+  NOTE_MAX,
+  NOTE_TOO_LONG,
   type TimesheetStatus,
   addDays,
   canRecall,
+  cleanNote,
+  copyMessage,
+  copyPlan,
   dayLimitMessage,
   isEditable,
   isIsoDate,
@@ -51,10 +57,14 @@ export const TIME_MESSAGES = {
   cantRecall: "This timesheet can't be recalled now.",
   noTimesheet: "Add your hours before submitting.",
   saveFailed: "Couldn't save. Try again.",
+  noteTooLong: NOTE_TOO_LONG,
+  noteNeedsHours: "Add hours to this day before adding a note.",
+  noSource: COPY_NO_SOURCE,
 } as const;
 
 export type TimeResult =
-  | { ok: true; data: TimesheetView }
+  /** `message` is a toast to show (Copy last week). */
+  | { ok: true; data: TimesheetView; message?: string }
   /** `data` is the week as it is now, so the page can reload it. */
   | { ok: false; error: string; data?: TimesheetView };
 
@@ -133,13 +143,13 @@ async function syncEntries(db: TenantDb, row: typeof timesheetRows.$inferSelect)
  */
 async function run(
   ctx: TimeContext,
-  write: (db: TenantDb, setWeek: (w: string) => void) => Promise<{ weekStart: string }>,
+  write: (db: TenantDb, setWeek: (w: string) => void) => Promise<{ weekStart: string; message?: string }>,
 ): Promise<TimeResult> {
   let week: string | null = null;
   try {
     return await withFirm(ctx.firmId, async (db) => {
       const done = await write(db, (w) => (week = w));
-      return { ok: true as const, data: await loadWeek(db, ctx, done.weekStart) };
+      return { ok: true as const, data: await loadWeek(db, ctx, done.weekStart), message: done.message };
     });
   } catch (err) {
     if (!(err instanceof TimeError)) console.error("timesheet write failed", err);
@@ -436,6 +446,101 @@ export async function setHoursCore(actor: TimeActor, raw: unknown): Promise<Time
   });
 }
 
+// ---------- Notes ----------
+
+const setNoteInput = z.object({
+  rowId: uuid,
+  workDate: z.string().refine(isIsoDate),
+  note: z.string().nullable(),
+});
+
+/** Edit note: saved on the day's entry, so only on a day with hours (rule 10h). */
+export async function setNoteCore(actor: TimeActor, raw: unknown): Promise<TimeResult> {
+  allowed(actor);
+  const parsed = setNoteInput.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: TIME_MESSAGES.saveFailed };
+  const note = cleanNote(parsed.data.note);
+  if (note && note.length > NOTE_MAX) return { ok: false, error: TIME_MESSAGES.noteTooLong };
+  return run(actor, async (db, setWeek) => {
+    const { sheet, row } = await ownRow(db, actor, parsed.data.rowId);
+    setWeek(sheet.weekStart);
+    mustBeEditable(sheet);
+    const [entry] = await db
+      .select()
+      .from(timeEntries)
+      .where(and(eq(timeEntries.timesheetRowId, row.id), eq(timeEntries.workDate, parsed.data.workDate), isNull(timeEntries.archivedAt)));
+    if (!entry) {
+      // Clearing a note on an empty day is nothing to do.
+      if (!note) return { weekStart: sheet.weekStart };
+      throw new TimeError(TIME_MESSAGES.noteNeedsHours);
+    }
+    if (entry.note !== note) {
+      await db.update(timeEntries).set({ note }).where(eq(timeEntries.id, entry.id));
+      await log(db, actor, "time_entry", entry.id, "updated", { note: { before: entry.note, after: note } });
+    }
+    return { weekStart: sheet.weekStart };
+  });
+}
+
+// ---------- Copy last week ----------
+
+/** Copy last week: adds last week's rows (no hours or notes) after this week's (rule 13). */
+export async function copyLastWeekCore(actor: TimeActor, raw: unknown): Promise<TimeResult> {
+  allowed(actor);
+  const parsed = weekInput.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: TIME_MESSAGES.badWeek };
+  const { weekStart } = parsed.data;
+  return run(actor, async (db, setWeek) => {
+    setWeek(weekStart);
+    checkWeek(actor, weekStart);
+    const lastWeek = addDays(weekStart, -7);
+    const current = await findTimesheet(db, actor.membershipId, weekStart);
+    if (current) mustBeEditable(current);
+    // Nothing to copy: say so without starting a timesheet.
+    if (!(await findTimesheet(db, actor.membershipId, lastWeek))) return { weekStart, message: COPY_NO_SOURCE };
+
+    const sheet = await sheetForWeek(db, actor, weekStart);
+    mustBeEditable(sheet);
+    const [source, here] = [await loadWeek(db, actor, lastWeek), await loadWeek(db, actor, weekStart)];
+    const projectIds = [...new Set(source.rows.flatMap((r) => (r.projectId ? [r.projectId] : [])))];
+    const active = new Set(
+      projectIds.length
+        ? (
+            await db
+              .select({ id: projects.id })
+              .from(projects)
+              .where(and(inArray(projects.id, projectIds), eq(projects.status, "active"), isNull(projects.archivedAt)))
+          ).map((p) => p.id)
+        : [],
+    );
+    const plan = copyPlan(
+      source.rows.map((r) => ({ ...r, projectActive: r.projectId ? active.has(r.projectId) : true })),
+      here.rows,
+    );
+
+    let sortOrder = here.rows.reduce((m, r) => Math.max(m, r.sortOrder), 0);
+    for (const r of plan.copy) {
+      sortOrder += 1;
+      const [created] = await db
+        .insert(timesheetRows)
+        .values({
+          firmId: actor.firmId,
+          timesheetId: sheet.id,
+          sortOrder,
+          rowType: r.rowType,
+          projectId: r.projectId,
+          projectPhaseId: r.projectPhaseId,
+          overheadCategoryId: r.overheadCategoryId,
+          activityId: r.activityId,
+          billable: r.billable,
+        })
+        .returning({ id: timesheetRows.id });
+      await log(db, actor, "timesheet_row", created.id, "created", { timesheetId: sheet.id, copiedFromRowId: r.id });
+    }
+    return { weekStart, message: copyMessage({ ...plan, copied: plan.copy.length }) };
+  });
+}
+
 // ---------- Submit and recall ----------
 
 /** Submit / Resubmit (rules 10 and 18). */
@@ -456,7 +561,7 @@ export async function submitTimesheetCore(actor: TimeActor, raw: unknown, now: D
     const problems = submitProblems(view.rows, {
       dates: view.dates,
       today: view.today,
-      billableNotesRequired: actor.billableNotesRequired,
+      notesRule: actor.notesRule,
     });
     if (problems.length) throw new TimeError(problems[0]);
 

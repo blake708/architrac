@@ -15,6 +15,7 @@ import {
   saveRatesCore,
 } from "./rates";
 import { saveTimeListsCore } from "./time-lists";
+import { saveTimesheetRulesCore } from "./timesheet-rules";
 import {
   changeRoleCore,
   deactivateMemberCore,
@@ -103,4 +104,8 @@ export async function saveTimeLists(form: unknown) {
 
 export async function saveBenchmarks(input: unknown) {
   return saveBenchmarksCore(await actor(), input);
+}
+
+export async function saveTimesheetRules(input: unknown) {
+  return saveTimesheetRulesCore(await actor(), input);
 }
