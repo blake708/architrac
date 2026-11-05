@@ -169,11 +169,14 @@ test("History lists the week", async ({ page }) => {
 
 test("a note saves on a day with hours; days without hours are off", async ({ page }) => {
   await signInAs(page, "ioStaff", `/app/time/week/${WEEK}`);
-  await page.getByRole("button", { name: "Notes for 2026-014 Medical Office Building" }).click();
-  const mon = page.getByLabel("Note for 2026-014 Medical Office Building, Mon Oct 12");
-  await mon.fill("Owner meeting");
-  await mon.press("Enter");
-  await expect(page.getByLabel("Note for 2026-014 Medical Office Building, Wed Oct 14")).toBeDisabled();
+  // The note icon sits under each day with hours; Wed has none, so no icon.
+  await expect(page.getByRole("button", { name: "Add note, Wed Oct 14, 2026-014 Medical Office Building" })).toHaveCount(0);
+  await page.getByRole("button", { name: "Add note, Mon Oct 12, 2026-014 Medical Office Building" }).click();
+  const box = page.getByRole("dialog", { name: "Note, Mon Oct 12, 2026-014 Medical Office Building" });
+  await box.getByLabel("Note").fill("Owner meeting");
+  await box.getByRole("button", { name: "Save" }).click();
+  await expect(box).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Note, Mon Oct 12, 2026-014 Medical Office Building" })).toBeVisible();
   await expect(page.getByRole("status").filter({ hasText: /^Saved / })).toBeVisible({ timeout: 15_000 });
   await expect
     .poll(async () => (await query<{ note: string | null }>("select note from time_entries where firm_id = :firm and work_date = '2026-10-12' and archived_at is null"))[0]?.note)

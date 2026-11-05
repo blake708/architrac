@@ -46,8 +46,8 @@ Shared app shell (menu rail, top header with page title "Time"). Then, top to bo
    - Billing cell: toggle Badge button "Billable" (blue tint, filled blue dot) / "Non-bill." (grey tint, hollow dot); `aria-label` "Billable, select to change".
    - Day cells: number input 52×34px, centered mono 13px, `inputmode="decimal"`, placeholder `—`, empty when 0. Read-only states: transparent border and background.
    - Total cell: mono 13px weight 600, right-aligned.
-   - Last cell: "Notes" icon button (speech bubble; shows a small dot when any day in the row has a note) and "Remove row" icon button (×). `aria-label`s include the project name.
-   - **Notes sub-row** (toggled by the Notes button): spans the table; under each day column a small text input (placeholder "Note"), enabled only for days with hours; max 500 characters.
+   - Last cell: "Remove row" icon button (×). `aria-label`s include the project name.
+   - **Note icon** (changed by Blake, 2026-11-05, replacing a notes sub-row): a small speech-bubble button under each day's hours, only on days with hours. Faint = no note, blue (filled) = has a note, orange = the firm requires one and it's missing. It opens a small popover: `NOTE · TUE OCT 13` and the row name, a 3-line text box (max 500 characters, counter `28/500`), Cancel and Save (Ctrl/⌘+Enter saves). On a locked sheet the icon shows only where there's a note, and the popover is read-only.
    - **Day total row** (surface-2 background): "Day total" spanning first two columns, 7 mono totals, week total (14px, weight 700). A Mon–Fri total below the daily target is orange with a 3px orange bottom inset bar.
 7. **Footer card** (white, flex-wrap): left block (flex `1 1 360px`):
    - `WEEK TOTAL` caption + mono `32.5 / 40 h` + muted `28 billable · 4.5 non-billable · 86% billable`.

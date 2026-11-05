@@ -1,9 +1,10 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogClose, DialogContent } from "@/components/ui/dialog";
 import { CloseIcon } from "@/components/ui/icons";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/components/ui/toast";
 import {
   DAYS_IN_WEEK,
@@ -172,8 +173,6 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
   const toast = useToast();
   const [view, setView] = useState(initial);
   const [confirmRemove, setConfirmRemove] = useState<ViewRow | null>(null);
-  /** Rows whose notes sub-row is open. */
-  const [notesOpen, setNotesOpen] = useState<Set<string>>(() => new Set());
   const focusNewRow = useRef(false);
   const tableRef = useRef<HTMLTableElement>(null);
 
@@ -270,14 +269,6 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
     const workDate = view.dates[day];
     push({ run: () => setNote({ rowId: row.id, workDate, note }) });
   };
-
-  const toggleNotes = (id: string) =>
-    setNotesOpen((open) => {
-      const next = new Set(open);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
 
   const onCopy = () =>
     push({
@@ -446,8 +437,8 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
                   </th>
                 ))}
                 <th scope="col" className={cn(th, "w-[76px] pr-3 text-right")}>Total</th>
-                <th scope="col" className={cn(th, "w-[80px]")}>
-                  <span className="sr-only">Notes and remove</span>
+                <th scope="col" className={cn(th, "w-[44px]")}>
+                  <span className="sr-only">Remove</span>
                 </th>
               </tr>
             </thead>
@@ -474,12 +465,8 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
                 const t = rowTitle(row);
                 const title = row.rowType === "project" ? `${t.code} ${t.name}` : t.name;
                 const total = rowTotal(row);
-                const hasNote = row.notes.some(Boolean);
-                const missingNotes = view.billableNotesRequired && row.hours.some((_, i) => needsNote(row, i));
-                const showNotes = notesOpen.has(row.id);
                 return (
-                  <Fragment key={row.id}>
-                  <tr>
+                  <tr key={row.id}>
                     <td className={cn(td, "pl-5")}>
                       {!row.rowType ? (
                         editable ? (
@@ -545,31 +532,19 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
                           onCommit={(h) => commitHours(row, i, h)}
                           onInvalid={() => toast(HOURS_INPUT_ERROR, "error")}
                         />
+                        <NoteButton
+                          note={row.notes[i]}
+                          show={row.hours[i] > 0 && (editable || !!row.notes[i])}
+                          day={`${d.dow} ${d.date}`}
+                          title={title}
+                          readOnly={!editable}
+                          missing={view.billableNotesRequired && needsNote(row, i)}
+                          onSave={(text) => commitNote(row, i, text)}
+                        />
                       </td>
                     ))}
                     <td className={cn(td, "num pr-3 text-right text-[13px] font-semibold")}>{formatHours(total)}</td>
-                    <td className={cn(td, "pr-4 text-right whitespace-nowrap")}>
-                      {row.rowType && (editable || hasNote) && (
-                        <button
-                          type="button"
-                          aria-label={`Notes for ${title}`}
-                          aria-expanded={showNotes}
-                          onClick={() => toggleNotes(row.id)}
-                          className={cn(
-                            "relative inline-flex size-[30px] cursor-pointer items-center justify-center rounded-sm border-0 hover:bg-line-soft hover:text-ink",
-                            showNotes ? "bg-line-soft text-ink" : "bg-transparent",
-                            missingNotes ? "text-orange-strong" : !showNotes && "text-faint",
-                          )}
-                        >
-                          <NotesIcon />
-                          {(hasNote || missingNotes) && (
-                            <span
-                              aria-hidden="true"
-                              className={cn("absolute top-1 right-1 size-[6px] rounded-full", missingNotes ? "bg-orange" : "bg-blue")}
-                            />
-                          )}
-                        </button>
-                      )}
+                    <td className={cn(td, "pr-4 text-right")}>
                       {editable && (
                         <button
                           type="button"
@@ -582,28 +557,6 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
                       )}
                     </td>
                   </tr>
-                  {showNotes && row.rowType && (
-                    <tr className="bg-surface-2/60">
-                      <td colSpan={2} className="border-b border-line-soft py-2 pr-2 pl-5 align-middle text-[12.5px] text-muted">
-                        Notes{view.billableNotesRequired && row.billable ? " (required on billable days)" : ""}
-                      </td>
-                      {days.map((d, i) => (
-                        <td key={d.iso} className="border-b border-line-soft px-0 py-2 text-center">
-                          <NoteCell
-                            value={row.notes[i] ?? ""}
-                            label={`Note for ${title}, ${d.dow} ${d.date}`}
-                            disabled={row.hours[i] === 0}
-                            readOnly={!editable}
-                            missing={view.billableNotesRequired && needsNote(row, i)}
-                            alignRight={i >= 4}
-                            onCommit={(text) => commitNote(row, i, text)}
-                          />
-                        </td>
-                      ))}
-                      <td colSpan={2} className="border-b border-line-soft" />
-                    </tr>
-                  )}
-                  </Fragment>
                 );
               })}
               <tr className="bg-surface-2">
@@ -823,7 +776,7 @@ function HoursCell({
         )}
       />
       {hint && (
-        <span role="status" className="absolute top-full mt-0.5 text-[11px] whitespace-nowrap text-muted">
+        <span role="status" className="absolute top-full z-10 mt-0.5 rounded-sm bg-surface px-1 text-[11px] whitespace-nowrap text-muted">
           {hint}
         </span>
       )}
@@ -831,74 +784,112 @@ function HoursCell({
   );
 }
 
-function NotesIcon() {
+function NoteIcon({ filled }: { filled: boolean }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="size-[15px]">
+    <svg viewBox="0 0 24 24" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="size-[13px]">
       <path d="M21 12a8 8 0 0 1-11.6 7.1L4 20.5l1.4-4.9A8 8 0 1 1 21 12z" />
     </svg>
   );
 }
 
 /**
- * One day's note (rule 10h): only on a day with hours, at most 500
- * characters, saved on blur. It widens while typing so the note is readable.
+ * The note for one day (rule 10h): a small icon under the hours that opens a
+ * box to write it. Only on days with hours; at most 500 characters. Faint =
+ * no note, blue = has a note, orange = the firm requires one and it's missing.
  */
-function NoteCell({
-  value,
-  label,
-  disabled,
+function NoteButton({
+  note,
+  show,
+  day,
+  title,
   readOnly,
   missing,
-  alignRight,
-  onCommit,
+  onSave,
 }: {
-  value: string;
-  label: string;
-  disabled: boolean;
+  note: string | null;
+  show: boolean;
+  /** "Mon Oct 12" */
+  day: string;
+  title: string;
   readOnly: boolean;
   missing: boolean;
-  alignRight: boolean;
-  onCommit: (text: string) => void;
+  onSave: (text: string) => void;
 }) {
-  const [text, setText] = useState(value);
-  const focused = useRef(false);
-  useEffect(() => {
-    if (!focused.current) setText(value);
-  }, [value]);
+  const [open, setOpen] = useState(false);
+  const [text, setText] = useState(note ?? "");
 
-  if (readOnly)
-    return (
-      <span className="mx-auto block w-[52px] truncate text-[12px] text-ink-2" title={value || undefined} aria-label={label}>
-        {value || "—"}
-      </span>
-    );
+  // Keep the slot so rows line up whether or not a day has hours.
+  if (!show) return <span aria-hidden="true" className="block h-5" />;
+
+  const save = () => {
+    onSave(text);
+    setOpen(false);
+  };
 
   return (
-    <span className="relative mx-auto block h-[30px] w-[52px]">
-      <input
-        type="text"
-        aria-label={label}
-        aria-invalid={missing || undefined}
-        title={text || undefined}
-        placeholder={disabled ? "" : "Note"}
-        maxLength={NOTE_MAX}
-        disabled={disabled}
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        onFocus={() => (focused.current = true)}
-        onKeyDown={(e) => {
-          if (e.key === "Enter") e.currentTarget.blur();
-        }}
-        onBlur={(e) => {
-          focused.current = false;
-          onCommit(e.target.value);
-        }}
-        className={cn(
-          "absolute top-0 h-[30px] w-[52px] rounded-sm border bg-surface px-1.5 text-[12px] placeholder:text-faint focus:z-10 focus:w-[260px] focus-visible:outline-2 focus-visible:outline-blue disabled:cursor-not-allowed disabled:border-line-soft disabled:bg-transparent",
-          alignRight ? "right-0" : "left-0",
-          missing ? "border-orange" : "border-line-input",
-        )}
-      />
-    </span>
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        if (next) setText(note ?? "");
+        setOpen(next);
+      }}
+    >
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          aria-label={`${note || readOnly ? "Note" : "Add note"}, ${day}, ${title}`}
+          title={note ?? (missing ? "A note is required" : "Add a note")}
+          className={cn(
+            "mx-auto mt-1 flex h-4 w-6 cursor-pointer items-center justify-center rounded-sm border-0 bg-transparent hover:bg-line-soft",
+            missing ? "text-orange-strong" : note ? "text-blue" : "text-faint hover:text-ink-3",
+          )}
+        >
+          <NoteIcon filled={!!note} />
+        </button>
+      </PopoverTrigger>
+      <PopoverContent label={`Note, ${day}, ${title}`} align="center" className="w-[300px]">
+        <div className="flex flex-col gap-2">
+          <div className="flex items-baseline justify-between gap-2">
+            <span className="cap text-2xs font-semibold text-ink">Note · {day}</span>
+            <span className="truncate text-[11.5px] text-muted">{title}</span>
+          </div>
+          {readOnly ? (
+            <p className="m-0 text-sm whitespace-pre-wrap text-ink-2">{note}</p>
+          ) : (
+            <>
+              <textarea
+                aria-label="Note"
+                autoFocus
+                rows={3}
+                maxLength={NOTE_MAX}
+                value={text}
+                placeholder={missing ? "Required for billable time" : "What was this time for?"}
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                    e.preventDefault();
+                    save();
+                  }
+                }}
+                className="w-full resize-none rounded-sm border border-line-input bg-surface px-2.5 py-2 text-sm text-ink placeholder:text-faint focus:outline-2 focus:-outline-offset-1 focus:outline-blue"
+              />
+              <div className="flex items-center justify-between gap-2">
+                <span className="num text-[11.5px] text-muted">
+                  {text.length}/{NOTE_MAX}
+                </span>
+                <span className="flex gap-1.5">
+                  <Button variant="ghost" onClick={() => setOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button variant="primary" onClick={save}>
+                    Save
+                  </Button>
+                </span>
+              </div>
+            </>
+          )}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
