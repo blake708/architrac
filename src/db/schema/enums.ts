@@ -56,3 +56,18 @@ export const phaseStatus = pgEnum("phase_status", [
 
 /** Kind of building work, shown under the project type (1.4). */
 export const scopeKind = pgEnum("scope_kind", ["ground_up", "tenant_upfit", "shell"]);
+
+/**
+ * Where a timesheet is (timesheet spec, decision #3 b): submitted = with the
+ * team leader; leader_approved = with a principal; rejected = returned.
+ */
+export const timesheetStatus = pgEnum("timesheet_status", [
+  "draft",
+  "submitted",
+  "leader_approved",
+  "approved",
+  "rejected",
+]);
+
+/** What a timesheet row is for. Null on a row nobody has picked yet. */
+export const timesheetRowType = pgEnum("timesheet_row_type", ["project", "overhead", "leave"]);

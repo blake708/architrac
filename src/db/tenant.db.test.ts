@@ -24,9 +24,14 @@ import {
   phaseTemplates,
   rates,
   teams,
+  timeEntries,
+  timesheetRows,
+  timesheets,
 } from "./schema";
 import { type TenantDb, withFirm } from "./tenant";
 import {
+  type TestTime,
+  addTestTime,
   createOwnerPool,
   createTestFirm,
   removeTestFirm,
@@ -40,12 +45,15 @@ import {
 let owner: Pool;
 let A: TestFirm;
 let B: TestFirm;
+let BT: TestTime;
 
 beforeAll(async () => {
   requireDbEnv();
   owner = createOwnerPool();
   A = await createTestFirm(owner, "A");
   B = await createTestFirm(owner, "B");
+  await addTestTime(owner, A);
+  BT = await addTestTime(owner, B);
 });
 
 afterAll(async () => {
@@ -546,6 +554,56 @@ const cases: TableCase[] = [
     insertForB: (db) =>
       db.insert(projectPhaseRoles).values({ firmId: B.firmId, projectPhaseId: B.projectPhaseId, firmRoleId: B.firmRoleId, shareBp: 1 }),
   },
+  {
+    table: "timesheets",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: timesheets.firmId })
+        .from(timesheets)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) =>
+      db.update(timesheets).set({ rejectionNote: "hacked" }).where(eq(timesheets.id, BT.timesheetId)).returning(),
+    readB: (db) =>
+      db
+        .select({ v: timesheets.rejectionNote })
+        .from(timesheets)
+        .where(eq(timesheets.id, BT.timesheetId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) => db.insert(timesheets).values({ firmId: B.firmId, membershipId: B.membershipId, weekStart: "2026-10-19" }),
+  },
+  {
+    table: "timesheet_rows",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: timesheetRows.firmId })
+        .from(timesheetRows)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) => db.update(timesheetRows).set({ sortOrder: 99 }).where(eq(timesheetRows.id, BT.rowId)).returning(),
+    readB: (db) =>
+      db
+        .select({ v: timesheetRows.sortOrder })
+        .from(timesheetRows)
+        .where(eq(timesheetRows.id, BT.rowId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) => db.insert(timesheetRows).values({ firmId: B.firmId, timesheetId: BT.timesheetId }),
+  },
+  {
+    table: "time_entries",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: timeEntries.firmId })
+        .from(timeEntries)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) => db.update(timeEntries).set({ hours: "24" }).where(eq(timeEntries.id, BT.entryId)).returning(),
+    readB: (db) =>
+      db
+        .select({ v: timeEntries.hours })
+        .from(timeEntries)
+        .where(eq(timeEntries.id, BT.entryId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db.insert(timeEntries).values({ firmId: B.firmId, timesheetId: BT.timesheetId, timesheetRowId: BT.rowId, workDate: "2026-10-13", hours: "1" }),
+  },
 ];
 
 describe("database role", () => {
@@ -591,6 +649,33 @@ describe.each(cases)("$table: firm isolation", (c) => {
 });
 
 describe("other guards", () => {
+  it("a time entry can't hang off another firm's timesheet, row or phase", async () => {
+    const at = (await withFirm(A.firmId, (db) => db.select().from(timesheets)))[0];
+    await expectDbError(
+      withFirm(A.firmId, (db) =>
+        db.insert(timeEntries).values({ firmId: A.firmId, timesheetId: at.id, timesheetRowId: BT.rowId, workDate: "2026-10-14", hours: "1" }),
+      ),
+      /foreign key/,
+    );
+    await expectDbError(
+      withFirm(A.firmId, (db) =>
+        db.insert(timesheetRows).values({ firmId: A.firmId, timesheetId: at.id, rowType: "project", projectId: B.projectId, projectPhaseId: B.projectPhaseId }),
+      ),
+      /foreign key/,
+    );
+  });
+
+  it("hours must be over 0, at most 24 and in quarter hours", async () => {
+    const at = (await withFirm(A.firmId, (db) => db.select().from(timesheetRows)))[0];
+    for (const hours of ["1.3", "0", "24.25"])
+      await expectDbError(
+        withFirm(A.firmId, (db) =>
+          db.insert(timeEntries).values({ firmId: A.firmId, timesheetId: at.timesheetId, timesheetRowId: at.id, workDate: "2026-10-15", hours }),
+        ),
+        /time_entries_hours_range/,
+      );
+  });
+
   it("a membership can't point at another firm's team", async () => {
     await expectDbError(
       withFirm(A.firmId, (db) =>
