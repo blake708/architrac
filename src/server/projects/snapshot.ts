@@ -16,6 +16,7 @@ import { initials as initialsFrom } from "@/lib/initials";
 import { loadRates } from "@/server/settings/rates";
 import { invoiceFacts } from "./page";
 import type { Viewer } from "./view";
+import { costedHours } from "@/server/time/used";
 
 // Project snapshot (release-2/project-snapshot.md, built in 1.5 C). Owner and
 // admin only: it starts with requireCan("financials.view"), so a PM or staff
@@ -44,13 +45,12 @@ export type ProjectSnapshot = {
 };
 
 /**
- * Counted hours (submitted + approved) per phase, person and cost rate:
+ * Counted hours per phase, person and cost rate:
  * the frozen rate once approved, else the rate in force on the work date
- * (Rule 1). Time entries arrive in 1.6; until then there are none.
+ * (Rule 1). Drafts count too (decision #20).
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- reads time_entries from 1.6
-async function snapshotEntries(db: TenantDb, projectId: string): Promise<(SnapshotEntry & { phaseId: string })[]> {
-  return [];
+function snapshotEntries(db: TenantDb, projectId: string): Promise<(SnapshotEntry & { phaseId: string })[]> {
+  return costedHours(db, projectId);
 }
 
 export async function loadProjectSnapshot(

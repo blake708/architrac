@@ -10,6 +10,7 @@ import { PROJECT_MESSAGES } from "@/lib/projects/form";
 import { SAVE_FAILED_MESSAGE, type SettingsActor } from "@/server/settings/common";
 import { mixSchema } from "@/lib/projects/form";
 import { type MixInput, billRates, phaseMix, templateMixes, writePhaseMix } from "./roles";
+import { phasesWithTime } from "@/server/time/used";
 
 // Editing a project's phases (project-detail spec, Actions: Edit phases, Add
 // phase, Archive phase, Redistribute). Owners, admins and the project's own
@@ -78,10 +79,9 @@ async function billingFacts(db: TenantDb, phaseIds: string[]): Promise<Map<strin
   return new Map();
 }
 
-/** Phases with time or invoice lines can't be archived. Time arrives in 1.6, invoices in 1.8. */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- reads time_entries and invoice_lines
-async function phasesWithHistory(db: TenantDb, phaseIds: string[]): Promise<Set<string>> {
-  return new Set();
+/** Phases with time or invoice lines can't be archived. Invoice lines arrive in 1.8. */
+function phasesWithHistory(db: TenantDb, phaseIds: string[]): Promise<Set<string>> {
+  return phasesWithTime(db, phaseIds);
 }
 
 function diff(before: Record<string, unknown>, after: Record<string, unknown>) {

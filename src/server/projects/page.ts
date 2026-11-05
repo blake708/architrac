@@ -34,6 +34,7 @@ import { initials as initialsFrom } from "@/lib/initials";
 import type { ScopeKind } from "@/lib/projects/form";
 import { type MixInput, type RoleRate, billRates, templateMixes } from "./roles";
 import { type Viewer, activePeople, assignedProjectIds, pmChoices, principalChoices } from "./view";
+import { hoursByPhaseAndPerson } from "@/server/time/used";
 
 // One project's page (project-detail spec). Two views:
 // - financial (owner, admin, or the project's own PM / principal): fees,
@@ -182,10 +183,9 @@ const fullName = (u: { firstName: string; lastName: string; email: string }) =>
   `${u.firstName} ${u.lastName}`.trim() || u.email;
 const contactName = (c: { firstName: string; lastName: string }) => `${c.firstName} ${c.lastName}`.trim();
 
-/** Hours used per phase and person (submitted + approved). Time arrives in 1.6. */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- reads time_entries from 1.6
-async function usedHours(db: TenantDb, projectId: string): Promise<{ phaseId: string; membershipId: string; hours: number }[]> {
-  return [];
+/** Hours used per phase and person, drafts included (decision #20). */
+function usedHours(db: TenantDb, projectId: string): Promise<{ phaseId: string; membershipId: string; hours: number }[]> {
+  return hoursByPhaseAndPerson(db, projectId);
 }
 
 /** This project's counted invoice lines and open balance. Invoices arrive in 1.8. */
