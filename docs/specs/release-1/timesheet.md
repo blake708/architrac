@@ -8,7 +8,7 @@
 | **Status** | Draft |
 
 
-> **Revised for Open Decision #3 (b), 2026-11-05:** a timesheet goes to the person's **team leader, then a principal**, as a whole (not per project). Statuses: `draft` → `submitted` ("With team leader") → `leader_approved` ("With principal") → `approved`; either reviewer can return it (`rejected`). Team leaders' own timesheets, and people with no team (or whose leader is inactive), go straight to a principal. The Approvals tab, the approver KPI tiles and the approve/return actions are milestone 1.7 (`timesheet-approval.md`). Also decided 2026-11-05: draft hours are real `time_entries` (#19), billable notes can be required by a firm setting (#17), the due time is a firm setting (#21).
+> **Revised for Open Decision #3 (b), 2026-11-05:** a timesheet goes to the person's **team leader, then a principal**, as a whole (not per project). Statuses: `draft` → `submitted` ("With team leader") → `leader_approved` ("With principal") → `approved`; either reviewer can return it (`rejected`). Team leaders' own timesheets, and people with no team (or whose leader is inactive), go straight to a principal. The Approvals tab, the approver KPI tiles and the approve/return actions are milestone 1.7 (`timesheet-approval.md`). **Revised again 2026-11-09 (1.7 A, decisions #22, #23):** the route is now each firm's own list of review steps (Principal in Charge by default), saved on the sheet at submit in `timesheet_review_steps`; `leader_approved` is gone and `submitted` means "in review". Principals' own sheets are approved on submit. Rules 14, 18 and the status table below are updated; `timesheet-approval.md` has the details. Also decided 2026-11-05: draft hours are real `time_entries` (#19), billable notes can be required by a firm setting (#17), the due time is a firm setting (#21).
 
 ## Purpose
 Every person logs their hours for one week against a project phase + activity, an overhead category + activity, or leave, then submits the week for approval. This is the only way time enters ArchiTrac; budgets, invoices and project snapshots read from it.
@@ -63,7 +63,7 @@ Shared app shell (menu rail, top header with page title "Time"). Then, top to bo
 |---|---|---|
 | Week dates | `firm_settings.week_starts_on`, URL `weekStart` | 7 days from week start; weekend = Sat/Sun by day-of-week, not by column index |
 | Due date | first `firm_settings.timesheet_lock_day` on or after the week's fifth day (`week_start + 4`), at `firm_settings.timesheet_due_time` in `firms.timezone` | `DUE MON OCT 19, 9:00 AM`. Monday due → the following Monday; Friday due → that week's Friday |
-| Status badge | `timesheets.status`; no row → "Draft" | Draft = grey hollow dot; `submitted` "With team leader" and `leader_approved` "With principal" = blue dot; Approved = green filled; Returned (`rejected`) = orange diamond. "Late" suffix in orange when now > due and status is draft/rejected/none |
+| Status badge | `timesheets.status`; no row → "Draft" | Draft = grey hollow dot; `submitted` "With JR" / "With a principal" (from the current review step) = blue dot; Approved = green filled; Returned (`rejected`) = orange diamond. "Late" suffix in orange when now > due and status is draft/rejected/none |
 | Rows | `timesheet_rows` (see Open questions: data model addition) ordered by `sort_order` | one row per selection |
 | Project name / number | `projects.number`, `projects.name` | |
 | Phase options | `project_phases` for the row's project, `archived_at is null`, ordered `sort_order` | label suffix: `· current` (status `current`), `· closed` (status `closed`, option disabled), `· complete`, `· additional service` (`project_phases.is_additional_service`) |
@@ -101,14 +101,14 @@ Shared app shell (menu rail, top header with page title "Time"). Then, top to bo
 | Edit note | Saves `time_entries.note` for that day on blur (trimmed; blank clears it). Clearing a day's hours clears its note | ≤ 500 chars; only on a day with hours, else `Add hours to this day before adding a note.` | own |
 | Remove row | Row with no hours: removed at once. Row with hours: confirm Dialog "Remove this row? Its 6.5 h will be deleted." → sets `archived_at` on the row and its entries | Only when editable | own |
 | Copy last week | Copies row selections (not hours or notes) from the previous week's timesheet; see rule 13 | Only when editable | own |
-| Submit / Resubmit | Runs submit validation (rule 10). On success: drops empty rows, saves the reviewer (rule 18), sets `status='submitted'` (or `leader_approved` when it skips the leader), `submitted_at=now()`, clears `rejection_note` and any earlier leader approval, writes `activity_log` (`status_changed`). Toast "Timesheet submitted." | All blocking messages must be clear | own |
+| Submit / Resubmit | Runs submit validation (rule 10). On success: drops empty rows, builds the review (rule 18), sets `status='submitted'` (or `approved` for a principal's own sheet), `submitted_at=now()`, clears `rejection_note`, writes `activity_log` (`status_changed`). Toast "Timesheet submitted." | All blocking messages must be clear | own |
 | Recall timesheet | `status='draft'`, `submitted_at=null`, `reviewer_membership_id=null`, activity_log | Only while no reviewer has acted (rule 14) | own |
 
 All writes are Server Actions in `src/server/time/actions.ts`: `addRow`, `updateRow`, `removeRow`, `setHours`, `setNote`, `copyLastWeek`, `submitTimesheet`, `recallTimesheet`. Each one: `requireRole` → Zod → load timesheet and check it belongs to the caller's membership → check it is editable (rule 2) → write → `activity_log` → return the updated timesheet view model. The `timesheets` record is created on the first write for that week (status `draft`), never on view.
 
 ## Business rules
 1. **Week.** `week_start` = the most recent day ≤ the date that matches `firm_settings.week_starts_on` (TMG: 1 = Monday). A URL `weekStart` that is not a week-start day redirects to the containing week. One timesheet per (`membership_id`, `week_start`).
-2. **Editable states.** Editable when status is `draft`, `rejected`, or no timesheet exists. Read-only when `submitted`, `leader_approved` or `approved`. The server re-checks on every write; a write against a non-editable timesheet returns error `This timesheet is <status> and can't be changed.` and the UI reloads it.
+2. **Editable states.** Editable when status is `draft`, `rejected`, or no timesheet exists. Read-only when `submitted` or `approved`. The server re-checks on every write; a write against a non-editable timesheet returns error `This timesheet is <status> and can't be changed.` and the UI reloads it.
 3. **Row types.** `project` → needs `project_id`, `project_phase_id`, `activity_id`. `overhead` → needs `overhead_category_id` (non-leave) and `activity_id`. `leave` → needs leave `overhead_category_id` and `activity_id`. Entries copy the row's `project_id`, `project_phase_id`, `overhead_category_id`, `activity_id`, `billable` so reports read `time_entries` alone; changing the row updates its entries in the same transaction.
 4. **Closed phases / projects.** A phase with `status='closed'`, or any phase of a project with `status='closed'`, can't be chosen and can't receive hours. If a draft row points at a phase that became closed after it was chosen, the row shows `· closed` and submit is blocked (message in Validation).
 5. **Activity validity.** Project rows: activity `applies_to='project'`. Overhead/leave rows: activity `applies_to='overhead'` and `overhead_category_id` = the row's category. Inactive activities are not offered; a row already using one shows `<name> · inactive` and blocks submit.
@@ -131,9 +131,9 @@ All writes are Server Actions in `src/server/time/actions.ts`: `addRow`, `update
     - **Worked example (seed week of Oct 12, BM):** rows r1 2026-014 DD Meetings [2, 1.5, 2, 1, 0, 0, 0] = 6.5; r2 2026-006 CD QA/QC review [3, 2, 3, 2, 1] = 11; r3 2025-038 Permitting [1, 2, 1, 1, 0] = 5; r4 2025-031 CA Site visit [1, 2, 1, 1, 0.5] = 5.5; r5 Overhead Marketing Proposals [1, 0, 1, 1, 1.5] = 4.5. Day totals Mon 8, Tue 7.5, Wed 8, Thu 6, Fri 3, Sat 0, Sun 0; week 32.5. Billable 28, non-billable 4.5, 28 / 32.5 = 86.15% → 86%. Tue, Thu, Fri are orange (< 8). Bar: 70% blue + 11.25% light blue. Short warning: 40 − 32.5 = 7.5 h.
 12. **Phase summary.** Group rows with hours by key: project rows `<project name up to the first comma> · <phase name>`; overhead `Overhead · <category>`; leave `<category> · Leave`. Join `<key> <hours> h` with ` · ` in row order. Seed: `Medical Office Building · Design Development 6.5 h · Summerville Office Park · Construction Documents 11 h · Coastal Credit Union Branch · Permitting 5 h · Northside Self-Storage · Construction Admin 5.5 h · Overhead · Marketing 4.5 h`.
 13. **Copy last week.** Source = timesheet with `week_start` = this week − 7 days. Copies each non-archived source row's selection and `billable` as new rows appended after existing rows. Skips: rows identical (rule 10e key) to a row already present; rows whose project/phase is now closed or whose activity is inactive. Toast: `Copied 4 rows.` or `Copied 4 rows. Skipped 1: 2026-017 Pre-Design is closed.` No source: toast `There's no timesheet for last week to copy.` Everything already here: `Last week's rows are already on this timesheet.` Only skips: `Nothing copied. Skipped 1: …`. Projects that aren't active (on hold, pursuit) and switched-off overhead phases or leave types are skipped too (`2026-020 Clinic isn't active.`, `Marketing is no longer offered.`). (1.6 B)
-14. **Recall.** Allowed only while no reviewer has acted: status `submitted`, or `leader_approved` that skipped the leader (`leader_approved_at` null). Once the team leader has approved, the button is hidden and the status note says who reviewed it.
+14. **Recall.** Allowed only while no reviewer has acted: status `submitted` and no row of its review is `approved`. Recall archives the review rows. Once someone has approved a step, the button is hidden and the status note says who.
 15. **After approval.** `approved` timesheets are locked. Only an owner/admin "Reopen" (approval spec) makes them editable again; it returns status `rejected` with a note.
-18. **Route (decision #3 b).** At submit, `reviewer_membership_id` = the person's team's `leader_membership_id` when that leader is active and isn't the person; status `submitted` ("With team leader"). Otherwise the sheet skips the leader: `reviewer_membership_id` null, status `leader_approved` ("With principal"), `leader_approved_at`/`by` null. The reviewer is saved, so a team change after submitting doesn't move the sheet.
+18. **Route (decisions #22, #23, 1.7 A).** At submit the firm's review route becomes the sheet's review (`timesheet-approval.md` rule 1), saved in `timesheet_review_steps`, so later team, PIC or route changes don't move the sheet. A principal's own sheet is approved at once (rates frozen); a missing rate blocks that submit.
 16. **Rates are not set here.** `bill_rate_cents` / `cost_rate_cents` stay null until approval. This screen never returns rates to the browser.
 17. **Autosave.** Optimistic UI. Writes are queued in order per timesheet; failures retry 3 times (1 s, 3 s, 9 s), then show `Couldn't save. Check your connection.` with a "Retry" link. Leaving the page with unsaved writes triggers the browser "Leave site?" prompt.
 
@@ -146,10 +146,9 @@ All writes are Server Actions in `src/server/time/actions.ts`: `addRow`, `update
   | Status | Badge | Status note | Grid | Buttons |
   |---|---|---|---|---|
   | none / `draft` | Draft | `Not submitted yet. Due Mon Oct 19 at 9:00 AM.` | editable | Submit for approval |
-  | `submitted` | With team leader | `Submitted Oct 19, 8:12 AM to JR for review, then a principal approves. You can recall it until JR acts.` | read-only | Recall timesheet |
-  | `leader_approved`, skipped leader | With principal | `Submitted Oct 19, 8:12 AM to a principal for approval. You can recall it until they act.` | read-only | Recall timesheet |
-  | `leader_approved` by JR | With principal | `JR reviewed it Oct 19. Waiting on a principal.` | read-only | none |
-  | `approved` | Approved | `Approved Oct 20 by BM. Locked.` | read-only | none |
+  | `submitted`, nobody has acted | With JR / With BM, PD / With a principal | `Submitted Oct 19, 8:12 AM. Route: JR, then BM. You can recall it until someone approves.` | read-only | Recall timesheet |
+  | `submitted`, a step approved | With BM | `JR approved Oct 19. Waiting on BM.` | read-only | none |
+  | `approved` | Approved | `Approved Oct 20 by BM. Locked.` (principal's own: `Approved when you submitted, Oct 19. Locked.`) | read-only | none |
   | `rejected` | Returned | `Returned. Fix and resubmit.` + rejection banner | editable | Resubmit |
 
 ## Out of scope (for this release)
@@ -185,9 +184,9 @@ All writes are Server Actions in `src/server/time/actions.ts`: `addRow`, `update
 - [ ] Given a 32.5 h draft, then the short warning shows but submit is allowed; after submit, status is `submitted`, `submitted_at` is set and an `activity_log` row with action `status_changed` exists.
 - [ ] Given a submitted timesheet, when a client calls `setHours`, then the server returns `This timesheet is submitted and can't be changed.`
 - [ ] Given a submitted timesheet with no approved entries, when BM clicks Recall, then status returns to `draft` and cells are editable.
-- [ ] Given KL on JR's team submits, then `reviewer_membership_id` is JR, status is `submitted` and the badge reads `With team leader`.
-- [ ] Given JR (the team's leader) submits, then the reviewer is empty, status is `leader_approved`, the badge reads `With principal` and Recall is shown.
-- [ ] Given a timesheet JR has leader-approved, then Recall is hidden, the server refuses `recallTimesheet`, and the status note names JR.
+- [ ] Given route [Team leader, PIC] and KL on JR's team submits, then status is `submitted`, the review waits on JR and the badge reads `With JR`. *(Replaces the 1.6 tests; see `timesheet-approval.md` 1.7 A.)*
+- [ ] Given route [Team leader, PIC] and JR (the team's leader) submits, then step 1 is skipped, the badge reads `With BM` and Recall is shown.
+- [ ] Given a sheet where JR approved step 1, then Recall is hidden, the server refuses `recallTimesheet`, and the status note names JR.
 - [ ] Given the firm requires billable notes and a billable day with hours has no note, then submit is blocked with `1 billable day needs a note before you can submit.`; with the setting off, it isn't.
 - [ ] Given the firm's due day is Friday at 5:00 PM, then the week of Oct 12 reads `DUE FRI OCT 16, 5:00 PM`.
 - [ ] Given a `rejected` timesheet with note "Move Tue to Permitting", then the banner shows the note, cells are editable and the button reads `Resubmit`.
@@ -213,5 +212,5 @@ All resolved (Blake, 2026-11-05):
 6. **`rejected_at` / `rejected_by`** — added now with the other approval columns; written by 1.7.
 7. **Notes on billable time** — firm setting `firm_settings.timesheet_notes_rule`: optional, hourly phases, or all phases (decisions #17, #24).
 8. **Leave label** — `LEAVE <category name>`.
-9. **Approval route** — team leader, then principal (decision #3 b). See the note at the top.
+9. **Approval route** — each firm's own review route (decision #23, 1.7 A). See the note at the top.
 10. **Hours format** — `formatHours` shows up to 2 decimals on time screens.
