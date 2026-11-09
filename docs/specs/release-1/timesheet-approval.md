@@ -45,14 +45,14 @@ A sheet from a member with `is_principal = true` has no review. Submitting it ap
 ## Who can see it
 | Who | Access |
 |---|---|
-| Owner, admin | Approvals tab. Queue = sheets waiting on them as a reviewer. Week overview of everyone. Rates shown (owner/admin only, rule 12). Return any sheet in review; Reopen approved sheets (never their own). |
+| Owner, admin | Approvals tab. Queue = sheets waiting on them as a reviewer. Week overview of everyone. Rates shown (owner/admin only, rule 12). **Approve on behalf of** whoever the current step waits on (rule 3f), Return any sheet in review, Reopen approved sheets — never their own. |
 | Principal (`is_principal`) | Approvals tab. Queue = sheets waiting on them, plus every sheet whose current step is `any_principal`. Week overview of everyone. No rates unless also owner/admin. |
 | Team leader | Approvals tab. Queue = sheets waiting on them. Week overview of their team. Hours only. |
 | Named person on the route | Approvals tab. Queue = sheets waiting on them. Week overview of everyone. Hours only. |
 | Anyone else (staff, PMs not in the above) | No Approvals tab; routes return 404; actions return forbidden. |
 | Client (portal) | none |
 
-Nobody approves or returns their own sheet. Permission to act is "I have a `waiting` row on the current step" (or, for `any_principal`, "I'm an active principal and not the submitter") — checked on the server, never from job role alone. Owner/admin may also Return (not approve) any sheet in review.
+Nobody approves or returns their own sheet. Permission to act is "I have a `waiting` row on the current step" (or, for `any_principal`, "I'm an active principal and not the submitter") — checked on the server, never from job role alone. Owner/admin may also Return any sheet in review, and step in to approve the current step for someone who is out or can't review (rule 3f).
 
 ## Layout
 
@@ -79,15 +79,16 @@ App shell, Time page header and KPI strip as in `timesheet.md`. "Approvals" tab 
    - Step: `Step 2 of 2 · Principal in Charge`, muted line: who else is still needed at this step (`Also waiting on PD`) or `Last step`.
    - Actions: primary small Button "Approve" (30px), secondary "Return"; the rest of the row links to the detail page.
    - **Selection bar** (sticky bottom, ink background, white text) when ≥ 1 checked: `3 selected · 96 h` + Button "Approve selected" + ghost "Clear".
-4. **Week overview** (`/app/time/approvals/week/[weekStart]`, default = the most recent week whose due time has passed): week navigation (prev / "Last week" / next) and meta `WEEK OF OCT 12 – OCT 18, 2026 · DUE MON OCT 19, 9:00 AM`. One Card per team (`teams.sort_order`; people with no team in a final "No team" card), header: team name, leader Avatar + `Team leader · JR`, mono summary `2 waiting on you · 1 with others · 1 not submitted`. Same grid, but "Step" becomes **Status** (Badge, rule 7). Actions: Approve/Return when it's waiting on me; `Send reminder` for Not submitted / Draft / Returned (label becomes `Reminder sent 2:14 PM`); `Nudge JR` for sheets waiting only on others (owner/admin and principals). Card footer when ≥ 1 missing: secondary Button `Remind all not submitted (2)`.
+4. **Week overview** (`/app/time/approvals/week/[weekStart]`, default = the most recent week whose due time has passed): week navigation (prev / "Last week" / next) and meta `WEEK OF OCT 12 – OCT 18, 2026 · DUE MON OCT 19, 9:00 AM`. One Card per team (`teams.sort_order`; people with no team in a final "No team" card), header: team name, leader Avatar + `Team leader · JR`, mono summary `2 waiting on you · 1 with others · 1 not submitted`. Same grid, but "Step" becomes **Status** (Badge, rule 7). Actions: Approve/Return when it's waiting on me; owner/admin see `Approve for JR` (or `Approve for BM, PD`) on sheets waiting on others; `Send reminder` for Not submitted / Draft / Returned (label becomes `Reminder sent 2:14 PM`); `Nudge JR` for sheets waiting only on others (owner/admin and principals). Card footer when ≥ 1 missing: secondary Button `Remind all not submitted (2)`.
 5. **Detail page** (`/app/time/approvals/[timesheetId]`):
-   - Page header: meta `KL · DESIGNER · WEEK OF OCT 12 – OCT 18, 2026 · SUBMITTED MON OCT 19, 8:12 AM`; H1 person's full name; right: icon buttons "Previous in queue" / "Next in queue", secondary "Return", primary `Approve` (only when it's waiting on me).
+   - Page header: meta `KL · DESIGNER · WEEK OF OCT 12 – OCT 18, 2026 · SUBMITTED MON OCT 19, 8:12 AM`; H1 person's full name; right: icon buttons "Previous in queue" / "Next in queue", secondary "Return", primary `Approve` (only when it's waiting on me); owner/admin on a sheet waiting on others: secondary `Approve for BM, PD`.
    - **Review strip**: the sheet's own review as chips: `Team leader · JR ✓ Oct 19` (green), `Principal in Charge · BM` (blue, current), `PD` (blue, current), skipped steps grey with the reason (`Team leader · skipped, no team`).
    - The timesheet grid from `timesheet.md` read-only with notes expanded; owner/admin only: **Bill rate** and **Cost rate** columns 90px each, mono (`$110`, `$44`; red `No rate` when the lookup fails). Frozen values once approved, else the lookup preview.
    - Footer Card: week total, billable split bar, flags list, **History** from `activity_log` (`Submitted Oct 19, 8:12 AM`, `JR approved (step 1) Oct 19, 2:40 PM`, `Returned by BM: "…"`).
 6. **Return dialog** (Dialog): title `Return timesheet to KL`; Textarea label `What needs to change?` (required, 1–1000 chars); help `KL is notified with this note. Approvals already given on this timesheet are cleared.`; footer ghost "Cancel", danger "Return timesheet".
-7. **Approve confirm dialog** (bulk only): `Approve 4 timesheets?` body `This approves your step on each one. Timesheets that finish their route lock the rates in effect on each work date.` Buttons "Cancel" / primary "Approve".
-8. **Reopen** (detail page of an `approved` sheet, owner/admin only, never their own): secondary Button "Reopen", opens the Return dialog titled `Reopen and return to KL`.
+7. **Approve-for dialog** (owner/admin stepping in): title `Approve for BM?` (or `Approve for BM and PD?`); body `Use this when BM is out or can't review. It's recorded as approved by you for BM, and BM is notified.`; optional Textarea `Note (optional)` (≤ 1000 chars); footer ghost "Cancel", primary "Approve for BM".
+8. **Approve confirm dialog** (bulk only): `Approve 4 timesheets?` body `This approves your step on each one. Timesheets that finish their route lock the rates in effect on each work date.` Buttons "Cancel" / primary "Approve".
+9. **Reopen** (detail page of an `approved` sheet, owner/admin only, never their own): secondary Button "Reopen", opens the Return dialog titled `Reopen and return to KL`.
 
 ### Notifications (1.7 C)
 - **Bell** icon button in the app header, left of the user menu, with an unread count badge (hidden at 0, `9+` above 9). `aria-label="Notifications, 3 unread"`.
@@ -120,6 +121,7 @@ App shell, Time page header and KPI strip as in `timesheet.md`. "Approvals" tab 
 | Submit (Time page) | Build the review (rule 1) or auto-approve a principal's sheet; notify the first step's approvers | `timesheet.md` rule 10, plus rule 1 refusals | own |
 | Recall (Time page) | `status='draft'`, archive the review rows | No review row `approved` | own |
 | Approve (row, detail, bulk) | `approveStep(timesheetId)` — rule 3 | Sheet `submitted`; I may act on the current step; on the last approval, every entry has a rate | the current step's approver(s), never own |
+| Approve for … (step in) | Approve-for dialog → `approveStep(timesheetId, { onBehalf: true, note })` — rule 3f | Sheet `submitted`; current step has ≥ 1 `waiting` row; note ≤ 1000 chars | owner/admin, never own |
 | Approve selected / Approve N with no flags | Confirm → `approveStep` per sheet, each in its own transaction; toast `Approved 4.` or `Approved 3. 1 not approved: KL has no rate on Oct 14.` | "no flags" = rows in the current view whose Flag is `—` | as above |
 | Return | Return dialog → `returnTimesheet(timesheetId, note)` — rule 4 | note trimmed 1–1000 chars; status `submitted` | anyone with a row (waiting or approved) in the current review; owner/admin |
 | Reopen | `reopenTimesheet(timesheetId, note)` — rule 5 | status `approved`; no entry has `invoice_id` (from 1.8) | owner/admin, never own |
@@ -150,6 +152,7 @@ Server actions: route editing in `src/server/settings/review-route.ts`; approval
    - c. If the current step has no `waiting` rows left, advance: the next step becomes current (skipping `any_principal` when a principal already approved, rule 1). If none remain: re-run `timesheet.md` rule 10 b–d (defensive), freeze rates on every non-archived entry (`bill_rate_cents`, `cost_rate_cents` from `rateFor(P, work_date)`), `T.status='approved'`, `approved_at`, `approved_by` = V.
    - d. `activity_log`: `approved` row for T with `changes = { step_no, kind }`; plus `status_changed` when c approves it.
    - e. Notify the next step's approvers (1.7 C), or the submitter when approved.
+   - f. **Stepping in (owner/admin).** With `onBehalf`, every `waiting` row on the current step is marked `approved` with `acted_by` = the owner/admin's user and `on_behalf = true` (an `any_principal` row keeps `approver_membership_id` null). Then c–e as normal. `activity_log` `approved` gets `changes.on_behalf_of` = the initials of the people stood in for, plus the note. Each of them is notified: `MW approved KL's timesheet for you (week of Oct 12).` Detail-page review strip shows `Principal in Charge · BM ✓ by MW for BM Oct 20`. For the `any_principal` skip (rule 1), a step approved on behalf of a principal counts as a principal's approval.
    - **Rate fixture:** Designer role rate A: bill 11000, cost 4200, `effective_to` 2026-10-13; rate B: bill 11000, cost 4400, from 2026-10-14. KL's 2026-014 row = Mon 3, Tue 3, Wed 2, Thu 2, Fri 2 (12 h). On final approval Mon/Tue entries get cost 4200, Wed–Fri 4400, all bill 11000. Labor cost = 6 × 4200 + 6 × 4400 = 51,600 cents ($516). Billable value = 12 × 11000 = 132,000 cents ($1,320). With a person override for KL (bill 12000, cost 4600, from 2026-10-01), every entry gets 12000 / 4600.
 4. **Return** (`returnTimesheet`): `T.status='rejected'`, `rejection_note`, `rejected_at`, `rejected_by`; archive T's review rows; clear `bill_rate_cents` / `cost_rate_cents` on its entries (none set before approval, defensive); `activity_log` `status_changed` with the note; notify P: `Your timesheet for Oct 12 – 18 was returned` with the note and a link to `/app/time/week/2026-10-12`. Allowed only while `submitted`.
 5. **Reopen** (`reopenTimesheet`): only `approved` sheets with no invoiced entry (`2 entries are on invoice 2026-121. Void or edit that invoice before reopening.`, from 1.8). Same effect as rule 4 (rates cleared), `activity_log` action `reopened`.
@@ -175,7 +178,6 @@ Server actions: route editing in `src/server/settings/review-route.ts`; approval
 
 ## Out of scope (for this release)
 - Approving part of a sheet (single projects or days), editing someone's hours during review, delegation while an approver is away → Release 2+.
-- Owner/admin approving a step on someone else's behalf → open question 12.
 - Email delivery (added later inside `notify()`), notification preferences, Slack.
 - Routes per team (decided: one per firm).
 
@@ -208,6 +210,9 @@ Server actions: route editing in `src/server/settings/review-route.ts`; approval
 - [ ] Given an approved entry, when an admin later edits the Designer rate, then its frozen rates are unchanged.
 - [ ] Given route [Team leader, Any principal], when JR approves KL's sheet, then it appears in the queue of every active principal, and the first to approve completes it.
 - [ ] Given two people approve the same step at once, then one succeeds and the other gets `This timesheet is no longer waiting for you.` or a no-op, never double-written rates.
+- [ ] Given KL's sheet waits on BM and PD and PD is out, when MW (admin) clicks `Approve for BM, PD` with note "Both out this week", then both rows are `approved` with `acted_by` = MW and `on_behalf` = true, the sheet is `approved` with rates frozen, `activity_log` shows `on_behalf_of` BM, PD and the note, and BM and PD are each notified.
+- [ ] Given route [Team leader, Any principal] and MW approves step 1 for JR, then step 2 still waits on any principal (JR isn't a principal); given route [PIC, Any principal] and MW approves for BM, then step 2 is skipped.
+- [ ] Given JR (team leader, not owner/admin) calls `approveStep` with `onBehalf` on a sheet waiting on BM, then forbidden; given MW calls it on her own sheet, then forbidden.
 - [ ] Given BM is an owner, then his own sheet never appears in his queue and `approveStep` on it returns forbidden.
 - [ ] Given Return with an empty or whitespace note, then the dialog shows `Add a note so KL knows what to change.`; a 1001-character note shows `Notes can be up to 1000 characters.`
 - [ ] Given JR approved step 1, when BM returns the sheet, then status = `rejected`, the review rows are archived and KL is notified with the note.
@@ -242,4 +247,4 @@ Server actions: route editing in `src/server/settings/review-route.ts`; approval
 9. ~~What can a firm set?~~ — decided 2026-11-09 (#23): four step kinds, one route per firm, auto-skip.
 10. ~~Principal sheets~~ — decided: approved on submit (#22).
 11. ~~Sheets in review when the route changes~~ — decided: they keep the review made at submit.
-12. Should owner/admin be able to approve a step on someone's behalf (e.g. a PIC on holiday)? Not in 1.7; Return + resubmit after a route change is the workaround.
+12. ~~Owner/admin approving on someone's behalf~~ — decided 2026-11-09 (Blake): yes, "Approve for …" (rule 3f), built in 1.7 B.

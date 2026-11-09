@@ -331,6 +331,7 @@ One sheet's copy of the route, made at submit: one row per **required approver**
 | status | enum `review_row_status` | `waiting`, `approved`, `skipped` |
 | skip_reason | text null | `no_team`, `no_projects`, `is_submitter`, `inactive`, `already_reviewing`, `principal_already_approved` |
 | acted_by, acted_at | uuid fk users / timestamptz null | who approved and when |
+| on_behalf | boolean | default false; true when an owner/admin approved for the named approver |
 | archived_at | | set on Recall and Return; resubmit builds a new set |
 
 Current step = lowest `step_no` with a `waiting` row. Same-firm FKs to timesheets and memberships.
