@@ -58,16 +58,25 @@ export const phaseStatus = pgEnum("phase_status", [
 export const scopeKind = pgEnum("scope_kind", ["ground_up", "tenant_upfit", "shell"]);
 
 /**
- * Where a timesheet is (timesheet spec, decision #3 b): submitted = with the
- * team leader; leader_approved = with a principal; rejected = returned.
+ * Where a timesheet is: submitted = in review (who it waits on is in
+ * timesheet_review_steps, 1.7 A); rejected = returned.
  */
-export const timesheetStatus = pgEnum("timesheet_status", [
-  "draft",
-  "submitted",
-  "leader_approved",
-  "approved",
-  "rejected",
+export const timesheetStatus = pgEnum("timesheet_status", ["draft", "submitted", "approved", "rejected"]);
+
+/**
+ * A step on the firm's review route (decision #23): every Principal in
+ * Charge of a project on the sheet, the team leader, any one principal, or a
+ * named person.
+ */
+export const reviewStepKind = pgEnum("review_step_kind", [
+  "principal_in_charge",
+  "team_leader",
+  "any_principal",
+  "person",
 ]);
+
+/** One required approval on a sheet's review. */
+export const reviewRowStatus = pgEnum("review_row_status", ["waiting", "approved", "skipped"]);
 
 /** What a timesheet row is for. Null on a row nobody has picked yet. */
 export const timesheetRowType = pgEnum("timesheet_row_type", ["project", "overhead", "leave"]);

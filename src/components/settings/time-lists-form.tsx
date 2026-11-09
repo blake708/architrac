@@ -19,7 +19,9 @@ import {
 import { saveTimeLists } from "@/server/settings/actions";
 import { ErrorBanner } from "./error-banner";
 import { blurOnEnter, useInstantSave } from "./form-state";
+import { ReviewRouteCard } from "./review-route-card";
 import { TimesheetRulesCard } from "./timesheet-rules-card";
+import type { ReviewRouteView } from "@/lib/settings/review-route";
 import type { TimesheetRules } from "@/lib/settings/timesheet-rules";
 
 const FORM_ID = "time-lists-form";
@@ -233,8 +235,11 @@ const removeAt = <T,>(list: readonly T[], i: number) =>
 export function TimeListsFormView({
   initial,
   rules,
+  route,
 }: {
   initial: TimeListsForm;
+  /** The "Approval route" card (decision #23). */
+  route?: ReviewRouteView;
   /** The "Timesheets" card above the lists (decisions #17, #21). */
   rules?: { initial: TimesheetRules; weekStartsOn: number; exampleWeek: string };
 }) {
@@ -319,6 +324,7 @@ export function TimeListsFormView({
       className="flex max-w-[960px] flex-col gap-4"
     >
       {rules && <TimesheetRulesCard {...rules} save={save} />}
+      {route && <ReviewRouteCard initial={route} save={save} />}
       {banner && <ErrorBanner message={banner} />}
       <section
         aria-labelledby="ts-lists-title"

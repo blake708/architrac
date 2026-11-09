@@ -303,32 +303,16 @@ export function shortWarning(weekTotal: number, targetHours: number): string | n
   return `${h(short)} ${plural(short, "hour", "hours")} short of ${h(targetHours)}. Add the missing time, or log PTO or a holiday before submitting.`;
 }
 
-// ---------- Status (rules 2, 14, 18) ----------
+// ---------- Status (rule 2) ----------
 
-export type TimesheetStatus = "draft" | "submitted" | "leader_approved" | "approved" | "rejected";
+export type TimesheetStatus = "draft" | "submitted" | "approved" | "rejected";
 
 /** Rule 2: no timesheet yet counts as a draft. */
 export function isEditable(status: TimesheetStatus | null): boolean {
   return status === null || status === "draft" || status === "rejected";
 }
 
-/** Rule 14: recall while no reviewer has acted. */
-export function canRecall(status: TimesheetStatus | null, leaderApprovedAt: Date | string | null): boolean {
-  return status === "submitted" || (status === "leader_approved" && leaderApprovedAt === null);
-}
-
-/**
- * Rule 18: who reviews first. The team leader when there is one, they're
- * active and they aren't the person; otherwise straight to a principal.
- */
-export function submitRoute(
-  membershipId: string,
-  leader: { membershipId: string; active: boolean } | null,
-): { status: "submitted" | "leader_approved"; reviewerMembershipId: string | null } {
-  if (leader && leader.active && leader.membershipId !== membershipId)
-    return { status: "submitted", reviewerMembershipId: leader.membershipId };
-  return { status: "leader_approved", reviewerMembershipId: null };
-}
+// Recall (rule 14) and the route (rule 18) live in review-route.ts.
 
 // ---------- Copy last week (rule 13) ----------
 

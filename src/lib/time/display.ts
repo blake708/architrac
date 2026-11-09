@@ -51,47 +51,45 @@ type StatusFacts = {
   dueLabel: string;
   timezone: string;
   submittedAt: string | null;
-  reviewer: string | null;
-  leaderApprovedAt: string | null;
-  leaderApprovedBy: string | null;
+  /** "JR", "BM, PD" or "a principal". */
+  waitingOn: string | null;
+  /** "JR, then BM". */
+  routeAhead: string | null;
+  lastApprovedBy: string | null;
+  lastApprovedAt: string | null;
+  autoApproved: boolean;
   approvedAt: string | null;
   approvedBy: string | null;
 };
 
-/** The status badge and note (States → Status states; decision #3 b). */
+/** The status badge and note (States → Status states; decisions #22, #23). */
 export function statusView(f: StatusFacts): StatusView {
   const submitted = f.submittedAt ? whenLabel(f.submittedAt, f.timezone) : "";
   switch (f.status) {
     case "submitted": {
-      const who = f.reviewer ?? "your team leader";
-      const until = f.reviewer ? `${f.reviewer} acts` : "they act";
-      return {
-        label: "With team leader",
-        tone: "blue",
-        look: "half",
-        note: `Submitted ${submitted} to ${who} for review, then a principal approves. You can recall it until ${until}.`,
-      };
-    }
-    case "leader_approved":
-      if (!f.leaderApprovedAt)
+      const label = f.waitingOn ? `With ${f.waitingOn}` : "In review";
+      if (f.lastApprovedAt)
         return {
-          label: "With principal",
+          label,
           tone: "blue",
           look: "half",
-          note: `Submitted ${submitted} to a principal for approval. You can recall it until they act.`,
+          note: `${f.lastApprovedBy ?? "A reviewer"} approved ${dayLabel(f.lastApprovedAt, f.timezone)}. Waiting on ${f.waitingOn ?? "the next reviewer"}.`,
         };
       return {
-        label: "With principal",
+        label,
         tone: "blue",
         look: "half",
-        note: `${f.leaderApprovedBy ?? "Your team leader"} reviewed it ${dayLabel(f.leaderApprovedAt, f.timezone)}. Waiting on a principal.`,
+        note: `Submitted ${submitted}.${f.routeAhead ? ` Route: ${f.routeAhead}.` : ""} You can recall it until someone approves.`,
       };
+    }
     case "approved":
       return {
         label: "Approved",
         tone: "green",
         look: "filled",
-        note: `Approved ${f.approvedAt ? dayLabel(f.approvedAt, f.timezone) : ""}${f.approvedBy ? ` by ${f.approvedBy}` : ""}. Locked.`,
+        note: f.autoApproved
+          ? `Approved when you submitted, ${f.approvedAt ? dayLabel(f.approvedAt, f.timezone) : ""}. Locked.`
+          : `Approved ${f.approvedAt ? dayLabel(f.approvedAt, f.timezone) : ""}${f.approvedBy ? ` by ${f.approvedBy}` : ""}. Locked.`,
       };
     case "rejected":
       return { label: "Returned", tone: "orange", look: "diamond", note: "Returned. Fix and resubmit." };

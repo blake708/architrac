@@ -66,6 +66,34 @@ async function newRow(who: TimeActor, week = WEEK) {
   return v.rows[v.rows.length - 1].id;
 }
 
+/** A complete project row with 8 h on the week's Monday; returns its id. */
+async function fullRow(who: TimeActor, week: string) {
+  const rowId = await newRow(who, week);
+  ok(await updateRowCore(who, { rowId, change: { type: "pick", pick: { kind: "project", projectId: A.projectId } } }));
+  ok(await updateRowCore(who, { rowId, change: { type: "activity", id: ids.meetings } }));
+  ok(await setHoursCore(who, { rowId, workDate: week, hours: 8 }));
+  return rowId;
+}
+
+/** A sheet's live review rows. */
+const reviewOf = (timesheetId: string) =>
+  q(
+    "select step_no, kind, approver_membership_id, status, skip_reason from timesheet_review_steps where timesheet_id = $1 and archived_at is null order by step_no, approver_membership_id",
+    [timesheetId],
+  );
+
+/** Replace the firm's route. */
+async function setRoute(steps: { kind: string; membershipId?: string }[]) {
+  await q("update review_steps set archived_at = now() where firm_id = $1 and archived_at is null", [A.firmId]);
+  for (const [i, st] of steps.entries())
+    await q("insert into review_steps (firm_id, sort_order, kind, membership_id) values ($1, $2, $3, $4)", [
+      A.firmId,
+      i,
+      st.kind,
+      st.membershipId ?? null,
+    ]);
+}
+
 const q = <T extends Record<string, unknown>>(text: string, params: unknown[] = []) =>
   asFirm(pool, A.firmId, async (c) => (await c.query<T>(text, params)).rows);
 
@@ -263,24 +291,19 @@ describe("submit and recall", () => {
     });
   });
 
-  it("a team member's sheet goes to the team leader; empty rows are dropped; it locks", async () => {
+  it("default route: the sheet waits on the project's Principal in Charge; empty rows drop; it locks", async () => {
     const week = "2026-08-31";
-    const rowId = await newRow(klA, week);
+    const rowId = await fullRow(klA, week);
     await newRow(klA, week); // stays empty
-    ok(await updateRowCore(klA, { rowId, change: { type: "pick", pick: { kind: "project", projectId: A.projectId } } }));
-    ok(await updateRowCore(klA, { rowId, change: { type: "activity", id: ids.meetings } }));
-    ok(await setHoursCore(klA, { rowId, workDate: week, hours: 8 }));
     const v = ok(await submitTimesheetCore(klA, { weekStart: week }));
     expect(v.status).toBe("submitted");
-    expect(v.reviewer).toBe("TT"); // the owner: "Time Test"
+    expect(v.waitingOn).toBe("TT"); // the owner, "Time Test", is the project's PIC
+    expect(v.routeAhead).toBe("TT");
     expect(v.canRecall).toBe(true);
     expect(v.rows.map((r) => r.id)).toEqual([rowId]);
-    const [sheet] = await q<{ reviewer_membership_id: string; submitted_at: Date }>(
-      "select reviewer_membership_id, submitted_at from timesheets where id = $1",
-      [v.timesheetId],
-    );
-    expect(sheet.reviewer_membership_id).toBe(A.membershipId);
-    expect(sheet.submitted_at).not.toBeNull();
+    expect(await reviewOf(v.timesheetId!)).toEqual([
+      { step_no: 1, kind: "principal_in_charge", approver_membership_id: A.membershipId, status: "waiting", skip_reason: null },
+    ]);
     const logs = await q("select id from activity_log where entity_id = $1 and action = 'status_changed'", [v.timesheetId]);
     expect(logs).toHaveLength(1);
     expect(await setHoursCore(klA, { rowId, workDate: week, hours: 4 })).toMatchObject({
@@ -288,38 +311,24 @@ describe("submit and recall", () => {
       error: "This timesheet is submitted and can't be changed.",
     });
 
-    // Recall returns it to draft.
+    // Recall returns it to draft and archives the review.
     const back = ok(await recallTimesheetCore(klA, { weekStart: week }));
     expect(back.status).toBe("draft");
     expect(back.editable).toBe(true);
+    expect(await reviewOf(v.timesheetId!)).toEqual([]);
   });
 
-  it("the team leader's own sheet goes straight to a principal", async () => {
-    const week = "2026-08-24";
-    const rowId = await newRow(bm, week);
-    ok(await updateRowCore(bm, { rowId, change: { type: "pick", pick: { kind: "project", projectId: A.projectId } } }));
-    ok(await updateRowCore(bm, { rowId, change: { type: "activity", id: ids.meetings } }));
-    ok(await setHoursCore(bm, { rowId, workDate: week, hours: 8 }));
-    const v = ok(await submitTimesheetCore(bm, { weekStart: week }));
-    expect(v.status).toBe("leader_approved");
-    expect(v.reviewer).toBeNull();
-    expect(v.canRecall).toBe(true);
-  });
-
-  it("can't recall once the team leader has approved", async () => {
+  it("can't recall once someone has approved a step", async () => {
     const week = "2026-08-17";
-    const rowId = await newRow(klA, week);
-    ok(await updateRowCore(klA, { rowId, change: { type: "pick", pick: { kind: "project", projectId: A.projectId } } }));
-    ok(await updateRowCore(klA, { rowId, change: { type: "activity", id: ids.meetings } }));
-    ok(await setHoursCore(klA, { rowId, workDate: week, hours: 8 }));
+    await fullRow(klA, week);
     const v = ok(await submitTimesheetCore(klA, { weekStart: week }));
-    await q("update timesheets set status = 'leader_approved', leader_approved_at = now(), leader_approved_by = $2 where id = $1", [
-      v.timesheetId,
-      A.userId,
-    ]);
+    await q(
+      "update timesheet_review_steps set status = 'approved', acted_by = $2, acted_at = now() where timesheet_id = $1 and archived_at is null",
+      [v.timesheetId, A.userId],
+    );
     const after = await loadWeekCore(klA, week);
     expect(after.canRecall).toBe(false);
-    expect(after.leaderApprovedBy).toBe("TT");
+    expect(after.lastApprovedBy).toBe("TT");
     expect(await recallTimesheetCore(klA, { weekStart: week })).toMatchObject({ ok: false, error: "This timesheet can't be recalled now." });
   });
 
@@ -522,5 +531,107 @@ describe("logged time feeds the other screens (decision #20)", () => {
     expect(has.has(ids.closedPhase)).toBe(false);
     // Kat is a Designer: $44 cost from 2026-01-01.
     expect(costed.find((c) => c.membershipId === kl.membershipId)?.rateCents).toBe(4400);
+  });
+});
+
+describe("review route (1.7 A)", () => {
+  let pd: TestMember; // becomes a principal partway through
+  let pdA: TimeActor;
+  beforeAll(async () => {
+    pd = await addTestMember(pool, A, { firstName: "Pat", lastName: "Dunn", role: "project_manager" });
+    users.push(pd.userId);
+    pdA = actorFor(A, pd, { member: { appRole: "project_manager", active: true } });
+  });
+  afterAll(async () => {
+    await setRoute([{ kind: "principal_in_charge" }]);
+  });
+
+  it("a new firm starts with one Principal in Charge step", async () => {
+    // The test pool is the owner, which skips row security, so filter by firm.
+    expect(await q("select kind, membership_id from review_steps where firm_id = $1 and archived_at is null", [A.firmId])).toEqual([
+      { kind: "principal_in_charge", membership_id: null },
+    ]);
+  });
+
+  it("route [Team leader, PIC]: the owner's own sheet has nobody left, and there's no principal", async () => {
+    await setRoute([{ kind: "team_leader" }, { kind: "principal_in_charge" }]);
+    const week = "2026-05-25";
+    await fullRow(bm, week);
+    expect(await submitTimesheetCore(bm, { weekStart: week })).toMatchObject({
+      ok: false,
+      error: "There's no principal to approve this timesheet. Ask an admin to mark someone as a principal on the Team page.",
+    });
+
+    // Once Pat is a principal, it goes to any principal.
+    await q("update memberships set is_principal = true where id = $1", [pd.membershipId]);
+    const v = ok(await submitTimesheetCore(bm, { weekStart: week }));
+    expect(v.waitingOn).toBe("a principal");
+    expect(await reviewOf(v.timesheetId!)).toEqual([
+      { step_no: 1, kind: "team_leader", approver_membership_id: null, status: "skipped", skip_reason: "is_submitter" },
+      { step_no: 2, kind: "principal_in_charge", approver_membership_id: null, status: "skipped", skip_reason: "is_submitter" },
+      { step_no: 3, kind: "any_principal", approver_membership_id: null, status: "waiting", skip_reason: null },
+    ]);
+  });
+
+  it("route [Team leader, PIC]: KL's leader is also the PIC, so they're asked once", async () => {
+    const week = "2026-05-18";
+    await fullRow(klA, week);
+    const v = ok(await submitTimesheetCore(klA, { weekStart: week }));
+    expect(v.waitingOn).toBe("TT");
+    expect(await reviewOf(v.timesheetId!)).toEqual([
+      { step_no: 1, kind: "team_leader", approver_membership_id: A.membershipId, status: "waiting", skip_reason: null },
+      { step_no: 2, kind: "principal_in_charge", approver_membership_id: null, status: "skipped", skip_reason: "already_reviewing" },
+    ]);
+  });
+
+  it("a waiting sheet keeps its review when the route or the project's PIC changes", async () => {
+    await setRoute([{ kind: "principal_in_charge" }]);
+    const week = "2026-07-20";
+    await fullRow(klA, week);
+    ok(await submitTimesheetCore(klA, { weekStart: week }));
+    await setRoute([{ kind: "person", membershipId: pd.membershipId }]);
+    await q("update projects set principal_membership_id = $1 where id = $2", [pd.membershipId, A.projectId]);
+    try {
+      const after = await loadWeekCore(klA, week);
+      expect(after.waitingOn).toBe("TT");
+    } finally {
+      await q("update projects set principal_membership_id = $1 where id = $2", [A.membershipId, A.projectId]);
+      await setRoute([{ kind: "principal_in_charge" }]);
+    }
+  });
+
+  it("a principal's own sheet: a missing rate refuses; with a rate it's approved and the rates freeze", async () => {
+    const week = "2026-05-11";
+    await fullRow(pdA, week);
+    expect(await submitTimesheetCore(pdA, { weekStart: week })).toMatchObject({
+      ok: false,
+      error: "No rate for PD on May 11. Add one in Settings → Roles & rates.",
+    });
+    expect(await q("select status from timesheets where membership_id = $1 and week_start = $2", [pd.membershipId, week])).toEqual([
+      { status: "draft" },
+    ]);
+
+    await q(
+      "insert into rates (firm_id, membership_id, bill_rate_cents, cost_rate_cents, effective_from) values ($1, $2, 18500, 9500, '2026-01-01')",
+      [A.firmId, pd.membershipId],
+    );
+    const v = ok(await submitTimesheetCore(pdA, { weekStart: week }));
+    expect(v.status).toBe("approved");
+    expect(v.autoApproved).toBe(true);
+    expect(v.editable).toBe(false);
+    expect(await reviewOf(v.timesheetId!)).toEqual([]);
+    const [sheet] = await q<{ approved_by: string; approved_at: Date }>("select approved_by, approved_at from timesheets where id = $1", [
+      v.timesheetId,
+    ]);
+    expect(sheet.approved_by).toBe(pd.userId);
+    expect(sheet.approved_at).not.toBeNull();
+    expect(
+      await q("select bill_rate_cents, cost_rate_cents from time_entries where timesheet_id = $1 and archived_at is null", [v.timesheetId]),
+    ).toEqual([{ bill_rate_cents: "18500", cost_rate_cents: "9500" }]);
+    const [logRow] = await q<{ changes: { auto?: boolean } }>(
+      "select changes from activity_log where entity_id = $1 and action = 'status_changed'",
+      [v.timesheetId],
+    );
+    expect(logRow.changes.auto).toBe(true);
   });
 });

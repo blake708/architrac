@@ -40,16 +40,19 @@ export function MenuItem({
   children,
   onSelect,
   danger,
+  disabled,
 }: {
   children: ReactNode;
   onSelect: () => void;
   danger?: boolean;
+  disabled?: boolean;
 }) {
   return (
     <DropdownMenu.Item
       onSelect={onSelect}
+      disabled={disabled}
       className={cn(
-        "cursor-pointer px-3 py-2 outline-none data-[highlighted]:bg-surface-2",
+        "cursor-pointer px-3 py-2 outline-none data-[highlighted]:bg-surface-2 data-[disabled]:cursor-not-allowed data-[disabled]:text-faint",
         danger && "text-red",
       )}
     >

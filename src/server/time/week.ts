@@ -18,7 +18,6 @@ import {
   type RowType,
   type TimesheetStatus,
   addDays,
-  canRecall,
   dueDate,
   isEditable,
   isHourlyFee,
@@ -26,8 +25,10 @@ import {
   weekStartOf,
   zonedInstant,
 } from "@/lib/calc/timesheet";
+import { canRecallReview, routeLabel, waitingLabel } from "@/lib/calc/review-route";
 import { todayIn } from "@/lib/format";
 import { initials as initialsFromName } from "@/lib/initials";
+import { loadReview } from "./review";
 
 // Loads one person's week for the timesheet page (timesheet spec, Data
 // shown). Only their own timesheet, and never rates: the view model has no
@@ -91,10 +92,17 @@ export type TimesheetView = {
   editable: boolean;
   canRecall: boolean;
   submittedAt: string | null;
-  /** Initials of the team leader it went to (null = straight to a principal). */
-  reviewer: string | null;
-  leaderApprovedAt: string | null;
-  leaderApprovedBy: string | null;
+  /** Who the sheet waits on now: "JR", "BM, PD" or "a principal" (null = not in review). */
+  waitingOn: string | null;
+  /** The route still ahead: "JR, then BM" (null = not in review). */
+  routeAhead: string | null;
+  /** The latest approval in this review, if any. */
+  lastApprovedBy: string | null;
+  lastApprovedAt: string | null;
+  /** A principal's own sheet, approved when they submitted (#22). */
+  autoApproved: boolean;
+  /** Submitting approves at once (#22): the button reads "Submit and approve". */
+  isPrincipal: boolean;
   approvedAt: string | null;
   approvedBy: string | null;
   rejectedAt: string | null;
@@ -158,7 +166,11 @@ export async function loadWeek(
   const dueAt = zonedInstant(due, ctx.dueTime, ctx.timezone);
 
   const [me] = await db
-    .select({ capacity: memberships.weeklyCapacityHours, target: memberships.targetUtilizationBp })
+    .select({
+      capacity: memberships.weeklyCapacityHours,
+      target: memberships.targetUtilizationBp,
+      isPrincipal: memberships.isPrincipal,
+    })
     .from(memberships)
     .where(eq(memberships.id, ctx.membershipId));
 
@@ -233,10 +245,18 @@ export async function loadWeek(
   const categoryById = new Map(categoryRecords.map((c) => [c.id, c]));
   const activityById = new Map(activityRecords.map((a) => [a.id, a]));
 
-  // Names of the people who acted on the sheet.
-  const actorIds = sheet
-    ? [sheet.leaderApprovedBy, sheet.approvedBy, sheet.rejectedBy].filter((v): v is string => !!v)
-    : [];
+  // The sheet's review: who it waits on and who has approved (rules 14, 18).
+  const review = sheet ? await loadReview(db, sheet.id) : [];
+  const approvals = review
+    .filter((r) => r.status === "approved" && r.actedAt)
+    .sort((x, y) => x.actedAt!.getTime() - y.actedAt!.getTime());
+  const lastApproval = approvals.at(-1) ?? null;
+
+  // Names of the people who acted on the sheet or are on its review.
+  const actorIds = [
+    ...(sheet ? [sheet.approvedBy, sheet.rejectedBy] : []),
+    lastApproval?.actedBy,
+  ].filter((v): v is string => !!v);
   const actorRecords = actorIds.length
     ? await db
         .select({ id: users.id, firstName: users.firstName, lastName: users.lastName, initials: users.initials })
@@ -244,15 +264,17 @@ export async function loadWeek(
         .where(inArray(users.id, actorIds))
     : [];
   const actors = new Map(actorRecords.map((u) => [u.id, u]));
-  let reviewer: string | null = null;
-  if (sheet?.reviewerMembershipId) {
-    const [r] = await db
-      .select({ firstName: users.firstName, lastName: users.lastName, initials: users.initials })
-      .from(memberships)
-      .innerJoin(users, eq(users.id, memberships.userId))
-      .where(eq(memberships.id, sheet.reviewerMembershipId));
-    reviewer = initialsOf(r);
-  }
+  const reviewerIds = [...new Set(review.flatMap((r) => (r.approverMembershipId ? [r.approverMembershipId] : [])))];
+  const reviewerRecords = reviewerIds.length
+    ? await db
+        .select({ id: memberships.id, firstName: users.firstName, lastName: users.lastName, initials: users.initials })
+        .from(memberships)
+        .innerJoin(users, eq(users.id, memberships.userId))
+        .where(inArray(memberships.id, reviewerIds))
+    : [];
+  const reviewers = new Map(reviewerRecords.map((u) => [u.id, u]));
+  const reviewerInitials = (id: string) => initialsOf(reviewers.get(id)) ?? "?";
+  const inReview = sheet?.status === "submitted";
 
   const rows: ViewRow[] = rowRecords.map((r) => {
     const hours = dates.map(() => 0);
@@ -307,11 +329,14 @@ export async function loadWeek(
     timesheetId: sheet?.id ?? null,
     status,
     editable: isEditable(status),
-    canRecall: canRecall(status, sheet?.leaderApprovedAt ?? null),
+    canRecall: canRecallReview(status, review),
     submittedAt: iso(sheet?.submittedAt),
-    reviewer,
-    leaderApprovedAt: iso(sheet?.leaderApprovedAt),
-    leaderApprovedBy: initialsOf(sheet?.leaderApprovedBy ? actors.get(sheet.leaderApprovedBy) : undefined),
+    waitingOn: inReview ? waitingLabel(review, reviewerInitials) : null,
+    routeAhead: inReview ? routeLabel(review, reviewerInitials) : null,
+    lastApprovedBy: initialsOf(lastApproval?.actedBy ? actors.get(lastApproval.actedBy) : undefined),
+    lastApprovedAt: iso(lastApproval?.actedAt),
+    autoApproved: status === "approved" && review.length === 0 && !!sheet?.approvedBy && sheet.approvedBy === ctx.userId,
+    isPrincipal: me?.isPrincipal ?? false,
     approvedAt: iso(sheet?.approvedAt),
     approvedBy: initialsOf(sheet?.approvedBy ? actors.get(sheet.approvedBy) : undefined),
     rejectedAt: iso(sheet?.rejectedAt),

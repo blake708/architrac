@@ -647,7 +647,7 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
                   blocked ? "cursor-not-allowed border-line-strong bg-line-strong text-white" : "cursor-pointer border-ink bg-ink text-white hover:bg-ink-2",
                 )}
               >
-                {view.status === "rejected" ? "Resubmit" : "Submit for approval"}
+                {view.isPrincipal ? (view.status === "rejected" ? "Resubmit and approve" : "Submit and approve") : view.status === "rejected" ? "Resubmit" : "Submit for approval"}
               </button>
             )}
           </div>

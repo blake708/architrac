@@ -26,6 +26,8 @@ import {
   teams,
   timeEntries,
   timesheetRows,
+  reviewSteps,
+  timesheetReviewSteps,
   timesheets,
 } from "./schema";
 import { type TenantDb, withFirm } from "./tenant";
@@ -603,6 +605,40 @@ const cases: TableCase[] = [
         .then((r) => r[0]?.v),
     insertForB: (db) =>
       db.insert(timeEntries).values({ firmId: B.firmId, timesheetId: BT.timesheetId, timesheetRowId: BT.rowId, workDate: "2026-10-13", hours: "1" }),
+  },
+  {
+    table: "review_steps",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: reviewSteps.firmId })
+        .from(reviewSteps)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) => db.update(reviewSteps).set({ sortOrder: 99 }).where(eq(reviewSteps.id, BT.routeStepId)).returning(),
+    readB: (db) =>
+      db
+        .select({ v: reviewSteps.sortOrder })
+        .from(reviewSteps)
+        .where(eq(reviewSteps.id, BT.routeStepId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) => db.insert(reviewSteps).values({ firmId: B.firmId, sortOrder: 5, kind: "any_principal" }),
+  },
+  {
+    table: "timesheet_review_steps",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: timesheetReviewSteps.firmId })
+        .from(timesheetReviewSteps)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) =>
+      db.update(timesheetReviewSteps).set({ stepNo: 99 }).where(eq(timesheetReviewSteps.id, BT.reviewRowId)).returning(),
+    readB: (db) =>
+      db
+        .select({ v: timesheetReviewSteps.stepNo })
+        .from(timesheetReviewSteps)
+        .where(eq(timesheetReviewSteps.id, BT.reviewRowId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db.insert(timesheetReviewSteps).values({ firmId: B.firmId, timesheetId: BT.timesheetId, stepNo: 2, kind: "any_principal" }),
   },
 ];
 

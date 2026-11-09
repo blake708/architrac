@@ -10,8 +10,7 @@ import { weekRange } from "@/lib/time/display";
 const SCALE_HOURS = 45;
 const STATUS: Record<TimesheetStatus, { label: string; tone: BadgeTone }> = {
   draft: { label: "Draft", tone: "neutral" },
-  submitted: { label: "With team leader", tone: "blue" },
-  leader_approved: { label: "With principal", tone: "blue" },
+  submitted: { label: "In review", tone: "blue" },
   approved: { label: "Approved", tone: "green" },
   rejected: { label: "Returned", tone: "orange" },
 };
