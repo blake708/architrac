@@ -4,7 +4,12 @@ import {
   type RouteStep,
   type SavedReviewRow,
   ROUTE_MESSAGES,
+  advanceReview,
+  andList,
   buildReview,
+  currentRows,
+  rowsFor,
+  stepSummary,
   canRecallReview,
   currentStep,
   freezeRates,
@@ -206,5 +211,91 @@ describe("freezeRates (rules 2 and 3c)", () => {
       ok: false,
       message: "No rate for KL on Oct 14, Oct 15. Add one in Settings → Roles & rates.",
     });
+  });
+});
+
+// ---------- Approving (rule 3, 1.7 B) ----------
+
+type Row = SavedReviewRow & { id: string };
+let n = 0;
+const row = (stepNo: number, kind: RouteStep["kind"], who: string | null, status: Row["status"] = "waiting"): Row => ({
+  id: `r${++n}`,
+  stepNo,
+  kind,
+  approverMembershipId: who,
+  status,
+  actedAt: status === "approved" ? "2026-10-19T14:00:00Z" : null,
+});
+const principals = new Set(["BM", "PD"]);
+const isPrincipal = (id: string) => principals.has(id);
+const ids = (rs: Row[]) => rs.map((r) => r.id);
+
+describe("rowsFor: who may act on the current step", () => {
+  const rows = [row(1, "team_leader", "JR"), row(2, "principal_in_charge", "BM")];
+
+  it("only the current step's approver", () => {
+    expect(ids(rowsFor(rows, { membershipId: "JR", isActivePrincipal: false }, "KL"))).toEqual([rows[0].id]);
+    expect(rowsFor(rows, { membershipId: "BM", isActivePrincipal: true }, "KL")).toEqual([]);
+  });
+
+  it("any principal acts on an any_principal step; nobody on their own sheet", () => {
+    const any = [row(1, "any_principal", null)];
+    expect(rowsFor(any, { membershipId: "PD", isActivePrincipal: true }, "KL")).toHaveLength(1);
+    expect(rowsFor(any, { membershipId: "JR", isActivePrincipal: false }, "KL")).toHaveLength(0);
+    expect(rowsFor(any, { membershipId: "KL", isActivePrincipal: true }, "KL")).toHaveLength(0);
+  });
+
+  it("currentRows lists everyone the step still waits on", () => {
+    const two = [row(1, "principal_in_charge", "BM"), row(1, "principal_in_charge", "PD"), row(2, "any_principal", null)];
+    expect(currentRows(two).map((r) => r.approverMembershipId)).toEqual(["BM", "PD"]);
+  });
+});
+
+describe("advanceReview (rule 3c)", () => {
+  it("route [PIC, Any principal]: once BM approves, step 2 is skipped and the sheet is done", () => {
+    const rows = [row(1, "principal_in_charge", "BM", "approved"), row(2, "any_principal", null)];
+    expect(advanceReview(rows, isPrincipal)).toEqual({ skip: [rows[1].id], done: true });
+  });
+
+  it("route [Team leader, Any principal]: JR isn't a principal, so step 2 waits", () => {
+    const rows = [row(1, "team_leader", "JR", "approved"), row(2, "any_principal", null)];
+    expect(advanceReview(rows, isPrincipal)).toEqual({ skip: [], done: false });
+  });
+
+  it("two PICs: still waiting on PD after BM approves", () => {
+    const rows = [row(1, "principal_in_charge", "BM", "approved"), row(1, "principal_in_charge", "PD")];
+    expect(advanceReview(rows, isPrincipal)).toEqual({ skip: [], done: false });
+  });
+
+  it("an earlier any_principal approval counts (even on behalf, approver null)", () => {
+    const rows = [row(1, "any_principal", null, "approved"), row(2, "team_leader", "JR", "approved"), row(3, "any_principal", null)];
+    expect(advanceReview(rows, isPrincipal)).toEqual({ skip: [rows[2].id], done: true });
+  });
+
+  it("all approved → done", () => {
+    expect(advanceReview([row(1, "principal_in_charge", "BM", "approved")], isPrincipal)).toEqual({ skip: [], done: true });
+  });
+});
+
+describe("stepSummary", () => {
+  const init = (id: string) => id;
+
+  it("Step 1 of 1 · Principal in Charge, last step", () => {
+    expect(stepSummary([row(1, "principal_in_charge", "BM")], "BM", init)).toEqual({
+      label: "Step 1 of 1 · Principal in Charge",
+      note: "Last step",
+    });
+  });
+
+  it("names who else is still needed, or what comes next", () => {
+    const rows = [row(1, "principal_in_charge", "BM"), row(1, "principal_in_charge", "PD")];
+    expect(stepSummary(rows, "BM", init)?.note).toBe("Also waiting on PD");
+    const two = [row(1, "team_leader", "JR"), row(2, "principal_in_charge", "BM")];
+    expect(stepSummary(two, "JR", init)).toEqual({ label: "Step 1 of 2 · Team leader", note: "Then Principal in Charge" });
+  });
+
+  it("andList", () => {
+    expect(andList(["BM"])).toBe("BM");
+    expect(andList(["BM", "PD"])).toBe("BM and PD");
   });
 });

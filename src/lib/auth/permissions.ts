@@ -97,8 +97,12 @@ const RULES = {
   },
   // Enter own time
   "time.enter_own": EVERYONE,
-  // Approve time
-  "time.approve": { ...OWNER_ADMIN, project_manager: "own_projects" },
+  // Approving time follows each sheet's review (timesheet-approval spec,
+  // decision #23): whoever its current step waits on. These two are the
+  // role-based parts: owner/admin can step in for an approver (rule 3f) and
+  // reopen an approved sheet (rule 5).
+  "time.approve_for": OWNER_ADMIN,
+  "time.reopen": OWNER_ADMIN,
   // Create/send invoices (PM: draft only, own projects)
   "invoices.create_draft": { ...OWNER_ADMIN, project_manager: "own_projects" },
   "invoices.send": OWNER_ADMIN,

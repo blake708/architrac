@@ -220,3 +220,90 @@ export function freezeRates(
   }
   return { ok: true, rates: out as { billRateCents: number; costRateCents: number }[] };
 }
+
+// ---------- Approving (rule 3, 1.7 B) ----------
+
+/** A review row with enough to decide who may act and what comes next. */
+export type ActRow = SavedReviewRow & { id: string };
+
+/** Who is trying to act on a sheet. */
+export type Approver = { membershipId: string; isActivePrincipal: boolean };
+
+/**
+ * The waiting rows on the current step this person may approve: their own
+ * named rows, or an `any_principal` row if they're an active principal.
+ * Nobody acts on their own sheet.
+ */
+export function rowsFor<R extends SavedReviewRow>(rows: readonly R[], me: Approver, submitterId: string): R[] {
+  if (me.membershipId === submitterId) return [];
+  const step = currentStep(rows);
+  if (step === null) return [];
+  return rows.filter(
+    (r) =>
+      r.stepNo === step &&
+      r.status === "waiting" &&
+      (r.approverMembershipId === me.membershipId || (r.approverMembershipId === null && me.isActivePrincipal)),
+  );
+}
+
+/** The waiting rows on the current step (what an owner/admin stands in for, rule 3f). */
+export function currentRows<R extends SavedReviewRow>(rows: readonly R[]): R[] {
+  const step = currentStep(rows);
+  return step === null ? [] : rows.filter((r) => r.stepNo === step && r.status === "waiting");
+}
+
+/**
+ * Rule 3c: after approvals, move on. While the current step is an
+ * `any_principal` step and a principal already approved an earlier step
+ * (an `any_principal` row, or a named row whose approver is a principal —
+ * on-behalf approvals count too), that step is skipped. Returns the row ids
+ * to mark skipped and whether the review is finished.
+ */
+export function advanceReview<R extends SavedReviewRow & { id: string }>(
+  rows: readonly R[],
+  isPrincipal: (membershipId: string) => boolean,
+): { skip: string[]; done: boolean } {
+  const state = rows.map((r) => ({ ...r }));
+  const skip: string[] = [];
+  for (;;) {
+    const step = currentStep(state);
+    if (step === null) return { skip, done: true };
+    const here = state.filter((r) => r.stepNo === step && r.status === "waiting");
+    if (!here.every((r) => r.kind === "any_principal")) return { skip, done: false };
+    const principalApproved = state.some(
+      (r) =>
+        r.stepNo < step &&
+        r.status === "approved" &&
+        (r.kind === "any_principal" || (r.approverMembershipId !== null && isPrincipal(r.approverMembershipId))),
+    );
+    if (!principalApproved) return { skip, done: false };
+    for (const r of here) {
+      r.status = "skipped";
+      skip.push(r.id);
+    }
+  }
+}
+
+/** "Step 2 of 2 · Principal in Charge" and who else is still needed, for the queue. */
+export function stepSummary(
+  rows: readonly SavedReviewRow[],
+  myMembershipId: string | null,
+  initials: (id: string) => string,
+): { label: string; note: string } | null {
+  const step = currentStep(rows);
+  if (step === null) return null;
+  const total = Math.max(...rows.map((r) => r.stepNo));
+  const here = rows.filter((r) => r.stepNo === step && r.status === "waiting");
+  const label = `Step ${step} of ${total} · ${STEP_LABELS[here[0].kind]}`;
+  const others = here
+    .filter((r) => r.approverMembershipId !== null && r.approverMembershipId !== myMembershipId)
+    .map((r) => initials(r.approverMembershipId!));
+  if (others.length) return { label, note: `Also waiting on ${others.join(", ")}` };
+  const next = rows.find((r) => r.stepNo > step && r.status === "waiting");
+  return { label, note: next ? `Then ${STEP_LABELS[next.kind]}` : "Last step" };
+}
+
+/** "BM" / "BM and PD", for the Approve-for button and dialog. */
+export function andList(names: readonly string[]): string {
+  return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : (names[0] ?? "");
+}

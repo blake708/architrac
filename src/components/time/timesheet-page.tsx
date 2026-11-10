@@ -171,7 +171,15 @@ function rowTitle(r: ViewRow) {
   return { code: "LEAVE", name: r.categoryName ?? "Leave" };
 }
 
-export function TimesheetPage({ initial, historyCount }: { initial: TimesheetView; historyCount: number }) {
+export function TimesheetPage({
+  initial,
+  historyCount,
+  approvalsCount = null,
+}: {
+  initial: TimesheetView;
+  historyCount: number;
+  approvalsCount?: number | null;
+}) {
   const toast = useToast();
   const [view, setView] = useState(initial);
   const [confirmRemove, setConfirmRemove] = useState<ViewRow | null>(null);
@@ -399,7 +407,7 @@ export function TimesheetPage({ initial, historyCount }: { initial: TimesheetVie
 
   return (
     <main>
-      <TimeHeader view={view} tab="mine" historyCount={historyCount} />
+      <TimeHeader view={view} tab="mine" historyCount={historyCount} approvalsCount={approvalsCount} />
       <div className="flex flex-col gap-4 px-4 pt-5 pb-8 md:px-page-x">
         {/* Status bar */}
         <div className="flex flex-wrap items-center gap-2.5">

@@ -34,6 +34,7 @@ export async function loadRoute(db: TenantDb): Promise<(RouteStep & { id: string
 export async function loadReview(db: TenantDb, timesheetId: string) {
   return db
     .select({
+      id: timesheetReviewSteps.id,
       stepNo: timesheetReviewSteps.stepNo,
       kind: timesheetReviewSteps.kind,
       approverMembershipId: timesheetReviewSteps.approverMembershipId,
