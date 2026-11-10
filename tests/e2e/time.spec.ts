@@ -258,3 +258,75 @@ test("when the network drops, saving retries, then Retry saves it", async ({ pag
     .poll(async () => (await query<{ hours: string }>("select hours from time_entries where firm_id = :firm and work_date = '2026-10-20' and archived_at is null"))[0]?.hours)
     .toBe("3.00");
 });
+
+// ---------- Approvals (timesheet-approval spec, 1.7 B) ----------
+
+/** A sheet for Kit already in review, waiting on Bo (the PIC), with 8 h Mon–Fri. */
+async function sheetInReview(week: string) {
+  const staff = membership(PEOPLE.ioStaff.email);
+  const owner = membership(PEOPLE.ioOwner.email);
+  await query(`
+    insert into rates (firm_id, membership_id, bill_rate_cents, cost_rate_cents, effective_from)
+    select :firm, ${staff}, 11000, 4400, '2026-01-01'
+    where not exists (select 1 from rates where firm_id = :firm and membership_id = ${staff})
+  `);
+  const [{ id }] = await query<{ id: string }>(`
+    with s as (
+      insert into timesheets (firm_id, membership_id, week_start, status, submitted_at)
+      values (:firm, ${staff}, '${week}', 'submitted', now()) returning id
+    ), p as (
+      select pr.id as project_id, ph.id as phase_id from projects pr join project_phases ph on ph.project_id = pr.id
+      where pr.firm_id = :firm and pr.number = '2026-014' and ph.status = 'current'
+    ), r as (
+      insert into timesheet_rows (firm_id, timesheet_id, row_type, project_id, project_phase_id, billable, sort_order)
+      select :firm, s.id, 'project', p.project_id, p.phase_id, true, 0 from s, p returning id, timesheet_id, project_id, project_phase_id
+    ), e as (
+      insert into time_entries (firm_id, timesheet_id, timesheet_row_id, work_date, project_id, project_phase_id, hours, billable)
+      select :firm, r.timesheet_id, r.id, '${week}'::date + d, r.project_id, r.project_phase_id, 8, true from r, generate_series(0, 4) d
+    ), v as (
+      insert into timesheet_review_steps (firm_id, timesheet_id, step_no, kind, approver_membership_id)
+      select :firm, s.id, 1, 'principal_in_charge', ${owner} from s
+    )
+    select id from s
+  `);
+  return id;
+}
+
+test("Approvals: the owner approves Kit's week from the queue and the rates lock", async ({ page }) => {
+  const id = await sheetInReview("2026-09-28");
+  await signInAs(page, "ioOwner", "/app/time/approvals");
+  await expect(page.getByRole("link", { name: /^Approvals/ })).toHaveAttribute("aria-current", "page");
+  const card = page.getByRole("region", { name: "Week of Sep 28 – Oct 4" });
+  await expect(card.getByText("Step 1 of 1 · Principal in Charge")).toBeVisible();
+  await expect(card.getByRole("img", { name: "Mon to Fri: 8, 8, 8, 8, 8 hours" })).toBeVisible();
+  await card.getByRole("button", { name: "Approve Kit Lowe" }).click();
+  await expect(page.getByText(/Approved \w+'s timesheet\./)).toBeVisible({ timeout: 15_000 });
+  await expect
+    .poll(async () => (await query<{ status: string }>(`select status from timesheets where id = '${id}'`))[0].status)
+    .toBe("approved");
+  const rates = await query<{ bill: string }>(`select bill_rate_cents as bill from time_entries where timesheet_id = '${id}'`);
+  expect(rates.every((r) => r.bill === "11000")).toBe(true);
+});
+
+test("Approvals: the owner returns a week with a note, from the detail page", async ({ page }) => {
+  const id = await sheetInReview("2026-09-21");
+  await signInAs(page, "ioOwner", `/app/time/approvals/${id}`);
+  await expect(page.getByRole("heading", { name: "Kit Lowe" })).toBeVisible();
+  await expect(page.getByRole("list", { name: "Review" })).toContainText("Principal in Charge · BM");
+  // Owner/admin see rates.
+  await expect(page.getByRole("columnheader", { name: "Bill rate" })).toBeVisible();
+  await page.getByRole("button", { name: "Return" }).click();
+  const dialog = page.getByRole("dialog");
+  await dialog.getByRole("button", { name: "Return timesheet" }).click();
+  await expect(dialog.getByText(/Add a note so \w+ knows what to change\./)).toBeVisible();
+  await dialog.getByLabel("What needs to change?").fill("Split Monday between SD and DD.");
+  await dialog.getByRole("button", { name: "Return timesheet" }).click();
+  await expect(page).toHaveURL(/\/app\/time\/approvals$/, { timeout: 15_000 });
+  const [sheet] = await query<{ status: string; rejection_note: string }>(`select status, rejection_note from timesheets where id = '${id}'`);
+  expect(sheet).toEqual({ status: "rejected", rejection_note: "Split Monday between SD and DD." });
+});
+
+test("Approvals: staff who review nothing get 404", async ({ page }) => {
+  await signInAs(page, "ioStaff", "/app/time/approvals");
+  await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
+});

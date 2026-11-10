@@ -25,10 +25,13 @@ export function TimeHeader({
   view,
   tab,
   historyCount,
+  approvalsCount = null,
 }: {
   view: TimesheetView;
-  tab: "mine" | "history";
+  tab: "mine" | "approvals" | "history";
   historyCount: number;
+  /** Sheets waiting on me; null = no Approvals tab (timesheet-approval spec, Who can see it). */
+  approvalsCount?: number | null;
 }) {
   const isCurrent = view.weekStart === view.currentWeekStart;
   const canNext = view.weekStart < view.lastWeekStart;
@@ -63,6 +66,9 @@ export function TimeHeader({
   const short = Math.max(0, view.targetHours - t.weekTotal);
   const tabs = [
     { key: "mine", label: "My timesheet", href: weekHref(view.weekStart), count: null },
+    ...(approvalsCount !== null
+      ? [{ key: "approvals", label: "Approvals", href: "/app/time/approvals", count: approvalsCount } as const]
+      : []),
     { key: "history", label: "History", href: "/app/time/history", count: historyCount },
   ] as const;
 
@@ -91,6 +97,7 @@ export function TimeHeader({
             value={`${t.billablePct}%`}
             note={`${formatHours(t.billable)} billable hours${view.targetUtilizationPct !== null ? ` · target ${view.targetUtilizationPct}%` : ""}`}
           />
+          {approvalsCount !== null && <KpiTile label="Ready for you" value={String(approvalsCount)} note="Timesheets waiting on you" />}
         </section>
         <nav aria-label="Time sections" className="border-b border-line">
           <ul className="m-0 flex list-none gap-6 overflow-x-auto overflow-y-hidden p-0">

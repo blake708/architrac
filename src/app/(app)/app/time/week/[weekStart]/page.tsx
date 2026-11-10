@@ -5,6 +5,7 @@ import { withFirm } from "@/db/tenant";
 import { requireSession } from "@/lib/auth/session";
 import { isIsoDate, weekStartOf } from "@/lib/calc/timesheet";
 import { timeActorFrom } from "@/server/time/actor";
+import { approvalsTabCount } from "@/server/time/approval-read";
 import { loadHistory, loadWeek } from "@/server/time/week";
 
 // My timesheet for one week (timesheet spec). A date that isn't a week-start
@@ -16,13 +17,14 @@ export default async function TimeWeekPage({ params }: { params: Promise<{ weekS
   const start = weekStartOf(weekStart, session.settings.weekStartsOn);
   if (start !== weekStart) redirect(`/app/time/week/${start}`);
   const ctx = timeActorFrom(session);
-  const { view, history } = await withFirm(ctx.firmId, async (db) => ({
+  const { view, history, approvals } = await withFirm(ctx.firmId, async (db) => ({
     view: await loadWeek(db, ctx, weekStart),
     history: await loadHistory(db, ctx, new Date(), 0),
+    approvals: await approvalsTabCount(db, ctx),
   }));
   return (
     <ToastProvider>
-      <TimesheetPage key={weekStart} initial={view} historyCount={history.total} />
+      <TimesheetPage key={weekStart} initial={view} historyCount={history.total} approvalsCount={approvals} />
     </ToastProvider>
   );
 }
