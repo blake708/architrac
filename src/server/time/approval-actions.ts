@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { requireSession } from "@/lib/auth/session";
 import { timeActorFrom } from "./actor";
 import { approveManyCore, approveStepCore, reopenTimesheetCore, returnTimesheetCore } from "./approval";
+import { nudgeCore, remindAllCore, sendReminderCore } from "./reminders";
 
 // Approvals server actions (timesheet-approval spec, Actions). Who is asking
 // always comes from the session; each core checks permission, validates the
@@ -29,6 +30,21 @@ export async function returnTimesheet(input: unknown) {
 }
 export async function reopenTimesheet(input: unknown) {
   const r = await reopenTimesheetCore(await actor(), input);
+  refresh();
+  return r;
+}
+export async function sendReminder(input: unknown) {
+  const r = await sendReminderCore(await actor(), input);
+  refresh();
+  return r;
+}
+export async function remindAll(input: unknown) {
+  const r = await remindAllCore(await actor(), input);
+  refresh();
+  return r;
+}
+export async function nudgeApprover(input: unknown) {
+  const r = await nudgeCore(await actor(), input);
   refresh();
   return r;
 }

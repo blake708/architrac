@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Fragment } from "react";
 import { type Flag, barsLabel, dayBar } from "@/lib/calc/timesheet-flags";
 import { cn } from "@/lib/cn";
@@ -68,4 +69,23 @@ export function DayBars({ hours }: { hours: number[] }) {
 export function FlagText({ flag }: { flag: Flag | null }) {
   if (!flag) return <span className="text-muted">—</span>;
   return <span className={cn("text-sm", flag.tone === "red" ? "text-red" : "text-orange-strong")}>{flag.label}</span>;
+}
+
+/** "Waiting on me (3) · Week overview" (Layout 1). Links, so each view has its own address. */
+export function ApprovalsViewSwitch({ view, waiting, weekHref }: { view: "queue" | "week"; waiting: number; weekHref: string }) {
+  const item = (on: boolean) =>
+    cn(
+      "inline-flex h-8 items-center gap-2 rounded-sm px-3 text-sm no-underline",
+      on ? "bg-ink font-semibold text-white" : "text-ink-2 hover:bg-line-soft",
+    );
+  return (
+    <nav aria-label="Approvals views" className="inline-flex w-fit gap-1 rounded-sm border border-line bg-surface p-1">
+      <Link href="/app/time/approvals" aria-current={view === "queue" ? "page" : undefined} className={item(view === "queue")}>
+        Waiting on me <span className="num text-xs opacity-80">{waiting}</span>
+      </Link>
+      <Link href={weekHref} aria-current={view === "week" ? "page" : undefined} className={item(view === "week")}>
+        Week overview
+      </Link>
+    </nav>
+  );
 }

@@ -196,10 +196,14 @@ test.describe("firm settings: due Friday 5 PM, which notes are required", () => 
   test("an owner changes them in Settings and the timesheet follows", async ({ browser }) => {
     const owner = await browser.newPage();
     await signInAs(owner, "ioOwner", "/app/settings/time");
-    await owner.getByLabel("Due day").selectOption({ label: "Friday" });
+    // Pick until the page has loaded its script: a choice made before then is
+    // reset when the page becomes interactive.
+    await expect(async () => {
+      await owner.getByLabel("Due day").selectOption({ label: "Friday" });
+      await expect(owner.getByTestId("due-example")).toContainText("is due Fri", { timeout: 1_000 });
+    }).toPass({ timeout: 15_000 });
     await owner.getByLabel("Due time").selectOption({ label: "5:00 PM" });
     await owner.getByLabel("Notes on billable time").selectOption({ label: "Required on all phases" });
-    await expect(owner.getByTestId("due-example")).toContainText("is due Fri");
     await expect(owner.getByTestId("due-example")).toContainText("at 5:00 PM.");
     await expect
       .poll(async () => (await query<{ d: number; t: string; n: string }>(
@@ -300,7 +304,7 @@ test("Approvals: the owner approves Kit's week from the queue and the rates lock
   await expect(card.getByText("Step 1 of 1 · Principal in Charge")).toBeVisible();
   await expect(card.getByRole("img", { name: "Mon to Fri: 8, 8, 8, 8, 8 hours" })).toBeVisible();
   await card.getByRole("button", { name: "Approve Kit Lowe" }).click();
-  await expect(page.getByText(/Approved \w+'s timesheet\./)).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByText("Approved Kit Lowe's timesheet.")).toBeVisible({ timeout: 15_000 });
   await expect
     .poll(async () => (await query<{ status: string }>(`select status from timesheets where id = '${id}'`))[0].status)
     .toBe("approved");
@@ -329,4 +333,40 @@ test("Approvals: the owner returns a week with a note, from the detail page", as
 test("Approvals: staff who review nothing get 404", async ({ page }) => {
   await signInAs(page, "ioStaff", "/app/time/approvals");
   await expect(page.getByRole("heading", { name: "Page not found" })).toBeVisible();
+});
+
+// ---------- Notifications and week overview (1.7 C) ----------
+
+test("the bell shows unread notifications; opening one marks it read and goes to its link", async ({ page }) => {
+  const owner = membership(PEOPLE.ioOwner.email);
+  await query(`delete from notifications where firm_id = :firm`);
+  await query(`
+    insert into notifications (firm_id, membership_id, kind, title, body, link)
+    values (:firm, ${owner}, 'review_waiting', 'Kit Lowe''s timesheet is waiting for you', 'Week of Oct 12 – 18 · 40 h', '/app/time/approvals')
+  `);
+  await signInAs(page, "ioOwner", "/app/projects");
+  const bell = page.getByRole("button", { name: "Notifications, 1 unread" });
+  await expect(bell).toBeVisible();
+  await bell.click();
+  const panel = page.getByRole("dialog", { name: "Notifications" });
+  await panel.getByRole("button", { name: /Kit Lowe's timesheet is waiting for you/ }).click();
+  await expect(page).toHaveURL(/\/app\/time\/approvals$/);
+  await expect(page.getByRole("button", { name: "Notifications", exact: true })).toBeVisible();
+  const [n] = await query<{ read: boolean }>(`select read_at is not null as read from notifications where firm_id = :firm`);
+  expect(n.read).toBe(true);
+});
+
+test("week overview: Kit hasn't submitted Oct 12, so the owner sends a reminder", async ({ page }) => {
+  await query(`delete from activity_log where firm_id = :firm and action = 'reminder_sent'`);
+  // People only show for weeks after they joined; the test users joined recently.
+  await query(`update memberships set created_at = '2026-01-01' where firm_id = :firm`);
+  await signInAs(page, "ioOwner", `/app/time/approvals/week/${WEEK}`);
+  await expect(page.getByRole("link", { name: "Week overview" })).toHaveAttribute("aria-current", "page");
+  const row = page.getByRole("row", { name: "Kit Lowe" });
+  await expect(row.getByText("Not submitted").or(row.getByText("Draft"))).toBeVisible();
+  await row.getByRole("button", { name: "Send reminder to Kit Lowe" }).click();
+  await expect(row.getByRole("button", { name: /^Reminder sent / })).toBeDisabled({ timeout: 15_000 });
+  const staff = membership(PEOPLE.ioStaff.email);
+  const notes = await query<{ title: string }>(`select title from notifications where firm_id = :firm and membership_id = ${staff} and kind = 'timesheet_reminder'`);
+  expect(notes.map((x) => x.title)).toEqual(["Your timesheet for Oct 12 – 18 is overdue"]);
 });
