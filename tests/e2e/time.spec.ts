@@ -35,7 +35,7 @@ const membership = (email: string) =>
   `(select m.id from memberships m join users u on u.id = m.user_id where m.firm_id = :firm and u.email = '${email}')`;
 
 test.beforeAll(async () => {
-  for (const t of ["time_entries", "timesheet_rows", "timesheets"]) await query(`delete from ${t} where firm_id = :firm`);
+  for (const t of ["timesheet_review_steps", "time_entries", "timesheet_rows", "timesheets"]) await query(`delete from ${t} where firm_id = :firm`);
   const [{ n }] = await query<{ n: number }>("select count(*)::int as n from projects where firm_id = :firm");
   if (n > 0) return;
   const owner = membership(PEOPLE.ioOwner.email);
@@ -138,7 +138,7 @@ test("a day can't pass 24 hours", async ({ page }) => {
   await expect(page.getByRole("status").filter({ hasText: /^Saved / })).toBeVisible({ timeout: 15_000 });
 });
 
-test("submit goes to the team leader, locks the week, and recall reopens it", async ({ page }) => {
+test("submit goes to the Principal in Charge, locks the week, and recall reopens it", async ({ page }) => {
   await signInAs(page, "ioStaff", `/app/time/week/${WEEK}`);
   await page.getByLabel("Activity for 2026-014 Medical Office Building").selectOption({ index: 1 });
   await expect(page.getByTestId("submit-blocker")).toHaveCount(0);
@@ -146,13 +146,18 @@ test("submit goes to the team leader, locks the week, and recall reopens it", as
   await expect(page.getByText(/hours short of 40/)).toBeVisible();
   await page.getByRole("button", { name: "Submit for approval" }).click();
   await expect(page.getByText("Timesheet submitted.")).toBeVisible({ timeout: 15_000 });
-  await expect(page.getByText("With team leader", { exact: true })).toBeVisible();
-  await expect(page.getByText(/to BM for review, then a principal approves/)).toBeVisible();
+  // Default route: Principal in Charge only. Bo (BM) is the PIC.
+  await expect(page.getByText("With BM", { exact: true })).toBeVisible();
+  await expect(page.getByText(/You can recall it until someone approves\./)).toBeVisible();
   // The empty overhead row was dropped; inputs are read-only.
   await expect(page.getByLabel("Overhead, Thu Oct 15")).toHaveCount(0);
   await expect(page.getByRole("textbox")).toHaveCount(0);
   const [sheet] = await query<{ status: string }>("select status from timesheets where firm_id = :firm");
   expect(sheet.status).toBe("submitted");
+  const rows = await query<{ kind: string }>(
+    "select kind from timesheet_review_steps where firm_id = :firm and archived_at is null",
+  );
+  expect(rows.map((r) => r.kind)).toEqual(["principal_in_charge"]);
 
   await page.getByRole("button", { name: "Recall timesheet" }).click();
   await expect(page.getByText("Draft", { exact: true })).toBeVisible({ timeout: 15_000 });
