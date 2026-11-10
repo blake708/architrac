@@ -177,15 +177,15 @@ test.describe("header", () => {
     );
   });
 
-  test("Release 0: no search box and no notifications button", async ({
+  test("no search box yet; the notifications bell is there (1.7 C)", async ({
     page,
   }) => {
     await signInAs(page, "owner");
     const header = page.getByRole("banner");
     await expect(header.getByRole("searchbox")).toHaveCount(0);
     await expect(
-      header.getByRole("button", { name: /notifications/i }),
-    ).toHaveCount(0);
+      header.getByRole("button", { name: /^Notifications/ }),
+    ).toHaveCount(1);
   });
 
   test("in only one firm: the firm name shows with no switcher menu", async ({

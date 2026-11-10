@@ -18,6 +18,7 @@ import { lookupRate } from "@/lib/calc/rates";
 import { APPROVAL_MESSAGES, RETURN_NOTE_MAX, bulkMessage, onBehalfNoteProblem, returnNoteProblem } from "@/lib/time/approval";
 import { initials as initialsFromName } from "@/lib/initials";
 import { FORBIDDEN_MESSAGE } from "@/server/settings/common";
+import { noticeApproved, noticeReturned, noticeReviewWaiting, noticeStoodIn } from "./notices";
 import { archiveReview, freezeSheetRates, loadReview } from "./review";
 import type { TimeActor } from "./write";
 
@@ -125,7 +126,7 @@ export async function loadRateBook(db: TenantDb, people: readonly { membershipId
 
 // ---------- Helpers ----------
 
-type Submitter = { membershipId: string; firmRoleId: string | null; initials: string; userId: string };
+type Submitter = { membershipId: string; firmRoleId: string | null; initials: string; name: string; userId: string };
 
 async function submitterOf(db: TenantDb, membershipId: string): Promise<Submitter> {
   const [p] = await db
@@ -140,7 +141,8 @@ async function submitterOf(db: TenantDb, membershipId: string): Promise<Submitte
     .from(memberships)
     .innerJoin(users, eq(users.id, memberships.userId))
     .where(eq(memberships.id, membershipId));
-  return { ...p, initials: p.initials || initialsFromName(`${p.firstName} ${p.lastName}`) };
+  const name = `${p.firstName} ${p.lastName}`.trim();
+  return { ...p, name, initials: p.initials || initialsFromName(name) };
 }
 
 /** Initials for membership ids (for "on behalf of BM, PD"). */
@@ -194,13 +196,24 @@ const approveInput = z.object({
   note: z.string().max(RETURN_NOTE_MAX + 200).optional(),
 });
 
+/**
+ * Did this approval finish the step it was on? Only then do the next step's
+ * approvers hear about it (a PIC approving while another PIC is still
+ * needed tells nobody).
+ */
+function currentStepChanged(review: readonly { id: string; stepNo: number; status: string }[], skipped: readonly string[], approved: Set<string>) {
+  const stillWaiting = (r: { id: string; status: string }) => r.status === "waiting" && !approved.has(r.id) && !skipped.includes(r.id);
+  const before = Math.min(...review.filter((r) => r.status === "waiting").map((r) => r.stepNo));
+  return !review.some((r) => r.stepNo === before && stillWaiting(r));
+}
+
 /** Approve one sheet inside an open transaction. Throws ApprovalError / Forbidden. */
 async function approveIn(
   db: TenantDb,
   actor: ApprovalActor,
   input: z.infer<typeof approveInput>,
   now: Date,
-): Promise<{ approved: boolean; initials: string }> {
+): Promise<{ approved: boolean; name: string }> {
   const sheet = await lockSheet(db, input.timesheetId);
   // Nobody approves their own sheet.
   if (sheet.membershipId === actor.membershipId) throw new Forbidden();
@@ -279,8 +292,19 @@ async function approveIn(
       .where(eq(timesheets.id, sheet.id));
     await log(db, actor, sheet.id, "status_changed", { status: { before: "submitted", after: "approved" } });
   }
-  // e: notifications for the next approvers / the submitter arrive in 1.7 C.
-  return { approved: next.done, initials: submitter.initials };
+  // e: tell the next approvers, or the person when it's done; and anyone an
+  // owner/admin stood in for (3f).
+  if (input.onBehalf) {
+    await noticeStoodIn(
+      db,
+      sheet,
+      actor.userId,
+      mine.flatMap((r) => (r.approverMembershipId && r.approverMembershipId !== actor.membershipId ? [r.approverMembershipId] : [])),
+    );
+  }
+  if (next.done) await noticeApproved(db, sheet);
+  else if (currentStepChanged(review, next.skip, mineIds)) await noticeReviewWaiting(db, sheet);
+  return { approved: next.done, name: submitter.name };
 }
 
 /** Approve (row, detail) and Approve for … (owner/admin, rule 3f). */
@@ -296,7 +320,7 @@ export async function approveStepCore(actor: ApprovalActor, raw: unknown, now: D
   return {
     ok: true,
     approved: r.data.approved,
-    message: r.data.approved ? `Approved ${r.data.initials}'s timesheet.` : `Approved your step on ${r.data.initials}'s timesheet.`,
+    message: r.data.approved ? `Approved ${r.data.name}'s timesheet.` : `Approved your step on ${r.data.name}'s timesheet.`,
   };
 }
 
@@ -355,7 +379,7 @@ async function sendBack(
     })
     .where(eq(timesheets.id, sheet.id));
   await log(db, actor, sheet.id, action, { status: { before: sheet.status, after: "rejected" }, note });
-  // The person is notified in 1.7 C.
+  await noticeReturned(db, sheet, note, action === "reopened");
 }
 
 /** Return: anyone with a row in the current review, or owner/admin. Only while submitted. */

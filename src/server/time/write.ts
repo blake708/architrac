@@ -32,6 +32,7 @@ import {
 } from "@/lib/calc/timesheet";
 import { canRecallReview } from "@/lib/calc/review-route";
 import { todayIn } from "@/lib/format";
+import { noticeReviewWaiting } from "./notices";
 import { archiveReview, loadReview, startReview } from "./review";
 import { type TimeContext, type TimesheetView, WEEKS_AHEAD, findTimesheet, loadWeek } from "./week";
 
@@ -587,6 +588,7 @@ export async function submitTimesheetCore(actor: TimeActor, raw: unknown, now: D
       ...(approved ? { auto: true } : { reviewRows: started.rows }),
       droppedRows: empty.length,
     });
+    if (!approved) await noticeReviewWaiting(db, sheet);
     return { weekStart };
   });
 }
