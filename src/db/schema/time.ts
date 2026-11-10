@@ -41,13 +41,7 @@ export const timesheets = pgTable(
     weekStart: date("week_start").notNull(),
     status: timesheetStatus("status").notNull().default("draft"),
     submittedAt: timestamp("submitted_at", { withTimezone: true }),
-    /**
-     * The team leader at submission (decision #3 b). Null when the sheet
-     * skipped the leader (they lead the team, no team, or leader inactive).
-     */
-    reviewerMembershipId: uuid("reviewer_membership_id"),
-    leaderApprovedAt: timestamp("leader_approved_at", { withTimezone: true }),
-    leaderApprovedBy: uuid("leader_approved_by").references(() => users.id),
+    // Who reviews it lives in timesheet_review_steps (1.7 A, decision #23).
     approvedAt: timestamp("approved_at", { withTimezone: true }),
     approvedBy: uuid("approved_by").references(() => users.id),
     rejectedAt: timestamp("rejected_at", { withTimezone: true }),
@@ -62,11 +56,6 @@ export const timesheets = pgTable(
     foreignKey({
       name: "timesheets_membership_same_firm_fk",
       columns: [t.firmId, t.membershipId],
-      foreignColumns: [memberships.firmId, memberships.id],
-    }),
-    foreignKey({
-      name: "timesheets_reviewer_same_firm_fk",
-      columns: [t.firmId, t.reviewerMembershipId],
       foreignColumns: [memberships.firmId, memberships.id],
     }),
   ],

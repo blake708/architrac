@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   type CalcRow,
   billableNote,
-  canRecall,
   cleanNote,
   copyMessage,
   copyPlan,
@@ -17,7 +16,6 @@ import {
   shortDays,
   shortWarning,
   submitProblems,
-  submitRoute,
   weekDates,
   weekStartOf,
   weekTotals,
@@ -234,31 +232,17 @@ describe("submit checks (rule 10)", () => {
   });
 });
 
-describe("status (rules 2, 14, 18)", () => {
+describe("status (rule 2)", () => {
   it("drafts, returned sheets and new weeks are editable", () => {
     expect(isEditable(null)).toBe(true);
     expect(isEditable("draft")).toBe(true);
     expect(isEditable("rejected")).toBe(true);
     expect(isEditable("submitted")).toBe(false);
-    expect(isEditable("leader_approved")).toBe(false);
     expect(isEditable("approved")).toBe(false);
   });
-
-  it("recall until a reviewer acts", () => {
-    expect(canRecall("submitted", null)).toBe(true);
-    expect(canRecall("leader_approved", null)).toBe(true);
-    expect(canRecall("leader_approved", new Date())).toBe(false);
-    expect(canRecall("approved", null)).toBe(false);
-    expect(canRecall("draft", null)).toBe(false);
-  });
-
-  it("goes to the team leader, or straight to a principal", () => {
-    expect(submitRoute("kl", { membershipId: "jr", active: true })).toEqual({ status: "submitted", reviewerMembershipId: "jr" });
-    expect(submitRoute("jr", { membershipId: "jr", active: true })).toEqual({ status: "leader_approved", reviewerMembershipId: null });
-    expect(submitRoute("kl", { membershipId: "jr", active: false })).toEqual({ status: "leader_approved", reviewerMembershipId: null });
-    expect(submitRoute("kl", null)).toEqual({ status: "leader_approved", reviewerMembershipId: null });
-  });
 });
+
+// Recall and the review route are tested in review-route.test.ts.
 
 describe("copy last week (rule 13)", () => {
   const src = (p: Partial<CalcRow> & { categoryInactive?: boolean; projectActive?: boolean }) => ({

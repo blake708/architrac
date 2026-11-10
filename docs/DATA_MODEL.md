@@ -303,12 +303,38 @@ One per person per week. Created on the first write for that week, never on view
 |---|---|---|
 | id, firm_id, membership_id | | |
 | week_start | date | unique (membership_id, week_start) |
-| status | enum `timesheet_status` | `draft`, `submitted` (with team leader), `leader_approved` (with principal), `approved`, `rejected` (returned) — decision #3 (b) |
+| status | enum `timesheet_status` | `draft`, `submitted` (in review: who it waits on comes from `timesheet_review_steps`), `approved`, `rejected` (returned). `leader_approved` was removed in 1.7 A |
 | submitted_at | timestamptz null | |
-| reviewer_membership_id | uuid fk null | team leader at submission; null = skipped straight to a principal |
-| leader_approved_at, leader_approved_by | timestamptz / uuid fk users, null | written by 1.7 |
-| approved_at, approved_by | timestamptz / uuid fk users, null | written by 1.7 |
+| approved_at, approved_by | timestamptz / uuid fk users, null | final approval, or the principal at submit (decision #22) |
 | rejected_at, rejected_by, rejection_note | null | written by 1.7 |
+
+### review_steps  (1.7 A)
+The firm's review route (decision #23). One route per firm; at least one non-archived step.
+| column | type | notes |
+|---|---|---|
+| id, firm_id | | |
+| sort_order | smallint | order of the steps |
+| kind | enum `review_step_kind` | `principal_in_charge`, `team_leader`, `any_principal`, `person` |
+| membership_id | uuid fk null | required when kind = `person`, null otherwise (check); same-firm FK |
+| archived_at | | removed steps |
+
+Unique while not archived: (firm_id, kind) for the three non-person kinds; (firm_id, membership_id) for `person`. New firms get one `principal_in_charge` step.
+
+### timesheet_review_steps  (1.7 A)
+One sheet's copy of the route, made at submit: one row per **required approver** per step (two PICs = two rows; `any_principal` = one row; a skipped step = one row).
+| column | type | notes |
+|---|---|---|
+| id, firm_id, timesheet_id | | |
+| step_no | smallint | 1, 2, … in route order |
+| kind | enum `review_step_kind` | copied from the route |
+| approver_membership_id | uuid fk null | who must approve; null for an `any_principal` row until a principal acts, and for skipped rows |
+| status | enum `review_row_status` | `waiting`, `approved`, `skipped` |
+| skip_reason | text null | `no_team`, `no_projects`, `is_submitter`, `inactive`, `already_reviewing`, `principal_already_approved` |
+| acted_by, acted_at | uuid fk users / timestamptz null | who approved and when |
+| on_behalf | boolean | default false; true when an owner/admin approved for the named approver |
+| archived_at | | set on Recall and Return; resubmit builds a new set |
+
+Current step = lowest `step_no` with a `waiting` row. Same-firm FKs to timesheets and memberships.
 
 ### timesheet_rows  (1.6)
 A line on the weekly grid; exists before it has hours.
@@ -428,7 +454,10 @@ The screen specs found fields the model above doesn't have yet. **Add each one w
 | 1.7 | time_entries | ~~approved_at, approved_by~~ not needed: decision #3 is (b), approval is per timesheet (Blake, 2026-11-02) | (timesheet-approval) |
 | 1.6 ✓ | timesheet_status enum, timesheets | add `leader_approved`; `reviewer_membership_id` (team leader at submission), `leader_approved_at`, `leader_approved_by` | Two-step approval, decision #3 (b) (Blake, 2026-11-02) |
 | 1.6 ✓ | timesheets | rejected_at, rejected_by (added early; written by 1.7) | "Returned by JR on Oct 20" (timesheet-approval) |
-| 1.7 | activity_log | actions `approved`, `reopened`, `reminder_sent` | (timesheet-approval) |
+| 1.7 A | **review_steps**, **timesheet_review_steps** (new); enums `review_step_kind`, `review_row_status` | see tables above | Custom review route (#23) (timesheet-approval) |
+| 1.7 A | timesheet_status enum, timesheets | remove `leader_approved`; drop `reviewer_membership_id`, `leader_approved_at`, `leader_approved_by` (existing sheets get an equivalent review in the migration) | Replaced by `timesheet_review_steps` (#23) |
+| 1.7 C | **notifications** (new) | id, firm_id, membership_id (recipient), kind text, title, body, link, entity_type, entity_id, read_at null, created_at; RLS by firm and the server only returns the caller's own | In-app notifications (#25) (timesheet-approval) |
+| 1.7 | activity_log | actions `approved`, `reopened`, `reminder_sent`, `nudged` | (timesheet-approval) |
 | 1.8 | invoice_status enum | add `in_review`; invoices.reviewed_by, reviewed_at | Review step before sending (invoicing) |
 | 1.8 | invoices | number nullable until sent, unique (firm_id, number) where not null; memo, sent_to text[], include_time_detail, voided_at, voided_by, void_reason | Numbers assigned at send, no gaps (invoicing) |
 | 1.8 | invoice_lines | sort_order, phase_fee_cents, prior_billed_cents, consultant_id, cost_cents, markup_bp, vendor_invoice_ref | Snapshots keep old invoices unchanged (invoicing) |

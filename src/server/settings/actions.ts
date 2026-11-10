@@ -15,6 +15,7 @@ import {
   saveRatesCore,
 } from "./rates";
 import { saveTimeListsCore } from "./time-lists";
+import { saveReviewRouteCore } from "./review-route";
 import { saveTimesheetRulesCore } from "./timesheet-rules";
 import {
   changeRoleCore,
@@ -108,4 +109,8 @@ export async function saveBenchmarks(input: unknown) {
 
 export async function saveTimesheetRules(input: unknown) {
   return saveTimesheetRulesCore(await actor(), input);
+}
+
+export async function saveReviewRoute(input: unknown) {
+  return saveReviewRouteCore(await actor(), input);
 }

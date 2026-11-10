@@ -8,7 +8,7 @@
 | **Status** | Draft |
 
 
-> **⚠ Revise before building (Open Decision #3, Blake, 2026-11-02):** timesheets are approved by the person's **team leader, then a principal** (option b), not per project by PMs. This spec was written for option (a). Rework approvals, statuses (`leader_approved`), the reviewer snapshot (`timesheets.reviewer_membership_id`) and permissions before starting this milestone.
+> **⚠ Revise before building (Open Decision #3, Blake, 2026-11-02):** timesheets are approved by the person's **team leader, then a principal** (option b), not per project by PMs. This spec was written for option (a). Rework approvals, statuses (`leader_approved`), the reviewer snapshot (`timesheets.reviewer_membership_id`) and permissions before starting this milestone. **Update 2026-11-09:** the route is now each firm's own review steps (decision #23, `timesheet-approval.md`); "awaiting me" = sheets whose current review step waits on me.
 
 ## Purpose
 The page everyone lands on after signing in. In Release 1 it answers four questions using only Release 1 data: *Where is my time this week? Which projects am I on and where are they? What is waiting for my approval? (owner/admin) What money is owed to us?* Everything else in the mockup is deferred (see Out of scope).

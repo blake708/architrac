@@ -226,7 +226,7 @@ export async function removeTestFirm(pool: Pool, firm: TestFirm) {
       "update companies set primary_contact_id = null, billing_contact_id = null where firm_id = $1",
       [firm.firmId],
     );
-    for (const t of ["time_entries", "timesheet_rows", "timesheets", "project_type_benchmarks", "project_phase_roles", "phase_template_roles", "consultants", "project_contacts", "project_members", "project_phases", "projects"])
+    for (const t of ["timesheet_review_steps", "review_steps", "time_entries", "timesheet_rows", "timesheets", "project_type_benchmarks", "project_phase_roles", "phase_template_roles", "consultants", "project_contacts", "project_members", "project_phases", "projects"])
       await c.query(`delete from ${t} where firm_id = $1`, [firm.firmId]);
     await c.query("delete from contacts where firm_id = $1", [firm.firmId]);
     await c.query("delete from companies where firm_id = $1", [firm.firmId]);
@@ -254,7 +254,7 @@ export async function removeFirmById(pool: Pool, firmId: string) {
       "update companies set primary_contact_id = null, billing_contact_id = null where firm_id = $1",
       [firmId],
     );
-    for (const t of ["time_entries", "timesheet_rows", "timesheets", "project_type_benchmarks", "project_phase_roles", "phase_template_roles", "consultants", "project_contacts", "project_members", "project_phases", "projects"])
+    for (const t of ["timesheet_review_steps", "review_steps", "time_entries", "timesheet_rows", "timesheets", "project_type_benchmarks", "project_phase_roles", "phase_template_roles", "consultants", "project_contacts", "project_members", "project_phases", "projects"])
       await c.query(`delete from ${t} where firm_id = $1`, [firmId]);
     await c.query("delete from contacts where firm_id = $1", [firmId]);
     await c.query("delete from companies where firm_id = $1", [firmId]);
@@ -327,11 +327,12 @@ export async function removeTestUsers(pool: Pool, userIds: string[]) {
   await pool.query("delete from users where id = any($1::uuid[])", [userIds]);
 }
 
-export type TestTime = { timesheetId: string; rowId: string; entryId: string };
+export type TestTime = { timesheetId: string; rowId: string; entryId: string; reviewRowId: string; routeStepId: string };
 
 /**
  * A draft timesheet for the firm's owner (week of Oct 12, 2026) with one row
- * on the project's SD phase (Design) and 2 h on Monday. removeTestFirm cleans it up.
+ * on the project's SD phase (Design) and 2 h on Monday, plus one review row
+ * (any principal) and the firm's default route step. removeTestFirm cleans it up.
  */
 export async function addTestTime(pool: Pool, firm: TestFirm): Promise<TestTime> {
   return asFirm(pool, firm.firmId, async (c) => {
@@ -351,6 +352,20 @@ export async function addTestTime(pool: Pool, firm: TestFirm): Promise<TestTime>
       "insert into time_entries (firm_id, timesheet_id, timesheet_row_id, work_date, project_id, project_phase_id, activity_id, hours, billable) values ($1, $2, $3, '2026-10-12', $4, $5, $6, 2, true) returning id",
       [firm.firmId, sheet.rows[0].id, row.rows[0].id, firm.projectId, firm.projectPhaseId, activity.rows[0].id],
     );
-    return { timesheetId: sheet.rows[0].id, rowId: row.rows[0].id, entryId: entry.rows[0].id };
+    const review = await c.query<{ id: string }>(
+      "insert into timesheet_review_steps (firm_id, timesheet_id, step_no, kind) values ($1, $2, 1, 'any_principal') returning id",
+      [firm.firmId, sheet.rows[0].id],
+    );
+    const step = await c.query<{ id: string }>(
+      "select id from review_steps where firm_id = $1 and archived_at is null order by sort_order limit 1",
+      [firm.firmId],
+    );
+    return {
+      timesheetId: sheet.rows[0].id,
+      rowId: row.rows[0].id,
+      entryId: entry.rows[0].id,
+      reviewRowId: review.rows[0].id,
+      routeStepId: step.rows[0].id,
+    };
   });
 }

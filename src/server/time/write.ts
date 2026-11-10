@@ -3,11 +3,9 @@ import { z } from "zod";
 import {
   activities,
   activityLog,
-  memberships,
   overheadCategories,
   projectPhases,
   projects,
-  teams,
   timeEntries,
   timesheetRows,
   timesheets,
@@ -21,7 +19,6 @@ import {
   NOTE_TOO_LONG,
   type TimesheetStatus,
   addDays,
-  canRecall,
   cleanNote,
   copyMessage,
   copyPlan,
@@ -31,10 +28,11 @@ import {
   isQuarterHours,
   rowTotal,
   submitProblems,
-  submitRoute,
   weekStartOf,
 } from "@/lib/calc/timesheet";
+import { canRecallReview } from "@/lib/calc/review-route";
 import { todayIn } from "@/lib/format";
+import { archiveReview, loadReview, startReview } from "./review";
 import { type TimeContext, type TimesheetView, WEEKS_AHEAD, findTimesheet, loadWeek } from "./week";
 
 // Timesheet writes (timesheet spec, Actions). Every one: permission → Zod →
@@ -569,35 +567,24 @@ export async function submitTimesheetCore(actor: TimeActor, raw: unknown, now: D
     const empty = view.rows.filter((r) => rowTotal(r) === 0).map((r) => r.id);
     for (const id of empty) await db.update(timesheetRows).set({ archivedAt: now }).where(eq(timesheetRows.id, id));
 
-    // Who reviews first: the team leader, saved now (rule 18).
-    const [me] = await db
-      .select({ teamId: memberships.teamId })
-      .from(memberships)
-      .where(eq(memberships.id, actor.membershipId));
-    let leader: { membershipId: string; active: boolean } | null = null;
-    if (me?.teamId) {
-      const [t] = await db
-        .select({ membershipId: teams.leaderMembershipId, active: memberships.active })
-        .from(teams)
-        .leftJoin(memberships, eq(memberships.id, teams.leaderMembershipId))
-        .where(and(eq(teams.id, me.teamId), isNull(teams.archivedAt)));
-      if (t?.membershipId) leader = { membershipId: t.membershipId, active: t.active ?? false };
-    }
-    const route = submitRoute(actor.membershipId, leader);
+    // The firm's route becomes this sheet's review, or a principal's own
+    // sheet is approved now with its rates frozen (rule 18; #22, #23).
+    const started = await startReview(db, actor, sheet.id);
+    if (!started.ok) throw new TimeError(started.message);
+    const approved = started.status === "approved";
     await db
       .update(timesheets)
       .set({
-        status: route.status,
-        reviewerMembershipId: route.reviewerMembershipId,
+        status: started.status,
         submittedAt: now,
-        leaderApprovedAt: null,
-        leaderApprovedBy: null,
+        approvedAt: approved ? now : null,
+        approvedBy: approved ? actor.userId : null,
         rejectionNote: null,
       })
       .where(eq(timesheets.id, sheet.id));
     await log(db, actor, "timesheet", sheet.id, "status_changed", {
-      status: { before: sheet.status, after: route.status },
-      reviewerMembershipId: route.reviewerMembershipId,
+      status: { before: sheet.status, after: started.status },
+      ...(approved ? { auto: true } : { reviewRows: started.rows }),
       droppedRows: empty.length,
     });
     return { weekStart };
@@ -615,11 +602,9 @@ export async function recallTimesheetCore(actor: TimeActor, raw: unknown): Promi
     const existing = await findTimesheet(db, actor.membershipId, weekStart);
     if (!existing) throw new TimeError(TIME_MESSAGES.notFound);
     const [sheet] = await db.select().from(timesheets).where(eq(timesheets.id, existing.id)).for("update");
-    if (!canRecall(sheet.status, sheet.leaderApprovedAt)) throw new TimeError(TIME_MESSAGES.cantRecall);
-    await db
-      .update(timesheets)
-      .set({ status: "draft", submittedAt: null, reviewerMembershipId: null })
-      .where(eq(timesheets.id, sheet.id));
+    if (!canRecallReview(sheet.status, await loadReview(db, sheet.id))) throw new TimeError(TIME_MESSAGES.cantRecall);
+    await archiveReview(db, sheet.id, new Date());
+    await db.update(timesheets).set({ status: "draft", submittedAt: null }).where(eq(timesheets.id, sheet.id));
     await log(db, actor, "timesheet", sheet.id, "status_changed", { status: { before: sheet.status, after: "draft" } });
     return { weekStart };
   });
