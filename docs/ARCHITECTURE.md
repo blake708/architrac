@@ -115,7 +115,8 @@ Two layers, so one mistake can't leak data:
 | Edit project phases & fees | ✔ | ✔ | own projects | |
 | View projects | all | all | all | assigned |
 | Enter own time | ✔ | ✔ | ✔ | ✔ |
-| Approve time | all | all | own projects | |
+| Approve time | when the sheet's review step waits on them (any role; see `timesheet-approval.md`) ||||
+| Approve time for someone else, reopen approved time | ✔ | ✔ | | |
 | Create/send invoices | ✔ | ✔ | draft only, own projects | |
 | Record payments, QuickBooks sync | ✔ | ✔ | | |
 | Contacts | edit | edit | edit | view |

@@ -84,9 +84,9 @@ const MATRIX: Row[] = [
     expected: { owner: true, admin: true, project_manager: true, staff: true },
   },
   {
-    row: "Approve time",
-    actions: ["time.approve"],
-    expected: { owner: true, admin: true, project_manager: "pm", staff: false },
+    row: "Approve time for someone else, reopen approved time",
+    actions: ["time.approve_for", "time.reopen"],
+    expected: { owner: true, admin: true, project_manager: false, staff: false },
   },
   {
     row: "Create/send invoices: draft",
@@ -232,11 +232,11 @@ describe("requireRole()", () => {
 describe("requireCan()", () => {
   it("passes when can() is true and throws when false", () => {
     expect(() =>
-      requireCan(member("project_manager"), "time.approve", {
+      requireCan(member("project_manager"), "projects.edit_fees", {
         isProjectManager: true,
       }),
     ).not.toThrow();
-    expect(() => requireCan(member("project_manager"), "time.approve")).toThrow(
+    expect(() => requireCan(member("project_manager"), "projects.edit_fees")).toThrow(
       ForbiddenError,
     );
   });
