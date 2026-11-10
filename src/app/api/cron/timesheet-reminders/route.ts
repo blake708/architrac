@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { cronAuthorized } from "@/server/time/cron-auth";
 import { runTimesheetReminders } from "@/server/time/reminders";
 
-// Hourly (vercel.json): automatic timesheet reminders and reviewer summaries
+// Daily for now (vercel.json; Hobby plan limit), hourly on Pro: automatic timesheet reminders and reviewer summaries
 // (timesheet-approval spec, rule 10). Not behind sign-in; it proves itself
 // with CRON_SECRET instead.
 export const dynamic = "force-dynamic";
