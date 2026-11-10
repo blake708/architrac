@@ -106,6 +106,13 @@
       "when": 1794260779055,
       "tag": "0014_drop_leader_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1794348519950,
+      "tag": "0015_notifications",
+      "breakpoints": true
     }
   ]
 }

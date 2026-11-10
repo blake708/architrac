@@ -8,3 +8,4 @@ export * from "./contacts";
 export * from "./projects";
 export * from "./time";
 export * from "./review";
+export * from "./notifications";

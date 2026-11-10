@@ -20,6 +20,7 @@ import {
   firms,
   invitations,
   memberships,
+  notifications,
   overheadCategories,
   phaseTemplates,
   rates,
@@ -639,6 +640,24 @@ const cases: TableCase[] = [
         .then((r) => r[0]?.v),
     insertForB: (db) =>
       db.insert(timesheetReviewSteps).values({ firmId: B.firmId, timesheetId: BT.timesheetId, stepNo: 2, kind: "any_principal" }),
+  },
+  {
+    table: "notifications",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: notifications.firmId })
+        .from(notifications)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) =>
+      db.update(notifications).set({ title: "Hacked" }).where(eq(notifications.id, BT.notificationId)).returning(),
+    readB: (db) =>
+      db
+        .select({ v: notifications.title })
+        .from(notifications)
+        .where(eq(notifications.id, BT.notificationId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db.insert(notifications).values({ firmId: B.firmId, membershipId: B.membershipId, kind: "review_waiting", title: "x" }),
   },
 ];
 

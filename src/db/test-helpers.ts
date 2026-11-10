@@ -226,7 +226,7 @@ export async function removeTestFirm(pool: Pool, firm: TestFirm) {
       "update companies set primary_contact_id = null, billing_contact_id = null where firm_id = $1",
       [firm.firmId],
     );
-    for (const t of ["timesheet_review_steps", "review_steps", "time_entries", "timesheet_rows", "timesheets", "project_type_benchmarks", "project_phase_roles", "phase_template_roles", "consultants", "project_contacts", "project_members", "project_phases", "projects"])
+    for (const t of ["notifications", "timesheet_review_steps", "review_steps", "time_entries", "timesheet_rows", "timesheets", "project_type_benchmarks", "project_phase_roles", "phase_template_roles", "consultants", "project_contacts", "project_members", "project_phases", "projects"])
       await c.query(`delete from ${t} where firm_id = $1`, [firm.firmId]);
     await c.query("delete from contacts where firm_id = $1", [firm.firmId]);
     await c.query("delete from companies where firm_id = $1", [firm.firmId]);
@@ -254,7 +254,7 @@ export async function removeFirmById(pool: Pool, firmId: string) {
       "update companies set primary_contact_id = null, billing_contact_id = null where firm_id = $1",
       [firmId],
     );
-    for (const t of ["timesheet_review_steps", "review_steps", "time_entries", "timesheet_rows", "timesheets", "project_type_benchmarks", "project_phase_roles", "phase_template_roles", "consultants", "project_contacts", "project_members", "project_phases", "projects"])
+    for (const t of ["notifications", "timesheet_review_steps", "review_steps", "time_entries", "timesheet_rows", "timesheets", "project_type_benchmarks", "project_phase_roles", "phase_template_roles", "consultants", "project_contacts", "project_members", "project_phases", "projects"])
       await c.query(`delete from ${t} where firm_id = $1`, [firmId]);
     await c.query("delete from contacts where firm_id = $1", [firmId]);
     await c.query("delete from companies where firm_id = $1", [firmId]);
@@ -327,7 +327,14 @@ export async function removeTestUsers(pool: Pool, userIds: string[]) {
   await pool.query("delete from users where id = any($1::uuid[])", [userIds]);
 }
 
-export type TestTime = { timesheetId: string; rowId: string; entryId: string; reviewRowId: string; routeStepId: string };
+export type TestTime = {
+  timesheetId: string;
+  rowId: string;
+  entryId: string;
+  reviewRowId: string;
+  routeStepId: string;
+  notificationId: string;
+};
 
 /**
  * A draft timesheet for the firm's owner (week of Oct 12, 2026) with one row
@@ -360,7 +367,12 @@ export async function addTestTime(pool: Pool, firm: TestFirm): Promise<TestTime>
       "select id from review_steps where firm_id = $1 and archived_at is null order by sort_order limit 1",
       [firm.firmId],
     );
+    const note = await c.query<{ id: string }>(
+      "insert into notifications (firm_id, membership_id, kind, title) values ($1, $2, 'review_waiting', 'Test') returning id",
+      [firm.firmId, firm.membershipId],
+    );
     return {
+      notificationId: note.rows[0].id,
       timesheetId: sheet.rows[0].id,
       rowId: row.rows[0].id,
       entryId: entry.rows[0].id,

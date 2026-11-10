@@ -457,7 +457,7 @@ The screen specs found fields the model above doesn't have yet. **Add each one w
 | 1.7 A | **review_steps**, **timesheet_review_steps** (new); enums `review_step_kind`, `review_row_status` | see tables above | Custom review route (#23) (timesheet-approval) |
 | 1.7 A | timesheet_status enum, timesheets | remove `leader_approved`; drop `reviewer_membership_id`, `leader_approved_at`, `leader_approved_by` (existing sheets get an equivalent review in the migration) | Replaced by `timesheet_review_steps` (#23) |
 | 1.7 C | **notifications** (new) | id, firm_id, membership_id (recipient), kind text, title, body, link, entity_type, entity_id, read_at null, created_at; RLS by firm and the server only returns the caller's own | In-app notifications (#25) (timesheet-approval) |
-| 1.7 | activity_log | actions `approved`, `reopened`, `reminder_sent`, `nudged` | (timesheet-approval) |
+| 1.7 | activity_log | actions `approved`, `reopened`, `reminder_sent`, `nudged`, `review_summary_sent` (entity_type `membership` for reminders, nudges and summaries) | (timesheet-approval) |
 | 1.8 | invoice_status enum | add `in_review`; invoices.reviewed_by, reviewed_at | Review step before sending (invoicing) |
 | 1.8 | invoices | number nullable until sent, unique (firm_id, number) where not null; memo, sent_to text[], include_time_detail, voided_at, voided_by, void_reason | Numbers assigned at send, no gaps (invoicing) |
 | 1.8 | invoice_lines | sort_order, phase_fee_cents, prior_billed_cents, consultant_id, cost_cents, markup_bp, vendor_invoice_ref | Snapshots keep old invoices unchanged (invoicing) |
