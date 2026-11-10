@@ -21,6 +21,20 @@ export async function useFirm(page: Page, firm: FirmKey) {
   await expect(current).toHaveText(name, { timeout: 20_000 });
 }
 
+/**
+ * Wait until the page is interactive (HydratedMark sets <html data-hydrated>).
+ * Clicking or picking before then can be lost on a slow machine.
+ */
+export async function expectInteractive(page: Page) {
+  await page.locator("html[data-hydrated]").waitFor({ state: "attached", timeout: 30_000 });
+}
+
+/** Open a page and wait until it's interactive. */
+export async function gotoReady(page: Page, path: string) {
+  await page.goto(path);
+  await expectInteractive(page);
+}
+
 /** Wait until the shell has loaded for a firm (the header's firm button shows). */
 export async function expectShell(page: Page) {
   await expect(page.getByTestId("firm-name")).toBeVisible({ timeout: 30_000 });
@@ -44,4 +58,5 @@ export async function signInAs(page: Page, who: PersonKey, path?: string) {
 
   await expectShell(page);
   if (path && path !== "/app") await page.goto(path);
+  await expectInteractive(page);
 }
