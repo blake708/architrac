@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dayHeader, returnedLine, statusView, weekMetaLine, weekRange } from "./display";
+import { dayHeader, returnedLine, statusView, weekRange, weekTitle } from "./display";
 
 // Timesheet spec, Layout 1 and States → Status states (decisions #22, #23).
 
@@ -18,9 +18,9 @@ const base = {
 } as const;
 
 describe("week labels", () => {
-  it("meta line (shown in caps)", () => {
-    expect(weekMetaLine("2026-10-12", "Mon Oct 19, 9:00 AM")).toBe("Week of Oct 12 – Oct 18, 2026 · Due Mon Oct 19, 9:00 AM");
-    expect(weekMetaLine("2026-12-28", "Mon Jan 4, 9:00 AM")).toBe("Week of Dec 28, 2026 – Jan 3, 2027 · Due Mon Jan 4, 9:00 AM");
+  it("week heading above the grid", () => {
+    expect(weekTitle("2026-10-12")).toBe("Week of Oct 12 – Oct 18, 2026");
+    expect(weekTitle("2026-12-28")).toBe("Week of Dec 28, 2026 – Jan 3, 2027");
   });
 
   it("history range and day headers", () => {

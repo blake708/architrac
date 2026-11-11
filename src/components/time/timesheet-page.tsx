@@ -16,16 +16,14 @@ import {
   dayLimitMessage,
   needsNote,
   parseHoursInput,
-  phaseSummary,
   rowTotal,
   shortDays,
-  shortWarning,
   submitProblems,
   weekTotals,
 } from "@/lib/calc/timesheet";
 import { cn } from "@/lib/cn";
 import { formatHours } from "@/lib/format";
-import { dayHeader, returnedLine, statusView } from "@/lib/time/display";
+import { dayHeader, returnedLine, statusView, weekTitle } from "@/lib/time/display";
 import {
   addRow,
   copyLastWeek,
@@ -38,7 +36,7 @@ import {
 } from "@/server/time/actions";
 import type { TimeResult } from "@/server/time/write";
 import type { TimesheetView, ViewRow } from "@/server/time/week";
-import { TimeHeader } from "./time-header";
+import { TimeHeader, WeekNav } from "./time-header";
 
 // My timesheet (timesheet spec, Layout 4–7 and rule 17). The page keeps the
 // week in state and changes it at once; every write goes through one queue,
@@ -215,7 +213,6 @@ export function TimesheetPage({
     today: view.today,
     notesRule: view.notesRule,
   });
-  const warning = editable ? shortWarning(totals.weekTotal, view.targetHours) : null;
   const status = statusView(view);
   const blocked = problems.length > 0 || pending > 0;
 
@@ -419,12 +416,9 @@ export function TimesheetPage({
           )}
           <span className="text-[12.5px] text-muted">{status.note}</span>
           <SaveIndicator save={save} onRetry={() => void retry()} />
-          {editable && (
-            <div className="ml-auto flex flex-wrap gap-2">
-              <Button onClick={onCopy}>Copy last week</Button>
-              <Button onClick={onAddRow}>Add row</Button>
-            </div>
-          )}
+          <div className="ml-auto">
+            <WeekNav view={view} />
+          </div>
         </div>
 
         {view.status === "rejected" && (
@@ -433,6 +427,12 @@ export function TimesheetPage({
             <p className="m-0 mt-1">Fix the rows below and resubmit.</p>
           </div>
         )}
+
+        {/* Week heading */}
+        <div className="flex flex-col gap-1">
+          <h2 className="m-0 text-xl leading-tight font-semibold">{weekTitle(view.weekStart)}</h2>
+          <p className="m-0 text-sm text-muted">Due {view.dueLabel}</p>
+        </div>
 
         {/* Weekly grid */}
         <section aria-label="Weekly timesheet" className="overflow-x-auto rounded-sm border border-line bg-surface">
@@ -590,6 +590,39 @@ export function TimesheetPage({
           </table>
         </section>
 
+        {/* Row actions (left) and submit (right) */}
+        {(editable || view.canRecall) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {/* An empty week already shows these inside the grid. */}
+            {editable && hasRows && (
+              <>
+                <Button onClick={onCopy}>Copy last week</Button>
+                <Button onClick={onAddRow}>Add row</Button>
+              </>
+            )}
+            <div className="ml-auto flex flex-wrap gap-2">
+              {view.canRecall && (
+                <Button onClick={onRecall} disabled={pending > 0}>
+                  Recall timesheet
+                </Button>
+              )}
+              {editable && (
+                <button
+                  type="button"
+                  onClick={onSubmit}
+                  aria-disabled={blocked ? "true" : undefined}
+                  className={cn(
+                    "inline-flex h-[var(--height-control)] items-center rounded-sm border px-3.5 text-base font-medium whitespace-nowrap",
+                    blocked ? "cursor-not-allowed border-line-strong bg-line-strong text-white" : "cursor-pointer border-ink bg-ink text-white hover:bg-ink-2",
+                  )}
+                >
+                  {view.isPrincipal ? (view.status === "rejected" ? "Resubmit and approve" : "Submit and approve") : view.status === "rejected" ? "Resubmit" : "Submit for approval"}
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Footer */}
         <div className="flex flex-wrap items-center gap-4 rounded-sm border border-line bg-surface px-5 py-4">
           <div className="flex min-w-0 flex-[1_1_360px] flex-col gap-2">
@@ -623,40 +656,6 @@ export function TimesheetPage({
                 <span aria-hidden="true" className="size-2 rotate-45 bg-orange" />
                 {problems[0]}
               </span>
-            )}
-            <span className="text-[12.5px] leading-normal text-ink-3">
-              <span className="cap mr-1.5 text-[10.5px] font-bold text-ink-2">Feeds project snapshots</span>
-              <span data-testid="phase-summary">{phaseSummary(view.rows)}</span>
-            </span>
-            {warning && (
-              <span className="inline-flex items-center gap-1.5 text-sm font-medium text-orange-strong">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.25" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                  <path d="M12 9v4" />
-                  <path d="M12 17h.01" />
-                  <path d="M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z" />
-                </svg>
-                {warning}
-              </span>
-            )}
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {view.canRecall && (
-              <Button onClick={onRecall} disabled={pending > 0}>
-                Recall timesheet
-              </Button>
-            )}
-            {editable && (
-              <button
-                type="button"
-                onClick={onSubmit}
-                aria-disabled={blocked ? "true" : undefined}
-                className={cn(
-                  "inline-flex h-[var(--height-control)] items-center rounded-sm border px-3.5 text-base font-medium whitespace-nowrap",
-                  blocked ? "cursor-not-allowed border-line-strong bg-line-strong text-white" : "cursor-pointer border-ink bg-ink text-white hover:bg-ink-2",
-                )}
-              >
-                {view.isPrincipal ? (view.status === "rejected" ? "Resubmit and approve" : "Submit and approve") : view.status === "rejected" ? "Resubmit" : "Submit for approval"}
-              </button>
             )}
           </div>
         </div>

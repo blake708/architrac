@@ -65,7 +65,8 @@ test("/app/time opens this week; a mid-week date goes to its week", async ({ pag
 
   await page.goto("/app/time/week/2026-10-14");
   await expect(page).toHaveURL(`/app/time/week/${WEEK}`);
-  await expect(page.getByText("Week of Oct 12 – Oct 18, 2026 · Due Mon Oct 19, 9:00 AM")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Week of Oct 12 – Oct 18, 2026" })).toBeVisible();
+  await expect(page.getByText("Due Mon Oct 19, 9:00 AM")).toBeVisible();
   await expect(page.getByText("No time this week yet")).toBeVisible();
   // Viewing creates nothing.
   expect(await query("select id from timesheets where firm_id = :firm")).toHaveLength(0);
@@ -142,8 +143,8 @@ test("submit goes to the Principal in Charge, locks the week, and recall reopens
   await signInAs(page, "ioStaff", `/app/time/week/${WEEK}`);
   await page.getByLabel("Activity for 2026-014 Medical Office Building").selectOption({ index: 1 });
   await expect(page.getByTestId("submit-blocker")).toHaveCount(0);
-  // Short of 40: a warning only.
-  await expect(page.getByText(/hours short of 40/)).toBeVisible();
+  // Short of 40 shows only on the KPI tile; it doesn't block submit.
+  await expect(page.getByText(/ h short of 40$/)).toBeVisible();
   await page.getByRole("button", { name: "Submit for approval" }).click();
   await expect(page.getByText("Timesheet submitted.")).toBeVisible({ timeout: 15_000 });
   // Default route: Principal in Charge only. Bo (BM) is the PIC.
@@ -214,7 +215,7 @@ test.describe("firm settings: due Friday 5 PM, which notes are required", () => 
 
     const page = await browser.newPage();
     await signInAs(page, "ioStaff", `/app/time/week/${WEEK}`);
-    await expect(page.getByText("Week of Oct 12 – Oct 18, 2026 · Due Fri Oct 16, 5:00 PM")).toBeVisible();
+    await expect(page.getByText("Due Fri Oct 16, 5:00 PM")).toBeVisible();
     // Mon has a note; Tue (1.25 h, billable) doesn't.
     await expect(page.getByTestId("submit-blocker")).toHaveText("1 billable day needs a note before you can submit.");
     // Hourly phases only: Design Development is a fixed fee, so no note is needed.

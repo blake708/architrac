@@ -5,11 +5,11 @@ import { PageHeader } from "@/components/ui/page-header";
 import { addDays, weekTotals } from "@/lib/calc/timesheet";
 import { cn } from "@/lib/cn";
 import { formatHours } from "@/lib/format";
-import { weekMetaLine } from "@/lib/time/display";
 import type { TimesheetView } from "@/server/time/week";
 
-// Top of the Time page (timesheet spec, Layout 1–3): week line and week
-// navigation, the KPI tiles, and the tabs (links to their routes).
+// Top of the Time page (timesheet spec, Layout 1–3): subheading and title,
+// the KPI tiles, and the tabs (links to their routes). The week arrows sit in
+// the timesheet's status bar (WeekNav below).
 
 const weekHref = (w: string) => `/app/time/week/${w}`;
 
@@ -21,25 +21,12 @@ function Chevron({ dir }: { dir: "left" | "right" }) {
   );
 }
 
-export function TimeHeader({
-  view,
-  tab,
-  historyCount,
-  approvalsCount = null,
-  notSubmitted = null,
-}: {
-  view: TimesheetView;
-  tab: "mine" | "approvals" | "history";
-  historyCount: number;
-  /** Sheets waiting on me; null = no Approvals tab (timesheet-approval spec, Who can see it). */
-  approvalsCount?: number | null;
-  /** KPI "Not submitted" for the last due week (Approvals pages only). */
-  notSubmitted?: { count: number; weekLabel: string } | null;
-}) {
+/** Previous week · This week · Next week (timesheet spec, Layout 4). */
+export function WeekNav({ view }: { view: TimesheetView }) {
   const isCurrent = view.weekStart === view.currentWeekStart;
   const canNext = view.weekStart < view.lastWeekStart;
   const iconBtn = cn(buttonClasses("secondary"), "w-[var(--height-control)] px-0");
-  const nav = (
+  return (
     <nav aria-label="Weeks" className="flex flex-wrap items-center gap-2">
       <Link href={weekHref(addDays(view.weekStart, -7))} aria-label="Previous week" className={iconBtn}>
         <Chevron dir="left" />
@@ -64,7 +51,23 @@ export function TimeHeader({
       )}
     </nav>
   );
+}
 
+export function TimeHeader({
+  view,
+  tab,
+  historyCount,
+  approvalsCount = null,
+  notSubmitted = null,
+}: {
+  view: TimesheetView;
+  tab: "mine" | "approvals" | "history";
+  historyCount: number;
+  /** Sheets waiting on me; null = no Approvals tab (timesheet-approval spec, Who can see it). */
+  approvalsCount?: number | null;
+  /** KPI "Not submitted" for the last due week (Approvals pages only). */
+  notSubmitted?: { count: number; weekLabel: string } | null;
+}) {
   const t = weekTotals(view.rows, view.targetHours);
   const short = Math.max(0, view.targetHours - t.weekTotal);
   const tabs = [
@@ -78,9 +81,8 @@ export function TimeHeader({
   return (
     <>
       <PageHeader
-        eyebrow={<span className="uppercase">{weekMetaLine(view.weekStart, view.dueLabel)}</span>}
+        eyebrow={approvalsCount !== null ? "TIMESHEETS · APPROVALS · HISTORY" : "TIMESHEETS · HISTORY"}
         title="Time"
-        actions={tab === "mine" ? nav : undefined}
       />
       <div className="flex flex-col gap-5 px-4 pt-6 md:px-page-x">
         <section aria-label="This week" className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3">

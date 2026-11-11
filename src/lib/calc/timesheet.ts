@@ -199,24 +199,6 @@ export function billableNote(t: WeekTotals): string {
   return `${h(t.billable)} billable · ${h(t.nonBillable)} non-billable · ${t.billablePct}% billable`;
 }
 
-/** Rule 12: what the week feeds, by project phase, overhead and leave. */
-export function phaseSummary(rows: CalcRow[]): string {
-  const totals = new Map<string, number>();
-  for (const r of rows) {
-    const total = rowTotal(r);
-    if (!total || !r.rowType) continue;
-    const key =
-      r.rowType === "project"
-        ? `${(r.projectName ?? "").split(",")[0].trim()} · ${r.phaseName ?? "No phase"}`
-        : r.rowType === "overhead"
-          ? `Overhead · ${r.categoryName ?? "No phase"}`
-          : `${r.categoryName ?? "Leave"} · Leave`;
-    totals.set(key, (totals.get(key) ?? 0) + total);
-  }
-  if (!totals.size) return "Nothing yet";
-  return [...totals].map(([k, v]) => `${k} ${h(v)} h`).join(" · ");
-}
-
 // ---------- Submit checks (rule 10) ----------
 
 export function isRowComplete(r: CalcRow): boolean {
@@ -294,13 +276,6 @@ export function submitProblems(rows: CalcRow[], check: SubmitCheck): string[] {
         : `${missing} billable ${plural(missing, "day needs", "days need")} a note before you can submit.`,
     );
   return out;
-}
-
-/** The short-week warning (rule 10, warning only). Null when the target is met. */
-export function shortWarning(weekTotal: number, targetHours: number): string | null {
-  const short = targetHours - weekTotal;
-  if (short <= 0) return null;
-  return `${h(short)} ${plural(short, "hour", "hours")} short of ${h(targetHours)}. Add the missing time, or log PTO or a holiday before submitting.`;
 }
 
 // ---------- Status (rule 2) ----------

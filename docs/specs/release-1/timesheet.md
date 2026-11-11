@@ -30,12 +30,12 @@ Nobody edits another person's timesheet in Release 1 (approvers view it read-onl
 Shared app shell (menu rail, top header with page title "Time"). Then, top to bottom:
 
 1. **Page header** (white band, 32px padding).
-   - Left: mono meta line `WEEK OF OCT 12 – OCT 18, 2026 · DUE MON OCT 19, 9:00 AM`, H1 "Time".
-   - Right: week navigation — icon button "Previous week" (`aria-label`), button "This week", icon button "Next week". "This week" is a secondary Button; when the current week is shown it has `aria-pressed="true"` and does nothing.
+   - Left: mono meta line `TIMESHEETS · APPROVALS · HISTORY` (`TIMESHEETS · HISTORY` for people without the Approvals tab), H1 "Time". (Changed by Blake, 2026-11-11: the week and due date moved down to the week heading, item 5a.)
 2. **KPI strip** — grid of KPI tiles, `repeat(auto-fit, minmax(180px, 1fr))`: "This week", "Billable". (1.7 adds "Ready for you" and "Not submitted" for team leaders and principals.)
 3. **Tabs** — "My timesheet", "History" (count = past timesheets). Tabs are links to their routes. (1.7 adds "Approvals" between them for team leaders and principals.)
-4. **Status bar** (My timesheet): status Badge with dot + label, a muted status note, autosave indicator (`Saving…` / `Saved 10:42 AM` / `Couldn't save. Retrying…` in orange), and on the right secondary buttons "Copy last week" and "Add row".
+4. **Status bar** (My timesheet): status Badge with dot + label, a muted status note, autosave indicator (`Saving…` / `Saved 10:42 AM` / `Couldn't save. Retrying…` in orange), and on the right the week navigation — icon button "Previous week" (`aria-label`), button "This week", icon button "Next week". "This week" is a secondary Button; when the current week is shown it has `aria-pressed="true"` and does nothing. (Moved here from the page header by Blake, 2026-11-11.)
 5. **Rejection banner** (only when status = `rejected`): orange-tint card, text `Returned by JR on Oct 20: "<rejection_note>"` and `Fix the rows below and resubmit.`
+5a. **Week heading** (right above the grid): H2 `Week of Oct 12 – Oct 18, 2026` (22px, weight 600), and under it a smaller muted line `Due Mon Oct 19, 9:00 AM`.
 6. **Weekly grid** (Card containing a real `<table>`, `min-width: 960px`, `table-layout: fixed`, horizontal scroll inside the card on narrow screens).
    - Header: "Project · phase · activity" (fluid), "Billing" (104px), 7 day columns (58px each: day-of-week + mono `Oct 12`; weekend columns use surface-2 background), "Total" (76px, right), remove column (44px, visually-hidden header "Remove").
    - Row, first cell, stacked with 6px gap:
@@ -49,13 +49,12 @@ Shared app shell (menu rail, top header with page title "Time"). Then, top to bo
    - Last cell: "Remove row" icon button (×). `aria-label`s include the project name.
    - **Note icon** (changed by Blake, 2026-11-05, replacing a notes sub-row): a small speech-bubble button under each day's hours, only on days with hours. Faint = no note, blue (filled) = has a note, orange = the firm requires one and it's missing. It opens a small popover: `NOTE · TUE OCT 13` and the row name, a 3-line text box (max 500 characters, counter `28/500`), Cancel and Save (Ctrl/⌘+Enter saves). On a locked sheet the icon shows only where there's a note, and the popover is read-only.
    - **Day total row** (surface-2 background): "Day total" spanning first two columns, 7 mono totals, week total (14px, weight 700). A Mon–Fri total below the daily target is orange with a 3px orange bottom inset bar.
+6a. **Action row** (under the grid): on the left secondary buttons "Copy last week" and "Add row" (only when editable); on the right secondary Button "Recall timesheet" when submitted and recall is allowed, and primary Button "Submit for approval" (`Resubmit` when rejected; principals see `Submit and approve`). Disabled submit = grey #C4C4C4 background, `aria-disabled="true"`, cursor not-allowed. (Moved by Blake, 2026-11-11.)
 7. **Footer card** (white, flex-wrap): left block (flex `1 1 360px`):
    - `WEEK TOTAL` caption + mono `32.5 / 40 h` + muted `28 billable · 4.5 non-billable · 86% billable`.
    - 10px stacked bar: billable segment blue #2F5BAA, non-billable segment #A9BDE3, track #EBEBEB; legend "Billable", "Non-billable". `role="img"` with `aria-label` "32.5 of 40 hours, 28 billable".
    - Blocking message (orange, diamond icon) when submit is blocked — first blocking message from Validation, e.g. `2 rows need a phase and an activity before you can submit.`
-   - Caption `FEEDS PROJECT SNAPSHOTS` + phase summary line.
-   - Short-week warning (orange, triangle icon) when draft/rejected and week total < target.
-   - Right: primary Button "Submit for approval" (`Resubmit` when rejected); secondary Button "Recall timesheet" when submitted and recall is allowed. Disabled submit = grey #C4C4C4 background, `aria-disabled="true"`, cursor not-allowed.
+   - (Removed by Blake, 2026-11-11: the `FEEDS PROJECT SNAPSHOTS` phase summary line and the short-week warning line. The "This week" KPI already shows `7.5 h short of 40`. The submit buttons moved to the action row, 6a.)
 8. **History tab** (`/app/time/history`): Card "Your past timesheets", list rows (grid `150px 1fr 80px 120px`): week range, billable/non-billable bar (scaled to 45 h), mono total `41 h`, status Badge. Row is a link to that week. Newest first, 26 weeks per page with "Load older".
 
 ## Data shown
@@ -81,7 +80,6 @@ Shared app shell (menu rail, top header with page title "Time"). Then, top to bo
 | Billable % | `round(billable / week × 100)`; 0 when week = 0 | |
 | KPI "This week" | week total `h`; note `<target − week> h short of 40` (orange) or `Target met` | |
 | KPI "Billable" | billable %; note `<billable> billable hours · target <memberships.target_utilization_bp/100>%` | |
-| Phase summary | see Business rule 12 | `Nothing yet` when empty |
 | Notes | `time_entries.note` | |
 | History rows | `timesheets` for my membership, `week_start < current week start`, plus entry sums | |
 
@@ -126,10 +124,10 @@ All writes are Server Actions in `src/server/time/actions.ts`: `addRow`, `update
     - g. The week has started: `today ≥ week_start` in firm timezone, else `You can't submit a week that hasn't started.`
     - h. Notes (`firm_settings.timesheet_notes_rule`, decisions #17 and #24): `all` → every billable day with hours has a note, else `<n> billable day(s) need(s) a note before you can submit.`; `hourly` → only billable days on phases with fee type `hourly` or `nte`, else `<n> billable day(s) on hourly phases need(s) a note before you can submit.`; `optional` → never. Non-billable time never needs a note.
     - Rows with no hours are ignored by a–e and deleted (archived) on submit.
-    - Short of target is a **warning only**: `7.5 hours short of 40. Add the missing time, or log PTO or a holiday before submitting.`
+    - Short of target never blocks submit. It shows only on the "This week" KPI (`7.5 h short of 40`).
 11. **Totals** (pure functions in `src/lib/calc/timesheet.ts`): `rowTotal = Σ row hours`; `dayTotal[d] = Σ hours on d`; `weekTotal = Σ dayTotal`; `billable = Σ hours where billable`; `billablePct = weekTotal ? round(billable / weekTotal × 100) : 0`; bar billable width = `min(100, billable / target × 100)%`, non-billable width = `max(0, min(100, weekTotal / target × 100) − billable width)%`.
-    - **Worked example (seed week of Oct 12, BM):** rows r1 2026-014 DD Meetings [2, 1.5, 2, 1, 0, 0, 0] = 6.5; r2 2026-006 CD QA/QC review [3, 2, 3, 2, 1] = 11; r3 2025-038 Permitting [1, 2, 1, 1, 0] = 5; r4 2025-031 CA Site visit [1, 2, 1, 1, 0.5] = 5.5; r5 Overhead Marketing Proposals [1, 0, 1, 1, 1.5] = 4.5. Day totals Mon 8, Tue 7.5, Wed 8, Thu 6, Fri 3, Sat 0, Sun 0; week 32.5. Billable 28, non-billable 4.5, 28 / 32.5 = 86.15% → 86%. Tue, Thu, Fri are orange (< 8). Bar: 70% blue + 11.25% light blue. Short warning: 40 − 32.5 = 7.5 h.
-12. **Phase summary.** Group rows with hours by key: project rows `<project name up to the first comma> · <phase name>`; overhead `Overhead · <category>`; leave `<category> · Leave`. Join `<key> <hours> h` with ` · ` in row order. Seed: `Medical Office Building · Design Development 6.5 h · Summerville Office Park · Construction Documents 11 h · Coastal Credit Union Branch · Permitting 5 h · Northside Self-Storage · Construction Admin 5.5 h · Overhead · Marketing 4.5 h`.
+    - **Worked example (seed week of Oct 12, BM):** rows r1 2026-014 DD Meetings [2, 1.5, 2, 1, 0, 0, 0] = 6.5; r2 2026-006 CD QA/QC review [3, 2, 3, 2, 1] = 11; r3 2025-038 Permitting [1, 2, 1, 1, 0] = 5; r4 2025-031 CA Site visit [1, 2, 1, 1, 0.5] = 5.5; r5 Overhead Marketing Proposals [1, 0, 1, 1, 1.5] = 4.5. Day totals Mon 8, Tue 7.5, Wed 8, Thu 6, Fri 3, Sat 0, Sun 0; week 32.5. Billable 28, non-billable 4.5, 28 / 32.5 = 86.15% → 86%. Tue, Thu, Fri are orange (< 8). Bar: 70% blue + 11.25% light blue. Short of target: 40 − 32.5 = 7.5 h.
+12. **Phase summary.** Removed by Blake, 2026-11-11 (not needed on this page).
 13. **Copy last week.** Source = timesheet with `week_start` = this week − 7 days. Copies each non-archived source row's selection and `billable` as new rows appended after existing rows. Skips: rows identical (rule 10e key) to a row already present; rows whose project/phase is now closed or whose activity is inactive. Toast: `Copied 4 rows.` or `Copied 4 rows. Skipped 1: 2026-017 Pre-Design is closed.` No source: toast `There's no timesheet for last week to copy.` Everything already here: `Last week's rows are already on this timesheet.` Only skips: `Nothing copied. Skipped 1: …`. Projects that aren't active (on hold, pursuit) and switched-off overhead phases or leave types are skipped too (`2026-020 Clinic isn't active.`, `Marketing is no longer offered.`). (1.6 B)
 14. **Recall.** Allowed only while no reviewer has acted: status `submitted` and no row of its review is `approved`. Recall archives the review rows. Once someone has approved a step, the button is hidden and the status note says who.
 15. **After approval.** `approved` timesheets are locked. Only an owner/admin "Reopen" (approval spec) makes them editable again; it returns status `rejected` with a note.
@@ -162,7 +160,6 @@ All writes are Server Actions in `src/server/time/actions.ts`: `addRow`, `update
 - [ ] Given `/app/time/week/2026-10-14`, when it loads, then it redirects to `/app/time/week/2026-10-12`.
 - [ ] Given BM has no timesheet for the week of Oct 26, when he views it, then no `timesheets` record is created and the empty state shows.
 - [ ] Given the seed week of Oct 12, when it loads, then day totals are 8, 7.5, 8, 6, 3, 0, 0, week total 32.5, billable note `28 billable · 4.5 non-billable · 86% billable`, and Tue, Thu, Fri totals are orange.
-- [ ] Given the seed week, then the phase summary equals the text in rule 12.
 - [ ] Given a draft week, when BM adds a row and picks `2026-014 · Medical Office Building`, then the phase select shows `Design Development · current` selected, `Schematic Design · closed` disabled, and the activity select shows `Activity…` with an orange border.
 - [ ] Given a draft, when a client calls `updateRow` with a closed `project_phase_id`, then the server rejects it and nothing changes.
 - [ ] Given an Overhead row with category Marketing and activity Proposals, when the category changes to Administration, then the activity is cleared and the options are Admin & IT, Accounting & billing, Office management.
@@ -181,7 +178,7 @@ All writes are Server Actions in `src/server/time/actions.ts`: `addRow`, `update
 - [ ] Given two rows both `2026-014 · Design Development · Meetings · Billable` with hours, then submit is blocked with the duplicate message.
 - [ ] Given a draft with 0 total hours, then submit is blocked with `Add your hours before submitting.`
 - [ ] Given today is Oct 14 and BM views the week of Oct 19 with hours, then submit is blocked with `You can't submit a week that hasn't started.`
-- [ ] Given a 32.5 h draft, then the short warning shows but submit is allowed; after submit, status is `submitted`, `submitted_at` is set and an `activity_log` row with action `status_changed` exists.
+- [ ] Given a 32.5 h draft, then the KPI shows `7.5 h short of 40` but submit is allowed; after submit, status is `submitted`, `submitted_at` is set and an `activity_log` row with action `status_changed` exists.
 - [ ] Given a submitted timesheet, when a client calls `setHours`, then the server returns `This timesheet is submitted and can't be changed.`
 - [ ] Given a submitted timesheet with no approved entries, when BM clicks Recall, then status returns to `draft` and cells are editable.
 - [ ] Given route [Team leader, PIC] and KL on JR's team submits, then status is `submitted`, the review waits on JR and the badge reads `With JR`. *(Replaces the 1.6 tests; see `timesheet-approval.md` 1.7 A.)*
