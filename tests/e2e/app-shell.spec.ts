@@ -60,8 +60,11 @@ test.describe("menu rail", () => {
     page,
   }) => {
     await signInAs(page, "admin"); // Beta, no modules on
+    // Admins also see Invoices, after Time (decision #27).
     expect(await railItemNames(page)).toEqual([
-      ...CORE,
+      ...CORE.slice(0, 5),
+      "Invoices",
+      ...CORE.slice(5),
       ...MODULES.map((m) => `${m} (turned off)`),
     ]);
     await expect(

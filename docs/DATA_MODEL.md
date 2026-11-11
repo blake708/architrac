@@ -474,6 +474,6 @@ The screen specs found fields the model above doesn't have yet. **Add each one w
 | 1.8 A ✓ | firm_settings | invoice_remittance_text | PDF footer (invoicing) |
 | 1.8 A ✓ | firm_settings / projects | `invoice_number_format` replaces `invoice_prefix` (migrated: `'2026-'`-style year prefixes become `{YYYY}-{###}`, any other prefix becomes `{prefix}{###}`); `projects.next_invoice_seq` integer default 1 | Firm-built invoice numbering, decision #5 (invoicing) |
 | 1.8 A ✓ | firm_settings | `project_number_format` text default `{YYYY}-{###}` | Firm-built project numbering, decision #28 (projects-list) |
-| 1.8 B | time_entries | `firm_role_id` uuid null fk firm_roles (same firm), frozen at approval; backfilled from memberships for approved sheets; covered by the invoice lock trigger | Group hours by the role at the time (decision #30) |
+| 1.8 B ✓ | time_entries | `firm_role_id` uuid null fk firm_roles (same firm), frozen at approval; backfilled from memberships for approved sheets; covered by the invoice lock trigger | Group hours by the role at the time (decision #30) |
 | 1.9 | integrations | status enum (`connected`,`needs_reauth`,`disconnected`), refresh_token_expires_at, settings jsonb, connected_by, connected_at, last_token_refresh_at; unique (firm_id, provider); unique (provider, external_account_id) while connected | (quickbooks-sync) |
 | 1.9 | **integration_sync_jobs** (new) | see `quickbooks-sync.md` for columns | Sync queue + log (quickbooks-sync) |
