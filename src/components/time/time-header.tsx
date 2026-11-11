@@ -26,12 +26,15 @@ export function TimeHeader({
   tab,
   historyCount,
   approvalsCount = null,
+  notSubmitted = null,
 }: {
   view: TimesheetView;
   tab: "mine" | "approvals" | "history";
   historyCount: number;
   /** Sheets waiting on me; null = no Approvals tab (timesheet-approval spec, Who can see it). */
   approvalsCount?: number | null;
+  /** KPI "Not submitted" for the last due week (Approvals pages only). */
+  notSubmitted?: { count: number; weekLabel: string } | null;
 }) {
   const isCurrent = view.weekStart === view.currentWeekStart;
   const canNext = view.weekStart < view.lastWeekStart;
@@ -98,6 +101,14 @@ export function TimeHeader({
             note={`${formatHours(t.billable)} billable hours${view.targetUtilizationPct !== null ? ` · target ${view.targetUtilizationPct}%` : ""}`}
           />
           {approvalsCount !== null && <KpiTile label="Ready for you" value={String(approvalsCount)} note="Timesheets waiting on you" />}
+          {notSubmitted && (
+            <KpiTile
+              label="Not submitted"
+              value={String(notSubmitted.count)}
+              tone={notSubmitted.count > 0 ? "orange" : "default"}
+              note={notSubmitted.weekLabel}
+            />
+          )}
         </section>
         <nav aria-label="Time sections" className="border-b border-line">
           <ul className="m-0 flex list-none gap-6 overflow-x-auto overflow-y-hidden p-0">

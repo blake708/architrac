@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Avatar } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
+import { Button, buttonClasses } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { useToast } from "@/components/ui/toast";
@@ -20,7 +20,7 @@ import { ConfirmApproveDialog, ReturnDialog } from "./approval-dialogs";
 
 const COLS = "36px 230px 120px 70px 76px minmax(160px,1fr) 150px 190px";
 
-export function ApprovalsQueueView({ queue }: { queue: ApprovalsQueue }) {
+export function ApprovalsQueueView({ queue, weekHref }: { queue: ApprovalsQueue; weekHref: string }) {
   const router = useRouter();
   const toast = useToast();
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -79,7 +79,15 @@ export function ApprovalsQueueView({ queue }: { queue: ApprovalsQueue }) {
 
       {!items.length && (
         <Card>
-          <EmptyState title="Nothing waiting on you" help="Timesheets that need your review appear here." />
+          <EmptyState
+            title="Nothing waiting on you"
+            help="Timesheets that need your review appear here."
+            action={
+              <Link href={weekHref} className={buttonClasses("secondary")}>
+                Go to week overview
+              </Link>
+            }
+          />
         </Card>
       )}
 
@@ -141,11 +149,10 @@ export function ApprovalsQueueView({ queue }: { queue: ApprovalsQueue }) {
                       >
                         <Avatar name={i.person.name} initials={i.person.initials} src={i.person.avatarUrl} size="sm" />
                         <span className="flex min-w-0 flex-col">
-                          <span className="truncate font-medium">
-                            {i.person.initials}
-                            {i.person.title ? ` · ${i.person.title}` : ""}
+                          <span className="truncate font-medium">{i.person.name}</span>
+                          <span className="truncate text-xs text-muted">
+                            {[i.person.title, `Target ${formatHours(i.person.capacity)} h`].filter(Boolean).join(" · ")}
                           </span>
-                          <span className="text-xs text-muted">{`Target ${formatHours(i.person.capacity)} h`}</span>
                         </span>
                       </Link>
                       </span>

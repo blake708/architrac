@@ -17,7 +17,7 @@ import { type ViewRow, loadWeek } from "./week";
 // types below keep them in an optional `rates` field that is left out for
 // everyone else.
 
-type Person = {
+export type Person = {
   membershipId: string;
   firmRoleId: string | null;
   name: string;
@@ -51,13 +51,13 @@ export type ApprovalsQueue = {
 };
 
 type SheetRow = typeof timesheets.$inferSelect;
-type Review = (SavedReviewRow & { id: string; timesheetId: string; skipReason: string | null; actedBy: string | null; onBehalf: boolean })[];
+export type Review = (SavedReviewRow & { id: string; timesheetId: string; skipReason: string | null; actedBy: string | null; onBehalf: boolean })[];
 
 const nameOf = (u: { firstName: string; lastName: string }) => `${u.firstName} ${u.lastName}`.trim();
 const initialsOf = (u: { firstName: string; lastName: string; initials: string }) => u.initials || initialsFromName(nameOf(u));
 
 /** A person without their role id, for the page. */
-const publicPerson = (p: Person): Omit<Person, "firmRoleId"> => ({
+export const publicPerson = (p: Person): Omit<Person, "firmRoleId"> => ({
   membershipId: p.membershipId,
   name: p.name,
   initials: p.initials,
@@ -66,7 +66,7 @@ const publicPerson = (p: Person): Omit<Person, "firmRoleId"> => ({
   avatarUrl: p.avatarUrl,
 });
 
-async function peopleFor(db: TenantDb, ids: readonly string[]): Promise<Map<string, Person>> {
+export async function peopleFor(db: TenantDb, ids: readonly string[]): Promise<Map<string, Person>> {
   if (!ids.length) return new Map();
   const rows = await db
     .select({
@@ -98,7 +98,7 @@ async function peopleFor(db: TenantDb, ids: readonly string[]): Promise<Map<stri
   );
 }
 
-async function reviewsFor(db: TenantDb, sheetIds: readonly string[]): Promise<Map<string, Review>> {
+export async function reviewsFor(db: TenantDb, sheetIds: readonly string[]): Promise<Map<string, Review>> {
   if (!sheetIds.length) return new Map();
   const rows = await db
     .select({
@@ -135,7 +135,7 @@ const me = (actor: ApprovalActor, access: ApprovalAccess) => ({
 });
 
 /** Sheets in review, with who they're waiting on. */
-async function inReview(db: TenantDb) {
+export async function inReview(db: TenantDb) {
   const sheets = await db.select().from(timesheets).where(eq(timesheets.status, "submitted"));
   const reviews = await reviewsFor(db, sheets.map((s) => s.id));
   const teamRows = sheets.length
@@ -185,7 +185,8 @@ export async function loadQueue(db: TenantDb, actor: ApprovalActor, access: Appr
         .where(and(inArray(timeEntries.timesheetId, mine.map((s) => s.id)), isNull(timeEntries.archivedAt)))
     : [];
   const rateOf = await loadRateBook(db, mine.map((s) => people.get(s.membershipId)!));
-  const initials = (id: string) => people.get(id)?.initials ?? "?";
+  // Full names in the table (Blake, 2026-11-10): "Also waiting on Pat Dunn".
+  const fullName = (id: string) => people.get(id)?.name ?? "someone";
 
   const items: QueueItem[] = mine.map((s) => {
     const p = people.get(s.membershipId)!;
@@ -204,7 +205,7 @@ export async function loadQueue(db: TenantDb, actor: ApprovalActor, access: Appr
       total,
       billable,
       billablePct: billablePct(billable, total),
-      step: stepSummary(reviews.get(s.id) ?? [], actor.membershipId, initials),
+      step: stepSummary(reviews.get(s.id) ?? [], actor.membershipId, fullName),
       flag: flags[0] ?? null,
     };
   });
@@ -412,4 +413,21 @@ export async function loadApprovalDetail(
 export async function approvalsTabCount(db: TenantDb, actor: ApprovalActor): Promise<number | null> {
   const access = await approvalAccess(db, actor);
   return access.canOpen ? queueCount(db, actor, access) : null;
+}
+
+/** How many sheets wait on each active member right now (cron summary, nudges). */
+export async function waitingCounts(db: TenantDb): Promise<Map<string, number>> {
+  const { sheets, reviews } = await inReview(db);
+  const members = await db
+    .select({ id: memberships.id, isPrincipal: memberships.isPrincipal })
+    .from(memberships)
+    .where(and(eq(memberships.active, true), isNull(memberships.archivedAt)));
+  const out = new Map<string, number>();
+  for (const m of members) {
+    const n = sheets.filter(
+      (s) => rowsFor(reviews.get(s.id) ?? [], { membershipId: m.id, isActivePrincipal: m.isPrincipal }, s.membershipId).length > 0,
+    ).length;
+    if (n) out.set(m.id, n);
+  }
+  return out;
 }

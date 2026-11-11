@@ -55,3 +55,13 @@ export async function findFirmIdByClerkOrg(
   );
   return result.rows[0]?.id ?? null;
 }
+
+/**
+ * Ids of every active firm, for jobs that run firm by firm (the hourly
+ * timesheet reminders). Uses a database function that returns only ids;
+ * each firm's data is then read with withFirm().
+ */
+export async function activeFirmIds(): Promise<string[]> {
+  const result = await getDb().execute<{ id: string }>(sql`select active_firm_ids() as id`);
+  return result.rows.map((r) => r.id);
+}

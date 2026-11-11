@@ -4,6 +4,6 @@
 export const FEATURES = {
   /** "Search everything" box in the top header. Later release. */
   globalSearch: false,
-  /** Notifications bell in the top header. Later release. */
-  notifications: false,
+  /** Notifications bell in the top header (1.7 C, decision #25). */
+  notifications: true,
 } as const;

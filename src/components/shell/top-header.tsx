@@ -1,9 +1,12 @@
 import { ROLE_LABELS, can } from "@/lib/auth/permissions";
+import { FEATURES } from "@/lib/features";
+import { unreadCountCore } from "@/server/notifications/inbox";
 import type { FirmSession } from "@/lib/auth/session";
 import { firmDisplayName } from "@/lib/settings/firm-profile";
 import { listMyFirms } from "@/server/firms/my-firms";
 import { AccountMenu } from "./account-menu";
 import { FirmSwitcher } from "./firm-switcher";
+import { NotificationsBell } from "./notifications-bell";
 import { CurrentPageTitle, SettingsGear } from "./header-links";
 import { MobileMenuButton } from "./shell-frame";
 
@@ -17,6 +20,9 @@ export async function TopHeader({ session }: { session: FirmSession }) {
   const { firm, user, membership } = session;
   const firms = await listMyFirms(session);
   const name = `${user.firstName} ${user.lastName}`.trim() || user.email;
+  const unread = FEATURES.notifications
+    ? await unreadCountCore({ firmId: firm.id, membershipId: membership.id, active: membership.active })
+    : 0;
 
   return (
     <header className="flex flex-wrap items-center gap-4 bg-chrome px-4 py-2.5 text-chrome-text md:px-page-x">
@@ -28,9 +34,9 @@ export async function TopHeader({ session }: { session: FirmSession }) {
       />
       <CurrentPageTitle />
       <div className="ml-auto flex flex-wrap items-center gap-3">
-        {/* The search box (FEATURES.globalSearch) and notifications bell
-            (FEATURES.notifications) go here. Both are off in Release 0, so
-            nothing is rendered for them. */}
+        {/* The search box (FEATURES.globalSearch) goes here; it's off, so
+            nothing is rendered for it. */}
+        {FEATURES.notifications && <NotificationsBell initialCount={unread} />}
         {can(membership, "settings.view") && <SettingsGear />}
         <AccountMenu
           name={name}

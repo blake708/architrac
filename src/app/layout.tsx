@@ -1,6 +1,7 @@
 import { ClerkProvider } from "@clerk/nextjs";
 import type { Metadata } from "next";
 import { Barlow, IBM_Plex_Mono } from "next/font/google";
+import { HydratedMark } from "@/components/shell/hydrated-mark";
 import "./globals.css";
 
 const barlow = Barlow({
@@ -41,6 +42,7 @@ export default function RootLayout({
         >
           {children}
         </ClerkProvider>
+        <HydratedMark />
       </body>
     </html>
   );
