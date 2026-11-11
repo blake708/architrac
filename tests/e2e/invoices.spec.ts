@@ -122,6 +122,12 @@ test("the PM starts an invoice from the Invoices page and bills DD at 30 %", asy
   await expect(page.getByRole("heading", { name: /2026-014 Medical Office Building/ })).toBeVisible();
   // Kim's approved 4 h at $115 on Close Out is already on it.
   await expect(total(page)).toHaveText("$460");
+  // Its time entries open in a dialog.
+  await page.locator('[data-phase="Close Out"]').getByRole("button", { name: "Show time entries (1)" }).click();
+  const entries = page.getByRole("dialog", { name: "Close Out · time entries" });
+  await expect(entries.getByRole("checkbox", { name: /Bill Kim Lane 4\.00 h/ })).toBeChecked();
+  await entries.getByRole("button", { name: "Done" }).click();
+  await expect(entries).toHaveCount(0);
 
   const dd = page.getByLabel("% complete for Design Development");
   await dd.fill("30");
