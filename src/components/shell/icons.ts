@@ -10,6 +10,7 @@ export const RAIL_ICONS: Record<NavKey, string> = {
     "M16 19v-1a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v1M9.5 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7M21 19v-1a4 4 0 0 0-3-3.9M15 3.2a3.5 3.5 0 0 1 0 6.6",
   team: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1",
   time: "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18M12 7v5l3 2",
+  invoices: "M6 3h9l4 4v14H6zM14 3v5h5M9 12h7M9 16h7M9 8h3",
   reports: "M3 21h18M6 21V11M11 21V5M16 21v-7M21 21v-4",
   build: "M3 18h18M5 18v-3a7 7 0 0 1 14 0v3M12 8V5M9 11V8.7M15 11V8.7",
   workload: "M4 5h9M4 10h15M4 15h12M4 20h6",

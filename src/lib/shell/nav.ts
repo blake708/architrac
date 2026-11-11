@@ -3,7 +3,7 @@
 // the module pages and the page titles.
 
 export type CoreKey =
-  "home" | "projects" | "contacts" | "team" | "time" | "reports";
+  "home" | "projects" | "contacts" | "team" | "time" | "invoices" | "reports";
 
 /** Add-on modules that get a rail item, in rail order. */
 export const RAIL_MODULE_KEYS = [
@@ -32,6 +32,8 @@ export const CORE_ITEMS: readonly NavDef[] = [
   { key: "contacts", label: "Contacts", href: "/app/contacts", release: 1 },
   { key: "team", label: "Team", href: "/app/team", release: 1 },
   { key: "time", label: "Time", href: "/app/time", release: 1 },
+  // Core, not the Accounting module (decision #27). Owners, admins and PMs only.
+  { key: "invoices", label: "Invoices", href: "/app/invoices", release: 1 },
   { key: "reports", label: "Reports", href: "/app/reports", release: 2 },
 ];
 
@@ -76,12 +78,13 @@ export type RailEntry =
  * who can turn them on (owner/admin), dimmed with an "Add" badge; everyone
  * else doesn't see them. Decided by Blake in 0.5.
  * The "Modules" label shows only if at least one module row shows.
+ * Invoices shows only to people who can see invoices (not staff).
  */
 export function railEntries(
   modulesEnabled: readonly string[],
-  { showOffModules }: { showOffModules: boolean },
+  { showOffModules, showInvoices = false }: { showOffModules: boolean; showInvoices?: boolean },
 ): RailEntry[] {
-  const core: RailEntry[] = CORE_ITEMS.map((c) => ({
+  const core: RailEntry[] = CORE_ITEMS.filter((c) => c.key !== "invoices" || showInvoices).map((c) => ({
     kind: "item",
     key: c.key,
     label: c.label,
