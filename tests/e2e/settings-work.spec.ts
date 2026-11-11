@@ -311,3 +311,48 @@ test.describe("Timesheet phases & activities", () => {
     await expect(leave.getByText("Personal", { exact: true })).toBeVisible();
   });
 });
+
+test.describe("Billing & invoices", () => {
+  const yy = String(new Date().getFullYear()).slice(2);
+  const settingsRow = async () =>
+    (
+      await deltaQuery<{ invoice_number_format: string; project_number_format: string }>(
+        "select invoice_number_format, project_number_format from firm_settings where firm_id = $1",
+        (f) => [f],
+      )
+    )[0];
+
+  test("the menu has a Money group with Billing & invoices", async ({ page }) => {
+    await signInAs(page, "deltaOwner", "/app/settings/firm");
+    const nav = page.getByRole("navigation", { name: "Settings sections" });
+    await nav.getByRole("link", { name: "Billing & invoices" }).click();
+    await expect(page.getByRole("heading", { name: "Numbering" })).toBeVisible();
+  });
+
+  test("TMG's formats show live examples and save when you leave the box", async ({ page }) => {
+    await signInAs(page, "deltaOwner", "/app/settings/billing");
+    const project = page.getByLabel("Project number format");
+    await project.fill("{YY}{###}");
+    await expect(page.getByTestId("project-example")).toContainText(`${yy}001`);
+    await project.blur();
+    const invoice = page.getByLabel("Invoice number format");
+    await invoice.fill("{PROJECT}-{##}");
+    await expect(page.getByTestId("invoice-example")).toContainText("Each project counts its own invoices");
+    // The firm-wide counter only matters without {PROJECT}.
+    await expect(page.getByLabel("Next invoice number")).toHaveCount(0);
+    await invoice.blur();
+    await expect.poll(settingsRow).toEqual({ invoice_number_format: "{PROJECT}-{##}", project_number_format: "{YY}{###}" });
+    await page.reload();
+    await expect(page.getByLabel("Project number format")).toHaveValue("{YY}{###}");
+  });
+
+  test("a format without a counter shows an error and isn't saved", async ({ page }) => {
+    await signInAs(page, "deltaOwner", "/app/settings/billing");
+    const invoice = page.getByLabel("Invoice number format");
+    await invoice.fill("{YYYY}-");
+    await expect(page.getByText("Add a counter, like {###}.")).toBeVisible();
+    await invoice.blur();
+    await page.reload();
+    await expect(page.getByLabel("Invoice number format")).not.toHaveValue("{YYYY}-");
+  });
+});
