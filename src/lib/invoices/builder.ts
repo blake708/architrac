@@ -17,12 +17,10 @@ export const INVOICE_MESSAGES = {
   percentRange: "Enter a % complete from 0 to 100.",
   notFixedPhase: "That phase isn't a fixed-fee phase on this project.",
   entryNotHere: "That time entry isn't on this invoice.",
-  consultantNotBilled: "Pick a consultant whose fees are billed through.",
-  costPositive: "Enter what they billed you (over $0).",
-  vendorRef: "Enter their invoice number (up to 40 characters).",
+  consultantNotBilled: "That consultant's fees aren't billed through on this project.",
   adjustmentDescription: "Enter a description (up to 200 characters).",
   adjustmentAmount: "Enter an amount other than $0.",
-  lineNotRemovable: "Only consultant lines and adjustments can be removed.",
+  lineNotRemovable: "Only adjustments can be removed. Set % complete to change the other lines.",
   returnNote: "Add a note of at least 3 characters for the person who prepared it.",
   notInReview: "This invoice isn't waiting for review.",
   submitted: "Submitted for review.",
@@ -55,12 +53,10 @@ export const percentInput = z.object({
 
 export const entryInput = z.object({ ...base, entryId: uuid, include: z.boolean() });
 
-export const consultantLineInput = z.object({
+export const consultantPercentInput = z.object({
   ...base,
-  lineId: uuid.optional(),
   consultantId: uuid,
-  vendorInvoiceRef: z.string().trim().min(1, INVOICE_MESSAGES.vendorRef).max(40, INVOICE_MESSAGES.vendorRef),
-  costCents: z.number().int(INVOICE_MESSAGES.costPositive).positive(INVOICE_MESSAGES.costPositive).max(100_000_000_00),
+  percentCompleteBp: z.number().int(INVOICE_MESSAGES.percentRange).min(0, INVOICE_MESSAGES.percentRange).max(10000, INVOICE_MESSAGES.percentRange),
 });
 
 export const adjustmentInput = z.object({

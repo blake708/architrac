@@ -1,7 +1,6 @@
 import { and, count, desc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import {
   activityLog,
-  companies,
   consultants,
   contacts,
   invoiceExcludedEntries,
@@ -13,13 +12,13 @@ import {
   users,
 } from "@/db/schema";
 import type { TenantDb } from "@/db/tenant";
-import { consultantAmount, formatPercentBp, invoiceDueDate, lastBilledBp } from "@/lib/calc/invoice";
-import { ADJUSTMENT_SORT_BASE, CONSULTANT_SORT_BASE, money } from "@/lib/calc/invoice-plan";
+import { consultantLastBilledBp, formatPercentBp, invoiceDueDate, lastBilledBp } from "@/lib/calc/invoice";
+import { ADJUSTMENT_SORT_BASE, money } from "@/lib/calc/invoice-plan";
 import { formatDate } from "@/lib/format";
 import {
   INVOICE_MESSAGES,
   adjustmentInput,
-  consultantLineInput,
+  consultantPercentInput,
   createDraftInput,
   entryInput,
   lineInput,
@@ -219,26 +218,26 @@ async function nextSort(db: TenantDb, invoiceId: string, base: number) {
   return base + (row?.n ?? 0);
 }
 
-async function ownLine(db: TenantDb, inv: InvoiceRow, lineId: string, kind: "consultant" | "adjustment") {
+/** A free adjustment on this invoice (no phase): the only kind typed in by hand. */
+async function ownAdjustment(db: TenantDb, inv: InvoiceRow, lineId: string) {
   const [line] = await db
     .select()
     .from(invoiceLines)
     .where(and(eq(invoiceLines.id, lineId), eq(invoiceLines.invoiceId, inv.id), isNull(invoiceLines.archivedAt)));
-  const ok = line && line.lineType === kind && (kind === "consultant" || line.projectPhaseId === null);
-  if (!ok) throw new InvoiceError(INVOICE_MESSAGES.lineNotRemovable);
+  if (!line || line.lineType !== "adjustment" || line.projectPhaseId !== null)
+    throw new InvoiceError(INVOICE_MESSAGES.lineNotRemovable);
   return line;
 }
 
-/** Add or change a consultant pass-through line (rule 6). */
-export async function saveConsultantLineCore(actor: InvoiceActor, raw: unknown): Promise<Result> {
-  const parsed = consultantLineInput.safeParse(raw);
+/** % complete on a consultant's fee: saved on the consultant and the line (rule 6, decision #31). */
+export async function setConsultantPercentCore(actor: InvoiceActor, raw: unknown): Promise<Result> {
+  const parsed = consultantPercentInput.safeParse(raw);
   if (!parsed.success) return invalid(parsed.error.issues);
   const v = parsed.data;
-  return edit(actor, "saveConsultantLine", v.invoiceId, v.version, async (db, inv) => {
+  return edit(actor, "setConsultantPercent", v.invoiceId, v.version, async (db, inv) => {
     const [c] = await db
-      .select({ discipline: consultants.discipline, markupBp: consultants.markupBp, company: companies.name })
+      .select()
       .from(consultants)
-      .innerJoin(companies, eq(companies.id, consultants.companyId))
       .where(
         and(
           eq(consultants.id, v.consultantId),
@@ -246,32 +245,23 @@ export async function saveConsultantLineCore(actor: InvoiceActor, raw: unknown):
           eq(consultants.billedThrough, true),
           isNull(consultants.archivedAt),
         ),
-      );
-    if (!c) throw new InvoiceError(INVOICE_MESSAGES.consultantNotBilled, "consultantId");
-    const amount = consultantAmount(v.costCents, c.markupBp);
-    const values = {
-      consultantId: v.consultantId,
-      description: `${c.discipline} · ${c.company} · inv ${v.vendorInvoiceRef}`,
-      quantity: "1.00",
-      rateCents: amount,
-      amountCents: amount,
-      costCents: v.costCents,
-      markupBp: c.markupBp,
-      vendorInvoiceRef: v.vendorInvoiceRef,
-    };
-    if (v.lineId) {
-      const line = await ownLine(db, inv, v.lineId, "consultant");
-      await db.update(invoiceLines).set(values).where(eq(invoiceLines.id, line.id));
-      return { consultantLine: { description: values.description, before: line.amountCents, after: amount } };
-    }
-    await db.insert(invoiceLines).values({
-      ...values,
+      )
+      .for("update");
+    if (!c) throw new InvoiceError(INVOICE_MESSAGES.consultantNotBilled);
+    const last = consultantLastBilledBp(await linesForProjects(db, [inv.projectId]), c.id, inv.id);
+    if (v.percentCompleteBp < last)
+      throw new InvoiceError(`% complete is below what's already billed (${formatPercentBp(last)}).`, "percentCompleteBp");
+    if (c.percentCompleteBp === v.percentCompleteBp) return null;
+    await db.update(consultants).set({ percentCompleteBp: v.percentCompleteBp }).where(eq(consultants.id, c.id));
+    await db.insert(activityLog).values({
       firmId: actor.firmId,
-      invoiceId: inv.id,
-      lineType: "consultant",
-      sortOrder: await nextSort(db, inv.id, CONSULTANT_SORT_BASE),
+      actorUserId: actor.userId,
+      entityType: "consultant",
+      entityId: c.id,
+      action: "updated",
+      changes: { percent_complete_bp: { before: c.percentCompleteBp, after: v.percentCompleteBp } },
     });
-    return { consultantLine: { description: values.description, added: amount } };
+    return { consultant: c.discipline, percentCompleteBp: { before: c.percentCompleteBp, after: v.percentCompleteBp } };
   });
 }
 
@@ -283,7 +273,7 @@ export async function saveAdjustmentCore(actor: InvoiceActor, raw: unknown): Pro
   return edit(actor, "saveAdjustment", v.invoiceId, v.version, async (db, inv) => {
     const values = { description: v.description, quantity: "1.00", rateCents: v.amountCents, amountCents: v.amountCents };
     if (v.lineId) {
-      const line = await ownLine(db, inv, v.lineId, "adjustment");
+      const line = await ownAdjustment(db, inv, v.lineId);
       await db.update(invoiceLines).set(values).where(eq(invoiceLines.id, line.id));
       return { adjustment: { description: v.description, before: line.amountCents, after: v.amountCents } };
     }
@@ -298,18 +288,13 @@ export async function saveAdjustmentCore(actor: InvoiceActor, raw: unknown): Pro
   });
 }
 
-/** Remove a consultant line or free adjustment (archived). */
+/** Remove a free adjustment (archived). Calculated lines change through % complete instead. */
 export async function removeLineCore(actor: InvoiceActor, raw: unknown): Promise<Result> {
   const parsed = lineInput.safeParse(raw);
   if (!parsed.success) return invalid(parsed.error.issues);
   const v = parsed.data;
   return edit(actor, "removeLine", v.invoiceId, v.version, async (db, inv) => {
-    const [line] = await db
-      .select()
-      .from(invoiceLines)
-      .where(and(eq(invoiceLines.id, v.lineId), eq(invoiceLines.invoiceId, inv.id), isNull(invoiceLines.archivedAt)));
-    if (!line || !(line.lineType === "consultant" || (line.lineType === "adjustment" && line.projectPhaseId === null)))
-      throw new InvoiceError(INVOICE_MESSAGES.lineNotRemovable);
+    const line = await ownAdjustment(db, inv, v.lineId);
     await db.update(invoiceLines).set({ archivedAt: new Date() }).where(eq(invoiceLines.id, line.id));
     return { removed: line.description };
   });

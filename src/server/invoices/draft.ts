@@ -1,7 +1,8 @@
-import { and, desc, eq, inArray, isNotNull, isNull, lte, notInArray, or, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, isNotNull, isNull, lte, notInArray, or, sql } from "drizzle-orm";
 import {
   activityLog,
   companies,
+  consultants,
   contacts,
   firmRoles,
   firmSettings,
@@ -167,10 +168,10 @@ async function excludedIds(db: TenantDb, invoiceId: string): Promise<string[]> {
  * NTE phase of this project, worked on or before "period through", not
  * already on an invoice, and not unticked on this draft.
  */
-export async function syncReservedTime(db: TenantDb, inv: InvoiceRow, hourlyPhaseIds: string[]) {
+export async function syncReservedTime(db: TenantDb, inv: InvoiceRow, hourlyPhaseIds: string[]): Promise<number> {
   const excluded = await excludedIds(db, inv.id);
   // Release: after the period, unticked, or no longer on an hourly phase.
-  await db
+  const released = await db
     .update(timeEntries)
     .set({ invoiceId: null })
     .where(
@@ -184,9 +185,10 @@ export async function syncReservedTime(db: TenantDb, inv: InvoiceRow, hourlyPhas
             : sql`true`,
         ),
       ),
-    );
-  if (!hourlyPhaseIds.length) return;
-  await db
+    )
+    .returning({ id: timeEntries.id });
+  if (!hourlyPhaseIds.length) return released.length;
+  const reserved = await db
     .update(timeEntries)
     .set({ invoiceId: inv.id })
     .where(
@@ -200,7 +202,9 @@ export async function syncReservedTime(db: TenantDb, inv: InvoiceRow, hourlyPhas
         excluded.length ? notInArray(timeEntries.id, excluded) : sql`true`,
         sql`exists (select 1 from ${timesheets} t where t.id = ${timeEntries.timesheetId} and t.status = 'approved')`,
       ),
-    );
+    )
+    .returning({ id: timeEntries.id });
+  return released.length + reserved.length;
 }
 
 /** Entries reserved on this draft, with the role frozen on each (decision #30). */
@@ -227,11 +231,29 @@ export async function reservedEntries(db: TenantDb, invoiceId: string) {
 // Recalculate (rules 3–7)
 
 /** The plan for a draft as things stand (no writes). */
+/** Consultants on the project whose fees pass through (decision #31). */
+export async function billedConsultants(db: TenantDb, projectId: string) {
+  return db
+    .select({
+      id: consultants.id,
+      discipline: consultants.discipline,
+      company: companies.name,
+      feeCents: consultants.feeCents,
+      markupBp: consultants.markupBp,
+      percentCompleteBp: consultants.percentCompleteBp,
+    })
+    .from(consultants)
+    .innerJoin(companies, eq(companies.id, consultants.companyId))
+    .where(and(eq(consultants.projectId, projectId), eq(consultants.billedThrough, true), isNull(consultants.archivedAt)))
+    .orderBy(asc(consultants.discipline), asc(companies.name));
+}
+
 export async function planFor(db: TenantDb, inv: InvoiceRow): Promise<DraftPlan> {
-  const [phases, priorLines, entries] = await Promise.all([
+  const [phases, priorLines, entries, cons] = await Promise.all([
     projectPhaseRows(db, inv.projectId),
     linesForProjects(db, [inv.projectId]),
     reservedEntries(db, inv.id),
+    billedConsultants(db, inv.projectId),
   ]);
   return planDraft({
     invoiceId: inv.id,
@@ -245,16 +267,28 @@ export async function planFor(db: TenantDb, inv: InvoiceRow): Promise<DraftPlan>
     })),
     priorLines,
     entries,
+    consultants: cons.map((c) => ({
+      id: c.id,
+      label: `${c.discipline} · ${c.company}`,
+      feeCents: c.feeCents,
+      markupBp: c.markupBp,
+      percentCompleteBp: c.percentCompleteBp,
+    })),
   });
 }
 
-/** Calculated lines are phase fees, hourly lines, and adjustments tied to a phase (NTE write-downs). */
+/** Calculated lines: phase fees, hourly lines, consultants, and adjustments tied to a phase (NTE write-downs). */
 const isPlanned = (l: Pick<typeof invoiceLines.$inferSelect, "lineType" | "projectPhaseId">) =>
-  l.lineType === "phase_fee" || l.lineType === "hourly" || (l.lineType === "adjustment" && l.projectPhaseId !== null);
+  l.lineType === "phase_fee" ||
+  l.lineType === "hourly" ||
+  l.lineType === "consultant" ||
+  (l.lineType === "adjustment" && l.projectPhaseId !== null);
 
 const signature = (l: {
   lineType: string;
   projectPhaseId: string | null;
+  consultantId: string | null;
+  markupBp: number | null;
   description: string;
   quantity: string;
   rateCents: number;
@@ -267,6 +301,8 @@ const signature = (l: {
   JSON.stringify([
     l.lineType,
     l.projectPhaseId,
+    l.consultantId,
+    l.markupBp,
     l.description,
     Number(l.quantity).toFixed(2),
     l.rateCents,
@@ -277,16 +313,17 @@ const signature = (l: {
     l.sortOrder,
   ]);
 
-export type RecalcResult = { plan: DraftPlan; added: string[]; removed: string[] };
+export type RecalcResult = { plan: DraftPlan; added: string[]; removed: string[]; changed: boolean };
 
 /**
  * Bring a draft up to date: reserve/release time, rewrite the calculated
  * lines that changed (unchanged ones stay as they are), and store totals.
- * Always touches the invoice so the page's version moves on.
+ * Touches the invoice (moving the page's version on) only when something
+ * changed, so opening a draft that's already current changes nothing.
  */
 export async function recalculate(db: TenantDb, inv: InvoiceRow): Promise<RecalcResult> {
   const phases = await projectPhaseRows(db, inv.projectId);
-  await syncReservedTime(
+  const timeMoved = await syncReservedTime(
     db,
     inv,
     phases.filter((p) => p.feeType !== "fixed").map((p) => p.id),
@@ -321,6 +358,8 @@ export async function recalculate(db: TenantDb, inv: InvoiceRow): Promise<Recalc
         firmId: inv.firmId,
         invoiceId: inv.id,
         projectPhaseId: p.projectPhaseId,
+        consultantId: p.consultantId,
+        markupBp: p.markupBp,
         lineType: p.lineType,
         description: p.description,
         quantity: p.quantity,
@@ -335,11 +374,18 @@ export async function recalculate(db: TenantDb, inv: InvoiceRow): Promise<Recalc
 
   const kept = live.filter((l) => !toArchive.includes(l));
   const totals = invoiceTotals([...kept, ...toInsert]);
-  await db
-    .update(invoices)
-    .set({ subtotalCents: totals.subtotalCents, taxCents: totals.taxCents, totalCents: totals.totalCents, updatedAt: now })
-    .where(eq(invoices.id, inv.id));
-  return { plan, added: toInsert.map((l) => l.description), removed: toArchive.map((l) => l.description) };
+  const changed =
+    timeMoved > 0 ||
+    toInsert.length > 0 ||
+    toArchive.length > 0 ||
+    totals.totalCents !== inv.totalCents ||
+    totals.subtotalCents !== inv.subtotalCents;
+  if (changed)
+    await db
+      .update(invoices)
+      .set({ subtotalCents: totals.subtotalCents, taxCents: totals.taxCents, totalCents: totals.totalCents, updatedAt: now })
+      .where(eq(invoices.id, inv.id));
+  return { plan, added: toInsert.map((l) => l.description), removed: toArchive.map((l) => l.description), changed };
 }
 
 /** Lines that changed in a save, for the activity log (rule 18: batched per save). */

@@ -10,7 +10,7 @@ import {
   removeLineCore,
   returnToDraftCore,
   saveAdjustmentCore,
-  saveConsultantLineCore,
+  setConsultantPercentCore,
   setPhasePercentCore,
   submitForReviewCore,
   toggleEntryCore,
@@ -55,8 +55,8 @@ export async function toggleEntry(input: unknown) {
 export async function recalculateDraft(input: unknown) {
   return andRefresh(recalculateDraftCore(await actor(), input));
 }
-export async function saveConsultantLine(input: unknown) {
-  return andRefresh(saveConsultantLineCore(await actor(), input));
+export async function setConsultantPercent(input: unknown) {
+  return andRefresh(setConsultantPercentCore(await actor(), input));
 }
 export async function saveAdjustment(input: unknown) {
   return andRefresh(saveAdjustmentCore(await actor(), input));

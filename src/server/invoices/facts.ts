@@ -22,6 +22,7 @@ export async function linesForProjects(db: TenantDb, projectIds: readonly string
       lineType: invoiceLines.lineType,
       amountCents: invoiceLines.amountCents,
       percentCompleteBp: invoiceLines.percentCompleteBp,
+      consultantId: invoiceLines.consultantId,
     })
     .from(invoiceLines)
     .innerJoin(invoices, eq(invoices.id, invoiceLines.invoiceId))

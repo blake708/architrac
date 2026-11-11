@@ -24,7 +24,7 @@ import {
   removeLineCore,
   returnToDraftCore,
   saveAdjustmentCore,
-  saveConsultantLineCore,
+  setConsultantPercentCore,
   setPhasePercentCore,
   submitForReviewCore,
   toggleEntryCore,
@@ -250,6 +250,12 @@ describe("Building the lines", () => {
     expect(v.hourly.find((h) => h.phaseId === ph.ADD)!.groups.map((g) => g.roleName)).toEqual(["Principal", "Project Architect"]);
   });
 
+  it("non-billable time on an hourly phase gets a heads-up", async () => {
+    expect((await view()).warnings.map((w) => w.message)).toContain(
+      "1 h on hourly phases in this period is marked non-billable on timesheets, so it isn't on this invoice.",
+    );
+  });
+
   it("unapproved time isn't billed; a warning shows its hours", async () => {
     const v = await view();
     expect(v.warnings.map((w) => w.message)).toContain(
@@ -290,18 +296,35 @@ describe("Building the lines", () => {
     expect(r).toMatchObject({ ok: false, fieldErrors: { percentCompleteBp: "% complete is below what's already billed (60%)." } });
   });
 
-  it("a consultant line at 10 % markup: 552,000 → 607,200, with an over-fee warning", async () => {
-    const v = ok(
-      await saveConsultantLineCore(JR(), {
-        invoiceId: draftId,
-        version: (await view()).version,
-        consultantId: A.consultantId,
-        vendorInvoiceRef: "CME-2291",
-        costCents: 552_000,
-      }),
+  it("a consultant bills by % complete of their marked-up fee (decision #31)", async () => {
+    // MEP: $1,000 fee + 10 % markup = $1,100 to the client; A-100 billed 30 % ($330).
+    // The owner connection sees every firm: filter by firm (another test file also has an A-100).
+    const [prior] = await q<{ id: string }>("select id from invoices where firm_id = $1 and number = 'A-100'", [A.firmId]);
+    await q(
+      `insert into invoice_lines (firm_id, invoice_id, line_type, description, rate_cents, amount_cents, percent_complete_bp, consultant_id, markup_bp)
+       values ($1, $2, 'consultant', 'MEP · 30% complete', 33000, 33000, 3000, $3, 1000)`,
+      [A.firmId, prior.id, A.consultantId],
     );
-    expect(v.consultantLines).toMatchObject([{ vendorInvoiceRef: "CME-2291", costCents: 552_000, markupBp: 1000, amountCents: 607_200 }]);
-    expect(v.warnings.some((w) => /MEP · .*\$5,520 billed against a \$1,000 fee\./.test(w.message))).toBe(true);
+    let v = await view();
+    expect(v.consultants).toMatchObject([
+      { consultantId: A.consultantId, feeCents: 100_000, markupBp: 1000, clientFeeCents: 110_000, lastBilledBp: 3000, previouslyBilledCents: 33_000 },
+    ]);
+    const below = await setConsultantPercentCore(JR(), { invoiceId: draftId, version: v.version, consultantId: A.consultantId, percentCompleteBp: 2000 });
+    expect(below).toMatchObject({ ok: false, fieldErrors: { percentCompleteBp: "% complete is below what's already billed (30%)." } });
+    v = ok(await setConsultantPercentCore(JR(), { invoiceId: draftId, version: v.version, consultantId: A.consultantId, percentCompleteBp: 5000 }));
+    expect(v.consultants[0]).toMatchObject({ percentCompleteBp: 5000, earnedToDateCents: 55_000, thisInvoiceCents: 22_000 });
+    const [c] = await q<{ percent_complete_bp: number }>("select percent_complete_bp from consultants where id = $1", [A.consultantId]);
+    expect(c.percent_complete_bp).toBe(5000);
+  });
+
+  it("fixed-fee phases show WIP for the period and hours against budget", async () => {
+    await q("update project_phases set budget_hours = 10 where id = $1", [ph.SD]);
+    await q("update memberships set firm_role_id = $1 where id = $2", [A.firmRoleId, kl.membershipId]);
+    // Approved at a frozen $145; unapproved valued at KL's role rate ($115).
+    await sheet(jr.membershipId, "2026-10-12", "approved", [{ phase: ph.SD, date: "2026-10-13", hours: 5, rate: 14_500, roleId: role.architect }]);
+    await sheet(kl.membershipId, "2026-10-19", "submitted", [{ phase: ph.SD, date: "2026-10-20", hours: 2, rate: 0, roleId: null }]);
+    const sd = (await view()).fixed.find((f) => f.phaseId === ph.SD)!;
+    expect(sd).toMatchObject({ wipCents: 95_500, wipHundredths: 700, usedHundredths: 700, suggestBp: 7000 });
   });
 
   it("adjustments can be negative (a retainer) and removed", async () => {
@@ -316,7 +339,7 @@ describe("Building the lines", () => {
 
   it("totals add up on the server: DD + SD + hourly + Permitting net + MEP", async () => {
     const v = await view();
-    expect(v.totals.totalCents).toBe(1_395_000 + 1_116_000 + 262_875 + 110_000 + 607_200);
+    expect(v.totals.totalCents).toBe(1_395_000 + 1_116_000 + 262_875 + 110_000 + 22_000);
     expect(lines(v)).toContainEqual(["Design Development", 1_395_000]);
   });
 
@@ -327,6 +350,15 @@ describe("Building the lines", () => {
 });
 
 describe("Time on the draft", () => {
+  it("opening a draft picks up time approved since; opening it again changes nothing", async () => {
+    const before = await view();
+    await sheet(kl.membershipId, "2026-10-26", "approved", [{ phase: ph.ADD, date: "2026-10-26", hours: 1, rate: 11_000, roleId: A.firmRoleId }]);
+    const after = await view();
+    expect(after.version).not.toBe(before.version);
+    expect(after.hourly.find((h) => h.phaseId === ph.ADD)!.groups.map((g) => [g.roleName, g.amountCents])).toContainEqual(["Designer", 11_000]);
+    expect((await view()).version).toBe(after.version);
+  });
+
   it("an unticked entry comes off and stays off on Recalculate; ticking puts it back", async () => {
     let v = await view();
     const entry = v.hourly.find((h) => h.phaseId === ph.ADD)!.entries.find((e) => e.hours === "2.25")!;
@@ -345,7 +377,7 @@ describe("Time on the draft", () => {
     const before = await updateDraftSettingsCore(JR(), { invoiceId: draftId, version: v.version, periodEnd: "2026-09-15" });
     expect(before).toMatchObject({ ok: false, fieldErrors: { periodEnd: "Period through can't be before Oct 1, 2026." } });
     v = ok(await updateDraftSettingsCore(JR(), { invoiceId: draftId, version: v.version, periodEnd: "2026-10-31" }));
-    expect(v.hourly.find((h) => h.phaseId === ph.ADD)!.groups).toHaveLength(2);
+    expect(v.hourly.find((h) => h.phaseId === ph.ADD)!.groups).toHaveLength(3);
   });
 
   it("a new issue date moves the due date; due can't be before issue", async () => {
@@ -434,7 +466,7 @@ describe("Delete draft", () => {
     const next = ok(await createDraftInvoiceCore(BM(), { projectId: A.projectId }));
     expect(next.created).toBe(true);
     draftId = next.id;
-    expect((await view()).hourly.find((h) => h.phaseId === ph.ADD)!.groups.map((g) => g.amountCents)).toEqual([78_000, 184_875]);
+    expect((await view()).hourly.find((h) => h.phaseId === ph.ADD)!.groups.map((g) => g.amountCents)).toEqual([78_000, 184_875, 11_000]);
   });
 });
 

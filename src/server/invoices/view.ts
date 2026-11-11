@@ -1,7 +1,6 @@
-import { and, asc, desc, eq, inArray, isNull, lte, ne, or } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, lte, ne, or } from "drizzle-orm";
 import {
   companies,
-  consultants,
   contacts,
   firmRoles,
   firmSettings,
@@ -16,11 +15,12 @@ import {
 } from "@/db/schema";
 import type { TenantDb } from "@/db/tenant";
 import { can } from "@/lib/auth/permissions";
-import { type InvoiceStatus, COUNTED_STATUSES, OPEN_STATUSES } from "@/lib/calc/invoice";
-import { type FixedRow, type HourlyRow, money, sumHundredths } from "@/lib/calc/invoice-plan";
+import { type InvoiceStatus, OPEN_STATUSES, hoursSuggestBp, hoursToHundredths, timeValueCents } from "@/lib/calc/invoice";
+import { type ConsultantRow, type FixedRow, type HourlyRow, money, sumHundredths } from "@/lib/calc/invoice-plan";
 import { formatDate } from "@/lib/format";
 import { sendProblems } from "@/lib/invoices/builder";
-import { type Access, type InvoiceActor, type InvoiceRow, canEdit, planFor, projectAccess, versionOf } from "./draft";
+import { loadRateBook } from "@/server/time/approval";
+import { type Access, type InvoiceActor, type InvoiceRow, canEdit, planFor, projectAccess, projectPhaseRows, recalculate, versionOf } from "./draft";
 
 // What the invoice pages read (invoicing spec, Layout A and C). Bill rates
 // show to PMs who can build the invoice (decision #4); cost rates, cost and
@@ -55,18 +55,18 @@ export type BuilderView = {
     termsDays: number;
   };
   contacts: { id: string; name: string; email: string | null }[];
-  fixed: FixedRow[];
+  fixed: (FixedRow & {
+    /** Bill-rate value of time on the phase in this invoice's period. */
+    wipCents: number;
+    wipHundredths: number;
+    /** All hours on the phase to date (drafts too, decision #20). */
+    usedHundredths: number;
+    budgetHours: string;
+    /** Hours used ÷ budget, capped at 100 %; null with no budget. */
+    suggestBp: number | null;
+  })[];
   hourly: (HourlyRow & { entries: BuilderEntry[] })[];
-  consultantLines: {
-    id: string;
-    consultantId: string;
-    label: string;
-    vendorInvoiceRef: string;
-    costCents: number;
-    markupBp: number;
-    amountCents: number;
-  }[];
-  consultantOptions: { id: string; label: string; markupBp: number }[];
+  consultants: ConsultantRow[];
   adjustments: { id: string; description: string; amountCents: number }[];
   warnings: Warning[];
   totals: {
@@ -83,7 +83,7 @@ export type BuilderView = {
 
 const pct1 = (bp: number) => `${(Math.floor(bp / 10) / 10).toFixed(1).replace(/\.0$/, "")}%`;
 
-/** The builder page for one draft, or null when it isn't there or isn't theirs. */
+/** The builder page for one draft (refreshed first), or null when it isn't there or isn't theirs. */
 export async function loadBuilder(db: TenantDb, actor: InvoiceActor, invoiceId: string): Promise<BuilderView | null> {
   if (!/^[0-9a-f-]{36}$/i.test(invoiceId)) return null;
   const [inv] = await db
@@ -93,6 +93,15 @@ export async function loadBuilder(db: TenantDb, actor: InvoiceActor, invoiceId: 
   if (!inv) return null;
   const access = await projectAccess(db, actor, inv.projectId);
   if (!access || (!access.canDraft && !access.canReview)) return null;
+  // Opening a draft brings it up to date (time approved since, % changed on
+  // the project page). Nothing is written when it's already current.
+  if (canEdit(inv, access)) {
+    const r = await recalculate(db, inv);
+    if (r.changed) {
+      const [fresh] = await db.select().from(invoices).where(eq(invoices.id, inv.id));
+      return buildView(db, fresh, access);
+    }
+  }
   return buildView(db, inv, access);
 }
 
@@ -169,34 +178,23 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
         )
     : [];
 
-  // Consultants on the project whose fees pass through; cost billed so far on counted invoices.
-  const consultantRows = await db
-    .select({
-      id: consultants.id,
-      discipline: consultants.discipline,
-      company: companies.name,
-      markupBp: consultants.markupBp,
-      feeCents: consultants.feeCents,
-      billedThrough: consultants.billedThrough,
-      archivedAt: consultants.archivedAt,
-    })
-    .from(consultants)
-    .innerJoin(companies, eq(companies.id, consultants.companyId))
-    .where(eq(consultants.projectId, inv.projectId));
-  const consultantLabel = new Map(consultantRows.map((c) => [c.id, `${c.discipline} · ${c.company}`]));
-  const priorConsultantCost = await db
-    .select({ consultantId: invoiceLines.consultantId, cost: invoiceLines.costCents, status: invoices.status })
-    .from(invoiceLines)
-    .innerJoin(invoices, eq(invoices.id, invoiceLines.invoiceId))
-    .where(
-      and(
-        eq(invoices.projectId, inv.projectId),
-        ne(invoices.id, inv.id),
-        eq(invoiceLines.lineType, "consultant"),
-        isNull(invoices.archivedAt),
-        isNull(invoiceLines.archivedAt),
-      ),
-    );
+  // Time on hourly phases marked non-billable in the period: never billed, worth a heads-up.
+  const nonBillable = hourlyIds.length
+    ? await db
+        .select({ hours: timeEntries.hours })
+        .from(timeEntries)
+        .where(
+          and(
+            inArray(timeEntries.projectPhaseId, hourlyIds),
+            eq(timeEntries.billable, false),
+            isNull(timeEntries.archivedAt),
+            lte(timeEntries.workDate, inv.periodEnd),
+            inv.periodStart ? gte(timeEntries.workDate, inv.periodStart) : undefined,
+          ),
+        )
+    : [];
+
+  const wip = await fixedPhaseWip(db, inv);
 
   // Other open invoices on the project (account summary).
   const prior = await db
@@ -213,17 +211,6 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
     .orderBy(asc(invoices.issueDate));
   const priorInvoices = prior.map((r) => ({ number: r.number ?? "—", balanceCents: r.total - r.paid }));
 
-  const consultantLines = lineRows
-    .filter((l) => l.lineType === "consultant" && l.consultantId)
-    .map((l) => ({
-      id: l.id,
-      consultantId: l.consultantId!,
-      label: consultantLabel.get(l.consultantId!) ?? l.description,
-      vendorInvoiceRef: l.vendorInvoiceRef ?? "",
-      costCents: l.costCents ?? 0,
-      markupBp: l.markupBp ?? 0,
-      amountCents: l.amountCents,
-    }));
   const adjustments = lineRows
     .filter((l) => l.lineType === "adjustment" && l.projectPhaseId === null)
     .map((l) => ({ id: l.id, description: l.description, amountCents: l.amountCents }));
@@ -236,7 +223,14 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
       tone: "attention",
       message: `${unapprovedHundredths / 100} h of billable time through ${formatDate(inv.periodEnd)} isn't approved yet, so it isn't on this invoice.`,
     });
+  const nonBillableHundredths = sumHundredths(nonBillable.map((u) => u.hours));
+  if (nonBillableHundredths > 0)
+    warnings.push({
+      tone: "attention",
+      message: `${nonBillableHundredths / 100} h on hourly phases in this period is marked non-billable on timesheets, so it isn't on this invoice.`,
+    });
   for (const f of plan.fixed) if (f.error) warnings.push({ tone: "danger", message: `${f.name}: ${f.error}` });
+  for (const c of plan.consultants) if (c.error) warnings.push({ tone: "danger", message: `${c.label}: ${c.error}` });
   for (const h of plan.hourly) {
     if (h.warning === "reached")
       warnings.push({
@@ -248,18 +242,6 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
       });
     else if (h.warning === "approaching")
       warnings.push({ tone: "attention", message: `${h.name}: approaching the ${money(h.feeCents)} limit (${pct1(h.pctOfCapBp ?? 0)} used).` });
-  }
-  for (const c of consultantRows) {
-    const cost =
-      priorConsultantCost
-        .filter((r) => r.consultantId === c.id && COUNTED_STATUSES.has(r.status))
-        .reduce((n, r) => n + (r.cost ?? 0), 0) +
-      consultantLines.filter((l) => l.consultantId === c.id).reduce((n, l) => n + l.costCents, 0);
-    if (consultantLines.some((l) => l.consultantId === c.id) && cost > c.feeCents)
-      warnings.push({
-        tone: "attention",
-        message: `${c.discipline} · ${c.company}: ${money(cost)} billed against a ${money(c.feeCents)} fee.`,
-      });
   }
   const billTo = contactList.find((c) => c.id === inv.billToContactId);
   const hasToAddress = !!billTo?.email?.trim();
@@ -296,7 +278,18 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
       termsDays: settings[0]?.terms ?? 30,
     },
     contacts: contactList,
-    fixed: plan.fixed,
+    fixed: plan.fixed.map((f) => {
+      const w = wip.get(f.phaseId);
+      const used = w?.usedHundredths ?? 0;
+      return {
+        ...f,
+        wipCents: w?.wipCents ?? 0,
+        wipHundredths: w?.wipHundredths ?? 0,
+        usedHundredths: used,
+        budgetHours: w?.budgetHours ?? "0",
+        suggestBp: hoursSuggestBp(used, w?.budgetHours ?? "0"),
+      };
+    }),
     hourly: plan.hourly.map((h) => ({
       ...h,
       entries: entryRows
@@ -312,10 +305,7 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
           included: e.invoiceId === inv.id,
         })),
     })),
-    consultantLines,
-    consultantOptions: consultantRows
-      .filter((c) => c.billedThrough && !c.archivedAt)
-      .map((c) => ({ id: c.id, label: `${c.discipline} · ${c.company}`, markupBp: c.markupBp })),
+    consultants: plan.consultants,
     adjustments,
     warnings,
     totals: {
@@ -333,6 +323,56 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
       delete: access.canDraft && inv.status === "draft",
     },
   };
+}
+
+/**
+ * WIP on fixed-fee phases (Blake, 2026-11-11): the bill-rate value of time
+ * on each phase in this invoice's period, and all hours to date against the
+ * phase budget. Approved time uses its frozen rate; other time uses the
+ * rate in force on the work date (as the snapshot does, decision #20).
+ */
+async function fixedPhaseWip(db: TenantDb, inv: InvoiceRow) {
+  const phases = (await projectPhaseRows(db, inv.projectId)).filter((p) => p.feeType === "fixed");
+  const out = new Map<string, { wipCents: number; wipHundredths: number; usedHundredths: number; budgetHours: string }>();
+  if (!phases.length) return out;
+  const rows = await db
+    .select({
+      phaseId: timeEntries.projectPhaseId,
+      workDate: timeEntries.workDate,
+      hours: timeEntries.hours,
+      rateCents: timeEntries.billRateCents,
+      membershipId: timesheets.membershipId,
+      firmRoleId: memberships.firmRoleId,
+    })
+    .from(timeEntries)
+    .innerJoin(timesheets, eq(timesheets.id, timeEntries.timesheetId))
+    .innerJoin(memberships, eq(memberships.id, timesheets.membershipId))
+    .where(
+      and(
+        inArray(timeEntries.projectPhaseId, phases.map((p) => p.id)),
+        isNull(timeEntries.archivedAt),
+      ),
+    );
+  const rateOf = await loadRateBook(
+    db,
+    rows.map((r) => ({ membershipId: r.membershipId, firmRoleId: r.firmRoleId })),
+  );
+  for (const p of phases) {
+    const mine = rows.filter((r) => r.phaseId === p.id);
+    const inPeriod = mine.filter((r) => r.workDate <= inv.periodEnd && (!inv.periodStart || r.workDate >= inv.periodStart));
+    out.set(p.id, {
+      wipCents: timeValueCents(
+        inPeriod.map((r) => ({
+          hours: r.hours,
+          rateCents: r.rateCents ?? rateOf(r.membershipId, r.firmRoleId, r.workDate)?.billRateCents ?? 0,
+        })),
+      ),
+      wipHundredths: inPeriod.reduce((n, r) => n + hoursToHundredths(r.hours), 0),
+      usedHundredths: mine.reduce((n, r) => n + hoursToHundredths(r.hours), 0),
+      budgetHours: p.budgetHours,
+    });
+  }
+  return out;
 }
 
 // ---------------------------------------------------------------------------
