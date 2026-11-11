@@ -365,29 +365,35 @@ One per row per day. Copies the row's selection so reports read this table alone
 | billable | boolean | only with a project |
 | bill_rate_cents, cost_rate_cents | bigint null | **frozen on approval** (1.7) |
 | archived_at | | cleared days and removed rows |
-| invoice_id | — | added in 1.8 with invoices |
+| invoice_id | uuid fk null | the invoice it's reserved on (draft) or billed on (1.8). While set, a trigger locks hours, date, project, phase, rate, billable and archived_at, and its approved timesheet can't be reopened |
 
 Checks: not both phase and overhead category; not both project and overhead category. Drafts count in hours used everywhere (decision #20).
 
 ### invoices
 | column | type | notes |
 |---|---|---|
-| id, firm_id, project_id, client_company_id | | |
-| number | text | "2026-121", unique per firm |
-| status | enum `invoice_status` | `draft`, `sent`, `partially_paid`, `paid`, `void`, `written_off` |
+| id, firm_id, project_id, client_company_id | | composite keys keep every link inside the firm |
+| bill_to_contact_id | uuid fk null | defaults to the project's client contact, else the company's billing contact |
+| number | text null | null while draft / in review; assigned at send from the number format; unique per firm (partial index), never reused |
+| status | enum `invoice_status` | `draft`, `in_review`, `sent`, `partially_paid`, `paid`, `void`, `written_off`. One `draft`/`in_review` per project (partial unique index) |
 | issue_date, due_date | date | |
 | period_start, period_end | date | time cutoff |
 | subtotal_cents, tax_cents, total_cents | bigint | |
 | amount_paid_cents | bigint | maintained from payments |
 | quickbooks_invoice_id | text null | |
-| pdf_url | text null | |
+| pdf_url | text null | storage key of the sent PDF |
 | sent_at | timestamptz null | |
+| memo, sent_to text[], include_time_detail | | 1.8 |
+| reviewed_by, reviewed_at, voided_at, voided_by, void_reason, created_by, archived_at | | 1.8; checks: sent needs a number, void needs a reason, 0 ≤ paid ≤ total |
 
 ### invoice_lines
-| id, firm_id, invoice_id | project_phase_id fk null | line_type enum (`phase_fee`, `hourly`, `consultant`, `expense`, `adjustment`) | description | quantity numeric | rate_cents | amount_cents | percent_complete_bp null (fixed fee lines) |
+| id, firm_id, invoice_id | project_phase_id fk null | line_type enum (`phase_fee`, `hourly`, `consultant`, `expense`, `adjustment`) | description | quantity numeric | rate_cents | amount_cents | percent_complete_bp null (fixed fee lines) | sort_order | snapshots: phase_fee_cents, prior_billed_cents | consultant_id fk, cost_cents, markup_bp, vendor_invoice_ref | archived_at |
+
+### invoice_excluded_entries  (1.8)
+| id, firm_id, invoice_id, time_entry_id | archived_at; one active row per invoice and entry. Entries someone unticked on a draft, so Recalculate leaves them out |
 
 ### payments
-| id, firm_id, invoice_id | received_on date | amount_cents | method enum (`check`, `ach`, `card`, `other`) | reference text | quickbooks_payment_id null | stripe_payment_intent_id null |
+| id, firm_id, invoice_id | received_on date | amount_cents > 0 | method enum (`check`, `ach`, `card`, `other`) | reference text | quickbooks_payment_id null | stripe_payment_intent_id null | created_by | archived_at (delete = archive) |
 
 ### integrations
 Per-firm connection credentials. **Secrets encrypted at rest** (see ARCHITECTURE → Secrets); never selected by client-side code.
@@ -460,12 +466,12 @@ The screen specs found fields the model above doesn't have yet. **Add each one w
 | 1.7 A | timesheet_status enum, timesheets | remove `leader_approved`; drop `reviewer_membership_id`, `leader_approved_at`, `leader_approved_by` (existing sheets get an equivalent review in the migration) | Replaced by `timesheet_review_steps` (#23) |
 | 1.7 C | **notifications** (new) | id, firm_id, membership_id (recipient), kind text, title, body, link, entity_type, entity_id, read_at null, created_at; RLS by firm and the server only returns the caller's own | In-app notifications (#25) (timesheet-approval) |
 | 1.7 | activity_log | actions `approved`, `reopened`, `reminder_sent`, `nudged`, `review_summary_sent` (entity_type `membership` for reminders, nudges and summaries) | (timesheet-approval) |
-| 1.8 | invoice_status enum | add `in_review`; invoices.reviewed_by, reviewed_at | Review step before sending (invoicing) |
-| 1.8 | invoices | number nullable until sent, unique (firm_id, number) where not null; memo, sent_to text[], include_time_detail, voided_at, voided_by, void_reason | Numbers assigned at send, no gaps (invoicing) |
-| 1.8 | invoice_lines | sort_order, phase_fee_cents, prior_billed_cents, consultant_id, cost_cents, markup_bp, vendor_invoice_ref | Snapshots keep old invoices unchanged (invoicing) |
-| 1.8 | invoices / time_entries | partial unique index: one open draft per project; `invoice_excluded_entries` (invoice_id, time_entry_id) | (invoicing) |
-| 1.8 | firm_settings | invoice_remittance_text | PDF footer (invoicing) |
-| 1.8 | firm_settings / projects | `invoice_number_format` replaces `invoice_prefix` (migrated: `'2026-'`-style year prefixes become `{YYYY}-{###}`, any other prefix becomes `{prefix}{###}`); `projects.next_invoice_seq` integer default 1 | Firm-built invoice numbering, decision #5 (invoicing) |
-| 1.8 | firm_settings | `project_number_format` text default `{YYYY}-{###}` | Firm-built project numbering, decision #28 (projects-list) |
+| 1.8 A ✓ | invoice_status enum | add `in_review`; invoices.reviewed_by, reviewed_at | Review step before sending (invoicing) |
+| 1.8 A ✓ | invoices | number nullable until sent, unique (firm_id, number) where not null; memo, sent_to text[], include_time_detail, voided_at, voided_by, void_reason | Numbers assigned at send, no gaps (invoicing) |
+| 1.8 A ✓ | invoice_lines | sort_order, phase_fee_cents, prior_billed_cents, consultant_id, cost_cents, markup_bp, vendor_invoice_ref | Snapshots keep old invoices unchanged (invoicing) |
+| 1.8 A ✓ | invoices / time_entries | partial unique index: one open draft per project; `invoice_excluded_entries` (invoice_id, time_entry_id) | (invoicing) |
+| 1.8 A ✓ | firm_settings | invoice_remittance_text | PDF footer (invoicing) |
+| 1.8 A ✓ | firm_settings / projects | `invoice_number_format` replaces `invoice_prefix` (migrated: `'2026-'`-style year prefixes become `{YYYY}-{###}`, any other prefix becomes `{prefix}{###}`); `projects.next_invoice_seq` integer default 1 | Firm-built invoice numbering, decision #5 (invoicing) |
+| 1.8 A ✓ | firm_settings | `project_number_format` text default `{YYYY}-{###}` | Firm-built project numbering, decision #28 (projects-list) |
 | 1.9 | integrations | status enum (`connected`,`needs_reauth`,`disconnected`), refresh_token_expires_at, settings jsonb, connected_by, connected_at, last_token_refresh_at; unique (firm_id, provider); unique (provider, external_account_id) while connected | (quickbooks-sync) |
 | 1.9 | **integration_sync_jobs** (new) | see `quickbooks-sync.md` for columns | Sync queue + log (quickbooks-sync) |
