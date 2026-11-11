@@ -323,6 +323,8 @@ describe("Building the lines", () => {
     // Approved at a frozen $145; unapproved valued at KL's role rate ($115).
     await sheet(jr.membershipId, "2026-10-12", "approved", [{ phase: ph.SD, date: "2026-10-13", hours: 5, rate: 14_500, roleId: role.architect }]);
     await sheet(kl.membershipId, "2026-10-19", "submitted", [{ phase: ph.SD, date: "2026-10-20", hours: 2, rate: 0, roleId: null }]);
+    // Time after "period through" counts in neither WIP nor Hours, so the two agree.
+    await sheet(jr.membershipId, "2027-01-04", "approved", [{ phase: ph.SD, date: "2027-01-05", hours: 3, rate: 14_500, roleId: role.architect }]);
     const sd = (await view()).fixed.find((f) => f.phaseId === ph.SD)!;
     expect(sd).toMatchObject({ wipCents: 95_500, wipHundredths: 700, usedHundredths: 700, suggestBp: 7000 });
   });

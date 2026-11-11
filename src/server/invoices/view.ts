@@ -62,7 +62,7 @@ export type BuilderView = {
     /** Bill-rate value of time on the phase in this invoice's period. */
     wipCents: number;
     wipHundredths: number;
-    /** All hours on the phase to date (drafts too, decision #20). */
+    /** All hours on the phase through "period through" (drafts too, decision #20). */
     usedHundredths: number;
     budgetHours: string;
     /** Hours used ÷ budget, capped at 100 %; null with no budget. */
@@ -376,7 +376,8 @@ async function fixedPhaseWip(db: TenantDb, inv: InvoiceRow, wipFrom: string | nu
         })),
       ),
       wipHundredths: inPeriod.reduce((n, r) => n + hoursToHundredths(r.hours), 0),
-      usedHundredths: mine.reduce((n, r) => n + hoursToHundredths(r.hours), 0),
+      // As of "period through", like everything else on the invoice.
+      usedHundredths: mine.filter((r) => r.workDate <= inv.periodEnd).reduce((n, r) => n + hoursToHundredths(r.hours), 0),
       budgetHours: p.budgetHours,
     });
   }

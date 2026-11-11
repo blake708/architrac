@@ -219,8 +219,8 @@ export function FixedSection({ b }: Props) {
           ? `from ${formatDate(view.settings.wipFrom)} (after the last invoice)`
           : "to date (no invoice sent yet)"}{" "}
         through {formatDate(view.settings.periodEnd)}, at bill rates, including
-        time not yet approved. Hours are all time to date against the phase
-        budget.
+        time not yet approved. Hours are all time on the phase through the same
+        date, against the phase budget.
       </p>
     </Section>
   );
