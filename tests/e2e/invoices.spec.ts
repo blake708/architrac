@@ -12,7 +12,8 @@ import { signInAs } from "./support/sign-in";
 // Runs in order against "E2E Kappa Billing", which only this file uses.
 // Setup: 2026-014 Medical Office Building for Palmetto Medical Properties;
 // principal Kay (owner), PM Jay; SD $27,900 at 0 %,
-// DD $46,500 at 0 %, Close Out hourly with Kim's approved 4 h at $115.
+// DD $46,500 at 0 % with 2 h of Kim's time, Close Out hourly with Kim's
+// approved 4 h at $115, and MEP (Coastal) at $18,000 + 10 % markup.
 
 test.describe.configure({ mode: "serial" });
 
@@ -77,6 +78,28 @@ test.beforeAll(async () => {
     select :firm, row.timesheet_id, row.id, date '2026-10-06', row.project_id, row.project_phase_id, row.activity_id, 4, true, 11500, 4400, r.id
     from row, r
   `);
+  // 2 h on DD (fixed fee, so WIP not a line) and an MEP consultant: $18,000 + 10 %.
+  await query(`
+    with s as (
+      select id from timesheets where firm_id = :firm limit 1
+    ), ph as (
+      select id, project_id from project_phases where firm_id = :firm and code = 'DD'
+    ), a as (
+      select id from activities where firm_id = :firm and applies_to = 'project' order by sort_order limit 1
+    ), row as (
+      insert into timesheet_rows (firm_id, timesheet_id, row_type, project_id, project_phase_id, activity_id, billable, sort_order)
+      select :firm, s.id, 'project', ph.project_id, ph.id, a.id, true, 1 from s, ph, a
+      returning id, timesheet_id, project_id, project_phase_id, activity_id
+    ), te as (
+      insert into time_entries (firm_id, timesheet_id, timesheet_row_id, work_date, project_id, project_phase_id, activity_id, hours, billable, bill_rate_cents, cost_rate_cents)
+      select :firm, timesheet_id, id, date '2026-10-07', project_id, project_phase_id, activity_id, 2, true, 11500, 4400 from row
+      returning 1
+    ), mep as (
+      insert into companies (firm_id, name, kind) values (:firm, 'Coastal MEP Engineers', 'consultant') returning id
+    )
+    insert into consultants (firm_id, project_id, company_id, discipline, fee_cents, markup_bp)
+    select :firm, ph.project_id, mep.id, 'MEP', 1800000, 1000 from ph, mep where (select count(*) from te) > 0
+  `);
 });
 
 const total = (page: Page) => page.getByTestId("invoice-total");
@@ -105,6 +128,14 @@ test("the PM starts an invoice from the Invoices page and bills DD at 30 %", asy
   await dd.press("Enter");
   await expect(total(page)).toHaveText("$14,410");
   await expect(page.locator('tr[data-phase="Design Development"]')).toContainText("$13,950");
+  // WIP: the 2 h on DD at $115.
+  await expect(page.locator('tr[data-phase="Design Development"] [data-col="wip"]')).toContainText("$230");
+
+  // MEP at 50 % of $19,800 (fee + markup) adds $9,900.
+  const mep = page.getByLabel("% complete for MEP · Coastal MEP Engineers");
+  await mep.fill("50");
+  await mep.press("Enter");
+  await expect(total(page)).toHaveText("$24,310");
 
   // Back on the list, the draft shows and the project is marked.
   await page.goto("/app/invoices");
@@ -116,7 +147,7 @@ test("the PM starts an invoice from the Invoices page and bills DD at 30 %", asy
 test("a % below what's billed shows an error; a retainer credit lowers the total", async ({ page }) => {
   await signInAs(page, "kaPm", "/app/invoices");
   await page.getByRole("link", { name: "Draft" }).click();
-  await expect(total(page)).toHaveText("$14,410");
+  await expect(total(page)).toHaveText("$24,310");
   const sd = page.getByLabel("% complete for Schematic Design");
   await sd.fill("101");
   await sd.press("Enter");
@@ -126,7 +157,7 @@ test("a % below what's billed shows an error; a retainer credit lowers the total
   await page.getByLabel("Description").fill("Retainer applied");
   await page.getByLabel("Amount").fill("-1,000");
   await page.getByRole("button", { name: "Add line" }).click();
-  await expect(total(page)).toHaveText("$13,410");
+  await expect(total(page)).toHaveText("$23,310");
 });
 
 test("the PM submits it for review and can no longer edit it", async ({ page }) => {
