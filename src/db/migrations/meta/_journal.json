@@ -127,6 +127,13 @@
       "when": 1794425523189,
       "tag": "0017_drop_invoice_prefix",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1794428767141,
+      "tag": "0018_entry_role",
+      "breakpoints": true
     }
   ]
 }

@@ -1,6 +1,7 @@
 import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
 import { z } from "zod";
 import {
+  invoices,
   activityLog,
   memberships,
   rates,
@@ -364,7 +365,7 @@ async function sendBack(
   await archiveReview(db, sheet.id, now);
   await db
     .update(timeEntries)
-    .set({ billRateCents: null, costRateCents: null, updatedAt: now })
+    .set({ billRateCents: null, costRateCents: null, firmRoleId: null, updatedAt: now })
     .where(and(eq(timeEntries.timesheetId, sheet.id), isNull(timeEntries.archivedAt)));
   await db
     .update(timesheets)
@@ -407,6 +408,18 @@ export async function returnTimesheetCore(actor: ApprovalActor, raw: unknown, no
   return r.ok ? { ok: true, message: `Returned to ${r.data}.` } : r;
 }
 
+/** Time on an invoice (draft or sent) locks its week (invoicing rule 13). */
+async function assertNotInvoiced(db: TenantDb, timesheetId: string) {
+  const rows = await db
+    .selectDistinct({ number: invoices.number, status: invoices.status })
+    .from(timeEntries)
+    .innerJoin(invoices, eq(invoices.id, timeEntries.invoiceId))
+    .where(and(eq(timeEntries.timesheetId, timesheetId), isNull(timeEntries.archivedAt)));
+  if (!rows.length) return;
+  const numbers = rows.flatMap((r) => (r.number ? [r.number] : []));
+  throw new ApprovalError(APPROVAL_MESSAGES.onInvoice(numbers, rows.some((r) => !r.number)));
+}
+
 /** Reopen an approved sheet: owner/admin, never their own. */
 export async function reopenTimesheetCore(actor: ApprovalActor, raw: unknown, now: Date = new Date()): Promise<ApprovalResult> {
   if (!can(actor.member, "time.reopen")) return forbidden;
@@ -419,7 +432,7 @@ export async function reopenTimesheetCore(actor: ApprovalActor, raw: unknown, no
     const problem = returnNoteProblem(parsed.data.note, who.initials);
     if (problem) throw new ApprovalError(problem);
     if (sheet.status !== "approved") throw new ApprovalError(APPROVAL_MESSAGES.notApproved);
-    // Invoiced entries block Reopen from 1.8 (invoices don't exist yet).
+    await assertNotInvoiced(db, sheet.id);
     await sendBack(db, actor, sheet, parsed.data.note.trim(), "reopened", now);
     return who.initials;
   });
