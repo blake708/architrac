@@ -84,8 +84,9 @@ One row per firm.
 | timesheet_lock_day | smallint | day of week timesheets are due (the first one on or after the week's 5th day) |
 | timesheet_due_time | time | 09:00; time of day they're due, firm time zone (1.6, decision #21) |
 | timesheet_notes_rule | enum `timesheet_notes_rule` | `optional` (default), `hourly` (billable days on `hourly`/`nte` phases need a note to submit), `all` (every billable day with hours does). 1.6, decisions #17 and #24; replaced `billable_notes_required` (migrations 0011–0012) |
-| invoice_prefix | text | "2026-" |
-| next_invoice_number | integer | 128 in the seed (2026-121 … 2026-127 already exist) |
+| invoice_number_format | text | `{YYYY}-{###}` (default). Tokens `{YYYY}` `{YY}` `{PROJECT}` and a counter `{#}`…`{######}`; must contain exactly one counter. Replaces `invoice_prefix` in 1.8 A (decision #5) |
+| next_invoice_number | integer | firm-wide counter, used when the format has no `{PROJECT}`. 128 in the seed (2026-121 … 2026-127 already exist) |
+| project_number_format | text | `{YYYY}-{###}` (default; TMG uses `{YY}{###}` → `26031`). Tokens `{YYYY}` `{YY}` and one counter `{#}`…`{######}`; drives the suggested number on New project (1.8 A, decision #28) |
 | default_payment_terms_days | smallint | 30 |
 | modules_enabled | text[] | `'{}'` (valid keys: `build`,`workload`,`accounting`,`marketing`,`knowledge`,`code`,`website`,`hiring`) |
 
@@ -125,7 +126,7 @@ Someone invited who hasn't joined yet. They have no `users` row until they accep
 - `memberships.firm_role_id` has no FK until `firm_roles` exists (1.1).
 - `firm_id_for_clerk_org(text) → uuid`: security-definer function, the only cross-firm lookup; maps Clerk's active org to a firm id before `withFirm`.
 - The app role (`architrac_app`) has SELECT/INSERT/UPDATE only. No DELETE, so "no hard deletes" is enforced by the database.
-- Defaults: `firm_settings.modules_enabled` = `{}` (new firms start with no add-ons), `next_invoice_number` = 1, `invoice_prefix` = `''`. The TMG seed sets its own values.
+- Defaults: `firm_settings.modules_enabled` = `{}` (new firms start with no add-ons), `next_invoice_number` = 1, `invoice_number_format` = `{YYYY}-{###}`. The TMG seed sets its own values.
 
 ---
 
@@ -261,6 +262,7 @@ New firms get the default phases, activities and categories from the database fu
 | closed_on | date null | set when status becomes `closed` |
 | quickbooks_customer_id | text null | sub-customer/job in QuickBooks |
 | proposal_id | uuid fk null | set when converted from a won proposal (Release 3) |
+| next_invoice_seq | integer | 1; per-project invoice counter, used when the number format has `{PROJECT}` (1.8 A, decision #5) |
 
 ### project_phases
 The backbone: time, budgets, invoices and the snapshot all hang off this.
@@ -463,5 +465,7 @@ The screen specs found fields the model above doesn't have yet. **Add each one w
 | 1.8 | invoice_lines | sort_order, phase_fee_cents, prior_billed_cents, consultant_id, cost_cents, markup_bp, vendor_invoice_ref | Snapshots keep old invoices unchanged (invoicing) |
 | 1.8 | invoices / time_entries | partial unique index: one open draft per project; `invoice_excluded_entries` (invoice_id, time_entry_id) | (invoicing) |
 | 1.8 | firm_settings | invoice_remittance_text | PDF footer (invoicing) |
+| 1.8 | firm_settings / projects | `invoice_number_format` replaces `invoice_prefix` (migrated: `'2026-'`-style year prefixes become `{YYYY}-{###}`, any other prefix becomes `{prefix}{###}`); `projects.next_invoice_seq` integer default 1 | Firm-built invoice numbering, decision #5 (invoicing) |
+| 1.8 | firm_settings | `project_number_format` text default `{YYYY}-{###}` | Firm-built project numbering, decision #28 (projects-list) |
 | 1.9 | integrations | status enum (`connected`,`needs_reauth`,`disconnected`), refresh_token_expires_at, settings jsonb, connected_by, connected_at, last_token_refresh_at; unique (firm_id, provider); unique (provider, external_account_id) while connected | (quickbooks-sync) |
 | 1.9 | **integration_sync_jobs** (new) | see `quickbooks-sync.md` for columns | Sync queue + log (quickbooks-sync) |

@@ -15,7 +15,7 @@
      ├──► Neon PostgreSQL (all app data, row-level security per firm)
      ├──► Clerk (sign-in, users, organizations = firms)
      ├──► Cloudflare R2 (files: invoice PDFs, documents)   [Release 1+]
-     ├──► Postmark or Resend (email)                        [Release 1]
+     ├──► Postmark (email, decision #6)                      [Release 1]
      ├──► QuickBooks Online API                              [Release 1]
      ├──► Stripe (client payments, subscriptions)           [Release 2/5]
      └──► Dropbox Sign (e-signature)                         [Release 3]
