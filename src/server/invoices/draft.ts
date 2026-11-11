@@ -395,8 +395,8 @@ export const lineChanges = (r: RecalcResult) =>
 // ---------------------------------------------------------------------------
 // New invoice
 
-/** The day after the project's last counted invoice period (rule 8), or null. */
-async function lastCountedPeriodEnd(db: TenantDb, projectId: string): Promise<string | null> {
+/** The end of the project's last counted invoice period (rule 8), or null. */
+export async function lastCountedPeriodEnd(db: TenantDb, projectId: string): Promise<string | null> {
   const [row] = await db
     .select({ end: invoices.periodEnd })
     .from(invoices)

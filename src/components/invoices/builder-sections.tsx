@@ -214,12 +214,13 @@ export function FixedSection({ b }: Props) {
         </TableFoot>
       </Table>
       <p className="m-0 px-[18px] py-2.5 text-xs text-muted">
-        WIP is time on the phase
-        {view.settings.periodStart
-          ? ` from ${formatDate(view.settings.periodStart)}`
-          : ""}{" "}
-        through {formatDate(view.settings.periodEnd)} at bill rates. Hours are
-        all time to date against the phase budget.
+        WIP is time on the phase{" "}
+        {view.settings.wipFrom
+          ? `from ${formatDate(view.settings.wipFrom)} (after the last invoice)`
+          : "to date (no invoice sent yet)"}{" "}
+        through {formatDate(view.settings.periodEnd)}, at bill rates, including
+        time not yet approved. Hours are all time to date against the phase
+        budget.
       </p>
     </Section>
   );
@@ -243,6 +244,14 @@ export function HourlySection({ b }: Props) {
 function HourlyPhase({ b, h }: Props & { h: BuilderView["hourly"][number] }) {
   const { view, run } = b;
   const [open, setOpen] = useState(false);
+  /** Ticks shown straight away while their save runs; the server's answer replaces them. */
+  const [ticking, setTicking] = useState<Record<string, boolean>>({});
+  function toggle(entryId: string, include: boolean) {
+    setTicking((t) => ({ ...t, [entryId]: include }));
+    void run(toggleEntry, { entryId, include }).finally(() =>
+      setTicking((t) => Object.fromEntries(Object.entries(t).filter(([k]) => k !== entryId))),
+    );
+  }
   return (
     <div
       className="border-t border-line-soft px-[18px] py-3.5"
@@ -354,14 +363,9 @@ function HourlyPhase({ b, h }: Props & { h: BuilderView["hourly"][number] }) {
                         <input
                           type="checkbox"
                           aria-label={`Bill ${e.person} ${e.hours} h on ${formatDate(e.workDate)}`}
-                          checked={e.included}
+                          checked={ticking[e.id] ?? e.included}
                           disabled={!view.can.edit}
-                          onChange={(ev) =>
-                            void run(toggleEntry, {
-                              entryId: e.id,
-                              include: ev.target.checked,
-                            })
-                          }
+                          onChange={(ev) => toggle(e.id, ev.target.checked)}
                         />
                       </TableCell>
                       <TableCell className="num text-[12.5px]">

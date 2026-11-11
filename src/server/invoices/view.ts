@@ -20,7 +20,8 @@ import { type ConsultantRow, type FixedRow, type HourlyRow, money, sumHundredths
 import { formatDate } from "@/lib/format";
 import { sendProblems } from "@/lib/invoices/builder";
 import { loadRateBook } from "@/server/time/approval";
-import { type Access, type InvoiceActor, type InvoiceRow, canEdit, planFor, projectAccess, projectPhaseRows, recalculate, versionOf } from "./draft";
+import { type Access, type InvoiceActor, type InvoiceRow, canEdit, lastCountedPeriodEnd, planFor, projectAccess, projectPhaseRows, recalculate, versionOf } from "./draft";
+import { addDays } from "@/lib/calc/timesheet";
 
 // What the invoice pages read (invoicing spec, Layout A and C). Bill rates
 // show to PMs who can build the invoice (decision #4); cost rates, cost and
@@ -53,6 +54,8 @@ export type BuilderView = {
     billToContactId: string | null;
     memo: string;
     termsDays: number;
+    /** WIP counts time from this date (day after the last sent invoice's period); null = all time to date. */
+    wipFrom: string | null;
   };
   contacts: { id: string; name: string; email: string | null }[];
   fixed: (FixedRow & {
@@ -194,7 +197,9 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
         )
     : [];
 
-  const wip = await fixedPhaseWip(db, inv);
+  const lastEnd = await lastCountedPeriodEnd(db, inv.projectId);
+  const wipFrom = lastEnd ? addDays(lastEnd, 1) : null;
+  const wip = await fixedPhaseWip(db, inv, wipFrom);
 
   // Other open invoices on the project (account summary).
   const prior = await db
@@ -276,6 +281,7 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
       billToContactId: inv.billToContactId,
       memo: inv.memo ?? "",
       termsDays: settings[0]?.terms ?? 30,
+      wipFrom,
     },
     contacts: contactList,
     fixed: plan.fixed.map((f) => {
@@ -327,11 +333,13 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
 
 /**
  * WIP on fixed-fee phases (Blake, 2026-11-11): the bill-rate value of time
- * on each phase in this invoice's period, and all hours to date against the
+ * on each phase since the last sent invoice's period (all time, on a first
+ * invoice) through "period through", and all hours to date against the
  * phase budget. Approved time uses its frozen rate; other time uses the
  * rate in force on the work date (as the snapshot does, decision #20).
+ * Drafts count (decision #20).
  */
-async function fixedPhaseWip(db: TenantDb, inv: InvoiceRow) {
+async function fixedPhaseWip(db: TenantDb, inv: InvoiceRow, wipFrom: string | null) {
   const phases = (await projectPhaseRows(db, inv.projectId)).filter((p) => p.feeType === "fixed");
   const out = new Map<string, { wipCents: number; wipHundredths: number; usedHundredths: number; budgetHours: string }>();
   if (!phases.length) return out;
@@ -359,7 +367,7 @@ async function fixedPhaseWip(db: TenantDb, inv: InvoiceRow) {
   );
   for (const p of phases) {
     const mine = rows.filter((r) => r.phaseId === p.id);
-    const inPeriod = mine.filter((r) => r.workDate <= inv.periodEnd && (!inv.periodStart || r.workDate >= inv.periodStart));
+    const inPeriod = mine.filter((r) => r.workDate <= inv.periodEnd && (!wipFrom || r.workDate >= wipFrom));
     out.set(p.id, {
       wipCents: timeValueCents(
         inPeriod.map((r) => ({

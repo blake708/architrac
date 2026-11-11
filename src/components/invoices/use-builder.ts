@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { BuilderView } from "@/server/invoices/view";
 
 // The builder's state: the latest view from the server, and a queue so
@@ -12,11 +12,23 @@ type Action<I> = (input: I & { invoiceId: string; version: string }) => Promise<
 
 export function useBuilder(initial: BuilderView) {
   const [view, setView] = useState(initial);
+  // The page refreshes after every save (and on Reload). Take the server's
+  // copy only when it's a version this page hasn't seen, so open dialogs and
+  // half-typed boxes survive a save.
+  const [seen, setSeen] = useState(initial);
+  if (initial !== seen) {
+    setSeen(initial);
+    // Versions are timestamps: an older copy arriving late is ignored.
+    if (initial.version > view.version) setView(initial);
+  }
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<string, string>>>({});
   const [busy, setBusy] = useState(0);
   const latest = useRef(initial);
   const chain = useRef<Promise<unknown>>(Promise.resolve());
+  useEffect(() => {
+    if (view.version > latest.current.version) latest.current = view;
+  }, [view]);
 
   /** Run a builder action; resolves true when it worked. `errorKey` scopes a field error (e.g. a phase id). */
   const run = useCallback(<I extends object>(action: Action<I>, input: I, errorKey?: string): Promise<boolean> => {

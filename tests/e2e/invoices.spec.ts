@@ -126,6 +126,14 @@ test("the PM starts an invoice from the Invoices page and bills DD at 30 %", asy
   await page.locator('[data-phase="Close Out"]').getByRole("button", { name: "Show time entries (1)" }).click();
   const entries = page.getByRole("dialog", { name: "Close Out · time entries" });
   await expect(entries.getByRole("checkbox", { name: /Bill Kim Lane 4\.00 h/ })).toBeChecked();
+  // Unticking saves and the dialog stays open; ticking puts it back.
+  const kim = entries.getByRole("checkbox", { name: /Bill Kim Lane/ });
+  await kim.uncheck();
+  await expect(total(page)).toHaveText("$0");
+  await expect(entries).toBeVisible();
+  await kim.check();
+  await expect(total(page)).toHaveText("$460");
+  await expect(entries).toBeVisible();
   await entries.getByRole("button", { name: "Done" }).click();
   await expect(entries).toHaveCount(0);
 
