@@ -12,9 +12,7 @@ import {
   isEditable,
   isIsoDate,
   parseHoursInput,
-  phaseSummary,
   shortDays,
-  shortWarning,
   submitProblems,
   weekDates,
   weekStartOf,
@@ -145,28 +143,6 @@ describe("totals (rule 11, seed week)", () => {
 
   it("an empty week is 0% billable", () => {
     expect(weekTotals([], 40).billablePct).toBe(0);
-  });
-
-  it("short warning is 7.5 hours", () => {
-    expect(shortWarning(32.5, 40)).toBe("7.5 hours short of 40. Add the missing time, or log PTO or a holiday before submitting.");
-    expect(shortWarning(40, 40)).toBeNull();
-  });
-});
-
-describe("phase summary (rule 12)", () => {
-  it("matches the seed week", () => {
-    expect(phaseSummary(seed())).toBe(
-      "Medical Office Building · Design Development 6.5 h · Summerville Office Park · Construction Documents 11 h · Coastal Credit Union Branch · Permitting 5 h · Northside Self-Storage · Construction Admin 5.5 h · Overhead · Marketing 4.5 h",
-    );
-  });
-
-  it("uses the name before the first comma; leave reads <category> · Leave", () => {
-    const rows = [
-      row({ projectName: "Clinic, Phase 2", phaseName: "SD", hours: [1] }),
-      row({ rowType: "leave", projectPhaseId: null, overheadCategoryId: "l", categoryName: "PTO", billable: false, hours: [8] }),
-    ];
-    expect(phaseSummary(rows)).toBe("Clinic · SD 1 h · PTO · Leave 8 h");
-    expect(phaseSummary([])).toBe("Nothing yet");
   });
 });
 

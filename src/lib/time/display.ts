@@ -8,13 +8,13 @@ const utc = (iso: string) => new Date(`${iso}T00:00:00Z`);
 const fmt = (opts: Intl.DateTimeFormatOptions, d: Date, timeZone = "UTC") =>
   new Intl.DateTimeFormat("en-US", { ...opts, timeZone }).format(d);
 
-/** "Week of Oct 12 – Oct 18, 2026 · Due Mon Oct 19, 9:00 AM" (shown in caps by CSS). */
-export function weekMetaLine(weekStart: string, dueLabel: string): string {
+/** The heading above the grid: "Week of Oct 12 – Oct 18, 2026". */
+export function weekTitle(weekStart: string): string {
   const end = addDays(weekStart, 6);
   const sameYear = weekStart.slice(0, 4) === end.slice(0, 4);
   const from = fmt(sameYear ? { month: "short", day: "numeric" } : { month: "short", day: "numeric", year: "numeric" }, utc(weekStart));
   const to = fmt({ month: "short", day: "numeric", year: "numeric" }, utc(end));
-  return `Week of ${from} – ${to} · Due ${dueLabel}`;
+  return `Week of ${from} – ${to}`;
 }
 
 /** "Oct 12 – 18" style range for History rows: "Oct 12 – Oct 18, 2026". */
