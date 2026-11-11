@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, inArray, isNull } from "drizzle-orm";
+import { invoiceMoneyByCompany } from "@/server/invoices/facts";
 import { companies, consultants, contacts, projectContacts, projectPhases, projects } from "@/db/schema";
 import type { TenantDb } from "@/db/tenant";
 import { type Member, can } from "@/lib/auth/permissions";
@@ -81,13 +82,9 @@ export type ContactsView = {
   seesMoney: boolean;
 };
 
-/**
- * Invoices per client company. Invoices arrive in milestone 1.8; until then
- * there are none.
- */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- reads invoices from 1.8
-async function invoicesByCompany(db: TenantDb): Promise<Map<string, InvoiceMoney[]>> {
-  return new Map();
+/** Invoices per client company (billed and open come from these). */
+function invoicesByCompany(db: TenantDb): Promise<Map<string, InvoiceMoney[]>> {
+  return invoiceMoneyByCompany(db);
 }
 
 /**

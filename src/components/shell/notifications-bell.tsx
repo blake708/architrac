@@ -26,6 +26,8 @@ const KIND_ICON: Record<string, string> = {
   timesheet_reminder: "M12 6v6l4 2M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20",
   approver_nudge: BELL,
   review_summary: "M4 6h16M4 12h16M4 18h10",
+  invoice_review: "M7 3h7l5 5v13H7zM14 3v5h5M10 13h6M10 17h6",
+  invoice_returned: "M9 14L4 9l5-5M4 9h11a5 5 0 0 1 0 10h-1",
 };
 
 export function NotificationsBell({ initialCount }: { initialCount: number }) {

@@ -1,4 +1,5 @@
 import { and, asc, desc, eq, inArray, isNull, or } from "drizzle-orm";
+import { invoiceMoneyForProject, linesForProjects, outstandingCents } from "@/server/invoices/facts";
 import {
   activityLog,
   companies,
@@ -188,10 +189,10 @@ function usedHours(db: TenantDb, projectId: string): Promise<{ phaseId: string; 
   return hoursByPhaseAndPerson(db, projectId);
 }
 
-/** This project's counted invoice lines and open balance. Invoices arrive in 1.8. */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- reads invoices from 1.8
+/** This project's invoice lines (only counted ones count as billed) and open balance. */
 export async function invoiceFacts(db: TenantDb, projectId: string) {
-  return { lines: [] as Parameters<typeof projectBilled>[1], outstandingCents: 0 };
+  const [lines, money] = await Promise.all([linesForProjects(db, [projectId]), invoiceMoneyForProject(db, projectId)]);
+  return { lines: lines as Parameters<typeof projectBilled>[1], outstandingCents: outstandingCents(money) };
 }
 
 export async function loadProjectPage(

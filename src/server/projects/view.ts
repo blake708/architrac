@@ -29,6 +29,7 @@ import { blendedBillRateCents } from "@/lib/calc/rates";
 import { todayIn } from "@/lib/format";
 import { loadRates } from "@/server/settings/rates";
 import { DEFAULT_PROJECT_NUMBER_FORMAT } from "@/lib/calc/number-format";
+import { linesByProject } from "@/server/invoices/facts";
 import { type BenchmarkSources, loadBenchmarkSources } from "./estimate";
 import { templateMixes } from "./roles";
 import { initials } from "@/lib/initials";
@@ -95,10 +96,9 @@ function usedHoursByPhase(db: TenantDb, projectIds: string[]): Promise<Map<strin
   return hoursByPhase(db, projectIds);
 }
 
-/** Invoice lines per project. Invoices arrive in 1.8; until then none. */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- reads invoice_lines from 1.8
-async function billedLines(db: TenantDb, projectIds: string[]): Promise<Map<string, BilledLine[]>> {
-  return new Map();
+/** Invoice lines per project (only counted ones count as billed). */
+function billedLines(db: TenantDb, projectIds: string[]): Promise<Map<string, BilledLine[]>> {
+  return linesByProject(db, projectIds);
 }
 
 /** Projects this member is on the team of. */

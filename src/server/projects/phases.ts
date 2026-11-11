@@ -10,6 +10,7 @@ import { PROJECT_MESSAGES } from "@/lib/projects/form";
 import { SAVE_FAILED_MESSAGE, type SettingsActor } from "@/server/settings/common";
 import { mixSchema } from "@/lib/projects/form";
 import { type MixInput, billRates, phaseMix, templateMixes, writePhaseMix } from "./roles";
+import { phaseBilling } from "@/server/invoices/facts";
 import { phasesWithTime } from "@/server/time/used";
 
 // Editing a project's phases (project-detail spec, Actions: Edit phases, Add
@@ -73,15 +74,15 @@ async function editableProject(db: TenantDb, actor: SettingsActor, projectId: st
   return can(actor.member, "projects.edit_fees", { isProjectManager: own }) ? p : null;
 }
 
-/** Billing facts per phase. Invoices arrive in 1.8; until then nothing is billed. */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- reads invoice_lines from 1.8
-async function billingFacts(db: TenantDb, phaseIds: string[]): Promise<Map<string, Omit<PhaseFacts, "feeType">>> {
-  return new Map();
+/** Billing facts per phase: billed, last billed %, any invoice lines. */
+function billingFacts(db: TenantDb, phaseIds: string[]): Promise<Map<string, Omit<PhaseFacts, "feeType">>> {
+  return phaseBilling(db, phaseIds);
 }
 
-/** Phases with time or invoice lines can't be archived. Invoice lines arrive in 1.8. */
-function phasesWithHistory(db: TenantDb, phaseIds: string[]): Promise<Set<string>> {
-  return phasesWithTime(db, phaseIds);
+/** Phases with time or invoice lines can't be archived. */
+async function phasesWithHistory(db: TenantDb, phaseIds: string[]): Promise<Set<string>> {
+  const [time, billing] = await Promise.all([phasesWithTime(db, phaseIds), phaseBilling(db, phaseIds)]);
+  return new Set([...time, ...billing.keys()]);
 }
 
 function diff(before: Record<string, unknown>, after: Record<string, unknown>) {
