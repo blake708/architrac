@@ -100,8 +100,8 @@ export async function createTestFirm(
 
   return asFirm(pool, firmId, async (c) => {
     await c.query(
-      "insert into firm_settings (firm_id, invoice_prefix) values ($1, $2)",
-      [firmId, `${label}-`],
+      "insert into firm_settings (firm_id, invoice_number_format) values ($1, $2)",
+      [firmId, `${label}-{###}`],
     );
     const team = await c.query<{ id: string }>(
       "insert into teams (firm_id, name) values ($1, $2) returning id",
@@ -226,7 +226,7 @@ export async function removeTestFirm(pool: Pool, firm: TestFirm) {
       "update companies set primary_contact_id = null, billing_contact_id = null where firm_id = $1",
       [firm.firmId],
     );
-    for (const t of ["notifications", "timesheet_review_steps", "review_steps", "time_entries", "timesheet_rows", "timesheets", "project_type_benchmarks", "project_phase_roles", "phase_template_roles", "consultants", "project_contacts", "project_members", "project_phases", "projects"])
+    for (const t of ["notifications", "timesheet_review_steps", "review_steps", "invoice_excluded_entries", "payments", "invoice_lines", "time_entries", "invoices", "timesheet_rows", "timesheets", "project_type_benchmarks", "project_phase_roles", "phase_template_roles", "consultants", "project_contacts", "project_members", "project_phases", "projects"])
       await c.query(`delete from ${t} where firm_id = $1`, [firm.firmId]);
     await c.query("delete from contacts where firm_id = $1", [firm.firmId]);
     await c.query("delete from companies where firm_id = $1", [firm.firmId]);
@@ -254,7 +254,7 @@ export async function removeFirmById(pool: Pool, firmId: string) {
       "update companies set primary_contact_id = null, billing_contact_id = null where firm_id = $1",
       [firmId],
     );
-    for (const t of ["notifications", "timesheet_review_steps", "review_steps", "time_entries", "timesheet_rows", "timesheets", "project_type_benchmarks", "project_phase_roles", "phase_template_roles", "consultants", "project_contacts", "project_members", "project_phases", "projects"])
+    for (const t of ["notifications", "timesheet_review_steps", "review_steps", "invoice_excluded_entries", "payments", "invoice_lines", "time_entries", "invoices", "timesheet_rows", "timesheets", "project_type_benchmarks", "project_phase_roles", "phase_template_roles", "consultants", "project_contacts", "project_members", "project_phases", "projects"])
       await c.query(`delete from ${t} where firm_id = $1`, [firmId]);
     await c.query("delete from contacts where firm_id = $1", [firmId]);
     await c.query("delete from companies where firm_id = $1", [firmId]);
@@ -378,6 +378,63 @@ export async function addTestTime(pool: Pool, firm: TestFirm): Promise<TestTime>
       entryId: entry.rows[0].id,
       reviewRowId: review.rows[0].id,
       routeStepId: step.rows[0].id,
+    };
+  });
+}
+
+export type TestInvoices = {
+  /** A draft on the firm's project with one SD phase-fee line and the test entry reserved and excluded. */
+  draftId: string;
+  draftLineId: string;
+  excludedId: string;
+  /** A sent invoice (number "{label}-100") with one $10,000 line and a $4,000 check. */
+  sentId: string;
+  sentLineId: string;
+  paymentId: string;
+};
+
+/**
+ * Invoices for a test firm (needs addTestTime first). removeTestFirm
+ * cleans them up.
+ */
+export async function addTestInvoices(pool: Pool, firm: TestFirm, time: TestTime): Promise<TestInvoices> {
+  return asFirm(pool, firm.firmId, async (c) => {
+    const sent = await c.query<{ id: string }>(
+      `insert into invoices (firm_id, project_id, client_company_id, number, status, issue_date, due_date, period_end,
+         subtotal_cents, total_cents, amount_paid_cents, sent_at)
+       values ($1, $2, $3, $4, 'partially_paid', '2026-09-16', '2026-10-16', '2026-09-30', 1000000, 1000000, 400000, now()) returning id`,
+      [firm.firmId, firm.projectId, firm.companyId, `${firm.label}-100`],
+    );
+    const sentLine = await c.query<{ id: string }>(
+      `insert into invoice_lines (firm_id, invoice_id, project_phase_id, line_type, description, rate_cents, amount_cents, percent_complete_bp)
+       values ($1, $2, $3, 'phase_fee', 'Schematic Design · 100% complete', 1000000, 1000000, 10000) returning id`,
+      [firm.firmId, sent.rows[0].id, firm.projectPhaseId],
+    );
+    const payment = await c.query<{ id: string }>(
+      "insert into payments (firm_id, invoice_id, received_on, amount_cents, method, reference) values ($1, $2, '2026-10-01', 400000, 'check', '1042') returning id",
+      [firm.firmId, sent.rows[0].id],
+    );
+    const draft = await c.query<{ id: string }>(
+      `insert into invoices (firm_id, project_id, client_company_id, issue_date, due_date, period_start, period_end)
+       values ($1, $2, $3, '2026-10-16', '2026-11-15', '2026-10-01', '2026-10-31') returning id`,
+      [firm.firmId, firm.projectId, firm.companyId],
+    );
+    const draftLine = await c.query<{ id: string }>(
+      `insert into invoice_lines (firm_id, invoice_id, project_phase_id, line_type, description, rate_cents, amount_cents)
+       values ($1, $2, $3, 'adjustment', 'Retainer applied', -50000, -50000) returning id`,
+      [firm.firmId, draft.rows[0].id, firm.projectPhaseId],
+    );
+    const excluded = await c.query<{ id: string }>(
+      "insert into invoice_excluded_entries (firm_id, invoice_id, time_entry_id) values ($1, $2, $3) returning id",
+      [firm.firmId, draft.rows[0].id, time.entryId],
+    );
+    return {
+      draftId: draft.rows[0].id,
+      draftLineId: draftLine.rows[0].id,
+      excludedId: excluded.rows[0].id,
+      sentId: sent.rows[0].id,
+      sentLineId: sentLine.rows[0].id,
+      paymentId: payment.rows[0].id,
     };
   });
 }

@@ -83,7 +83,6 @@ describe("createFirm (database)", () => {
     const result = await createFirmCore(
       { name, timezone: "America/New_York", fiscalYearStartMonth: "1" },
       deps,
-      new Date("2026-10-27T12:00:00Z"),
     );
 
     expect(result.ok).toBe(true);
@@ -108,13 +107,15 @@ describe("createFirm (database)", () => {
     const [settings] = await readAsFirm<{
       overhead_rate_bp: number;
       modules_enabled: string[];
-      invoice_prefix: string;
+      invoice_number_format: string;
+      project_number_format: string;
       default_payment_terms_days: number;
     }>(firmId, "select * from firm_settings where firm_id = $1", [firmId]);
     expect(settings).toMatchObject({
       overhead_rate_bp: 6000,
       modules_enabled: [],
-      invoice_prefix: "2026-",
+      invoice_number_format: "{YYYY}-{###}",
+      project_number_format: "{YYYY}-{###}",
       default_payment_terms_days: 30,
     });
 

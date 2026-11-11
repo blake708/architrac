@@ -113,6 +113,20 @@
       "when": 1794348519950,
       "tag": "0015_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794425442945,
+      "tag": "0016_invoices",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1794425523189,
+      "tag": "0017_drop_invoice_prefix",
+      "breakpoints": true
     }
   ]
 }

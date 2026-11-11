@@ -60,6 +60,8 @@ export const projects = pgTable(
     closedOn: date("closed_on"),
     /** QuickBooks sub-customer / job (1.9). */
     quickbooksCustomerId: text("quickbooks_customer_id"),
+    /** Per-project invoice counter, used when the invoice number format has {PROJECT} (decision #5). */
+    nextInvoiceSeq: integer("next_invoice_seq").notNull().default(1),
     createdBy: uuid("created_by").references((): AnyPgColumn => users.id),
     ...timestamps,
     archivedAt: archivedAt(),
@@ -88,6 +90,7 @@ export const projects = pgTable(
       columns: [t.firmId, t.pmMembershipId],
       foreignColumns: [memberships.firmId, memberships.id],
     }),
+    check("projects_next_invoice_seq_min", sql`${t.nextInvoiceSeq} >= 1`),
     check("projects_square_feet_positive", sql`${t.squareFeet} is null or ${t.squareFeet} > 0`),
     check(
       "projects_construction_cost_nonneg",
@@ -242,6 +245,7 @@ export const consultants = pgTable(
     archivedAt: archivedAt(),
   },
   (t): PgTableExtraConfigValue[] => [
+    unique("consultants_firm_id_id_unique").on(t.firmId, t.id),
     index("consultants_project_idx").on(t.firmId, t.projectId),
     index("consultants_company_idx").on(t.firmId, t.companyId),
     foreignKey({

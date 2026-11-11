@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import { z } from "zod";
 import { activityLog, firmSettings, firms, memberships } from "@/db/schema";
 import { type TenantDb, withFirm } from "@/db/tenant";
+import { DEFAULT_INVOICE_NUMBER_FORMAT, DEFAULT_PROJECT_NUMBER_FORMAT } from "@/lib/calc/number-format";
 import { TIMEZONE_VALUES } from "@/lib/timezones";
 import { type ClerkUserFacts, upsertUserIn } from "@/server/auth/users";
 
@@ -89,7 +90,6 @@ async function insertFirm(
 export async function createFirmCore(
   raw: unknown,
   deps: CreateFirmDeps,
-  now: Date = new Date(),
 ): Promise<CreateFirmResult> {
   // 0. Check the input before touching Clerk.
   const parsed = createFirmSchema.safeParse(raw);
@@ -123,7 +123,8 @@ export async function createFirmCore(
           weekStartsOn: 1,
           timesheetIncrementMinutes: 15,
           timesheetLockDay: 1,
-          invoicePrefix: `${now.getFullYear()}-`,
+          invoiceNumberFormat: DEFAULT_INVOICE_NUMBER_FORMAT,
+          projectNumberFormat: DEFAULT_PROJECT_NUMBER_FORMAT,
           nextInvoiceNumber: 1,
           defaultPaymentTermsDays: 30,
           modulesEnabled: [],

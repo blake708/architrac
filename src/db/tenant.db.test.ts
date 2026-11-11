@@ -19,7 +19,11 @@ import {
   firmSettings,
   firms,
   invitations,
+  invoiceExcludedEntries,
+  invoiceLines,
+  invoices,
   memberships,
+  payments,
   notifications,
   overheadCategories,
   phaseTemplates,
@@ -33,7 +37,9 @@ import {
 } from "./schema";
 import { type TenantDb, withFirm } from "./tenant";
 import {
+  type TestInvoices,
   type TestTime,
+  addTestInvoices,
   addTestTime,
   createOwnerPool,
   createTestFirm,
@@ -48,15 +54,20 @@ import {
 let owner: Pool;
 let A: TestFirm;
 let B: TestFirm;
+let AT: TestTime;
 let BT: TestTime;
+let AI: TestInvoices;
+let BI: TestInvoices;
 
 beforeAll(async () => {
   requireDbEnv();
   owner = createOwnerPool();
   A = await createTestFirm(owner, "A");
   B = await createTestFirm(owner, "B");
-  await addTestTime(owner, A);
+  AT = await addTestTime(owner, A);
   BT = await addTestTime(owner, B);
+  AI = await addTestInvoices(owner, A, AT);
+  BI = await addTestInvoices(owner, B, BT);
 });
 
 afterAll(async () => {
@@ -129,12 +140,12 @@ const cases: TableCase[] = [
     updateB: (db) =>
       db
         .update(firmSettings)
-        .set({ invoicePrefix: "hacked" })
+        .set({ invoiceNumberFormat: "hacked" })
         .where(eq(firmSettings.firmId, B.firmId))
         .returning(),
     readB: (db) =>
       db
-        .select({ v: firmSettings.invoicePrefix })
+        .select({ v: firmSettings.invoiceNumberFormat })
         .from(firmSettings)
         .where(eq(firmSettings.firmId, B.firmId))
         .then((r) => r[0]?.v),
@@ -659,7 +670,85 @@ const cases: TableCase[] = [
     insertForB: (db) =>
       db.insert(notifications).values({ firmId: B.firmId, membershipId: B.membershipId, kind: "review_waiting", title: "x" }),
   },
+  {
+    table: "invoices",
+    visibleFirmIds: (db) => db.select({ f: invoices.firmId }).from(invoices).then((r) => r.map((x) => x.f)),
+    updateB: (db) => db.update(invoices).set({ memo: "hacked" }).where(eq(invoices.id, BI.draftId)).returning(),
+    readB: (db) =>
+      db
+        .select({ v: invoices.memo })
+        .from(invoices)
+        .where(eq(invoices.id, BI.draftId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db.insert(invoices).values({
+        firmId: B.firmId,
+        projectId: B.projectId,
+        clientCompanyId: B.companyId,
+        number: "X-1",
+        status: "sent",
+        issueDate: "2026-10-01",
+        dueDate: "2026-10-31",
+        periodEnd: "2026-09-30",
+      }),
+  },
+  {
+    table: "invoice_lines",
+    visibleFirmIds: (db) => db.select({ f: invoiceLines.firmId }).from(invoiceLines).then((r) => r.map((x) => x.f)),
+    updateB: (db) => db.update(invoiceLines).set({ description: "hacked" }).where(eq(invoiceLines.id, BI.sentLineId)).returning(),
+    readB: (db) =>
+      db
+        .select({ v: invoiceLines.description })
+        .from(invoiceLines)
+        .where(eq(invoiceLines.id, BI.sentLineId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db.insert(invoiceLines).values({
+        firmId: B.firmId,
+        invoiceId: BI.draftId,
+        lineType: "adjustment",
+        description: "x",
+        rateCents: 1,
+        amountCents: 1,
+      }),
+  },
+  {
+    table: "payments",
+    visibleFirmIds: (db) => db.select({ f: payments.firmId }).from(payments).then((r) => r.map((x) => x.f)),
+    updateB: (db) => db.update(payments).set({ reference: "hacked" }).where(eq(payments.id, BI.paymentId)).returning(),
+    readB: (db) =>
+      db
+        .select({ v: payments.reference })
+        .from(payments)
+        .where(eq(payments.id, BI.paymentId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db.insert(payments).values({ firmId: B.firmId, invoiceId: BI.sentId, receivedOn: "2026-10-02", amountCents: 1, method: "ach" }),
+  },
+  {
+    table: "invoice_excluded_entries",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: invoiceExcludedEntries.firmId })
+        .from(invoiceExcludedEntries)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) =>
+      db
+        .update(invoiceExcludedEntries)
+        .set({ archivedAt: new Date("2000-01-01T00:00:00Z") })
+        .where(eq(invoiceExcludedEntries.id, BI.excludedId))
+        .returning(),
+    readB: (db) =>
+      db
+        .select({ v: invoiceExcludedEntries.archivedAt })
+        .from(invoiceExcludedEntries)
+        .where(eq(invoiceExcludedEntries.id, BI.excludedId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db.insert(invoiceExcludedEntries).values({ firmId: B.firmId, invoiceId: BI.draftId, timeEntryId: BT.entryId }),
+  },
 ];
+
 
 describe("database role", () => {
   it("the app connects as a role that cannot bypass row-level security", async () => {
@@ -700,6 +789,121 @@ describe.each(cases)("$table: firm isolation", (c) => {
   it("returns nothing when no firm is selected", async () => {
     const ids = await getDb().transaction((tx) => c.visibleFirmIds(tx));
     expect(ids).toEqual([]);
+  });
+});
+
+describe("invoice guards (invoicing spec)", () => {
+  const draftOn = (projectId: string, clientCompanyId: string) => ({
+    firmId: A.firmId,
+    projectId,
+    clientCompanyId,
+    issueDate: "2026-10-16",
+    dueDate: "2026-11-15",
+    periodEnd: "2026-10-31",
+  });
+
+  it("an invoice can't use another firm's project, client or contact", async () => {
+    await expectDbError(
+      withFirm(A.firmId, (db) =>
+        db.insert(invoices).values({ ...draftOn(B.projectId, A.companyId), status: "sent", number: "X-8" }),
+      ),
+      /foreign key/,
+    );
+    // Sent, so the one-draft rule doesn't answer first (A's project has a draft).
+    await expectDbError(
+      withFirm(A.firmId, (db) =>
+        db.insert(invoices).values({ ...draftOn(A.projectId, B.companyId), status: "sent", number: "X-9" }),
+      ),
+      /foreign key/,
+    );
+    await expectDbError(
+      withFirm(A.firmId, (db) => db.update(invoices).set({ billToContactId: B.contactId }).where(eq(invoices.id, AI.draftId))),
+      /foreign key/,
+    );
+  });
+
+  it("a line can't hang off another firm's invoice, phase or consultant", async () => {
+    const base = { firmId: A.firmId, lineType: "adjustment" as const, description: "x", rateCents: 1, amountCents: 1 };
+    for (const v of [
+      { ...base, invoiceId: BI.draftId },
+      { ...base, invoiceId: AI.draftId, projectPhaseId: B.projectPhaseId },
+      { ...base, invoiceId: AI.draftId, lineType: "consultant" as const, consultantId: B.consultantId },
+    ])
+      await expectDbError(withFirm(A.firmId, (db) => db.insert(invoiceLines).values(v)), /foreign key/);
+  });
+
+  it("a payment or time entry can't point at another firm's invoice", async () => {
+    await expectDbError(
+      withFirm(A.firmId, (db) =>
+        db.insert(payments).values({ firmId: A.firmId, invoiceId: BI.sentId, receivedOn: "2026-10-02", amountCents: 1, method: "check" }),
+      ),
+      /foreign key/,
+    );
+    await expectDbError(
+      withFirm(A.firmId, (db) => db.update(timeEntries).set({ invoiceId: BI.draftId }).where(eq(timeEntries.id, AT.entryId))),
+      /foreign key/,
+    );
+  });
+
+  it("one open draft per project (rule 12)", async () => {
+    await expectDbError(
+      withFirm(A.firmId, (db) => db.insert(invoices).values(draftOn(A.projectId, A.companyId))),
+      /invoices_one_open_draft/,
+    );
+  });
+
+  it("invoice numbers are unique per firm, and a sent invoice needs one (rule 1)", async () => {
+    await expectDbError(
+      withFirm(A.firmId, (db) =>
+        db.insert(invoices).values({ ...draftOn(A.projectId, A.companyId), status: "sent", number: `${A.label}-100` }),
+      ),
+      /invoices_firm_number_unique/,
+    );
+    await expectDbError(
+      withFirm(A.firmId, (db) => db.insert(invoices).values({ ...draftOn(A.projectId, A.companyId), status: "sent" })),
+      /invoices_number_when_sent/,
+    );
+  });
+
+  it("paid can't go over the total, and a payment must be over $0", async () => {
+    await expectDbError(
+      withFirm(A.firmId, (db) => db.update(invoices).set({ amountPaidCents: 1_000_001 }).where(eq(invoices.id, AI.sentId))),
+      /invoices_paid_range/,
+    );
+    await expectDbError(
+      withFirm(A.firmId, (db) =>
+        db.insert(payments).values({ firmId: A.firmId, invoiceId: AI.sentId, receivedOn: "2026-10-02", amountCents: 0, method: "check" }),
+      ),
+      /payments_amount_positive/,
+    );
+  });
+
+  it("time on an invoice is locked; releasing it unlocks (rule 13)", async () => {
+    const lock = (invoiceId: string | null) =>
+      withFirm(A.firmId, (db) => db.update(timeEntries).set({ invoiceId }).where(eq(timeEntries.id, AT.entryId)));
+    await lock(AI.draftId);
+    for (const change of [{ hours: "3" }, { workDate: "2026-10-13" }, { billable: false }, { billRateCents: 1 }, { archivedAt: new Date() }])
+      await expectDbError(
+        withFirm(A.firmId, (db) => db.update(timeEntries).set(change).where(eq(timeEntries.id, AT.entryId))),
+        /time_entry_locked/,
+      );
+    // A note isn't billed, so it can still change.
+    await withFirm(A.firmId, (db) => db.update(timeEntries).set({ note: "Site visit" }).where(eq(timeEntries.id, AT.entryId)));
+    await lock(null);
+    const changed = await withFirm(A.firmId, (db) =>
+      db.update(timeEntries).set({ hours: "2.5" }).where(eq(timeEntries.id, AT.entryId)).returning(),
+    );
+    expect(changed).toHaveLength(1);
+  });
+
+  it("an approved timesheet with time on an invoice can't be reopened", async () => {
+    const setStatus = (status: "approved" | "draft") =>
+      withFirm(A.firmId, (db) => db.update(timesheets).set({ status }).where(eq(timesheets.id, AT.timesheetId)));
+    await setStatus("approved");
+    await withFirm(A.firmId, (db) => db.update(timeEntries).set({ invoiceId: AI.draftId }).where(eq(timeEntries.id, AT.entryId)));
+    await expectDbError(setStatus("draft"), /time_entry_locked/);
+    await withFirm(A.firmId, (db) => db.update(timeEntries).set({ invoiceId: null }).where(eq(timeEntries.id, AT.entryId)));
+    await setStatus("draft");
   });
 });
 
