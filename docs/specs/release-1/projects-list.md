@@ -198,10 +198,11 @@ These go in `src/lib/calc/` with unit tests. Money is in cents, and rounding is 
    - Project `pursuit`: "Pursuit · not started".
    - Otherwise take the name of the first phase (by `sort_order`) with status `current`. If there is none: "All phases complete" when every phase is complete/closed, or "Not started" when none is. For `on_hold`, prefix "On hold · ".
    - *MOB:* "Design Development".
-5. **Suggested project number**
-   - `Y` = the current year in `firms.timezone`.
-   - Find the highest integer `N` among projects whose number matches `^{Y}-(\d+)$`. Suggest `{Y}-{N+1}`, zero-padded to 3 digits, or `{Y}-001` when there is none.
-   - *Seed:* the highest is 2026-022, so suggest **2026-023**.
+5. **Suggested project number** (revised 1.8 A, decision #28)
+   - The firm's format is `firm_settings.project_number_format` (Settings → Billing & invoices), default `{YYYY}-{###}`. Tokens: `{YYYY}` / `{YY}` = the current year in `firms.timezone`; `{#}`…`{######}` = the counter, zero-padded to the number of `#`; anything else is printed as typed. A format needs exactly one counter, no `{PROJECT}`, and its literal text must fit the project number pattern below.
+   - Turn the format into a pattern with this year filled in and the counter as `(\d+)`. Find the highest counter `N` among the firm's projects (archived included) whose number matches. Suggest the format with `N + 1`, or 1 when there is none. With no year token, every project matching the pattern counts, so the counter never restarts.
+   - Shared engine with invoice numbers: `formatNumber` / `parseCounter` / `validateNumberFormat` in `src/lib/calc/number-format.ts`; `nextProjectNumber(existing, format, year)` in `src/lib/calc/projects.ts` calls it.
+   - *Seed* (`{YYYY}-{###}`): the highest is 2026-022, so suggest **2026-023**. *TMG* (`{YY}{###}`), existing 26029 and 26030, year 2026 → **26031**; in 2027 with no 27xxx yet → **27001**. `P{####}` with P0411 → **P0412**.
    - The server re-checks uniqueness on save; on a race, return the error "Number already used".
 6. **Fee split** uses `distributeFee(totalCents, rows, editedIds)` from DATA_MODEL "Key calculations". Precisely:
    - Work only with included rows. `remaining = total − Σ fee of edited rows`. If `remaining < 0`, block with an error.

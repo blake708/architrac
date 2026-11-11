@@ -5,7 +5,7 @@
 | **Release** | 1 |
 | **Route** | `/app/invoices` (firm-wide list) · `/app/projects/[projectId]/billing` (project tab labelled "Invoices"; folder name per ARCHITECTURE §3) · `/app/invoices/[invoiceId]/edit` (builder, draft only) · `/app/invoices/[invoiceId]` (detail) · `/api/invoices/[invoiceId]/pdf` (PDF download) |
 | **Mockup** | `mockup/Accounting.dc.html` (Receivables tab + invoice drawer), `mockup/Project.dc.html` (Invoices tab, Phases & fees "Billed" column) |
-| **Status** | Draft |
+| **Status** | Ready to build (decisions #5, #6, #12, #26, #27 recorded 2026-11-11) |
 
 ## Purpose
 Project managers build a progress invoice for one project from phase progress, approved time and consultant pass-through; an Owner/Admin reviews and sends it (PDF + email), records payments as they arrive, and watches receivables aging. Sent invoices and payments push to QuickBooks Online (see `quickbooks-sync.md`).
@@ -20,7 +20,7 @@ Invoicing is **core, not part of the Accounting add-on**. Every firm must bill t
 |---|---|
 | Owner | Full: view all, create/edit drafts, approve & send, void, record/delete payments |
 | Admin | Same as Owner |
-| Project manager | View invoices and create/edit drafts **only on projects where they are `pm_membership_id` or `principal_membership_id`**; can submit for review. Cannot send, void or record payments |
+| Project manager | View invoices and create/edit drafts **only on projects where they are `pm_membership_id` or `principal_membership_id`**; can submit for review. On projects where they are the **Principal in Charge** (`principal_membership_id`) they can also return to draft, send and resend (decision #26). Never void, record or delete payments |
 | Staff | none (nav item hidden; routes return 403 page) |
 | Client (portal) | none (portal invoices are Release 2) |
 
@@ -91,8 +91,15 @@ Invoicing is **core, not part of the Accounting add-on**. Every firm must bill t
 ## Business rules
 Money is integer cents; `roundHalfUp(x)` rounds to the nearest cent, .5 up. Put every function below in `src/lib/calc/invoice.ts` with unit tests using these exact examples. Seed: Medical Office Building (MOB), fixed fee $186,000, phases Pre-Design 5 %, SD 15 %, DD 25 %, CD 35 %, Permitting 5 %, CA 15 %. Invoices 2026-097 $9,300 (paid), 2026-109 $16,740 (paid), 2026-121 $11,160 (sent, due Nov 15).
 
-1. **Numbering.** Number is assigned at send (not at draft), inside a transaction:
-   `UPDATE firm_settings SET next_invoice_number = next_invoice_number + 1 WHERE firm_id = $1 RETURNING invoice_prefix, next_invoice_number - 1 AS n` → `number = invoice_prefix + String(n).padStart(3, '0')`. Example: prefix `2026-`, next 128 → `2026-128`, next becomes 129. If the unique index `(firm_id, number)` rejects it (number entered by hand in QBO, import), loop: take the next number, max 5 tries, then error. Voided numbers are never reused. Drafts deleted before send consume no number.
+1. **Numbering** (decision #5). The number is assigned at send (not at draft), inside a transaction, from the firm's **number format** `firm_settings.invoice_number_format` (Settings → Billing & invoices). Tokens:
+   - `{YYYY}` / `{YY}`: the issue date's year (firm tz), `2026` / `26`.
+   - `{PROJECT}`: the project's `projects.number`, e.g. `2026-014` (or TMG's `26031`, whose own format is a firm setting, decision #28).
+   - `{#}` … `{######}`: the counter, zero-padded to the number of `#` (longer numbers are not cut: `{##}` with 128 → `128`).
+   - Anything else is printed as typed. A format must contain exactly one counter token, at most one `{PROJECT}`, be 1–40 characters, and use only letters, digits, `-`, `_`, `.` and spaces outside tokens (no `/`: numbers become file names), and never make a number over 40 characters. Settings shows a live example ("Next: 2026-014-04").
+   **Counter scope.** If the format contains `{PROJECT}`, the counter is per project: `UPDATE projects SET next_invoice_seq = next_invoice_seq + 1 WHERE id = $1 RETURNING next_invoice_seq - 1 AS n`. Otherwise it is firm-wide and never resets at year end: `UPDATE firm_settings SET next_invoice_number = next_invoice_number + 1 WHERE firm_id = $1 RETURNING next_invoice_number - 1 AS n`. Owner/Admin can edit the firm's next number in Settings (must be ≥ 1).
+   Put the shared token engine (`formatNumber`, `parseCounter`, `validateNumberFormat`) in `src/lib/calc/number-format.ts`, used by invoice and project numbers, with unit tests.
+   Examples: `{YYYY}-{###}`, next 128, issued Oct 2026 → `2026-128` (next 129); the next one issued Jan 2027 → `2027-129`. `{PROJECT}-{##}` on MOB (`2026-014`) with `next_invoice_seq` 4 → `2026-014-04` (MOB's next becomes 5; other projects unaffected). `INV{YY}{####}` with 7 → `INV260007`. TMG: `{PROJECT}-{##}` on project `26031`, 4th invoice → `26031-04`.
+   If the unique index `(firm_id, number)` rejects it (number entered by hand in QBO, import, a format change that collides), take the next counter value and try again, max 5 tries, then error "Couldn't find a free invoice number; check the number format in Settings." Voided numbers are never reused. Drafts deleted before send consume no number. Changing the format only affects invoices sent afterwards; existing numbers never change.
 2. **Previously billed** for a phase = Σ `invoice_lines.amount_cents` for that `project_phase_id` on invoices with status in (`sent`,`partially_paid`,`paid`,`written_off`), lines and invoices not archived, **excluding the current invoice**. Fixed-fee phases count only `line_type = phase_fee`; hourly/NTE phases count `hourly` and `adjustment` lines.
 3. **Fixed-fee line** (`fee_type = fixed`):
    `earnedToDate = roundHalfUp(fee_cents × percent_complete_bp / 10000)`; `thisInvoice = earnedToDate − previouslyBilled`.
@@ -159,11 +166,14 @@ Money is integer cents; `roundHalfUp(x)` rounds to the nearest cent, .5 up. Put 
 - [ ] Given entries reserved on a draft, when a user tries to edit one on the timesheet, then the action fails with "On draft invoice" and the DB trigger also rejects a direct update.
 - [ ] Given a draft is deleted, then its time entries have `invoice_id = null` and appear on the next new draft.
 - [ ] Given a project with a draft, when New invoice is clicked, then the existing draft opens and no second draft is created.
-- [ ] Given `invoice_prefix '2026-'` and `next_invoice_number 128`, when a draft is sent, then its number is `2026-128` and next is 129.
+- [ ] Given format `{YYYY}-{###}` and `next_invoice_number 128`, when a draft issued Oct 16, 2026 is sent, then its number is `2026-128` and next is 129; a second sent with issue date Jan 5, 2027 gets `2027-129`.
+- [ ] Given format `{PROJECT}-{##}` and MOB (`2026-014`) with `next_invoice_seq 4`, when a MOB draft is sent, then its number is `2026-014-04`, MOB's next is 5, and the firm's `next_invoice_number` and other projects' counters are unchanged.
+- [ ] Given a format with no counter, two counters, or a `<` character, when an Owner saves it in Settings, then it is rejected with a message; a PM or Staff calling the action gets 403.
+- [ ] Given the next number already exists (entered elsewhere), when a draft is sent, then it skips to the next free number.
 - [ ] Given two drafts sent concurrently, then they receive different consecutive numbers.
 - [ ] Given issue date Oct 16 and terms 30, then due date is Nov 15.
 - [ ] Given the email provider fails during send, then status stays `in_review`/`draft`, the number is kept, and Retry completes without assigning a new number.
-- [ ] Given a PM, when they open the Send action, then it is not shown; calling the server action returns 403.
+- [ ] Given a PM who is not the project's Principal in Charge, when they open the draft, then Send is not shown and calling the server action returns 403; given a PM who **is** the project's Principal in Charge, then they can send it, but Record payment and Void are not shown and those actions return 403.
 - [ ] Given 2026-121 (total 1,116,000) when a payment of 500,000 is recorded, then status = partially_paid and balance = 616,000; when 616,000 more is recorded, status = paid.
 - [ ] Given a payment greater than the balance, then it is rejected.
 - [ ] Given a paid invoice, when a payment is deleted, then amount_paid and status recompute and a QBO delete job is queued.
@@ -180,16 +190,16 @@ Money is integer cents; `roundHalfUp(x)` rounds to the nearest cent, .5 up. Put 
 - [ ] Given a sent invoice, the downloaded PDF contains number, bill-to, fee table, totals and "Page 1 of N"; a draft preview carries the DRAFT watermark.
 
 ## Open questions
-1. **Data model addition needed:** add `in_review` to enum `invoice_status`; add `invoices.reviewed_by uuid null`, `reviewed_at timestamptz null`.
-2. **Data model addition needed:** make `invoices.number` nullable (null while draft/in review) with a partial unique index `(firm_id, number) where number is not null`.
-3. **Data model addition needed:** `invoices.memo text null` (client-facing), `invoices.sent_to text[]`, `invoices.include_time_detail boolean default true`, `invoices.voided_at timestamptz`, `invoices.voided_by uuid`, `invoices.void_reason text`.
-4. **Data model addition needed:** `invoice_lines.sort_order smallint`; `invoice_lines.phase_fee_cents bigint null` and `prior_billed_cents bigint null` (snapshots so detail/PDF stay stable if a phase fee changes later); `invoice_lines.consultant_id uuid null fk consultants`, `cost_cents bigint null`, `markup_bp integer null`, `vendor_invoice_ref text null`.
-5. **Data model addition needed:** partial unique index on `invoices (project_id) where status in ('draft','in_review') and archived_at is null` (rule 12), and a way to remember excluded entries on a draft (`invoice_excluded_entries (invoice_id, time_entry_id)` join table, or a `uuid[]` column on invoices).
-6. **Data model addition needed:** firm address/phone/email for the PDF header (`firms` or `firm_settings`), and `firm_settings.invoice_remittance_text text`.
+1. **Done in 1.8 A** (migration 0016). Add `in_review` to enum `invoice_status`; add `invoices.reviewed_by uuid null`, `reviewed_at timestamptz null`.
+2. **Done in 1.8 A.** Make `invoices.number` nullable (null while draft/in review) with a partial unique index `(firm_id, number) where number is not null`.
+3. **Done in 1.8 A** (also `bill_to_contact_id`, `created_by`, `archived_at`). `invoices.memo text null` (client-facing), `invoices.sent_to text[]`, `invoices.include_time_detail boolean default true`, `invoices.voided_at timestamptz`, `invoices.voided_by uuid`, `invoices.void_reason text`.
+4. **Done in 1.8 A.** `invoice_lines.sort_order smallint`; `invoice_lines.phase_fee_cents bigint null` and `prior_billed_cents bigint null` (snapshots so detail/PDF stay stable if a phase fee changes later); `invoice_lines.consultant_id uuid null fk consultants`, `cost_cents bigint null`, `markup_bp integer null`, `vendor_invoice_ref text null`.
+5. **Done in 1.8 A** (the join table, with `archived_at` so a re-ticked entry is never deleted). Partial unique index on `invoices (project_id) where status in ('draft','in_review') and archived_at is null` (rule 12), and a way to remember excluded entries on a draft (`invoice_excluded_entries (invoice_id, time_entry_id)` join table, or a `uuid[]` column on invoices).
+6. **Done.** Firm address, phone and email already live on `firms` (Firm profile); `firm_settings.invoice_remittance_text` added in 1.8 A, edited in Settings → Billing & invoices. Was: firm address/phone/email for the PDF header (`firms` or `firm_settings`), and `firm_settings.invoice_remittance_text text`.
 7. **Seed inconsistency:** DATA_MODEL shows `next_invoice_number 121`, but 2026-121…2026-127 already exist in the mockup and Settings shows next = 128. Seed should set 128.
-8. Prefix rollover: `invoice_prefix` is fixed text ("2026-"). Should the app roll it to "2027-" on Jan 1 (Settings mockup implies a `{YYYY}-{###}` format), and does the counter reset?
-9. Email provider: ARCHITECTURE lists "Postmark or Resend" — pick one (ADR). R1 assumption: sent from an ArchiTrac domain with From name = firm and Reply-To = sender; firm-domain sending is Release 2.
+8. ~~Prefix rollover~~ **Decided** (#5, Blake, 2026-11-11): firm-built number format, see rule 1. Was: prefix rollover: `invoice_prefix` is fixed text ("2026-"). Should the app roll it to "2027-" on Jan 1 (Settings mockup implies a `{YYYY}-{###}` format), and does the counter reset?
+9. ~~Email provider~~ **Postmark** (#6, Blake, 2026-11-11). Was: email provider: ARCHITECTURE lists "Postmark or Resend" — pick one (ADR). R1 assumption: sent from an ArchiTrac domain with From name = firm and Reply-To = sender; firm-domain sending is Release 2.
 10. **Conflict with CLAUDE.md rule 4** (rates only returned to owner/admin): a PM building an invoice sees hourly **bill** rates on lines (they print on the client's PDF anyway). Proposal: bill rates on invoice lines are visible to PMs with access to the project; cost rates, cost and profit are never returned by any invoicing endpoint. Blake to confirm.
-11. Should the project's Principal in Charge (if role = project_manager) also be allowed to approve & send?
-12. Retainer handling for TMG's "10% on signing" default — R1 workaround is a negative adjustment line; confirm acceptable.
+11. **Yes** (#26, Blake, 2026-11-11): send and resend, not payments or void. Was: should the project's Principal in Charge (if role = project_manager) also be allowed to approve & send?
+12. **Accepted** (#12, Blake, 2026-11-11). Was: retainer handling for TMG's "10% on signing" default — R1 workaround is a negative adjustment line; confirm acceptable.
 13. Historical invoices (2026-097, -109, -121) need importing so "previously billed" is correct at go-live — CSV import or manual entry as already-sent invoices?

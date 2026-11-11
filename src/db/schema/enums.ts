@@ -86,3 +86,23 @@ export const timesheetRowType = pgEnum("timesheet_row_type", ["project", "overhe
  * never, only on hourly and not-to-exceed phases, or on all billable time.
  */
 export const timesheetNotesRule = pgEnum("timesheet_notes_rule", ["optional", "hourly", "all"]);
+
+/**
+ * Where an invoice is (invoicing spec). in_review = a PM submitted it for an
+ * owner/admin to send. written_off arrives with Accounting (Release 2).
+ */
+export const invoiceStatus = pgEnum("invoice_status", [
+  "draft",
+  "in_review",
+  "sent",
+  "partially_paid",
+  "paid",
+  "void",
+  "written_off",
+]);
+
+/** What an invoice line bills. expense arrives in Release 2. */
+export const invoiceLineType = pgEnum("invoice_line_type", ["phase_fee", "hourly", "consultant", "expense", "adjustment"]);
+
+/** How a payment came in. */
+export const paymentMethod = pgEnum("payment_method", ["check", "ach", "card", "other"]);

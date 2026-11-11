@@ -3,7 +3,7 @@
 // (settings-rates-phases spec, Layout).
 
 export type SettingsSection = {
-  key: "firm" | "users" | "phases" | "rates" | "time" | "modules";
+  key: "firm" | "users" | "phases" | "rates" | "time" | "billing" | "modules";
   group: string;
   label: string;
   href: string;
@@ -66,6 +66,15 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     title: "Time & approvals",
     description:
       "When timesheets are due, how hours are entered, and who approves them.",
+    hasSave: false,
+  },
+  {
+    key: "billing",
+    group: "Money",
+    label: "Billing & invoices",
+    href: "/app/settings/billing",
+    title: "Billing & invoices",
+    description: "How invoices and projects are numbered, payment terms, and what prints at the foot of each invoice.",
     hasSave: false,
   },
   {

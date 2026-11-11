@@ -74,8 +74,14 @@ export const firmSettings = pgTable(
     timesheetDueTime: time("timesheet_due_time").notNull().default("09:00"),
     /** Which billable days with hours need a note before submit (decisions #17, #24). */
     timesheetNotesRule: timesheetNotesRule("timesheet_notes_rule").notNull().default("optional"),
-    invoicePrefix: text("invoice_prefix").notNull().default(""),
+    /** Firm-built invoice numbers (decision #5): "{YYYY}-{###}", "{PROJECT}-{##}". See lib/calc/number-format. */
+    invoiceNumberFormat: text("invoice_number_format").notNull().default("{YYYY}-{###}"),
+    /** The firm-wide counter, used when the format has no {PROJECT}. */
     nextInvoiceNumber: integer("next_invoice_number").notNull().default(1),
+    /** Suggested project numbers (decision #28): "{YYYY}-{###}", TMG "{YY}{###}". */
+    projectNumberFormat: text("project_number_format").notNull().default("{YYYY}-{###}"),
+    /** Printed in the invoice PDF footer ("Make checks payable to…"). */
+    invoiceRemittanceText: text("invoice_remittance_text"),
     defaultPaymentTermsDays: smallint("default_payment_terms_days")
       .notNull()
       .default(30),
@@ -98,6 +104,15 @@ export const firmSettings = pgTable(
       sql`${t.timesheetLockDay} between 0 and 6`,
     ),
     check("firm_settings_overhead_rate_bp_min", sql`${t.overheadRateBp} >= 0`),
+    check("firm_settings_next_invoice_number_min", sql`${t.nextInvoiceNumber} >= 1`),
+    check(
+      "firm_settings_payment_terms_range",
+      sql`${t.defaultPaymentTermsDays} between 0 and 365`,
+    ),
+    check(
+      "firm_settings_remittance_length",
+      sql`${t.invoiceRemittanceText} is null or char_length(${t.invoiceRemittanceText}) <= 500`,
+    ),
     check(
       "firm_settings_consultant_markup_range",
       sql`${t.defaultConsultantMarkupBp} between 0 and 10000`,

@@ -1,0 +1,1 @@
+ALTER TABLE "firm_settings" DROP COLUMN "invoice_prefix";

@@ -17,6 +17,7 @@ import {
 import { saveTimeListsCore } from "./time-lists";
 import { saveReviewRouteCore } from "./review-route";
 import { saveTimesheetRulesCore } from "./timesheet-rules";
+import { saveBillingSettingsCore } from "./billing";
 import {
   changeRoleCore,
   deactivateMemberCore,
@@ -113,4 +114,8 @@ export async function saveTimesheetRules(input: unknown) {
 
 export async function saveReviewRoute(input: unknown) {
   return saveReviewRouteCore(await actor(), input);
+}
+
+export async function saveBillingSettings(patch: unknown) {
+  return saveBillingSettingsCore(await actor(), patch);
 }

@@ -3,6 +3,8 @@
 // step (ADR 0004).
 
 import type { InvoiceStatus } from "./contacts";
+import { COUNTED_STATUSES, lineCountsForPhase } from "./invoice";
+import { counterIn, formatNumber } from "./number-format";
 
 export type ProjectStatus = "pursuit" | "active" | "on_hold" | "closed";
 export type PhaseStatus = "upcoming" | "current" | "complete" | "closed";
@@ -36,12 +38,7 @@ export type BilledLine = {
   amountCents: number;
 };
 
-const COUNTS: ReadonlySet<InvoiceStatus> = new Set([
-  "sent",
-  "partially_paid",
-  "paid",
-  "written_off",
-]);
+const COUNTS = COUNTED_STATUSES;
 
 /**
  * Architectural fee billed so far. Only invoices that went out count. Fixed
@@ -58,9 +55,7 @@ export function projectBilled(
     if (!COUNTS.has(l.invoiceStatus) || !l.projectPhaseId) continue;
     const t = typeById.get(l.projectPhaseId);
     if (!t) continue;
-    const counts =
-      t === "fixed" ? l.lineType === "phase_fee" : l.lineType === "hourly" || l.lineType === "adjustment";
-    if (counts) total += l.amountCents;
+    if (lineCountsForPhase(t, l.lineType)) total += l.amountCents;
   }
   return total;
 }
@@ -146,15 +141,19 @@ export function phaseText(
 // ---------------------------------------------------------------------------
 // Rule 5: suggested number
 
-/** "{year}-{N+1}", 3-digit padded, where N is the highest "{year}-N" in use. */
-export function nextProjectNumber(existing: readonly string[], year: number): string {
-  const re = new RegExp(`^${year}-(\\d+)$`);
+/**
+ * The next project number in the firm's format (decision #28): the highest
+ * counter among numbers that fit the format this year, plus one. With a
+ * year code the counter restarts each year; without one it keeps counting.
+ * "{YYYY}-{###}" with 2026-022 → "2026-023"; "{YY}{###}" with 26030 → "26031".
+ */
+export function nextProjectNumber(existing: readonly string[], format: string, year: number): string {
   let max = 0;
   for (const n of existing) {
-    const m = re.exec(n.trim());
-    if (m) max = Math.max(max, Number(m[1]));
+    const c = counterIn(n, format, "project", { year });
+    if (c !== null) max = Math.max(max, c);
   }
-  return `${year}-${String(max + 1).padStart(3, "0")}`;
+  return formatNumber(format, "project", { year, n: max + 1 });
 }
 
 // ---------------------------------------------------------------------------

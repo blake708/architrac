@@ -28,6 +28,7 @@ import {
 import { blendedBillRateCents } from "@/lib/calc/rates";
 import { todayIn } from "@/lib/format";
 import { loadRates } from "@/server/settings/rates";
+import { DEFAULT_PROJECT_NUMBER_FORMAT } from "@/lib/calc/number-format";
 import { type BenchmarkSources, loadBenchmarkSources } from "./estimate";
 import { templateMixes } from "./roles";
 import { initials } from "@/lib/initials";
@@ -356,7 +357,9 @@ export async function loadNewProjectOptions(
   const rateView = await loadRates(db, firmId, today);
   const mixes = await templateMixes(db);
   const benchmarks = await loadBenchmarkSources(db);
-  const [settings] = await db.select({ markup: firmSettings.defaultConsultantMarkupBp }).from(firmSettings);
+  const [settings] = await db
+    .select({ markup: firmSettings.defaultConsultantMarkupBp, numberFormat: firmSettings.projectNumberFormat })
+    .from(firmSettings);
   const blended = blendedBillRateCents(
     rateView.roles.map((r) => ({ billCents: r.billCents, costCents: r.costCents, people: r.people })),
   );
@@ -378,6 +381,7 @@ export async function loadNewProjectOptions(
   return {
     suggestedNumber: nextProjectNumber(
       numbers.map((r) => r.n),
+      settings?.numberFormat ?? DEFAULT_PROJECT_NUMBER_FORMAT,
       year,
     ),
     clients: clientRows,
