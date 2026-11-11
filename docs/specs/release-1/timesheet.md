@@ -30,12 +30,12 @@ Nobody edits another person's timesheet in Release 1 (approvers view it read-onl
 Shared app shell (menu rail, top header with page title "Time"). Then, top to bottom:
 
 1. **Page header** (white band, 32px padding).
-   - Left: mono meta line `TIMESHEETS · APPROVALS · HISTORY` (`TIMESHEETS · HISTORY` for people without the Approvals tab), H1 "Time". (Changed by Blake, 2026-11-11: the week and due date moved down to the week heading, item 5a.)
+   - Left: mono meta line `TIMESHEETS · APPROVALS · HISTORY` (`TIMESHEETS · HISTORY` for people without the Approvals tab), H1 "Time". (Changed by Blake, 2026-11-11: the week moved down to the week heading, item 3a.)
 2. **KPI strip** — grid of KPI tiles, `repeat(auto-fit, minmax(180px, 1fr))`: "This week", "Billable". (1.7 adds "Ready for you" and "Not submitted" for team leaders and principals.)
 3. **Tabs** — "My timesheet", "History" (count = past timesheets). Tabs are links to their routes. (1.7 adds "Approvals" between them for team leaders and principals.)
+3a. **Week heading** (above the status bar): H2 `Week of Oct 12 – Oct 18, 2026` (22px, weight 600). The due date shows in the status note. (Blake, 2026-11-11.)
 4. **Status bar** (My timesheet): status Badge with dot + label, a muted status note, autosave indicator (`Saving…` / `Saved 10:42 AM` / `Couldn't save. Retrying…` in orange), and on the right the week navigation — icon button "Previous week" (`aria-label`), button "This week", icon button "Next week". "This week" is a secondary Button; when the current week is shown it has `aria-pressed="true"` and does nothing. (Moved here from the page header by Blake, 2026-11-11.)
 5. **Rejection banner** (only when status = `rejected`): orange-tint card, text `Returned by JR on Oct 20: "<rejection_note>"` and `Fix the rows below and resubmit.`
-5a. **Week heading** (right above the grid): H2 `Week of Oct 12 – Oct 18, 2026` (22px, weight 600), and under it a smaller muted line `Due Mon Oct 19, 9:00 AM`.
 6. **Weekly grid** (Card containing a real `<table>`, `min-width: 960px`, `table-layout: fixed`, horizontal scroll inside the card on narrow screens).
    - Header: "Project · phase · activity" (fluid), "Billing" (104px), 7 day columns (58px each: day-of-week + mono `Oct 12`; weekend columns use surface-2 background), "Total" (76px, right), remove column (44px, visually-hidden header "Remove").
    - Row, first cell, stacked with 6px gap:

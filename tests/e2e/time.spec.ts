@@ -66,7 +66,7 @@ test("/app/time opens this week; a mid-week date goes to its week", async ({ pag
   await page.goto("/app/time/week/2026-10-14");
   await expect(page).toHaveURL(`/app/time/week/${WEEK}`);
   await expect(page.getByRole("heading", { name: "Week of Oct 12 – Oct 18, 2026" })).toBeVisible();
-  await expect(page.getByText("Due Mon Oct 19, 9:00 AM")).toBeVisible();
+  await expect(page.getByText("Not submitted yet. Due Mon Oct 19 at 9:00 AM.")).toBeVisible();
   await expect(page.getByText("No time this week yet")).toBeVisible();
   // Viewing creates nothing.
   expect(await query("select id from timesheets where firm_id = :firm")).toHaveLength(0);
@@ -215,7 +215,7 @@ test.describe("firm settings: due Friday 5 PM, which notes are required", () => 
 
     const page = await browser.newPage();
     await signInAs(page, "ioStaff", `/app/time/week/${WEEK}`);
-    await expect(page.getByText("Due Fri Oct 16, 5:00 PM")).toBeVisible();
+    await expect(page.getByText("Due Fri Oct 16 at 5:00 PM.")).toBeVisible();
     // Mon has a note; Tue (1.25 h, billable) doesn't.
     await expect(page.getByTestId("submit-blocker")).toHaveText("1 billable day needs a note before you can submit.");
     // Hourly phases only: Design Development is a fixed fee, so no note is needed.

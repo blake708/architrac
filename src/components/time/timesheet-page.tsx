@@ -406,6 +406,9 @@ export function TimesheetPage({
     <main>
       <TimeHeader view={view} tab="mine" historyCount={historyCount} approvalsCount={approvalsCount} />
       <div className="flex flex-col gap-4 px-4 pt-5 pb-8 md:px-page-x">
+        {/* Week heading */}
+        <h2 className="m-0 text-xl leading-tight font-semibold">{weekTitle(view.weekStart)}</h2>
+
         {/* Status bar */}
         <div className="flex flex-wrap items-center gap-2.5">
           <StatusBadge look={status.look} tone={status.tone}>
@@ -427,12 +430,6 @@ export function TimesheetPage({
             <p className="m-0 mt-1">Fix the rows below and resubmit.</p>
           </div>
         )}
-
-        {/* Week heading */}
-        <div className="flex flex-col gap-1">
-          <h2 className="m-0 text-xl leading-tight font-semibold">{weekTitle(view.weekStart)}</h2>
-          <p className="m-0 text-sm text-muted">Due {view.dueLabel}</p>
-        </div>
 
         {/* Weekly grid */}
         <section aria-label="Weekly timesheet" className="overflow-x-auto rounded-sm border border-line bg-surface">
