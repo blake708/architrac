@@ -63,7 +63,6 @@ const actor = (who: { userId: string; membershipId: string }, appRole: AppRole):
 const BM = () => actor(A, "owner");
 const JR = () => actor(jr, "project_manager");
 const OP = () => actor(op, "project_manager");
-const MW = () => actor(mw, "admin");
 
 const q = <T extends Record<string, unknown>>(text: string, params: unknown[] = []) =>
   asFirm(pool, A.firmId, async (c) => (await c.query<T>(text, params)).rows);
