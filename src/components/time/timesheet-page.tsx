@@ -431,6 +431,15 @@ export function TimesheetPage({
           </div>
         )}
 
+        {view.invoiced.length > 0 && (
+          <p className="m-0 flex items-center gap-2 text-[12.5px] text-muted" data-testid="invoiced">
+            <svg aria-hidden="true" viewBox="0 0 24 24" className="size-3.5" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M6 11h12v10H6zM8 11V7a4 4 0 0 1 8 0v4" />
+            </svg>
+            Locked: {view.invoiced.join(" · ")}. Billed time can&apos;t change.
+          </p>
+        )}
+
         {/* Weekly grid */}
         <section aria-label="Weekly timesheet" className="overflow-x-auto rounded-sm border border-line bg-surface">
           <table ref={tableRef} className="w-full min-w-[960px] table-fixed border-collapse">
