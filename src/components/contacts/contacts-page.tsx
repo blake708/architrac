@@ -333,7 +333,10 @@ export function ContactsPage({
                         ) : c.missingBilling ? (
                           <span className="text-orange-strong">◆ No billing contact</span>
                         ) : (
-                          billing && personName(billing)
+                          <>
+                            {billing && personName(billing)}
+                            {c.billingEmail && <div className="text-xs text-muted">{c.billingEmail}</div>}
+                          </>
                         )}
                       </td>
                     </tr>

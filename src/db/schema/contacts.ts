@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   type AnyPgColumn,
+  check,
   type PgTableExtraConfigValue,
   foreignKey,
   index,
@@ -42,6 +43,11 @@ export const companies = pgTable(
     primaryContactId: uuid("primary_contact_id"),
     /** Who invoices go to (clients). */
     billingContactId: uuid("billing_contact_id"),
+    /**
+     * A shared accounts-payable address (ap@client.com). Invoices are emailed
+     * here, copying the billing contact (decision #32). Clients only. Lowercase.
+     */
+    billingEmail: text("billing_email"),
     /** QuickBooks customer this maps to (1.9). */
     quickbooksCustomerId: text("quickbooks_customer_id"),
     notes: text("notes"),
@@ -51,6 +57,7 @@ export const companies = pgTable(
   },
   (t): PgTableExtraConfigValue[] => [
     unique("companies_firm_id_id_unique").on(t.firmId, t.id),
+    check("companies_billing_email_length", sql`${t.billingEmail} is null or char_length(${t.billingEmail}) <= 254`),
     index("companies_firm_name_idx").on(t.firmId, sql`lower(${t.name})`),
     foreignKey({
       name: "companies_primary_contact_same_firm_fk",

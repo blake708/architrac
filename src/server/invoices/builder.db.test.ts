@@ -14,7 +14,7 @@ import {
   requireDbEnv,
 } from "@/db/test-helpers";
 import type { AppRole } from "@/lib/auth/permissions";
-import { INVOICE_MESSAGES } from "@/lib/invoices/builder";
+import { INVOICE_MESSAGES, NO_EMAIL } from "@/lib/invoices/builder";
 import { reopenTimesheetCore } from "@/server/time/approval";
 import { freezeSheetRates } from "@/server/time/review";
 import {
@@ -415,11 +415,16 @@ describe("Time on the draft", () => {
 });
 
 describe("Review", () => {
-  it("a bill-to with no email blocks Submit for review", async () => {
+  it("with no email to send to, Submit for review is blocked; a billing email fixes it (decision #32)", async () => {
     await q("update contacts set email = null where id = $1", [A.contactId]);
     const r = await submitForReviewCore(JR(), { invoiceId: draftId, version: (await view()).version });
-    expect(r).toEqual({ ok: false, error: "The bill-to contact needs an email address." });
+    expect(r).toEqual({ ok: false, error: NO_EMAIL });
+    await q("update companies set billing_email = 'ap@client.example' where id = $1", [A.companyId]);
+    expect((await view()).settings).toMatchObject({ emailTo: "ap@client.example", emailCc: null });
+    expect((await view()).problems).toEqual([]);
     await q("update contacts set email = 'bill@example.com' where id = $1", [A.contactId]);
+    expect((await view()).settings).toMatchObject({ emailTo: "ap@client.example", emailCc: "bill@example.com" });
+    await q("update companies set billing_email = null where id = $1", [A.companyId]);
   });
 
   it("the PM submits; owners, admins and the Principal in Charge are notified", async () => {
@@ -465,9 +470,16 @@ describe("Delete draft", () => {
     expect(r.ok).toBe(true);
     expect(await reserved()).toBe(0);
     expect(await withFirm(A.firmId, (db) => loadBuilder(db, BM(), draftId))).toBeNull();
+    // The project's client contact is someone else: bill-to still defaults to the billing contact (#32).
+    const [other] = await q<{ id: string }>(
+      "insert into contacts (firm_id, company_id, first_name, last_name, email) values ($1, $2, 'Owen', 'Site', 'owen@example.com') returning id",
+      [A.firmId, A.companyId],
+    );
+    await q("update projects set client_contact_id = $1 where id = $2", [other.id, A.projectId]);
     const next = ok(await createDraftInvoiceCore(BM(), { projectId: A.projectId }));
     expect(next.created).toBe(true);
     draftId = next.id;
+    expect((await view()).settings.billToContactId).toBe(A.contactId);
     expect((await view()).hourly.find((h) => h.phaseId === ph.ADD)!.groups.map((g) => g.amountCents)).toEqual([78_000, 184_875, 11_000]);
   });
 });

@@ -36,6 +36,8 @@ export type CompanyRow = {
   notes: string | null;
   primaryContactId: string | null;
   billingContactId: string | null;
+  /** Shared AP address (decision #32). */
+  billingEmail: string | null;
   missingBilling: boolean;
   projects: ProjectLink[];
   /** Owner/admin only. */
@@ -223,9 +225,11 @@ export async function loadContacts(db: TenantDb, viewer: Member): Promise<Contac
             ? c.primaryContactId
             : null,
         billingContactId: billing ? billing.id : null,
+        billingEmail: c.billingEmail,
         missingBilling: missingBillingContact(
           c.kind,
           billing ? { archived: false, email: billing.email } : null,
+          c.billingEmail,
         ),
         projects: projects.get(c.id) ?? [],
       };

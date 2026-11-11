@@ -18,7 +18,7 @@ import { can } from "@/lib/auth/permissions";
 import { type InvoiceStatus, OPEN_STATUSES, hoursSuggestBp, hoursToHundredths, timeValueCents } from "@/lib/calc/invoice";
 import { type ConsultantRow, type FixedRow, type HourlyRow, money, sumHundredths } from "@/lib/calc/invoice-plan";
 import { formatDate } from "@/lib/format";
-import { sendProblems } from "@/lib/invoices/builder";
+import { NO_EMAIL, invoiceRecipients, sendProblems } from "@/lib/invoices/builder";
 import { loadRateBook } from "@/server/time/approval";
 import { type Access, type InvoiceActor, type InvoiceRow, canEdit, lastCountedPeriodEnd, planFor, projectAccess, projectPhaseRows, recalculate, versionOf } from "./draft";
 import { addDays } from "@/lib/calc/timesheet";
@@ -54,6 +54,9 @@ export type BuilderView = {
     billToContactId: string | null;
     memo: string;
     termsDays: number;
+    /** Where Send will email it (decision #32): the client's billing email, copying the bill-to contact. */
+    emailTo: string | null;
+    emailCc: string | null;
     /** WIP counts time from this date (day after the last sent invoice's period); null = all time to date. */
     wipFrom: string | null;
   };
@@ -112,7 +115,10 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
   const p = access.project;
   const [plan, client, settings, contactRows, lineRows] = await Promise.all([
     planFor(db, inv),
-    db.select({ id: companies.id, name: companies.name }).from(companies).where(eq(companies.id, inv.clientCompanyId)),
+    db
+      .select({ id: companies.id, name: companies.name, billingEmail: companies.billingEmail })
+      .from(companies)
+      .where(eq(companies.id, inv.clientCompanyId)),
     db.select({ terms: firmSettings.defaultPaymentTermsDays }).from(firmSettings),
     db
       .select({ id: contacts.id, first: contacts.firstName, last: contacts.lastName, email: contacts.email })
@@ -249,14 +255,9 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
       warnings.push({ tone: "attention", message: `${h.name}: approaching the ${money(h.feeCents)} limit (${pct1(h.pctOfCapBp ?? 0)} used).` });
   }
   const billTo = contactList.find((c) => c.id === inv.billToContactId);
-  const hasToAddress = !!billTo?.email?.trim();
-  if (!hasToAddress)
-    warnings.push({
-      tone: "attention",
-      message: billTo
-        ? `${billTo.name} has no email address. Add one in Contacts or pick another bill-to contact.`
-        : "Pick a bill-to contact with an email address.",
-    });
+  const recipients = invoiceRecipients(client[0]?.billingEmail ?? null, billTo?.email ?? null);
+  const hasToAddress = !!recipients.to;
+  if (!hasToAddress) warnings.push({ tone: "attention", message: NO_EMAIL });
 
   const problems = sendProblems({
     totalCents: inv.totalCents,
@@ -272,7 +273,7 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
     version: versionOf(inv),
     status: inv.status,
     project: { id: p.id, number: p.number, name: p.name },
-    client: client[0] ?? { id: inv.clientCompanyId, name: "—" },
+    client: client[0] ? { id: client[0].id, name: client[0].name } : { id: inv.clientCompanyId, name: "—" },
     settings: {
       periodStart: inv.periodStart,
       periodEnd: inv.periodEnd,
@@ -281,6 +282,8 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
       billToContactId: inv.billToContactId,
       memo: inv.memo ?? "",
       termsDays: settings[0]?.terms ?? 30,
+      emailTo: recipients.to,
+      emailCc: recipients.cc,
       wipFrom,
     },
     contacts: contactList,

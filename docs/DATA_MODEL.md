@@ -225,6 +225,7 @@ New firms get the default phases, activities and categories from the database fu
 | address_line1, address_line2, city, state, postal_code | text | |
 | primary_contact_id | uuid null | main contact; same-firm FK → contacts (1.2) |
 | billing_contact_id | uuid null | same-firm FK → contacts; clients only |
+| billing_email | text null | clients: shared AP address for invoices, e.g. ap@client.com (1.8 B, decision #32) |
 | quickbooks_customer_id | text null | sync key |
 | notes | text | |
 | archived_at | timestamptz null | |
@@ -476,5 +477,6 @@ The screen specs found fields the model above doesn't have yet. **Add each one w
 | 1.8 A ✓ | firm_settings | `project_number_format` text default `{YYYY}-{###}` | Firm-built project numbering, decision #28 (projects-list) |
 | 1.8 B ✓ | time_entries | `firm_role_id` uuid null fk firm_roles (same firm), frozen at approval; backfilled from memberships for approved sheets; covered by the invoice lock trigger | Group hours by the role at the time (decision #30) |
 | 1.8 B ✓ | consultants | `percent_complete_bp` integer default 0, 0–10000 | Consultants billed by % complete of their fee (decision #31) |
+| 1.8 B ✓ | companies | `billing_email` text null (≤ 254, lowercase, clients only) | Shared AP address invoices are emailed to, copying the billing contact (decision #32) |
 | 1.9 | integrations | status enum (`connected`,`needs_reauth`,`disconnected`), refresh_token_expires_at, settings jsonb, connected_by, connected_at, last_token_refresh_at; unique (firm_id, provider); unique (provider, external_account_id) while connected | (quickbooks-sync) |
 | 1.9 | **integration_sync_jobs** (new) | see `quickbooks-sync.md` for columns | Sync queue + log (quickbooks-sync) |

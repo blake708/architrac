@@ -244,6 +244,12 @@ export function ContactsDrawer({
                 {c.missingBilling && (
                   <div className="text-orange-strong">◆ {billing ? "Billing contact has no email" : "No billing contact"}</div>
                 )}
+                {!billing && !c.missingBilling && dash}
+              </Row>
+            )}
+            {c.kind === "client" && (
+              <Row label="Billing email">
+                {c.billingEmail ? <a href={`mailto:${c.billingEmail}`}>{c.billingEmail}</a> : dash}
               </Row>
             )}
             <Row label="Copy on letters">{copyOn > 0 ? `${copyOn} ${copyOn === 1 ? "person" : "people"}` : dash}</Row>

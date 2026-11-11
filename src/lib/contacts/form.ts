@@ -137,6 +137,18 @@ export const companySchema = z.object({
     .transform((v) => (v === "" ? null : v)),
   primaryContactId: z.uuid().nullable(),
   billingContactId: z.uuid().nullable(),
+  /** Shared AP address for invoices (clients only, decision #32). */
+  billingEmail: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .max(254, { error: CONTACT_MESSAGES.long })
+    .refine((v) => v === "" || z.email().safeParse(v).success, {
+      error: CONTACT_MESSAGES.email,
+    })
+    .transform((v) => (v === "" ? null : v))
+    .optional()
+    .default(""),
   notes: text(4000),
 });
 export type CompanyInput = z.input<typeof companySchema>;

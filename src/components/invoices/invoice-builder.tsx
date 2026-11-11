@@ -183,6 +183,14 @@ function SettingsStrip({ b }: { b: ReturnType<typeof useBuilder> }) {
           value={s.billToContactId ?? ""}
           disabled={disabled}
           error={fieldErrors.billToContactId}
+          hint={
+            s.emailTo ? (
+              <span data-testid="email-to">
+                Emails to {s.emailTo}
+                {s.emailCc ? `, copying ${s.emailCc}` : ""}
+              </span>
+            ) : undefined
+          }
           onChange={(e) => save({ billToContactId: e.target.value || null })}
         >
           <option value="">Pick a contact…</option>

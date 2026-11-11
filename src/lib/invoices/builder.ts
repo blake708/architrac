@@ -91,6 +91,19 @@ export function parseMoney(text: string): number | null {
   return neg ? -cents : cents;
 }
 
+export const NO_EMAIL = "There's no email to send this to. Add a billing email for the client in Contacts, or pick a bill-to contact with an email.";
+
+/**
+ * Where an invoice is emailed (decision #32): the client's billing email if
+ * it has one, copying the bill-to contact; otherwise the bill-to contact.
+ */
+export function invoiceRecipients(billingEmail: string | null, contactEmail: string | null): { to: string | null; cc: string | null } {
+  const shared = billingEmail?.trim() || null;
+  const person = contactEmail?.trim() || null;
+  if (shared) return { to: shared, cc: person && person.toLowerCase() !== shared.toLowerCase() ? person : null };
+  return { to: person, cc: null };
+}
+
 /**
  * Rule 14 send checks, also run at Submit for review. Empty = ready.
  * (Every line has a description: the database requires one.)
@@ -105,7 +118,7 @@ export function sendProblems(f: {
   const out: string[] = [];
   if (f.lineCount === 0) out.push("Add at least one line.");
   else if (f.totalCents <= 0) out.push("The total must be more than $0.");
-  if (!f.hasToAddress) out.push("The bill-to contact needs an email address.");
+  if (!f.hasToAddress) out.push(NO_EMAIL);
   if (f.negativeFixedLine) out.push("A fixed-fee line can't be negative.");
   if (!f.hasClient) out.push("The project needs a client.");
   return out;

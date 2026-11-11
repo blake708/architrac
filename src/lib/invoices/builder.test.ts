@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseMoney, parsePercent, sendProblems } from "./builder";
+import { NO_EMAIL, invoiceRecipients, parseMoney, parsePercent, sendProblems } from "./builder";
 
 describe("parsePercent", () => {
   it("reads up to two decimals as basis points", () => {
@@ -28,13 +28,26 @@ describe("parseMoney", () => {
   });
 });
 
+describe("invoiceRecipients (decision #32)", () => {
+  it("the billing email first, copying the contact", () => {
+    expect(invoiceRecipients("ap@client.com", "pat@client.com")).toEqual({ to: "ap@client.com", cc: "pat@client.com" });
+  });
+  it("no copy to the same address", () => {
+    expect(invoiceRecipients("ap@client.com", "AP@client.com")).toEqual({ to: "ap@client.com", cc: null });
+  });
+  it("the contact alone when there's no billing email", () => {
+    expect(invoiceRecipients(null, "pat@client.com")).toEqual({ to: "pat@client.com", cc: null });
+    expect(invoiceRecipients(" ", null)).toEqual({ to: null, cc: null });
+  });
+});
+
 describe("sendProblems (rule 14)", () => {
   const ok = { totalCents: 1, lineCount: 1, hasToAddress: true, negativeFixedLine: false, hasClient: true };
   it("nothing to fix", () => expect(sendProblems(ok)).toEqual([]));
   it("lists each problem", () => {
     expect(sendProblems({ totalCents: 0, lineCount: 0, hasToAddress: false, negativeFixedLine: true, hasClient: false })).toEqual([
       "Add at least one line.",
-      "The bill-to contact needs an email address.",
+      NO_EMAIL,
       "A fixed-fee line can't be negative.",
       "The project needs a client.",
     ]);

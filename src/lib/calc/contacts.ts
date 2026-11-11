@@ -44,13 +44,16 @@ export function consultantFees(
 }
 
 /**
- * Rule 6: a client is missing a billing contact when it has none, or that
- * contact is archived, or has no email (invoices can't be emailed).
+ * Rule 6: a client is missing a billing contact when invoices can't be
+ * emailed: no billing email (decision #32) and no live billing contact
+ * with an email.
  */
 export function missingBillingContact(
   kind: string,
   billing: { archived: boolean; email: string | null } | null,
+  billingEmail: string | null = null,
 ): boolean {
   if (kind !== "client") return false;
+  if (billingEmail?.trim()) return false;
   return !billing || billing.archived || !billing.email?.trim();
 }

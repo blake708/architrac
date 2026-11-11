@@ -120,6 +120,8 @@ test("the PM starts an invoice from the Invoices page and bills DD at 30 %", asy
   // The builder's first load compiles in dev mode: allow it time.
   await expect(page).toHaveURL(/\/app\/invoices\/[0-9a-f-]+\/edit$/, { timeout: 30_000 });
   await expect(page.getByRole("heading", { name: /2026-014 Medical Office Building/ })).toBeVisible();
+  // Bill-to shows where Send will email it.
+  await expect(page.getByTestId("email-to")).toHaveText("Emails to ap@palmetto.example");
   // Kim's approved 4 h at $115 on Close Out is already on it.
   await expect(total(page)).toHaveText("$460");
   // Its time entries open in a dialog.

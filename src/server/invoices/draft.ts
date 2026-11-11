@@ -469,13 +469,13 @@ export async function createDraft(db: TenantDb, actor: InvoiceActor, projectId: 
   return { id: inv.id, created: true };
 }
 
-/** The project's client contact, else the company's billing contact (live ones only). */
+/** The client's billing contact, else the project's client contact (live ones only; decision #32). */
 async function defaultBillTo(db: TenantDb, p: ProjectRow): Promise<string | null> {
   const [company] = await db
     .select({ billing: companies.billingContactId })
     .from(companies)
     .where(eq(companies.id, p.clientCompanyId));
-  const candidates = [p.clientContactId, company?.billing].filter((id): id is string => !!id);
+  const candidates = [company?.billing, p.clientContactId].filter((id): id is string => !!id);
   if (!candidates.length) return null;
   const live = await db
     .select({ id: contacts.id })

@@ -56,6 +56,10 @@ describe("missing billing contact (rule 6)", () => {
     expect(missingBillingContact("client", { archived: false, email: " " })).toBe(true);
     expect(missingBillingContact("client", { archived: false, email: "a@b.co" })).toBe(false);
   });
+  it("a billing email is enough (decision #32)", () => {
+    expect(missingBillingContact("client", null, "ap@client.com")).toBe(false);
+    expect(missingBillingContact("client", null, " ")).toBe(true);
+  });
   it("only clients count", () => {
     expect(missingBillingContact("consultant", null)).toBe(false);
   });

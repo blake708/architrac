@@ -168,6 +168,20 @@ describe("companies", () => {
     expect(v.companies.find((c) => c.id === coastalId)!.missingBilling).toBe(true);
   });
 
+  it("a billing email (decision #32) counts as a way to email invoices; non-clients don't keep one", async () => {
+    const r = await saveCompanyCore(owner(), company({ name: "AP Only Co", billingEmail: " AP@Only.example " }));
+    if (!r.ok) throw new Error(JSON.stringify(r));
+    const row = (await view("owner")).companies.find((c) => c.id === r.data.id)!;
+    expect(row).toMatchObject({ billingEmail: "ap@only.example", missingBilling: false });
+    expect(await saveCompanyCore(owner(), company({ name: "Bad AP Co", billingEmail: "not-an-email" }))).toMatchObject({
+      fieldErrors: { billingEmail: CONTACT_MESSAGES.email },
+    });
+    const v = await saveCompanyCore(owner(), company({ name: "Vendor AP Co", kind: "vendor", billingEmail: "ap@vendor.example" }));
+    if (!v.ok) throw new Error("setup");
+    const [vendor] = await withFirm(A.firmId, (db) => db.select().from(companies).where(eq(companies.id, v.data.id)));
+    expect(vendor.billingEmail).toBeNull();
+  });
+
   it("checking Billing contact sets the company's link and logs two rows", async () => {
     const r = await saveContactCore(owner(), contact({ firstName: "Bea", lastName: "Billing", email: "Bea@Coastal.org", companyId: coastalId, isBilling: true, isMain: true }));
     if (!r.ok) throw new Error(JSON.stringify(r));

@@ -1,0 +1,2 @@
+ALTER TABLE "companies" ADD COLUMN "billing_email" text;--> statement-breakpoint
+ALTER TABLE "companies" ADD CONSTRAINT "companies_billing_email_length" CHECK ("companies"."billing_email" is null or char_length("companies"."billing_email") <= 254);
