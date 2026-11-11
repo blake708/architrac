@@ -1,0 +1,6617 @@
+{
+  "id": "e8721bba-0744-4c87-aa9d-6000da1aebd6",
+  "prevId": "acef2c9c-dc3c-424f-8183-ed624a24843b",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.firm_settings": {
+      "name": "firm_settings",
+      "schema": "",
+      "columns": {
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "overhead_rate_bp": {
+          "name": "overhead_rate_bp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 6000
+        },
+        "include_overhead_default": {
+          "name": "include_overhead_default",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "week_starts_on": {
+          "name": "week_starts_on",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "timesheet_increment_minutes": {
+          "name": "timesheet_increment_minutes",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 15
+        },
+        "timesheet_lock_day": {
+          "name": "timesheet_lock_day",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "timesheet_due_time": {
+          "name": "timesheet_due_time",
+          "type": "time",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'09:00'"
+        },
+        "timesheet_notes_rule": {
+          "name": "timesheet_notes_rule",
+          "type": "timesheet_notes_rule",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'optional'"
+        },
+        "invoice_number_format": {
+          "name": "invoice_number_format",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{YYYY}-{###}'"
+        },
+        "next_invoice_number": {
+          "name": "next_invoice_number",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "project_number_format": {
+          "name": "project_number_format",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{YYYY}-{###}'"
+        },
+        "invoice_remittance_text": {
+          "name": "invoice_remittance_text",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "default_payment_terms_days": {
+          "name": "default_payment_terms_days",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 30
+        },
+        "default_consultant_markup_bp": {
+          "name": "default_consultant_markup_bp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1000
+        },
+        "modules_enabled": {
+          "name": "modules_enabled",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "firm_settings_firm_id_firms_id_fk": {
+          "name": "firm_settings_firm_id_firms_id_fk",
+          "tableFrom": "firm_settings",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "firm_settings_week_starts_on_range": {
+          "name": "firm_settings_week_starts_on_range",
+          "value": "\"firm_settings\".\"week_starts_on\" between 0 and 6"
+        },
+        "firm_settings_timesheet_lock_day_range": {
+          "name": "firm_settings_timesheet_lock_day_range",
+          "value": "\"firm_settings\".\"timesheet_lock_day\" between 0 and 6"
+        },
+        "firm_settings_overhead_rate_bp_min": {
+          "name": "firm_settings_overhead_rate_bp_min",
+          "value": "\"firm_settings\".\"overhead_rate_bp\" >= 0"
+        },
+        "firm_settings_next_invoice_number_min": {
+          "name": "firm_settings_next_invoice_number_min",
+          "value": "\"firm_settings\".\"next_invoice_number\" >= 1"
+        },
+        "firm_settings_payment_terms_range": {
+          "name": "firm_settings_payment_terms_range",
+          "value": "\"firm_settings\".\"default_payment_terms_days\" between 0 and 365"
+        },
+        "firm_settings_remittance_length": {
+          "name": "firm_settings_remittance_length",
+          "value": "\"firm_settings\".\"invoice_remittance_text\" is null or char_length(\"firm_settings\".\"invoice_remittance_text\") <= 500"
+        },
+        "firm_settings_consultant_markup_range": {
+          "name": "firm_settings_consultant_markup_range",
+          "value": "\"firm_settings\".\"default_consultant_markup_bp\" between 0 and 10000"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.firms": {
+      "name": "firms",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "slug": {
+          "name": "slug",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "clerk_org_id": {
+          "name": "clerk_org_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "display_name": {
+          "name": "display_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "logo_url": {
+          "name": "logo_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "address_line1": {
+          "name": "address_line1",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "address_line2": {
+          "name": "address_line2",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "postal_code": {
+          "name": "postal_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "website": {
+          "name": "website",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "license_number": {
+          "name": "license_number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "timezone": {
+          "name": "timezone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'America/New_York'"
+        },
+        "fiscal_year_start_month": {
+          "name": "fiscal_year_start_month",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "firms_slug_unique": {
+          "name": "firms_slug_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "slug"
+          ]
+        },
+        "firms_clerk_org_id_unique": {
+          "name": "firms_clerk_org_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "clerk_org_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "firms_fiscal_year_start_month_range": {
+          "name": "firms_fiscal_year_start_month_range",
+          "value": "\"firms\".\"fiscal_year_start_month\" between 1 and 12"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.firm_roles": {
+      "name": "firm_roles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_billable": {
+          "name": "is_billable",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "firm_roles_name_unique": {
+          "name": "firm_roles_name_unique",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "lower(\"name\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"firm_roles\".\"archived_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "firm_roles_firm_id_firms_id_fk": {
+          "name": "firm_roles_firm_id_firms_id_fk",
+          "tableFrom": "firm_roles",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "firm_roles_created_by_users_id_fk": {
+          "name": "firm_roles_created_by_users_id_fk",
+          "tableFrom": "firm_roles",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "firm_roles_firm_id_id_unique": {
+          "name": "firm_roles_firm_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "firm_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.memberships": {
+      "name": "memberships",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "app_role": {
+          "name": "app_role",
+          "type": "app_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'staff'"
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "firm_role_id": {
+          "name": "firm_role_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "team_id": {
+          "name": "team_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "employment_type": {
+          "name": "employment_type",
+          "type": "employment_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'full_time'"
+        },
+        "weekly_capacity_hours": {
+          "name": "weekly_capacity_hours",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'40'"
+        },
+        "target_utilization_bp": {
+          "name": "target_utilization_bp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "license_note": {
+          "name": "license_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_principal": {
+          "name": "is_principal",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "memberships_firm_id_firms_id_fk": {
+          "name": "memberships_firm_id_firms_id_fk",
+          "tableFrom": "memberships",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "memberships_user_id_users_id_fk": {
+          "name": "memberships_user_id_users_id_fk",
+          "tableFrom": "memberships",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "memberships_created_by_users_id_fk": {
+          "name": "memberships_created_by_users_id_fk",
+          "tableFrom": "memberships",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "memberships_team_same_firm_fk": {
+          "name": "memberships_team_same_firm_fk",
+          "tableFrom": "memberships",
+          "tableTo": "teams",
+          "columnsFrom": [
+            "firm_id",
+            "team_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "memberships_firm_role_same_firm_fk": {
+          "name": "memberships_firm_role_same_firm_fk",
+          "tableFrom": "memberships",
+          "tableTo": "firm_roles",
+          "columnsFrom": [
+            "firm_id",
+            "firm_role_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "memberships_firm_user_unique": {
+          "name": "memberships_firm_user_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "firm_id",
+            "user_id"
+          ]
+        },
+        "memberships_firm_id_id_unique": {
+          "name": "memberships_firm_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "firm_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "memberships_target_utilization_bp_range": {
+          "name": "memberships_target_utilization_bp_range",
+          "value": "\"memberships\".\"target_utilization_bp\" between 0 and 10000"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.teams": {
+      "name": "teams",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "leader_membership_id": {
+          "name": "leader_membership_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "teams_firm_id_firms_id_fk": {
+          "name": "teams_firm_id_firms_id_fk",
+          "tableFrom": "teams",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "teams_created_by_users_id_fk": {
+          "name": "teams_created_by_users_id_fk",
+          "tableFrom": "teams",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "teams_leader_same_firm_fk": {
+          "name": "teams_leader_same_firm_fk",
+          "tableFrom": "teams",
+          "tableTo": "memberships",
+          "columnsFrom": [
+            "firm_id",
+            "leader_membership_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "teams_firm_id_id_unique": {
+          "name": "teams_firm_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "firm_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.users": {
+      "name": "users",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "clerk_user_id": {
+          "name": "clerk_user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "citext",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "first_name": {
+          "name": "first_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "last_name": {
+          "name": "last_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "initials": {
+          "name": "initials",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "avatar_url": {
+          "name": "avatar_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "users_clerk_user_id_unique": {
+          "name": "users_clerk_user_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "clerk_user_id"
+          ]
+        },
+        "users_email_unique": {
+          "name": "users_email_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "email"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.activity_log": {
+      "name": "activity_log",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "actor_user_id": {
+          "name": "actor_user_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "entity_type": {
+          "name": "entity_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "action": {
+          "name": "action",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "changes": {
+          "name": "changes",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "activity_log_entity_idx": {
+          "name": "activity_log_entity_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "entity_type",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "entity_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "activity_log_firm_id_firms_id_fk": {
+          "name": "activity_log_firm_id_firms_id_fk",
+          "tableFrom": "activity_log",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "activity_log_actor_user_id_users_id_fk": {
+          "name": "activity_log_actor_user_id_users_id_fk",
+          "tableFrom": "activity_log",
+          "tableTo": "users",
+          "columnsFrom": [
+            "actor_user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.invitations": {
+      "name": "invitations",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "email": {
+          "name": "email",
+          "type": "citext",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "app_role": {
+          "name": "app_role",
+          "type": "app_role",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "firm_role_id": {
+          "name": "firm_role_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "first_name": {
+          "name": "first_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "last_name": {
+          "name": "last_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "team_id": {
+          "name": "team_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "employment_type": {
+          "name": "employment_type",
+          "type": "employment_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "weekly_capacity_hours": {
+          "name": "weekly_capacity_hours",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "target_utilization_bp": {
+          "name": "target_utilization_bp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "invitation_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'pending'"
+        },
+        "clerk_invitation_id": {
+          "name": "clerk_invitation_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "invited_by": {
+          "name": "invited_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "invited_at": {
+          "name": "invited_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "accepted_at": {
+          "name": "accepted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "membership_id": {
+          "name": "membership_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "invitations_one_pending_per_email": {
+          "name": "invitations_one_pending_per_email",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "email",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"invitations\".\"status\" = 'pending'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "invitations_firm_status_idx": {
+          "name": "invitations_firm_status_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "invitations_firm_id_firms_id_fk": {
+          "name": "invitations_firm_id_firms_id_fk",
+          "tableFrom": "invitations",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invitations_invited_by_users_id_fk": {
+          "name": "invitations_invited_by_users_id_fk",
+          "tableFrom": "invitations",
+          "tableTo": "users",
+          "columnsFrom": [
+            "invited_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invitations_membership_same_firm_fk": {
+          "name": "invitations_membership_same_firm_fk",
+          "tableFrom": "invitations",
+          "tableTo": "memberships",
+          "columnsFrom": [
+            "firm_id",
+            "membership_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invitations_team_same_firm_fk": {
+          "name": "invitations_team_same_firm_fk",
+          "tableFrom": "invitations",
+          "tableTo": "teams",
+          "columnsFrom": [
+            "firm_id",
+            "team_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invitations_firm_role_same_firm_fk": {
+          "name": "invitations_firm_role_same_firm_fk",
+          "tableFrom": "invitations",
+          "tableTo": "firm_roles",
+          "columnsFrom": [
+            "firm_id",
+            "firm_role_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "invitations_clerk_invitation_id_unique": {
+          "name": "invitations_clerk_invitation_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "clerk_invitation_id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.activities": {
+      "name": "activities",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "applies_to": {
+          "name": "applies_to",
+          "type": "activity_scope",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "overhead_category_id": {
+          "name": "overhead_category_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "activities_firm_category_idx": {
+          "name": "activities_firm_category_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "overhead_category_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "activities_firm_id_firms_id_fk": {
+          "name": "activities_firm_id_firms_id_fk",
+          "tableFrom": "activities",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "activities_created_by_users_id_fk": {
+          "name": "activities_created_by_users_id_fk",
+          "tableFrom": "activities",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "activities_category_same_firm_fk": {
+          "name": "activities_category_same_firm_fk",
+          "tableFrom": "activities",
+          "tableTo": "overhead_categories",
+          "columnsFrom": [
+            "firm_id",
+            "overhead_category_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "activities_firm_id_id_unique": {
+          "name": "activities_firm_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "firm_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "activities_scope_category": {
+          "name": "activities_scope_category",
+          "value": "(\"activities\".\"applies_to\" = 'overhead') = (\"activities\".\"overhead_category_id\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.overhead_categories": {
+      "name": "overhead_categories",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "is_leave": {
+          "name": "is_leave",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "active": {
+          "name": "active",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "overhead_categories_code_unique": {
+          "name": "overhead_categories_code_unique",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "code",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"overhead_categories\".\"code\" is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "overhead_categories_firm_id_firms_id_fk": {
+          "name": "overhead_categories_firm_id_firms_id_fk",
+          "tableFrom": "overhead_categories",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "overhead_categories_created_by_users_id_fk": {
+          "name": "overhead_categories_created_by_users_id_fk",
+          "tableFrom": "overhead_categories",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "overhead_categories_firm_id_id_unique": {
+          "name": "overhead_categories_firm_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "firm_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.phase_templates": {
+      "name": "phase_templates",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "is_optional": {
+          "name": "is_optional",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "default_fee_type": {
+          "name": "default_fee_type",
+          "type": "fee_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'fixed'"
+        },
+        "default_fee_share_bp": {
+          "name": "default_fee_share_bp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "phase_templates_code_unique": {
+          "name": "phase_templates_code_unique",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "lower(\"code\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"phase_templates\".\"archived_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "phase_templates_name_unique": {
+          "name": "phase_templates_name_unique",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "lower(\"name\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"phase_templates\".\"archived_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "phase_templates_firm_id_firms_id_fk": {
+          "name": "phase_templates_firm_id_firms_id_fk",
+          "tableFrom": "phase_templates",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "phase_templates_created_by_users_id_fk": {
+          "name": "phase_templates_created_by_users_id_fk",
+          "tableFrom": "phase_templates",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "phase_templates_firm_id_id_unique": {
+          "name": "phase_templates_firm_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "firm_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "phase_templates_share_range": {
+          "name": "phase_templates_share_range",
+          "value": "\"phase_templates\".\"default_fee_share_bp\" between 0 and 10000"
+        },
+        "phase_templates_optional_no_share": {
+          "name": "phase_templates_optional_no_share",
+          "value": "not \"phase_templates\".\"is_optional\" or \"phase_templates\".\"default_fee_share_bp\" = 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.project_type_benchmarks": {
+      "name": "project_type_benchmarks",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_type": {
+          "name": "project_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scope_kind": {
+          "name": "scope_kind",
+          "type": "scope_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cost_per_sf_low_cents": {
+          "name": "cost_per_sf_low_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cost_per_sf_high_cents": {
+          "name": "cost_per_sf_high_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fee_low_bp": {
+          "name": "fee_low_bp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fee_high_bp": {
+          "name": "fee_high_bp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "project_type_benchmarks_any_scope_unique": {
+          "name": "project_type_benchmarks_any_scope_unique",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "lower(\"project_type\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"project_type_benchmarks\".\"archived_at\" is null and \"project_type_benchmarks\".\"scope_kind\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "project_type_benchmarks_scope_unique": {
+          "name": "project_type_benchmarks_scope_unique",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "lower(\"project_type\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "scope_kind",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"project_type_benchmarks\".\"archived_at\" is null and \"project_type_benchmarks\".\"scope_kind\" is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "project_type_benchmarks_firm_id_firms_id_fk": {
+          "name": "project_type_benchmarks_firm_id_firms_id_fk",
+          "tableFrom": "project_type_benchmarks",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "project_type_benchmarks_created_by_users_id_fk": {
+          "name": "project_type_benchmarks_created_by_users_id_fk",
+          "tableFrom": "project_type_benchmarks",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "project_type_benchmarks_cost_range": {
+          "name": "project_type_benchmarks_cost_range",
+          "value": "\"project_type_benchmarks\".\"cost_per_sf_low_cents\" > 0 and \"project_type_benchmarks\".\"cost_per_sf_high_cents\" >= \"project_type_benchmarks\".\"cost_per_sf_low_cents\""
+        },
+        "project_type_benchmarks_fee_range": {
+          "name": "project_type_benchmarks_fee_range",
+          "value": "\"project_type_benchmarks\".\"fee_low_bp\" > 0 and \"project_type_benchmarks\".\"fee_high_bp\" >= \"project_type_benchmarks\".\"fee_low_bp\" and \"project_type_benchmarks\".\"fee_high_bp\" <= 10000"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.rates": {
+      "name": "rates",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "firm_role_id": {
+          "name": "firm_role_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "membership_id": {
+          "name": "membership_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "bill_rate_cents": {
+          "name": "bill_rate_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "cost_rate_cents": {
+          "name": "cost_rate_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "effective_from": {
+          "name": "effective_from",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "effective_to": {
+          "name": "effective_to",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "rates_firm_role_idx": {
+          "name": "rates_firm_role_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "firm_role_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "rates_firm_id_firms_id_fk": {
+          "name": "rates_firm_id_firms_id_fk",
+          "tableFrom": "rates",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "rates_created_by_users_id_fk": {
+          "name": "rates_created_by_users_id_fk",
+          "tableFrom": "rates",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "rates_firm_role_same_firm_fk": {
+          "name": "rates_firm_role_same_firm_fk",
+          "tableFrom": "rates",
+          "tableTo": "firm_roles",
+          "columnsFrom": [
+            "firm_id",
+            "firm_role_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "rates_membership_same_firm_fk": {
+          "name": "rates_membership_same_firm_fk",
+          "tableFrom": "rates",
+          "tableTo": "memberships",
+          "columnsFrom": [
+            "firm_id",
+            "membership_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "rates_role_xor_membership": {
+          "name": "rates_role_xor_membership",
+          "value": "(\"rates\".\"firm_role_id\" is null) <> (\"rates\".\"membership_id\" is null)"
+        },
+        "rates_amounts_min": {
+          "name": "rates_amounts_min",
+          "value": "\"rates\".\"bill_rate_cents\" >= 0 and \"rates\".\"cost_rate_cents\" >= 0"
+        },
+        "rates_dates_order": {
+          "name": "rates_dates_order",
+          "value": "\"rates\".\"effective_to\" is null or \"rates\".\"effective_to\" >= \"rates\".\"effective_from\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.companies": {
+      "name": "companies",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "company_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "website": {
+          "name": "website",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "address_line1": {
+          "name": "address_line1",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "address_line2": {
+          "name": "address_line2",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "postal_code": {
+          "name": "postal_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "primary_contact_id": {
+          "name": "primary_contact_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "billing_contact_id": {
+          "name": "billing_contact_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "quickbooks_customer_id": {
+          "name": "quickbooks_customer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "companies_firm_name_idx": {
+          "name": "companies_firm_name_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "lower(\"name\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "companies_firm_id_firms_id_fk": {
+          "name": "companies_firm_id_firms_id_fk",
+          "tableFrom": "companies",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "companies_created_by_users_id_fk": {
+          "name": "companies_created_by_users_id_fk",
+          "tableFrom": "companies",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "companies_primary_contact_same_firm_fk": {
+          "name": "companies_primary_contact_same_firm_fk",
+          "tableFrom": "companies",
+          "tableTo": "contacts",
+          "columnsFrom": [
+            "firm_id",
+            "primary_contact_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "companies_billing_contact_same_firm_fk": {
+          "name": "companies_billing_contact_same_firm_fk",
+          "tableFrom": "companies",
+          "tableTo": "contacts",
+          "columnsFrom": [
+            "firm_id",
+            "billing_contact_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "companies_firm_id_id_unique": {
+          "name": "companies_firm_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "firm_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.contacts": {
+      "name": "contacts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "company_id": {
+          "name": "company_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "first_name": {
+          "name": "first_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "last_name": {
+          "name": "last_name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "''"
+        },
+        "designations": {
+          "name": "designations",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "email": {
+          "name": "email",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "phone": {
+          "name": "phone",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mobile": {
+          "name": "mobile",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "tags": {
+          "name": "tags",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'{}'::text[]"
+        },
+        "notes": {
+          "name": "notes",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "contacts_firm_company_idx": {
+          "name": "contacts_firm_company_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "company_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "contacts_firm_email_idx": {
+          "name": "contacts_firm_email_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "lower(\"email\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "contacts_firm_id_firms_id_fk": {
+          "name": "contacts_firm_id_firms_id_fk",
+          "tableFrom": "contacts",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "contacts_created_by_users_id_fk": {
+          "name": "contacts_created_by_users_id_fk",
+          "tableFrom": "contacts",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "contacts_company_same_firm_fk": {
+          "name": "contacts_company_same_firm_fk",
+          "tableFrom": "contacts",
+          "tableTo": "companies",
+          "columnsFrom": [
+            "firm_id",
+            "company_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "contacts_firm_id_id_unique": {
+          "name": "contacts_firm_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "firm_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.consultants": {
+      "name": "consultants",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "company_id": {
+          "name": "company_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contact_id": {
+          "name": "contact_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "discipline": {
+          "name": "discipline",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fee_cents": {
+          "name": "fee_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "markup_bp": {
+          "name": "markup_bp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "billed_through": {
+          "name": "billed_through",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "percent_complete_bp": {
+          "name": "percent_complete_bp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "consultants_project_idx": {
+          "name": "consultants_project_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "consultants_company_idx": {
+          "name": "consultants_company_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "company_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "consultants_firm_id_firms_id_fk": {
+          "name": "consultants_firm_id_firms_id_fk",
+          "tableFrom": "consultants",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "consultants_project_same_firm_fk": {
+          "name": "consultants_project_same_firm_fk",
+          "tableFrom": "consultants",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "firm_id",
+            "project_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "consultants_company_same_firm_fk": {
+          "name": "consultants_company_same_firm_fk",
+          "tableFrom": "consultants",
+          "tableTo": "companies",
+          "columnsFrom": [
+            "firm_id",
+            "company_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "consultants_contact_same_firm_fk": {
+          "name": "consultants_contact_same_firm_fk",
+          "tableFrom": "consultants",
+          "tableTo": "contacts",
+          "columnsFrom": [
+            "firm_id",
+            "contact_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "consultants_firm_id_id_unique": {
+          "name": "consultants_firm_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "firm_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "consultants_fee_nonneg": {
+          "name": "consultants_fee_nonneg",
+          "value": "\"consultants\".\"fee_cents\" >= 0"
+        },
+        "consultants_markup_range": {
+          "name": "consultants_markup_range",
+          "value": "\"consultants\".\"markup_bp\" between 0 and 10000"
+        },
+        "consultants_percent_range": {
+          "name": "consultants_percent_range",
+          "value": "\"consultants\".\"percent_complete_bp\" between 0 and 10000"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.phase_template_roles": {
+      "name": "phase_template_roles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "phase_template_id": {
+          "name": "phase_template_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "firm_role_id": {
+          "name": "firm_role_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "share_bp": {
+          "name": "share_bp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "phase_template_roles_one_active": {
+          "name": "phase_template_roles_one_active",
+          "columns": [
+            {
+              "expression": "phase_template_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "firm_role_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"phase_template_roles\".\"archived_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "phase_template_roles_template_idx": {
+          "name": "phase_template_roles_template_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "phase_template_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "phase_template_roles_firm_id_firms_id_fk": {
+          "name": "phase_template_roles_firm_id_firms_id_fk",
+          "tableFrom": "phase_template_roles",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "phase_template_roles_template_same_firm_fk": {
+          "name": "phase_template_roles_template_same_firm_fk",
+          "tableFrom": "phase_template_roles",
+          "tableTo": "phase_templates",
+          "columnsFrom": [
+            "firm_id",
+            "phase_template_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "phase_template_roles_role_same_firm_fk": {
+          "name": "phase_template_roles_role_same_firm_fk",
+          "tableFrom": "phase_template_roles",
+          "tableTo": "firm_roles",
+          "columnsFrom": [
+            "firm_id",
+            "firm_role_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "phase_template_roles_share_range": {
+          "name": "phase_template_roles_share_range",
+          "value": "\"phase_template_roles\".\"share_bp\" between 0 and 10000"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.project_contacts": {
+      "name": "project_contacts",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "company_id": {
+          "name": "company_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "contact_id": {
+          "name": "contact_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "role": {
+          "name": "role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "project_contacts_company_idx": {
+          "name": "project_contacts_company_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "company_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "project_contacts_project_idx": {
+          "name": "project_contacts_project_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "project_contacts_firm_id_firms_id_fk": {
+          "name": "project_contacts_firm_id_firms_id_fk",
+          "tableFrom": "project_contacts",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "project_contacts_project_same_firm_fk": {
+          "name": "project_contacts_project_same_firm_fk",
+          "tableFrom": "project_contacts",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "firm_id",
+            "project_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "project_contacts_company_same_firm_fk": {
+          "name": "project_contacts_company_same_firm_fk",
+          "tableFrom": "project_contacts",
+          "tableTo": "companies",
+          "columnsFrom": [
+            "firm_id",
+            "company_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "project_contacts_contact_same_firm_fk": {
+          "name": "project_contacts_contact_same_firm_fk",
+          "tableFrom": "project_contacts",
+          "tableTo": "contacts",
+          "columnsFrom": [
+            "firm_id",
+            "contact_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.project_members": {
+      "name": "project_members",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "membership_id": {
+          "name": "membership_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_role": {
+          "name": "project_role",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bill_rate_override_cents": {
+          "name": "bill_rate_override_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "project_members_one_active": {
+          "name": "project_members_one_active",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "membership_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"project_members\".\"archived_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "project_members_membership_idx": {
+          "name": "project_members_membership_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "membership_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "project_members_firm_id_firms_id_fk": {
+          "name": "project_members_firm_id_firms_id_fk",
+          "tableFrom": "project_members",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "project_members_project_same_firm_fk": {
+          "name": "project_members_project_same_firm_fk",
+          "tableFrom": "project_members",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "firm_id",
+            "project_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "project_members_membership_same_firm_fk": {
+          "name": "project_members_membership_same_firm_fk",
+          "tableFrom": "project_members",
+          "tableTo": "memberships",
+          "columnsFrom": [
+            "firm_id",
+            "membership_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.project_phase_roles": {
+      "name": "project_phase_roles",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_phase_id": {
+          "name": "project_phase_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "firm_role_id": {
+          "name": "firm_role_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "share_bp": {
+          "name": "share_bp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rate_cents": {
+          "name": "rate_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "hours": {
+          "name": "hours",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "project_phase_roles_one_active": {
+          "name": "project_phase_roles_one_active",
+          "columns": [
+            {
+              "expression": "project_phase_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "firm_role_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"project_phase_roles\".\"archived_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "project_phase_roles_phase_idx": {
+          "name": "project_phase_roles_phase_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "project_phase_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "project_phase_roles_firm_id_firms_id_fk": {
+          "name": "project_phase_roles_firm_id_firms_id_fk",
+          "tableFrom": "project_phase_roles",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "project_phase_roles_phase_same_firm_fk": {
+          "name": "project_phase_roles_phase_same_firm_fk",
+          "tableFrom": "project_phase_roles",
+          "tableTo": "project_phases",
+          "columnsFrom": [
+            "firm_id",
+            "project_phase_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "project_phase_roles_role_same_firm_fk": {
+          "name": "project_phase_roles_role_same_firm_fk",
+          "tableFrom": "project_phase_roles",
+          "tableTo": "firm_roles",
+          "columnsFrom": [
+            "firm_id",
+            "firm_role_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "project_phase_roles_share_range": {
+          "name": "project_phase_roles_share_range",
+          "value": "\"project_phase_roles\".\"share_bp\" between 0 and 10000"
+        },
+        "project_phase_roles_rate_nonneg": {
+          "name": "project_phase_roles_rate_nonneg",
+          "value": "\"project_phase_roles\".\"rate_cents\" >= 0"
+        },
+        "project_phase_roles_hours_nonneg": {
+          "name": "project_phase_roles_hours_nonneg",
+          "value": "\"project_phase_roles\".\"hours\" >= 0"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.project_phases": {
+      "name": "project_phases",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "code": {
+          "name": "code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fee_type": {
+          "name": "fee_type",
+          "type": "fee_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "fee_cents": {
+          "name": "fee_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "budget_hours": {
+          "name": "budget_hours",
+          "type": "numeric(8, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'0'"
+        },
+        "status": {
+          "name": "status",
+          "type": "phase_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'upcoming'"
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "end_date": {
+          "name": "end_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "percent_complete_bp": {
+          "name": "percent_complete_bp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "budget_hours_manual": {
+          "name": "budget_hours_manual",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "is_additional_service": {
+          "name": "is_additional_service",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "project_phases_project_idx": {
+          "name": "project_phases_project_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "sort_order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "project_phases_firm_id_firms_id_fk": {
+          "name": "project_phases_firm_id_firms_id_fk",
+          "tableFrom": "project_phases",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "project_phases_project_same_firm_fk": {
+          "name": "project_phases_project_same_firm_fk",
+          "tableFrom": "project_phases",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "firm_id",
+            "project_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "project_phases_firm_id_id_unique": {
+          "name": "project_phases_firm_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "firm_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "project_phases_fee_nonneg": {
+          "name": "project_phases_fee_nonneg",
+          "value": "\"project_phases\".\"fee_cents\" >= 0"
+        },
+        "project_phases_hours_nonneg": {
+          "name": "project_phases_hours_nonneg",
+          "value": "\"project_phases\".\"budget_hours\" >= 0"
+        },
+        "project_phases_pct_range": {
+          "name": "project_phases_pct_range",
+          "value": "\"project_phases\".\"percent_complete_bp\" between 0 and 10000"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.projects": {
+      "name": "projects",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "number": {
+          "name": "number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "name": {
+          "name": "name",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "client_company_id": {
+          "name": "client_company_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "client_contact_id": {
+          "name": "client_contact_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "project_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'active'"
+        },
+        "project_type": {
+          "name": "project_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "scope_kind": {
+          "name": "scope_kind",
+          "type": "scope_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "address_line1": {
+          "name": "address_line1",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "address_line2": {
+          "name": "address_line2",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "city": {
+          "name": "city",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "state": {
+          "name": "state",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "postal_code": {
+          "name": "postal_code",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "square_feet": {
+          "name": "square_feet",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "construction_cost_cents": {
+          "name": "construction_cost_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "principal_membership_id": {
+          "name": "principal_membership_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "pm_membership_id": {
+          "name": "pm_membership_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "start_date": {
+          "name": "start_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "target_end_date": {
+          "name": "target_end_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "closed_on": {
+          "name": "closed_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "quickbooks_customer_id": {
+          "name": "quickbooks_customer_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "next_invoice_seq": {
+          "name": "next_invoice_seq",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "projects_firm_number_unique": {
+          "name": "projects_firm_number_unique",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "lower(\"number\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "projects_firm_client_idx": {
+          "name": "projects_firm_client_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "client_company_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "projects_firm_id_firms_id_fk": {
+          "name": "projects_firm_id_firms_id_fk",
+          "tableFrom": "projects",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "projects_created_by_users_id_fk": {
+          "name": "projects_created_by_users_id_fk",
+          "tableFrom": "projects",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "projects_client_same_firm_fk": {
+          "name": "projects_client_same_firm_fk",
+          "tableFrom": "projects",
+          "tableTo": "companies",
+          "columnsFrom": [
+            "firm_id",
+            "client_company_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "projects_client_contact_same_firm_fk": {
+          "name": "projects_client_contact_same_firm_fk",
+          "tableFrom": "projects",
+          "tableTo": "contacts",
+          "columnsFrom": [
+            "firm_id",
+            "client_contact_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "projects_principal_same_firm_fk": {
+          "name": "projects_principal_same_firm_fk",
+          "tableFrom": "projects",
+          "tableTo": "memberships",
+          "columnsFrom": [
+            "firm_id",
+            "principal_membership_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "projects_pm_same_firm_fk": {
+          "name": "projects_pm_same_firm_fk",
+          "tableFrom": "projects",
+          "tableTo": "memberships",
+          "columnsFrom": [
+            "firm_id",
+            "pm_membership_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "projects_firm_id_id_unique": {
+          "name": "projects_firm_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "firm_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "projects_next_invoice_seq_min": {
+          "name": "projects_next_invoice_seq_min",
+          "value": "\"projects\".\"next_invoice_seq\" >= 1"
+        },
+        "projects_square_feet_positive": {
+          "name": "projects_square_feet_positive",
+          "value": "\"projects\".\"square_feet\" is null or \"projects\".\"square_feet\" > 0"
+        },
+        "projects_construction_cost_nonneg": {
+          "name": "projects_construction_cost_nonneg",
+          "value": "\"projects\".\"construction_cost_cents\" is null or \"projects\".\"construction_cost_cents\" >= 0"
+        },
+        "projects_dates_in_order": {
+          "name": "projects_dates_in_order",
+          "value": "\"projects\".\"start_date\" is null or \"projects\".\"target_end_date\" is null or \"projects\".\"target_end_date\" >= \"projects\".\"start_date\""
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.time_entries": {
+      "name": "time_entries",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timesheet_id": {
+          "name": "timesheet_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timesheet_row_id": {
+          "name": "timesheet_row_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "work_date": {
+          "name": "work_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "project_phase_id": {
+          "name": "project_phase_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "overhead_category_id": {
+          "name": "overhead_category_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "activity_id": {
+          "name": "activity_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hours": {
+          "name": "hours",
+          "type": "numeric(5, 2)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "note": {
+          "name": "note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "billable": {
+          "name": "billable",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "bill_rate_cents": {
+          "name": "bill_rate_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cost_rate_cents": {
+          "name": "cost_rate_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "firm_role_id": {
+          "name": "firm_role_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "invoice_id": {
+          "name": "invoice_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "time_entries_invoice_idx": {
+          "name": "time_entries_invoice_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "invoice_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "time_entries_row_day_unique": {
+          "name": "time_entries_row_day_unique",
+          "columns": [
+            {
+              "expression": "timesheet_row_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "work_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"time_entries\".\"archived_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "time_entries_timesheet_idx": {
+          "name": "time_entries_timesheet_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "timesheet_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "time_entries_phase_idx": {
+          "name": "time_entries_phase_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "project_phase_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "time_entries_project_idx": {
+          "name": "time_entries_project_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "time_entries_firm_id_firms_id_fk": {
+          "name": "time_entries_firm_id_firms_id_fk",
+          "tableFrom": "time_entries",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "time_entries_timesheet_same_firm_fk": {
+          "name": "time_entries_timesheet_same_firm_fk",
+          "tableFrom": "time_entries",
+          "tableTo": "timesheets",
+          "columnsFrom": [
+            "firm_id",
+            "timesheet_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "time_entries_row_same_firm_fk": {
+          "name": "time_entries_row_same_firm_fk",
+          "tableFrom": "time_entries",
+          "tableTo": "timesheet_rows",
+          "columnsFrom": [
+            "firm_id",
+            "timesheet_row_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "time_entries_project_same_firm_fk": {
+          "name": "time_entries_project_same_firm_fk",
+          "tableFrom": "time_entries",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "firm_id",
+            "project_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "time_entries_phase_same_firm_fk": {
+          "name": "time_entries_phase_same_firm_fk",
+          "tableFrom": "time_entries",
+          "tableTo": "project_phases",
+          "columnsFrom": [
+            "firm_id",
+            "project_phase_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "time_entries_category_same_firm_fk": {
+          "name": "time_entries_category_same_firm_fk",
+          "tableFrom": "time_entries",
+          "tableTo": "overhead_categories",
+          "columnsFrom": [
+            "firm_id",
+            "overhead_category_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "time_entries_role_same_firm_fk": {
+          "name": "time_entries_role_same_firm_fk",
+          "tableFrom": "time_entries",
+          "tableTo": "firm_roles",
+          "columnsFrom": [
+            "firm_id",
+            "firm_role_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "time_entries_invoice_same_firm_fk": {
+          "name": "time_entries_invoice_same_firm_fk",
+          "tableFrom": "time_entries",
+          "tableTo": "invoices",
+          "columnsFrom": [
+            "firm_id",
+            "invoice_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "time_entries_activity_same_firm_fk": {
+          "name": "time_entries_activity_same_firm_fk",
+          "tableFrom": "time_entries",
+          "tableTo": "activities",
+          "columnsFrom": [
+            "firm_id",
+            "activity_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "time_entries_firm_id_id_unique": {
+          "name": "time_entries_firm_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "firm_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "time_entries_not_phase_and_category": {
+          "name": "time_entries_not_phase_and_category",
+          "value": "\"time_entries\".\"project_phase_id\" is null or \"time_entries\".\"overhead_category_id\" is null"
+        },
+        "time_entries_project_xor_category": {
+          "name": "time_entries_project_xor_category",
+          "value": "\"time_entries\".\"project_id\" is null or \"time_entries\".\"overhead_category_id\" is null"
+        },
+        "time_entries_hours_range": {
+          "name": "time_entries_hours_range",
+          "value": "\"time_entries\".\"hours\" > 0 and \"time_entries\".\"hours\" <= 24 and (\"time_entries\".\"hours\" * 4) = trunc(\"time_entries\".\"hours\" * 4)"
+        },
+        "time_entries_note_length": {
+          "name": "time_entries_note_length",
+          "value": "\"time_entries\".\"note\" is null or char_length(\"time_entries\".\"note\") <= 500"
+        },
+        "time_entries_billable_project_only": {
+          "name": "time_entries_billable_project_only",
+          "value": "not \"time_entries\".\"billable\" or \"time_entries\".\"project_id\" is not null"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.timesheet_rows": {
+      "name": "timesheet_rows",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timesheet_id": {
+          "name": "timesheet_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "row_type": {
+          "name": "row_type",
+          "type": "timesheet_row_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "project_phase_id": {
+          "name": "project_phase_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "overhead_category_id": {
+          "name": "overhead_category_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "activity_id": {
+          "name": "activity_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "billable": {
+          "name": "billable",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "timesheet_rows_timesheet_idx": {
+          "name": "timesheet_rows_timesheet_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "timesheet_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "sort_order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "timesheet_rows_firm_id_firms_id_fk": {
+          "name": "timesheet_rows_firm_id_firms_id_fk",
+          "tableFrom": "timesheet_rows",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "timesheet_rows_timesheet_same_firm_fk": {
+          "name": "timesheet_rows_timesheet_same_firm_fk",
+          "tableFrom": "timesheet_rows",
+          "tableTo": "timesheets",
+          "columnsFrom": [
+            "firm_id",
+            "timesheet_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "timesheet_rows_project_same_firm_fk": {
+          "name": "timesheet_rows_project_same_firm_fk",
+          "tableFrom": "timesheet_rows",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "firm_id",
+            "project_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "timesheet_rows_phase_same_firm_fk": {
+          "name": "timesheet_rows_phase_same_firm_fk",
+          "tableFrom": "timesheet_rows",
+          "tableTo": "project_phases",
+          "columnsFrom": [
+            "firm_id",
+            "project_phase_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "timesheet_rows_category_same_firm_fk": {
+          "name": "timesheet_rows_category_same_firm_fk",
+          "tableFrom": "timesheet_rows",
+          "tableTo": "overhead_categories",
+          "columnsFrom": [
+            "firm_id",
+            "overhead_category_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "timesheet_rows_activity_same_firm_fk": {
+          "name": "timesheet_rows_activity_same_firm_fk",
+          "tableFrom": "timesheet_rows",
+          "tableTo": "activities",
+          "columnsFrom": [
+            "firm_id",
+            "activity_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "timesheet_rows_firm_id_id_unique": {
+          "name": "timesheet_rows_firm_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "firm_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "timesheet_rows_type_links": {
+          "name": "timesheet_rows_type_links",
+          "value": "case \"timesheet_rows\".\"row_type\"\n        when 'project' then \"timesheet_rows\".\"overhead_category_id\" is null\n        when 'overhead' then \"timesheet_rows\".\"project_id\" is null and \"timesheet_rows\".\"project_phase_id\" is null\n        when 'leave' then \"timesheet_rows\".\"project_id\" is null and \"timesheet_rows\".\"project_phase_id\" is null\n        else \"timesheet_rows\".\"project_id\" is null and \"timesheet_rows\".\"project_phase_id\" is null and \"timesheet_rows\".\"overhead_category_id\" is null and \"timesheet_rows\".\"activity_id\" is null\n      end"
+        },
+        "timesheet_rows_billable_project_only": {
+          "name": "timesheet_rows_billable_project_only",
+          "value": "not \"timesheet_rows\".\"billable\" or \"timesheet_rows\".\"row_type\" = 'project'"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.timesheets": {
+      "name": "timesheets",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "membership_id": {
+          "name": "membership_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "week_start": {
+          "name": "week_start",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status": {
+          "name": "status",
+          "type": "timesheet_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'draft'"
+        },
+        "submitted_at": {
+          "name": "submitted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "approved_at": {
+          "name": "approved_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "approved_by": {
+          "name": "approved_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rejected_at": {
+          "name": "rejected_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rejected_by": {
+          "name": "rejected_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "rejection_note": {
+          "name": "rejection_note",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "timesheets_firm_week_idx": {
+          "name": "timesheets_firm_week_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "week_start",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "timesheets_firm_id_firms_id_fk": {
+          "name": "timesheets_firm_id_firms_id_fk",
+          "tableFrom": "timesheets",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "timesheets_approved_by_users_id_fk": {
+          "name": "timesheets_approved_by_users_id_fk",
+          "tableFrom": "timesheets",
+          "tableTo": "users",
+          "columnsFrom": [
+            "approved_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "timesheets_rejected_by_users_id_fk": {
+          "name": "timesheets_rejected_by_users_id_fk",
+          "tableFrom": "timesheets",
+          "tableTo": "users",
+          "columnsFrom": [
+            "rejected_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "timesheets_membership_same_firm_fk": {
+          "name": "timesheets_membership_same_firm_fk",
+          "tableFrom": "timesheets",
+          "tableTo": "memberships",
+          "columnsFrom": [
+            "firm_id",
+            "membership_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "timesheets_firm_id_id_unique": {
+          "name": "timesheets_firm_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "firm_id",
+            "id"
+          ]
+        },
+        "timesheets_membership_week_unique": {
+          "name": "timesheets_membership_week_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "membership_id",
+            "week_start"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.review_steps": {
+      "name": "review_steps",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "kind": {
+          "name": "kind",
+          "type": "review_step_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "membership_id": {
+          "name": "membership_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "review_steps_firm_order_idx": {
+          "name": "review_steps_firm_order_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "sort_order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "review_steps_kind_unique": {
+          "name": "review_steps_kind_unique",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "kind",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"review_steps\".\"archived_at\" is null and \"review_steps\".\"kind\" <> 'person'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "review_steps_person_unique": {
+          "name": "review_steps_person_unique",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "membership_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"review_steps\".\"archived_at\" is null and \"review_steps\".\"kind\" = 'person'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "review_steps_firm_id_firms_id_fk": {
+          "name": "review_steps_firm_id_firms_id_fk",
+          "tableFrom": "review_steps",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "review_steps_membership_same_firm_fk": {
+          "name": "review_steps_membership_same_firm_fk",
+          "tableFrom": "review_steps",
+          "tableTo": "memberships",
+          "columnsFrom": [
+            "firm_id",
+            "membership_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "review_steps_firm_id_id_unique": {
+          "name": "review_steps_firm_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "firm_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "review_steps_person_has_member": {
+          "name": "review_steps_person_has_member",
+          "value": "(\"review_steps\".\"kind\" = 'person') = (\"review_steps\".\"membership_id\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.timesheet_review_steps": {
+      "name": "timesheet_review_steps",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "timesheet_id": {
+          "name": "timesheet_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "step_no": {
+          "name": "step_no",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "review_step_kind",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "approver_membership_id": {
+          "name": "approver_membership_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "review_row_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'waiting'"
+        },
+        "skip_reason": {
+          "name": "skip_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "acted_by": {
+          "name": "acted_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "acted_at": {
+          "name": "acted_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "on_behalf": {
+          "name": "on_behalf",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "timesheet_review_steps_sheet_idx": {
+          "name": "timesheet_review_steps_sheet_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "timesheet_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "step_no",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "timesheet_review_steps_approver_idx": {
+          "name": "timesheet_review_steps_approver_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "approver_membership_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"timesheet_review_steps\".\"archived_at\" is null and \"timesheet_review_steps\".\"status\" = 'waiting'",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "timesheet_review_steps_firm_id_firms_id_fk": {
+          "name": "timesheet_review_steps_firm_id_firms_id_fk",
+          "tableFrom": "timesheet_review_steps",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "timesheet_review_steps_acted_by_users_id_fk": {
+          "name": "timesheet_review_steps_acted_by_users_id_fk",
+          "tableFrom": "timesheet_review_steps",
+          "tableTo": "users",
+          "columnsFrom": [
+            "acted_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "timesheet_review_steps_sheet_same_firm_fk": {
+          "name": "timesheet_review_steps_sheet_same_firm_fk",
+          "tableFrom": "timesheet_review_steps",
+          "tableTo": "timesheets",
+          "columnsFrom": [
+            "firm_id",
+            "timesheet_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "timesheet_review_steps_approver_same_firm_fk": {
+          "name": "timesheet_review_steps_approver_same_firm_fk",
+          "tableFrom": "timesheet_review_steps",
+          "tableTo": "memberships",
+          "columnsFrom": [
+            "firm_id",
+            "approver_membership_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "timesheet_review_steps_skip_reason": {
+          "name": "timesheet_review_steps_skip_reason",
+          "value": "(\"timesheet_review_steps\".\"status\" = 'skipped') = (\"timesheet_review_steps\".\"skip_reason\" is not null)"
+        },
+        "timesheet_review_steps_acted": {
+          "name": "timesheet_review_steps_acted",
+          "value": "(\"timesheet_review_steps\".\"status\" = 'approved') = (\"timesheet_review_steps\".\"acted_at\" is not null)"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.notifications": {
+      "name": "notifications",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "membership_id": {
+          "name": "membership_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kind": {
+          "name": "kind",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "title": {
+          "name": "title",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "body": {
+          "name": "body",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "link": {
+          "name": "link",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "entity_type": {
+          "name": "entity_type",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "entity_id": {
+          "name": "entity_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "read_at": {
+          "name": "read_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "notifications_recipient_idx": {
+          "name": "notifications_recipient_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "membership_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "notifications_unread_idx": {
+          "name": "notifications_unread_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "membership_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "where": "\"notifications\".\"read_at\" is null and \"notifications\".\"archived_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "notifications_firm_id_firms_id_fk": {
+          "name": "notifications_firm_id_firms_id_fk",
+          "tableFrom": "notifications",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "notifications_membership_same_firm_fk": {
+          "name": "notifications_membership_same_firm_fk",
+          "tableFrom": "notifications",
+          "tableTo": "memberships",
+          "columnsFrom": [
+            "firm_id",
+            "membership_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.invoice_lines": {
+      "name": "invoice_lines",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "invoice_id": {
+          "name": "invoice_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_phase_id": {
+          "name": "project_phase_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "line_type": {
+          "name": "line_type",
+          "type": "invoice_line_type",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "description": {
+          "name": "description",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "quantity": {
+          "name": "quantity",
+          "type": "numeric(10, 2)",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'1'"
+        },
+        "rate_cents": {
+          "name": "rate_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount_cents": {
+          "name": "amount_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "percent_complete_bp": {
+          "name": "percent_complete_bp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sort_order": {
+          "name": "sort_order",
+          "type": "smallint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "phase_fee_cents": {
+          "name": "phase_fee_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "prior_billed_cents": {
+          "name": "prior_billed_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "consultant_id": {
+          "name": "consultant_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "cost_cents": {
+          "name": "cost_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "markup_bp": {
+          "name": "markup_bp",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "vendor_invoice_ref": {
+          "name": "vendor_invoice_ref",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "invoice_lines_invoice_idx": {
+          "name": "invoice_lines_invoice_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "invoice_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "sort_order",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "invoice_lines_phase_idx": {
+          "name": "invoice_lines_phase_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "project_phase_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "invoice_lines_firm_id_firms_id_fk": {
+          "name": "invoice_lines_firm_id_firms_id_fk",
+          "tableFrom": "invoice_lines",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invoice_lines_invoice_same_firm_fk": {
+          "name": "invoice_lines_invoice_same_firm_fk",
+          "tableFrom": "invoice_lines",
+          "tableTo": "invoices",
+          "columnsFrom": [
+            "firm_id",
+            "invoice_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invoice_lines_phase_same_firm_fk": {
+          "name": "invoice_lines_phase_same_firm_fk",
+          "tableFrom": "invoice_lines",
+          "tableTo": "project_phases",
+          "columnsFrom": [
+            "firm_id",
+            "project_phase_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invoice_lines_consultant_same_firm_fk": {
+          "name": "invoice_lines_consultant_same_firm_fk",
+          "tableFrom": "invoice_lines",
+          "tableTo": "consultants",
+          "columnsFrom": [
+            "firm_id",
+            "consultant_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "invoice_lines_percent_range": {
+          "name": "invoice_lines_percent_range",
+          "value": "\"invoice_lines\".\"percent_complete_bp\" is null or \"invoice_lines\".\"percent_complete_bp\" between 0 and 10000"
+        },
+        "invoice_lines_markup_range": {
+          "name": "invoice_lines_markup_range",
+          "value": "\"invoice_lines\".\"markup_bp\" is null or \"invoice_lines\".\"markup_bp\" between 0 and 10000"
+        },
+        "invoice_lines_cost_nonneg": {
+          "name": "invoice_lines_cost_nonneg",
+          "value": "\"invoice_lines\".\"cost_cents\" is null or \"invoice_lines\".\"cost_cents\" >= 0"
+        },
+        "invoice_lines_description": {
+          "name": "invoice_lines_description",
+          "value": "char_length(trim(\"invoice_lines\".\"description\")) between 1 and 500"
+        },
+        "invoice_lines_phase_fee_has_phase": {
+          "name": "invoice_lines_phase_fee_has_phase",
+          "value": "\"invoice_lines\".\"line_type\" <> 'phase_fee' or \"invoice_lines\".\"project_phase_id\" is not null"
+        },
+        "invoice_lines_consultant_has_consultant": {
+          "name": "invoice_lines_consultant_has_consultant",
+          "value": "\"invoice_lines\".\"line_type\" <> 'consultant' or \"invoice_lines\".\"consultant_id\" is not null"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.invoices": {
+      "name": "invoices",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "project_id": {
+          "name": "project_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "client_company_id": {
+          "name": "client_company_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "bill_to_contact_id": {
+          "name": "bill_to_contact_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "number": {
+          "name": "number",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "invoice_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'draft'"
+        },
+        "issue_date": {
+          "name": "issue_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "due_date": {
+          "name": "due_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "period_start": {
+          "name": "period_start",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "period_end": {
+          "name": "period_end",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "subtotal_cents": {
+          "name": "subtotal_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "tax_cents": {
+          "name": "tax_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "total_cents": {
+          "name": "total_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "amount_paid_cents": {
+          "name": "amount_paid_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 0
+        },
+        "memo": {
+          "name": "memo",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sent_to": {
+          "name": "sent_to",
+          "type": "text[]",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "include_time_detail": {
+          "name": "include_time_detail",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "quickbooks_invoice_id": {
+          "name": "quickbooks_invoice_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "pdf_url": {
+          "name": "pdf_url",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "sent_at": {
+          "name": "sent_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reviewed_by": {
+          "name": "reviewed_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "reviewed_at": {
+          "name": "reviewed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "voided_at": {
+          "name": "voided_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "voided_by": {
+          "name": "voided_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "void_reason": {
+          "name": "void_reason",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "invoices_firm_number_unique": {
+          "name": "invoices_firm_number_unique",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "number",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"invoices\".\"number\" is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "invoices_one_open_draft": {
+          "name": "invoices_one_open_draft",
+          "columns": [
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"invoices\".\"status\" in ('draft', 'in_review') and \"invoices\".\"archived_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "invoices_project_idx": {
+          "name": "invoices_project_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "project_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "invoices_status_idx": {
+          "name": "invoices_status_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "due_date",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "invoices_firm_id_firms_id_fk": {
+          "name": "invoices_firm_id_firms_id_fk",
+          "tableFrom": "invoices",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invoices_reviewed_by_users_id_fk": {
+          "name": "invoices_reviewed_by_users_id_fk",
+          "tableFrom": "invoices",
+          "tableTo": "users",
+          "columnsFrom": [
+            "reviewed_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invoices_voided_by_users_id_fk": {
+          "name": "invoices_voided_by_users_id_fk",
+          "tableFrom": "invoices",
+          "tableTo": "users",
+          "columnsFrom": [
+            "voided_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invoices_created_by_users_id_fk": {
+          "name": "invoices_created_by_users_id_fk",
+          "tableFrom": "invoices",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invoices_project_same_firm_fk": {
+          "name": "invoices_project_same_firm_fk",
+          "tableFrom": "invoices",
+          "tableTo": "projects",
+          "columnsFrom": [
+            "firm_id",
+            "project_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invoices_client_same_firm_fk": {
+          "name": "invoices_client_same_firm_fk",
+          "tableFrom": "invoices",
+          "tableTo": "companies",
+          "columnsFrom": [
+            "firm_id",
+            "client_company_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invoices_bill_to_same_firm_fk": {
+          "name": "invoices_bill_to_same_firm_fk",
+          "tableFrom": "invoices",
+          "tableTo": "contacts",
+          "columnsFrom": [
+            "firm_id",
+            "bill_to_contact_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {
+        "invoices_firm_id_id_unique": {
+          "name": "invoices_firm_id_id_unique",
+          "nullsNotDistinct": false,
+          "columns": [
+            "firm_id",
+            "id"
+          ]
+        }
+      },
+      "policies": {},
+      "checkConstraints": {
+        "invoices_number_when_sent": {
+          "name": "invoices_number_when_sent",
+          "value": "\"invoices\".\"status\" in ('draft', 'in_review') or \"invoices\".\"number\" is not null"
+        },
+        "invoices_void_reason": {
+          "name": "invoices_void_reason",
+          "value": "\"invoices\".\"status\" <> 'void' or \"invoices\".\"void_reason\" is not null"
+        },
+        "invoices_paid_range": {
+          "name": "invoices_paid_range",
+          "value": "\"invoices\".\"amount_paid_cents\" >= 0 and \"invoices\".\"amount_paid_cents\" <= greatest(\"invoices\".\"total_cents\", 0)"
+        },
+        "invoices_tax_nonneg": {
+          "name": "invoices_tax_nonneg",
+          "value": "\"invoices\".\"tax_cents\" >= 0"
+        },
+        "invoices_total_adds_up": {
+          "name": "invoices_total_adds_up",
+          "value": "\"invoices\".\"total_cents\" = \"invoices\".\"subtotal_cents\" + \"invoices\".\"tax_cents\""
+        },
+        "invoices_due_after_issue": {
+          "name": "invoices_due_after_issue",
+          "value": "\"invoices\".\"due_date\" >= \"invoices\".\"issue_date\""
+        },
+        "invoices_period_in_order": {
+          "name": "invoices_period_in_order",
+          "value": "\"invoices\".\"period_start\" is null or \"invoices\".\"period_end\" >= \"invoices\".\"period_start\""
+        },
+        "invoices_memo_length": {
+          "name": "invoices_memo_length",
+          "value": "\"invoices\".\"memo\" is null or char_length(\"invoices\".\"memo\") <= 2000"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.payments": {
+      "name": "payments",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "invoice_id": {
+          "name": "invoice_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "received_on": {
+          "name": "received_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "amount_cents": {
+          "name": "amount_cents",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "method": {
+          "name": "method",
+          "type": "payment_method",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "reference": {
+          "name": "reference",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "quickbooks_payment_id": {
+          "name": "quickbooks_payment_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "stripe_payment_intent_id": {
+          "name": "stripe_payment_intent_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_by": {
+          "name": "created_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "payments_invoice_idx": {
+          "name": "payments_invoice_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "invoice_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "payments_received_idx": {
+          "name": "payments_received_idx",
+          "columns": [
+            {
+              "expression": "firm_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "received_on",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "payments_firm_id_firms_id_fk": {
+          "name": "payments_firm_id_firms_id_fk",
+          "tableFrom": "payments",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "payments_created_by_users_id_fk": {
+          "name": "payments_created_by_users_id_fk",
+          "tableFrom": "payments",
+          "tableTo": "users",
+          "columnsFrom": [
+            "created_by"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "payments_invoice_same_firm_fk": {
+          "name": "payments_invoice_same_firm_fk",
+          "tableFrom": "payments",
+          "tableTo": "invoices",
+          "columnsFrom": [
+            "firm_id",
+            "invoice_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "payments_amount_positive": {
+          "name": "payments_amount_positive",
+          "value": "\"payments\".\"amount_cents\" > 0"
+        },
+        "payments_reference_length": {
+          "name": "payments_reference_length",
+          "value": "\"payments\".\"reference\" is null or char_length(\"payments\".\"reference\") <= 100"
+        }
+      },
+      "isRLSEnabled": false
+    },
+    "public.invoice_excluded_entries": {
+      "name": "invoice_excluded_entries",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "firm_id": {
+          "name": "firm_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "invoice_id": {
+          "name": "invoice_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "time_entry_id": {
+          "name": "time_entry_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "updated_at": {
+          "name": "updated_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "archived_at": {
+          "name": "archived_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "invoice_excluded_entries_unique": {
+          "name": "invoice_excluded_entries_unique",
+          "columns": [
+            {
+              "expression": "invoice_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "time_entry_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"invoice_excluded_entries\".\"archived_at\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "invoice_excluded_entries_firm_id_firms_id_fk": {
+          "name": "invoice_excluded_entries_firm_id_firms_id_fk",
+          "tableFrom": "invoice_excluded_entries",
+          "tableTo": "firms",
+          "columnsFrom": [
+            "firm_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invoice_excluded_entries_invoice_same_firm_fk": {
+          "name": "invoice_excluded_entries_invoice_same_firm_fk",
+          "tableFrom": "invoice_excluded_entries",
+          "tableTo": "invoices",
+          "columnsFrom": [
+            "firm_id",
+            "invoice_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "invoice_excluded_entries_entry_same_firm_fk": {
+          "name": "invoice_excluded_entries_entry_same_firm_fk",
+          "tableFrom": "invoice_excluded_entries",
+          "tableTo": "time_entries",
+          "columnsFrom": [
+            "firm_id",
+            "time_entry_id"
+          ],
+          "columnsTo": [
+            "firm_id",
+            "id"
+          ],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.activity_scope": {
+      "name": "activity_scope",
+      "schema": "public",
+      "values": [
+        "project",
+        "overhead"
+      ]
+    },
+    "public.app_role": {
+      "name": "app_role",
+      "schema": "public",
+      "values": [
+        "owner",
+        "admin",
+        "project_manager",
+        "staff"
+      ]
+    },
+    "public.company_kind": {
+      "name": "company_kind",
+      "schema": "public",
+      "values": [
+        "client",
+        "consultant",
+        "contractor",
+        "agency",
+        "vendor",
+        "other"
+      ]
+    },
+    "public.employment_type": {
+      "name": "employment_type",
+      "schema": "public",
+      "values": [
+        "full_time",
+        "part_time",
+        "contract"
+      ]
+    },
+    "public.fee_type": {
+      "name": "fee_type",
+      "schema": "public",
+      "values": [
+        "fixed",
+        "hourly",
+        "nte"
+      ]
+    },
+    "public.invitation_status": {
+      "name": "invitation_status",
+      "schema": "public",
+      "values": [
+        "pending",
+        "accepted",
+        "revoked",
+        "expired"
+      ]
+    },
+    "public.invoice_line_type": {
+      "name": "invoice_line_type",
+      "schema": "public",
+      "values": [
+        "phase_fee",
+        "hourly",
+        "consultant",
+        "expense",
+        "adjustment"
+      ]
+    },
+    "public.invoice_status": {
+      "name": "invoice_status",
+      "schema": "public",
+      "values": [
+        "draft",
+        "in_review",
+        "sent",
+        "partially_paid",
+        "paid",
+        "void",
+        "written_off"
+      ]
+    },
+    "public.payment_method": {
+      "name": "payment_method",
+      "schema": "public",
+      "values": [
+        "check",
+        "ach",
+        "card",
+        "other"
+      ]
+    },
+    "public.phase_status": {
+      "name": "phase_status",
+      "schema": "public",
+      "values": [
+        "upcoming",
+        "current",
+        "complete",
+        "closed"
+      ]
+    },
+    "public.project_status": {
+      "name": "project_status",
+      "schema": "public",
+      "values": [
+        "pursuit",
+        "active",
+        "on_hold",
+        "closed"
+      ]
+    },
+    "public.review_row_status": {
+      "name": "review_row_status",
+      "schema": "public",
+      "values": [
+        "waiting",
+        "approved",
+        "skipped"
+      ]
+    },
+    "public.review_step_kind": {
+      "name": "review_step_kind",
+      "schema": "public",
+      "values": [
+        "principal_in_charge",
+        "team_leader",
+        "any_principal",
+        "person"
+      ]
+    },
+    "public.scope_kind": {
+      "name": "scope_kind",
+      "schema": "public",
+      "values": [
+        "ground_up",
+        "tenant_upfit",
+        "shell"
+      ]
+    },
+    "public.timesheet_notes_rule": {
+      "name": "timesheet_notes_rule",
+      "schema": "public",
+      "values": [
+        "optional",
+        "hourly",
+        "all"
+      ]
+    },
+    "public.timesheet_row_type": {
+      "name": "timesheet_row_type",
+      "schema": "public",
+      "values": [
+        "project",
+        "overhead",
+        "leave"
+      ]
+    },
+    "public.timesheet_status": {
+      "name": "timesheet_status",
+      "schema": "public",
+      "values": [
+        "draft",
+        "submitted",
+        "approved",
+        "rejected"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}

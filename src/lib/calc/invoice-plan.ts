@@ -1,7 +1,6 @@
 // What a draft invoice's calculated lines should be (invoicing spec rules
-// 2–5). Pure: the server loads the facts, calls planDraft, then saves the
-// difference. Consultant lines and free adjustments are typed in by people
-// and aren't planned here.
+// 2–6). Pure: the server loads the facts, calls planDraft, then saves the
+// difference. Free adjustments are typed in by people and aren't planned.
 
 import { formatMoney } from "@/lib/format";
 import {
@@ -9,6 +8,9 @@ import {
   type InvoiceLineType,
   type NteWarning,
   type PriorLine,
+  consultantAmount,
+  consultantLastBilledBp,
+  consultantPreviouslyBilled,
   fixedFeeLine,
   formatPercentBp,
   hourlyGroups,
@@ -28,6 +30,16 @@ export type PlanPhase = {
   percentCompleteBp: number;
 };
 
+export type PlanConsultant = {
+  id: string;
+  /** "MEP · Coastal MEP Engineers" */
+  label: string;
+  /** Their fee to us. */
+  feeCents: number;
+  markupBp: number;
+  percentCompleteBp: number;
+};
+
 export type PlanEntry = {
   id: string;
   phaseId: string;
@@ -40,8 +52,11 @@ export type PlanEntry = {
 /** A calculated line. `key` matches it to the saved line on the next recalculation. */
 export type PlannedLine = {
   key: string;
-  lineType: Extract<InvoiceLineType, "phase_fee" | "hourly" | "adjustment">;
-  projectPhaseId: string;
+  lineType: Extract<InvoiceLineType, "phase_fee" | "hourly" | "adjustment" | "consultant">;
+  projectPhaseId: string | null;
+  consultantId: string | null;
+  /** Consultant lines: the markup applied. */
+  markupBp: number | null;
   description: string;
   /** "1" or hours, as numeric text. */
   quantity: string;
@@ -83,7 +98,24 @@ export type HourlyRow = {
   warning: NteWarning;
 };
 
-export type DraftPlan = { lines: PlannedLine[]; fixed: FixedRow[]; hourly: HourlyRow[] };
+/** A consultant billed by % complete of their marked-up fee (decision #31). */
+export type ConsultantRow = {
+  consultantId: string;
+  label: string;
+  /** Their fee to us. */
+  feeCents: number;
+  markupBp: number;
+  /** Fee plus markup: what the client is billed in total. */
+  clientFeeCents: number;
+  lastBilledBp: number;
+  percentCompleteBp: number;
+  earnedToDateCents: number;
+  previouslyBilledCents: number;
+  thisInvoiceCents: number;
+  error: string | null;
+};
+
+export type DraftPlan = { lines: PlannedLine[]; fixed: FixedRow[]; hourly: HourlyRow[]; consultants: ConsultantRow[] };
 
 export const NO_ROLE_NAME = "Staff";
 
@@ -106,6 +138,7 @@ export function planDraft(input: {
   phases: readonly PlanPhase[];
   priorLines: readonly PriorLine[];
   entries: readonly PlanEntry[];
+  consultants?: readonly PlanConsultant[];
 }): DraftPlan {
   const { invoiceId, priorLines } = input;
   const phases = [...input.phases].sort((a, b) => a.sortOrder - b.sortOrder);
@@ -141,6 +174,8 @@ export function planDraft(input: {
           key: `fee:${p.id}`,
           lineType: "phase_fee",
           projectPhaseId: p.id,
+          consultantId: null,
+          markupBp: null,
           description: `${p.name} · ${formatPercentBp(p.percentCompleteBp)} complete`,
           quantity: "1.00",
           rateCents: r.amountCents,
@@ -164,6 +199,8 @@ export function planDraft(input: {
         key: `hourly:${p.id}:${g.roleName}:${g.rateCents}`,
         lineType: "hourly",
         projectPhaseId: p.id,
+        consultantId: null,
+        markupBp: null,
         description: `${p.name} · ${g.roleName} · ${hoursText(g.hoursHundredths)} h @ ${money(g.rateCents)}`,
         quantity: quantityText(g.hoursHundredths),
         rateCents: g.rateCents,
@@ -184,6 +221,8 @@ export function planDraft(input: {
         key: `nte:${p.id}`,
         lineType: "adjustment",
         projectPhaseId: p.id,
+        consultantId: null,
+        markupBp: null,
         description: `${p.name} · not-to-exceed limit reached, ${money(cap.writeDownCents)} written down`,
         quantity: "1.00",
         rateCents: -cap.writeDownCents,
@@ -208,7 +247,50 @@ export function planDraft(input: {
     });
   });
 
-  return { lines, fixed, hourly };
+  // Consultants, after every phase: % complete of the marked-up fee (rule 6, decision #31).
+  const consultants: ConsultantRow[] = [];
+  (input.consultants ?? []).forEach((c, i) => {
+    const clientFeeCents = consultantAmount(c.feeCents, c.markupBp);
+    const prev = consultantPreviouslyBilled(priorLines, c.id, invoiceId);
+    const last = consultantLastBilledBp(priorLines, c.id, invoiceId);
+    const r = fixedFeeLine({
+      feeCents: clientFeeCents,
+      percentCompleteBp: c.percentCompleteBp,
+      previouslyBilledCents: prev,
+      lastBilledBp: last,
+    });
+    consultants.push({
+      consultantId: c.id,
+      label: c.label,
+      feeCents: c.feeCents,
+      markupBp: c.markupBp,
+      clientFeeCents,
+      lastBilledBp: last,
+      percentCompleteBp: c.percentCompleteBp,
+      earnedToDateCents: r.ok ? r.earnedToDateCents : prev,
+      previouslyBilledCents: prev,
+      thisInvoiceCents: r.ok ? r.amountCents : 0,
+      error: r.ok ? null : r.error,
+    });
+    if (r.ok && !r.omit)
+      lines.push({
+        key: `consultant:${c.id}`,
+        lineType: "consultant",
+        projectPhaseId: null,
+        consultantId: c.id,
+        markupBp: c.markupBp,
+        description: `${c.label} · ${formatPercentBp(c.percentCompleteBp)} complete`,
+        quantity: "1.00",
+        rateCents: r.amountCents,
+        amountCents: r.amountCents,
+        percentCompleteBp: c.percentCompleteBp,
+        phaseFeeCents: clientFeeCents,
+        priorBilledCents: prev,
+        sortOrder: CONSULTANT_SORT_BASE + i,
+      });
+  });
+
+  return { lines, fixed, hourly, consultants };
 }
 
 /** Sort orders for typed-in lines: after every planned line (sort_order is a smallint, max 32,767). */

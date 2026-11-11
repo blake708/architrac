@@ -1,0 +1,2 @@
+ALTER TABLE "consultants" ADD COLUMN "percent_complete_bp" integer DEFAULT 0 NOT NULL;--> statement-breakpoint
+ALTER TABLE "consultants" ADD CONSTRAINT "consultants_percent_range" CHECK ("consultants"."percent_complete_bp" between 0 and 10000);

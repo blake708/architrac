@@ -134,6 +134,13 @@
       "when": 1794428767141,
       "tag": "0018_entry_role",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1794433178762,
+      "tag": "0019_consultant_percent",
+      "breakpoints": true
     }
   ]
 }

@@ -29,6 +29,8 @@ describe("planDraft", () => {
         key: "fee:DD",
         lineType: "phase_fee",
         projectPhaseId: "DD",
+        consultantId: null,
+        markupBp: null,
         description: "Design Development · 30% complete",
         quantity: "1.00",
         rateCents: 1_395_000,
@@ -139,6 +141,29 @@ describe("planDraft", () => {
       entries: [{ id: "1", phaseId: "ADD", roleName: "Designer", billRateCents: 11_500, hours: "1" }],
     });
     expect(plan.lines.map((l) => l.projectPhaseId)).toEqual(["SD", "DD", "ADD"]);
+  });
+
+  it("consultants bill by % complete of their marked-up fee (decision #31)", () => {
+    // MEP $18,000 + 10 % = $19,800; billed 30 % ($5,940) before; now 50 %.
+    const MEP = { id: "MEP", label: "MEP · Coastal MEP", feeCents: 1_800_000, markupBp: 1000, percentCompleteBp: 5000 };
+    const priorMep = prior({ projectPhaseId: null, lineType: "consultant", consultantId: "MEP", amountCents: 594_000, percentCompleteBp: 3000 });
+    const plan = planDraft({ invoiceId: "new", phases: [], priorLines: [priorMep], entries: [], consultants: [MEP] });
+    expect(plan.consultants[0]).toMatchObject({
+      clientFeeCents: 1_980_000,
+      lastBilledBp: 3000,
+      earnedToDateCents: 990_000,
+      previouslyBilledCents: 594_000,
+      thisInvoiceCents: 396_000,
+      error: null,
+    });
+    expect(plan.lines).toMatchObject([
+      { lineType: "consultant", consultantId: "MEP", markupBp: 1000, amountCents: 396_000, description: "MEP · Coastal MEP · 50% complete" },
+    ]);
+    const below = planDraft({ invoiceId: "new", phases: [], priorLines: [priorMep], entries: [], consultants: [{ ...MEP, percentCompleteBp: 2000 }] });
+    expect(below.lines).toEqual([]);
+    expect(below.consultants[0].error).toBe("% complete is below what's already billed (30%).");
+    // A consultant line never counts as a phase's billed fee.
+    expect(planDraft({ invoiceId: "new", phases: [SD], priorLines: [priorMep], entries: [] }).fixed[0].previouslyBilledCents).toBe(0);
   });
 
   it("money shows cents only when there are some", () => {

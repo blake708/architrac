@@ -9,6 +9,7 @@ import {
   endOfMonth,
   fixedFeeLine,
   formatPercentBp,
+  hoursSuggestBp,
   hourlyGroups,
   hoursToHundredths,
   invoiceDueDate,
@@ -20,6 +21,7 @@ import {
   previouslyBilled,
   projectInvoiceSummary,
   statusFromPaid,
+  timeValueCents,
 } from "./invoice";
 
 // Examples from docs/specs/release-1/invoicing.md, business rules 2–11.
@@ -207,6 +209,17 @@ describe("rule 6: consultant line", () => {
   it("rounds half up", () => {
     expect(consultantAmount(5, 1000)).toBe(6); // 5.5 → 6
     expect(consultantAmount(100, 0)).toBe(100);
+  });
+});
+
+describe("WIP helpers", () => {
+  it("values time once: 5 h @ $145 + 2 h @ $115 = $955", () => {
+    expect(timeValueCents([{ hours: "5", rateCents: 14_500 }, { hours: "2.00", rateCents: 11_500 }])).toBe(95_500);
+  });
+  it("suggests a % from hours, capped at 100 %", () => {
+    expect(hoursSuggestBp(700, "10")).toBe(7000);
+    expect(hoursSuggestBp(19_800, "186")).toBe(10000);
+    expect(hoursSuggestBp(100, "0")).toBeNull();
   });
 });
 

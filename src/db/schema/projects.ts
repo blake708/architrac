@@ -241,6 +241,8 @@ export const consultants = pgTable(
     markupBp: integer("markup_bp").notNull().default(0),
     /** Their fee is billed to the client through our invoices. */
     billedThrough: boolean("billed_through").notNull().default(true),
+    /** Progress on their fee, billed like a fixed-fee phase (decision #31). 2500 = 25%. */
+    percentCompleteBp: integer("percent_complete_bp").notNull().default(0),
     ...timestamps,
     archivedAt: archivedAt(),
   },
@@ -265,6 +267,7 @@ export const consultants = pgTable(
     }),
     check("consultants_fee_nonneg", sql`${t.feeCents} >= 0`),
     check("consultants_markup_range", sql`${t.markupBp} between 0 and 10000`),
+    check("consultants_percent_range", sql`${t.percentCompleteBp} between 0 and 10000`),
   ],
 );
 
