@@ -2,13 +2,9 @@
 // and 13). Pure functions over cents. Invoices arrive in 1.8 and
 // consultants in 1.5; until then callers pass empty lists.
 
-export type InvoiceStatus =
-  | "draft"
-  | "sent"
-  | "partially_paid"
-  | "paid"
-  | "written_off"
-  | "void";
+import type { InvoiceStatus } from "./invoice";
+
+export type { InvoiceStatus };
 
 export type InvoiceMoney = {
   status: InvoiceStatus;

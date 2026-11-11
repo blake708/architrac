@@ -116,11 +116,27 @@ describe("rule 4: phase text", () => {
   });
 });
 
-describe("rule 5: next number", () => {
-  it("one past the highest this year", () => {
-    expect(nextProjectNumber(["2026-014", "2026-022", "2025-104", "2026-9x"], 2026)).toBe("2026-023");
-    expect(nextProjectNumber(["2025-104"], 2026)).toBe("2026-001");
-    expect(nextProjectNumber(["2026-1000"], 2026)).toBe("2026-1001");
+describe("rule 5: next number in the firm's format (decision #28)", () => {
+  it("{YYYY}-{###} (the default): one past the highest this year", () => {
+    const f = "{YYYY}-{###}";
+    expect(nextProjectNumber(["2026-014", "2026-022", "2025-104", "2026-9x"], f, 2026)).toBe("2026-023");
+    expect(nextProjectNumber(["2025-104"], f, 2026)).toBe("2026-001");
+    expect(nextProjectNumber(["2026-1000"], f, 2026)).toBe("2026-1001");
+  });
+
+  it("{YY}{###} (TMG): 26030 → 26031, and 27001 in a new year", () => {
+    const f = "{YY}{###}";
+    expect(nextProjectNumber(["26029", "26030", "25104"], f, 2026)).toBe("26031");
+    expect(nextProjectNumber(["26029", "26030"], f, 2027)).toBe("27001");
+  });
+
+  it("no year code: the counter keeps counting", () => {
+    expect(nextProjectNumber(["P0411", "p0007", "2026-001"], "P{####}", 2026)).toBe("P0412");
+    expect(nextProjectNumber(["P0411"], "P{####}", 2030)).toBe("P0412");
+  });
+
+  it("numbers in another format are ignored", () => {
+    expect(nextProjectNumber(["2026-014", "2026-022"], "{YY}{###}", 2026)).toBe("26001");
   });
 });
 
