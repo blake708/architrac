@@ -20,7 +20,7 @@ import { archivedAt, id, timestamps } from "./columns";
 import { timesheetRowType, timesheetStatus } from "./enums";
 import { activities, overheadCategories } from "./firm-setup";
 import { firms } from "./firms";
-import { memberships, users } from "./people";
+import { firmRoles, memberships, users } from "./people";
 import { invoices } from "./invoices";
 import { projectPhases, projects } from "./projects";
 
@@ -153,6 +153,8 @@ export const timeEntries = pgTable(
     /** Frozen on approval (1.7) from the rate lookup. Owner/admin only. */
     billRateCents: bigint("bill_rate_cents", { mode: "number" }),
     costRateCents: bigint("cost_rate_cents", { mode: "number" }),
+    /** The person's role, frozen with the rates at approval (decision #30). Invoices group hours by it. */
+    firmRoleId: uuid("firm_role_id"),
     /**
      * The invoice this entry is reserved on (draft) or billed on (1.8). While
      * set, hours, date, phase, rate and billable are locked by a trigger
@@ -195,6 +197,11 @@ export const timeEntries = pgTable(
       name: "time_entries_category_same_firm_fk",
       columns: [t.firmId, t.overheadCategoryId],
       foreignColumns: [overheadCategories.firmId, overheadCategories.id],
+    }),
+    foreignKey({
+      name: "time_entries_role_same_firm_fk",
+      columns: [t.firmId, t.firmRoleId],
+      foreignColumns: [firmRoles.firmId, firmRoles.id],
     }),
     foreignKey({
       name: "time_entries_invoice_same_firm_fk",

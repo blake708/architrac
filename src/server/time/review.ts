@@ -149,6 +149,8 @@ export async function startReview(db: TenantDb, who: Submitter, timesheetId: str
 /**
  * Rules 2 and 3c: freeze bill and cost rates onto every live entry of the
  * sheet, from the person's override or their role's rate on each work date.
+ * The person's role is frozen with them (decision #30), so invoices group
+ * hours by the role they had, even if it changes later.
  * Writes nothing if any date has no rate.
  */
 export async function freezeSheetRates(
@@ -192,7 +194,7 @@ export async function freezeSheetRates(
   for (const [i, e] of entries.entries()) {
     await db
       .update(timeEntries)
-      .set({ billRateCents: plan.rates[i].billRateCents, costRateCents: plan.rates[i].costRateCents })
+      .set({ billRateCents: plan.rates[i].billRateCents, costRateCents: plan.rates[i].costRateCents, firmRoleId })
       .where(eq(timeEntries.id, e.id));
   }
   return { ok: true };

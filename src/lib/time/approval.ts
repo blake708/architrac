@@ -11,6 +11,13 @@ export const APPROVAL_MESSAGES = {
   notWaiting: "This timesheet is no longer waiting for you.",
   notInReview: "This timesheet isn't in review, so it can't be returned.",
   notApproved: "Only approved timesheets can be reopened.",
+  /** Rule 13 of the invoicing spec: billed or reserved time locks the week. */
+  onInvoice: (numbers: string[], onDraft: boolean) =>
+    numbers.length
+      ? `Some of this week's time is billed on ${numbers.join(", ")}, so it can't be reopened.`
+      : onDraft
+        ? "Some of this week's time is on a draft invoice. Untick it on the invoice (or delete the draft) before reopening."
+        : "Some of this week's time is on an invoice, so it can't be reopened.",
   noteTooLong: `Notes can be up to ${RETURN_NOTE_MAX} characters.`,
   noteRequired: (initials: string) => `Add a note so ${initials} knows what to change.`,
   saveFailed: "Couldn't save. Try again.",

@@ -58,6 +58,8 @@ export type PriorLine = {
   lineType: InvoiceLineType;
   amountCents: number;
   percentCompleteBp: number | null;
+  /** Consultant lines: which consultant (decision #31). */
+  consultantId?: string | null;
 };
 
 /** Lines on counted invoices for this phase, excluding the invoice being built. */
@@ -86,6 +88,31 @@ export function lastBilledBp(lines: readonly PriorLine[], phaseId: string, curre
   const counted = countedLines(lines, phaseId, "fixed", currentInvoiceId);
   let best: PriorLine | null = null;
   for (const l of counted)
+    if (!best || (l.issueDate ?? "") > (best.issueDate ?? "") || (l.issueDate === best.issueDate && (l.percentCompleteBp ?? 0) > (best.percentCompleteBp ?? 0)))
+      best = l;
+  return best?.percentCompleteBp ?? 0;
+}
+
+/** Consultant lines on counted invoices for this consultant, excluding the invoice being built. */
+function consultantLines(lines: readonly PriorLine[], consultantId: string, currentInvoiceId: string | null) {
+  return lines.filter(
+    (l) =>
+      l.lineType === "consultant" &&
+      l.consultantId === consultantId &&
+      l.invoiceId !== currentInvoiceId &&
+      COUNTED_STATUSES.has(l.invoiceStatus),
+  );
+}
+
+/** Rule 6 (decision #31): billed so far for a consultant's fee. */
+export function consultantPreviouslyBilled(lines: readonly PriorLine[], consultantId: string, currentInvoiceId: string | null): number {
+  return consultantLines(lines, consultantId, currentInvoiceId).reduce((n, l) => n + l.amountCents, 0);
+}
+
+/** Rule 6: % complete on the consultant's most recent counted line (0 if none). */
+export function consultantLastBilledBp(lines: readonly PriorLine[], consultantId: string, currentInvoiceId: string | null): number {
+  let best: PriorLine | null = null;
+  for (const l of consultantLines(lines, consultantId, currentInvoiceId))
     if (!best || (l.issueDate ?? "") > (best.issueDate ?? "") || (l.issueDate === best.issueDate && (l.percentCompleteBp ?? 0) > (best.percentCompleteBp ?? 0)))
       best = l;
   return best?.percentCompleteBp ?? 0;
@@ -190,11 +217,29 @@ export function nteCap(input: { capCents: number; previouslyBilledCents: number;
 }
 
 // ---------------------------------------------------------------------------
-// Rule 6: consultant pass-through
+// Rule 6: consultants
 
-/** Their bill to us plus the markup: roundHalfUp(cost × (10000 + markup) / 10000). */
+/** A fee plus the markup: roundHalfUp(cost × (10000 + markup) / 10000). The client-facing consultant fee. */
 export function consultantAmount(costCents: number, markupBp: number): number {
   return divRoundHalfUp(costCents * (10000 + markupBp), 10000);
+}
+
+// ---------------------------------------------------------------------------
+// WIP on fixed-fee phases (1.8 B, Blake 2026-11-11)
+
+/** Bill-rate value of time: roundHalfUp(Σ hours × 100 × rate / 100), rounded once. */
+export function timeValueCents(entries: readonly { hours: string | number; rateCents: number }[]): number {
+  return divRoundHalfUp(
+    entries.reduce((n, e) => n + hoursToHundredths(e.hours) * e.rateCents, 0),
+    100,
+  );
+}
+
+/** Hours used ÷ budget hours as a suggested % complete, capped at 100 %; null with no budget. */
+export function hoursSuggestBp(usedHundredths: number, budgetHours: string | number): number | null {
+  const budget = hoursToHundredths(budgetHours);
+  if (budget <= 0) return null;
+  return Math.min(10000, divRoundHalfUp(usedHundredths * 10000, budget));
 }
 
 // ---------------------------------------------------------------------------

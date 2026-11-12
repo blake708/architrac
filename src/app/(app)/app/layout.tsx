@@ -19,6 +19,8 @@ export default async function AppLayout({
   const collapsed = isRailCollapsed((await cookies()).get(RAIL_COOKIE)?.value);
   const entries = railEntries(session.settings.modulesEnabled, {
     showOffModules: can(session.membership, "modules.manage"),
+    // PMs see their own projects' invoices, so the item shows for them too.
+    showInvoices: can(session.membership, "invoices.view", { isProjectManager: true }),
   });
 
   return (

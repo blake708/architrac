@@ -1,5 +1,6 @@
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import {
+  invoices,
   activities,
   memberships,
   overheadCategories,
@@ -108,6 +109,11 @@ export type TimesheetView = {
   rejectedAt: string | null;
   rejectedBy: string | null;
   rejectionNote: string | null;
+  /**
+   * Where this week's billed time is (invoicing rule 13): "Billed on 2026-128",
+   * "On draft invoice". Empty when none of it is on an invoice.
+   */
+  invoiced: string[];
   targetHours: number;
   targetUtilizationPct: number | null;
   notesRule: NotesRule;
@@ -153,6 +159,16 @@ export async function findTimesheet(db: TenantDb, membershipId: string, weekStar
 }
 
 /** Load the week. `weekStart` must already be a week-start day. */
+/** "Billed on 2026-128" / "On draft invoice" for each invoice holding this sheet's time. */
+async function invoicedLabels(db: TenantDb, timesheetId: string): Promise<string[]> {
+  const rows = await db
+    .selectDistinct({ number: invoices.number })
+    .from(timeEntries)
+    .innerJoin(invoices, eq(invoices.id, timeEntries.invoiceId))
+    .where(and(eq(timeEntries.timesheetId, timesheetId), isNull(timeEntries.archivedAt)));
+  return rows.map((r) => (r.number ? `Billed on ${r.number}` : "On draft invoice")).sort();
+}
+
 export async function loadWeek(
   db: TenantDb,
   ctx: TimeContext,
@@ -342,6 +358,7 @@ export async function loadWeek(
     rejectedAt: iso(sheet?.rejectedAt),
     rejectedBy: initialsOf(sheet?.rejectedBy ? actors.get(sheet.rejectedBy) : undefined),
     rejectionNote: sheet?.rejectionNote ?? null,
+    invoiced: sheet ? await invoicedLabels(db, sheet.id) : [],
     targetHours: Number(me?.capacity ?? 40),
     targetUtilizationPct: me?.target == null ? null : me.target / 100,
     notesRule: ctx.notesRule,

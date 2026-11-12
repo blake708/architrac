@@ -99,8 +99,11 @@ export async function saveCompanyCore(actor: SettingsActor, raw: unknown): Promi
   const parsed = companySchema.safeParse(raw);
   if (!parsed.success) return { ok: false, fieldErrors: fieldErrorsOf(parsed.error.issues) };
   const { id: companyId, ...input } = parsed.data;
-  // Only clients have a billing contact.
-  if (input.kind !== "client") input.billingContactId = null;
+  // Only clients have a billing contact and billing email.
+  if (input.kind !== "client") {
+    input.billingContactId = null;
+    input.billingEmail = null;
+  }
 
   try {
     const id = await withFirm(actor.firmId, async (db) => {

@@ -89,8 +89,8 @@ const MATRIX: Row[] = [
     expected: { owner: true, admin: true, project_manager: false, staff: false },
   },
   {
-    row: "Create/send invoices: draft",
-    actions: ["invoices.create_draft"],
+    row: "Create/send invoices: draft; see invoices; review (PM = Principal in Charge, #26)",
+    actions: ["invoices.create_draft", "invoices.view", "invoices.review"],
     expected: { owner: true, admin: true, project_manager: "pm", staff: false },
   },
   {

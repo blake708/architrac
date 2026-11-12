@@ -67,6 +67,12 @@ export const FIRMS = {
     modules: [] as string[],
     createdBy: "ioOwner",
   },
+  /** For invoices.spec.ts (Invoices page and builder), which makes drafts. */
+  kappa: {
+    name: `${E2E_PREFIX}Kappa Billing`,
+    modules: [] as string[],
+    createdBy: "kaOwner",
+  },
 } as const;
 export type FirmKey = keyof typeof FIRMS;
 
@@ -262,6 +268,24 @@ export const PEOPLE = {
     firstName: "Kit",
     lastName: "Lowe",
     memberships: [{ firm: "iota", role: "staff" }],
+  },
+  kaOwner: {
+    email: "architrac-e2e-kaowner+clerk_test@example.com",
+    firstName: "Kay",
+    lastName: "Owens",
+    memberships: [{ firm: "kappa", role: "owner" }],
+  },
+  kaPm: {
+    email: "architrac-e2e-kapm+clerk_test@example.com",
+    firstName: "Jay",
+    lastName: "Reed",
+    memberships: [{ firm: "kappa", role: "project_manager" }],
+  },
+  kaStaff: {
+    email: "architrac-e2e-kastaff+clerk_test@example.com",
+    firstName: "Kim",
+    lastName: "Lane",
+    memberships: [{ firm: "kappa", role: "staff" }],
   },
 } satisfies Record<string, Person>;
 export type PersonKey = keyof typeof PEOPLE;

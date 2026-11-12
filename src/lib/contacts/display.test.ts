@@ -18,6 +18,7 @@ const company = (c: Partial<CompanyRow>): CompanyRow => ({
   notes: null,
   primaryContactId: null,
   billingContactId: null,
+  billingEmail: null,
   missingBilling: false,
   projects: [],
   ...c,

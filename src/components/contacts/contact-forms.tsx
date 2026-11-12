@@ -92,6 +92,7 @@ function CompanyBody({
     postalCode: company?.postalCode ?? "",
     primaryContactId: company?.primaryContactId ?? "",
     billingContactId: company?.billingContactId ?? "",
+    billingEmail: company?.billingEmail ?? "",
     notes: company?.notes ?? "",
   });
   const [errors, setErrors] = useState<Errors>({});
@@ -117,6 +118,7 @@ function CompanyBody({
         ...v,
         primaryContactId: v.primaryContactId || null,
         billingContactId: v.kind === "client" ? v.billingContactId || null : null,
+        billingEmail: v.kind === "client" ? v.billingEmail : "",
       });
       if (!result.ok) {
         setErrors((result.fieldErrors ?? {}) as Errors);
@@ -190,7 +192,7 @@ function CompanyBody({
                 value={v.billingContactId}
                 onChange={(e) => set({ billingContactId: e.target.value })}
                 error={errors.billingContactId}
-                hint="Invoices are emailed here"
+                hint="Invoices are emailed to this person, or copied when there's a billing email"
               >
                 <option value="">None</option>
                 {staff.map((p) => (
@@ -199,6 +201,17 @@ function CompanyBody({
                   </option>
                 ))}
               </Select>
+            )}
+            {v.kind === "client" && (
+              <Input
+                type="email"
+                label="Billing email"
+                value={v.billingEmail}
+                onChange={(e) => set({ billingEmail: e.target.value })}
+                error={errors.billingEmail}
+                placeholder="ap@client.com"
+                hint="A shared address for invoices. Invoices go here and copy the billing contact."
+              />
             )}
           </div>
         ) : (

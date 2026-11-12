@@ -78,6 +78,25 @@ describe("railEntries", () => {
   });
 });
 
+describe("Invoices in the rail (decision #27)", () => {
+  it("shows after Time for people who can see invoices, and never for staff", () => {
+    expect(labels(railEntries([], { showOffModules: false, showInvoices: true }))).toEqual([
+      "Home",
+      "Projects",
+      "Contacts",
+      "Team",
+      "Time",
+      "Invoices",
+      "Reports",
+    ]);
+    expect(labels(railEntries([], { showOffModules: false }))).not.toContain("Invoices");
+  });
+
+  it("titles invoice pages", () => {
+    expect(titleForPath("/app/invoices/abc/edit")).toBe("Invoices");
+  });
+});
+
 describe("isModuleOn", () => {
   it("checks modules_enabled", () => {
     expect(isModuleOn({ modulesEnabled: TMG }, "build")).toBe(true);

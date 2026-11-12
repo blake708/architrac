@@ -103,8 +103,14 @@ const RULES = {
   // reopen an approved sheet (rule 5).
   "time.approve_for": OWNER_ADMIN,
   "time.reopen": OWNER_ADMIN,
+  // See invoices (the Invoices page; PMs only their own projects' invoices).
+  "invoices.view": { ...OWNER_ADMIN, project_manager: "own_projects" },
   // Create/send invoices (PM: draft only, own projects)
   "invoices.create_draft": { ...OWNER_ADMIN, project_manager: "own_projects" },
+  // Return to draft, send, resend (decision #26): owner/admin, or a PM on a
+  // project where they are the Principal in Charge. Callers pass
+  // isProjectManager = "is this project's Principal in Charge".
+  "invoices.review": { ...OWNER_ADMIN, project_manager: "own_projects" },
   "invoices.send": OWNER_ADMIN,
   // Record payments, QuickBooks sync
   "payments.record": OWNER_ADMIN,

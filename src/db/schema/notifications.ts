@@ -16,6 +16,9 @@ export const NOTIFICATION_KINDS = [
   "timesheet_reminder",
   "approver_nudge",
   "review_summary",
+  // Invoices (1.8): a draft submitted for review, a draft returned.
+  "invoice_review",
+  "invoice_returned",
 ] as const;
 export type NotificationKind = (typeof NOTIFICATION_KINDS)[number];
 
