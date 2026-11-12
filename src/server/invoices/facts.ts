@@ -7,7 +7,7 @@ import { type InvoiceMoney, type PriorLine, OPEN_STATUSES, lastBilledBp, previou
 // per client, last billed %. Only non-archived invoices and lines; which
 // statuses count is decided by the calc functions (rule 2).
 
-export type ProjectPriorLine = PriorLine & { projectId: string };
+export type ProjectPriorLine = PriorLine & { projectId: string; sentAt: Date | null };
 
 /** Every live line on these projects' live invoices, any status. */
 export async function linesForProjects(db: TenantDb, projectIds: readonly string[]): Promise<ProjectPriorLine[]> {
@@ -18,6 +18,7 @@ export async function linesForProjects(db: TenantDb, projectIds: readonly string
       invoiceId: invoices.id,
       invoiceStatus: invoices.status,
       issueDate: invoices.issueDate,
+      sentAt: invoices.sentAt,
       projectPhaseId: invoiceLines.projectPhaseId,
       lineType: invoiceLines.lineType,
       amountCents: invoiceLines.amountCents,

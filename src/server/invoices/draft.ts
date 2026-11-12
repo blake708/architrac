@@ -67,9 +67,16 @@ export async function projectAccess(db: TenantDb, actor: InvoiceActor, projectId
   };
 }
 
+/**
+ * Sending started (it has its number) but didn't finish (rule 15). It's
+ * frozen so the saved PDF and the email match it; only Retry is left.
+ */
+export const sendStarted = (inv: Pick<InvoiceRow, "status" | "number">) =>
+  inv.number !== null && (inv.status === "draft" || inv.status === "in_review");
+
 /** Can this person change the draft as it stands? */
-export const canEdit = (inv: Pick<InvoiceRow, "status">, a: Access) =>
-  a.canDraft && (inv.status === "draft" || (inv.status === "in_review" && a.canReview));
+export const canEdit = (inv: Pick<InvoiceRow, "status" | "number">, a: Access) =>
+  !sendStarted(inv) && a.canDraft && (inv.status === "draft" || (inv.status === "in_review" && a.canReview));
 
 /** The version a page holds: the invoice's last change. */
 export const versionOf = (inv: Pick<InvoiceRow, "updatedAt">) => inv.updatedAt.toISOString();
@@ -94,6 +101,7 @@ export async function lockForWrite(
   if (!inv) throw new InvoiceError(INVOICE_MESSAGES.notFound);
   const access = await projectAccess(db, actor, inv.projectId);
   if (!access?.canDraft && !access?.canReview) throw new Forbidden();
+  if (sendStarted(inv)) throw new InvoiceError(INVOICE_MESSAGES.sending);
   if (need === "review") {
     if (!access.canReview) throw new Forbidden();
     if (inv.status !== "in_review") throw new InvoiceError(INVOICE_MESSAGES.notInReview);

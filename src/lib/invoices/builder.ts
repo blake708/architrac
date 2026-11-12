@@ -26,6 +26,18 @@ export const INVOICE_MESSAGES = {
   submitted: "Submitted for review.",
   returned: "Returned to draft.",
   deleted: "Draft deleted. Its time is free to bill again.",
+  // Send, resend, void (1.8 C)
+  sending: "Sending started but didn't finish. Retry to finish sending; the invoice keeps its number.",
+  notSendable: "Only a draft or an invoice in review can be sent.",
+  notSent: "Only a sent invoice can do that.",
+  numberFailed: "Couldn't find a free invoice number; check the number format in Settings.",
+  emailList: "Enter email addresses separated by commas.",
+  toRequired: "Add at least one email address to send to.",
+  subject: "Enter a subject (up to 200 characters).",
+  message: "Keep the message to 5,000 characters or fewer.",
+  voidReason: "Add a reason of at least 3 characters.",
+  hasPayments: "Delete payments first.",
+  noPdf: "This invoice has no saved PDF.",
 } as const;
 
 const uuid = z.uuid();
@@ -71,6 +83,66 @@ export const adjustmentInput = z.object({
 });
 
 export const lineInput = z.object({ ...base, lineId: uuid });
+
+/** "a@x.com, b@y.com; c@z.com" → a clean list (lowercase, no repeats); null if any isn't an email. */
+export function parseEmailList(text: string): string[] | null {
+  const parts = text
+    .split(/[,;\s]+/)
+    .map((p) => p.trim().toLowerCase())
+    .filter(Boolean);
+  if (parts.some((p) => p.length > 254 || !z.email().safeParse(p).success)) return null;
+  return [...new Set(parts)];
+}
+
+const emailList = z
+  .string()
+  .max(2000, INVOICE_MESSAGES.emailList)
+  .transform((v, ctx) => {
+    const list = parseEmailList(v);
+    if (!list) {
+      ctx.addIssue({ code: "custom", message: INVOICE_MESSAGES.emailList });
+      return z.NEVER;
+    }
+    return list;
+  });
+
+const emailFields = {
+  to: emailList,
+  cc: emailList,
+  subject: z.string().trim().min(1, INVOICE_MESSAGES.subject).max(200, INVOICE_MESSAGES.subject),
+  message: z.string().max(5000, INVOICE_MESSAGES.message),
+};
+
+/** Send… (rule 15). "mark" = mark sent without emailing. */
+export const sendInput = z.discriminatedUnion("mode", [
+  z.object({ ...base, mode: z.literal("email"), issueDate: isoDate, expectedNumber: z.string().max(60), ...emailFields }),
+  z.object({ ...base, mode: z.literal("mark"), issueDate: isoDate }),
+]);
+export type SendInput = z.input<typeof sendInput>;
+
+export const resendInput = z.object({ invoiceId: uuid, ...emailFields });
+export const voidInput = z.object({ invoiceId: uuid, reason: z.string() });
+
+/** The Send dialog's starting message (rule 15c). Plain text. */
+export function defaultSendMessage(v: {
+  number: string;
+  projectName: string;
+  periodEnd: string;
+  total: string;
+  dueDate: string;
+  sender: string;
+  firmName: string;
+}): string {
+  return [
+    "Hello,",
+    "",
+    `Attached is invoice ${v.number} for ${v.projectName}, for services through ${v.periodEnd}. The amount due is ${v.total}, due ${v.dueDate}.`,
+    "",
+    "Thank you,",
+    v.sender,
+    v.firmName,
+  ].join("\n");
+}
 export const returnInput = z.object({ ...base, note: z.string() });
 
 /** "30.25" → 3025 basis points; null when it isn't a 0–100 number with up to 2 decimals. */

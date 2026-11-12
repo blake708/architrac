@@ -66,6 +66,11 @@ export const invoices = pgTable(
     /** Storage key of the sent PDF (private bucket; served through signed URLs). */
     pdfUrl: text("pdf_url"),
     sentAt: timestamp("sent_at", { withTimezone: true }),
+    /**
+     * When the send email went out (rule 15c). Set before the invoice is
+     * marked sent, so a retry after a later failure never emails twice.
+     */
+    emailedAt: timestamp("emailed_at", { withTimezone: true }),
     reviewedBy: uuid("reviewed_by").references(() => users.id),
     reviewedAt: timestamp("reviewed_at", { withTimezone: true }),
     voidedAt: timestamp("voided_at", { withTimezone: true }),

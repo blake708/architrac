@@ -16,6 +16,8 @@ import {
   invoiceTotals,
   lastBilledBp,
   nteCap,
+  nteStanding,
+  overallPercentBp,
   paymentProblem,
   periodStart,
   previouslyBilled,
@@ -141,6 +143,21 @@ describe("rule 3: fixed-fee line", () => {
     expect(formatPercentBp(3050)).toBe("30.5%");
     expect(formatPercentBp(3005)).toBe("30.05%");
   });
+
+  it("overall % complete weights each row by its fee", () => {
+    // $10,000 at 100% + $30,000 at 20% → $16,000 of $40,000 = 40%.
+    expect(
+      overallPercentBp([
+        { feeCents: 1_000_000, earnedCents: 1_000_000 },
+        { feeCents: 3_000_000, earnedCents: 600_000 },
+      ]),
+    ).toBe(4000);
+    // Rounds half up to the basis point: 1 of 3 → 33.33%.
+    expect(overallPercentBp([{ feeCents: 300, earnedCents: 100 }])).toBe(3333);
+    expect(overallPercentBp([{ feeCents: 300, earnedCents: 200 }])).toBe(6667);
+    expect(overallPercentBp([])).toBe(0);
+    expect(overallPercentBp([{ feeCents: 0, earnedCents: 0 }])).toBe(0);
+  });
 });
 
 describe("rule 4: hourly lines", () => {
@@ -173,6 +190,20 @@ describe("rule 4: hourly lines", () => {
 });
 
 describe("rule 5: not-to-exceed", () => {
+  it("standing after this invoice: billed to date and what's left of the limit", () => {
+    // Spec example: limit $9,300, $8,200 before, $1,100 now → all used.
+    expect(nteStanding({ capCents: 930_000, previouslyBilledCents: 820_000, thisInvoiceCents: 110_000 })).toEqual({
+      billedToDateCents: 930_000,
+      remainingCents: 0,
+    });
+    expect(nteStanding({ capCents: 930_000, previouslyBilledCents: 200_000, thisInvoiceCents: 50_000 })).toEqual({
+      billedToDateCents: 250_000,
+      remainingCents: 680_000,
+    });
+    // Billed past a lowered limit: remaining never goes negative.
+    expect(nteStanding({ capCents: 100_000, previouslyBilledCents: 150_000, thisInvoiceCents: 0 }).remainingCents).toBe(0);
+  });
+
   it("over the cap: −21,500 write-down, net $1,100.00, red warning", () => {
     expect(nteCap({ capCents: 930_000, previouslyBilledCents: 820_000, hourlyAmountCents: 131_500 })).toEqual({
       netCents: 110_000,

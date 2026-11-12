@@ -68,13 +68,9 @@ export function InvoicesPage({ rows, projects }: { rows: InvoiceListRow[]; proje
                   return (
                     <TableRow key={r.id} data-invoice={r.id}>
                       <TableCell className="num">
-                        {open ? (
-                          <Link href={`/app/invoices/${r.id}/edit`} className="font-medium text-ink">
-                            {r.number ?? "Draft"}
-                          </Link>
-                        ) : (
-                          r.number
-                        )}
+                        <Link href={open ? `/app/invoices/${r.id}/edit` : `/app/invoices/${r.id}`} className="font-medium text-ink">
+                          {r.number ?? "Draft"}
+                        </Link>
                       </TableCell>
                       <TableCell>
                         <div>{r.client}</div>

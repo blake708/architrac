@@ -16,7 +16,7 @@ export default async function InvoiceEditRoute({ params }: { params: Promise<{ i
   const actor = { ...actorFrom(session), timezone: session.firm.timezone };
   const view = await withFirm(session.firm.id, (db) => loadBuilder(db, actor, invoiceId));
   if (!view) return <AccessDenied firmName={firmDisplayName(session.firm)} />;
-  if (view.status !== "draft" && view.status !== "in_review") redirect("/app/invoices");
+  if (view.status !== "draft" && view.status !== "in_review") redirect(`/app/invoices/${invoiceId}`);
   // Keyed by invoice, not version: a save refreshes this page, and the
   // builder must keep its open dialogs and typing (it takes newer data itself).
   return <InvoiceBuilder key={view.id} initial={view} />;

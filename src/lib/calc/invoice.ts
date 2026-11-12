@@ -130,6 +130,16 @@ export function formatPercentBp(bp: number): string {
   return frac === 0 ? `${whole}%` : `${whole}.${String(frac).padStart(2, "0").replace(/0$/, "")}%`;
 }
 
+/**
+ * Overall % complete for a fee table's total row: total earned ÷ total fee,
+ * so each phase or consultant counts by the size of its fee. No fee → 0.
+ */
+export function overallPercentBp(rows: readonly { feeCents: number; earnedCents: number }[]): number {
+  const fee = rows.reduce((a, r) => a + r.feeCents, 0);
+  const earned = rows.reduce((a, r) => a + r.earnedCents, 0);
+  return fee > 0 ? divRoundHalfUp(earned * 10000, fee) : 0;
+}
+
 export type FixedFeeResult =
   | { ok: true; earnedToDateCents: number; amountCents: number; /** Nothing to bill this time: no line. */ omit: boolean }
   | { ok: false; error: string };
@@ -214,6 +224,19 @@ export function nteCap(input: { capCents: number; previouslyBilledCents: number;
   const pctOfCapBp = Math.floor((used * 10000) / capCents);
   const warning: NteWarning = used >= capCents ? "reached" : pctOfCapBp >= 9000 ? "approaching" : "none";
   return { netCents, writeDownCents, pctOfCapBp, warning };
+}
+
+/**
+ * An NTE phase's standing after this invoice, for the PDF's Not-to-exceed
+ * table: billed to date = previously billed + this invoice; remaining =
+ * the limit less that, never below 0.
+ */
+export function nteStanding(input: { capCents: number; previouslyBilledCents: number; thisInvoiceCents: number }): {
+  billedToDateCents: number;
+  remainingCents: number;
+} {
+  const billedToDateCents = input.previouslyBilledCents + input.thisInvoiceCents;
+  return { billedToDateCents, remainingCents: Math.max(0, input.capCents - billedToDateCents) };
 }
 
 // ---------------------------------------------------------------------------

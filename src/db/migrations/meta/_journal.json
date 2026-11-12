@@ -148,6 +148,13 @@
       "when": 1794437900352,
       "tag": "0020_billing_email",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1794457924499,
+      "tag": "0021_invoice_emailed_at",
+      "breakpoints": true
     }
   ]
 }

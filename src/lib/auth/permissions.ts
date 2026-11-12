@@ -112,6 +112,8 @@ const RULES = {
   // isProjectManager = "is this project's Principal in Charge".
   "invoices.review": { ...OWNER_ADMIN, project_manager: "own_projects" },
   "invoices.send": OWNER_ADMIN,
+  // Void a sent invoice (rule 16). Never a PM, even a Principal in Charge (#26).
+  "invoices.void": OWNER_ADMIN,
   // Record payments, QuickBooks sync
   "payments.record": OWNER_ADMIN,
   "quickbooks.sync": OWNER_ADMIN,

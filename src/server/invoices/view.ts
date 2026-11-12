@@ -8,6 +8,7 @@ import {
   invoiceLines,
   invoices,
   memberships,
+  projectPhases,
   projects,
   timeEntries,
   timesheets,
@@ -17,10 +18,23 @@ import type { TenantDb } from "@/db/tenant";
 import { can } from "@/lib/auth/permissions";
 import { type InvoiceStatus, OPEN_STATUSES, hoursSuggestBp, hoursToHundredths, timeValueCents } from "@/lib/calc/invoice";
 import { type ConsultantRow, type FixedRow, type HourlyRow, money, sumHundredths } from "@/lib/calc/invoice-plan";
+import { servicesSubtotal } from "@/lib/calc/invoice-sections";
 import { formatDate } from "@/lib/format";
 import { NO_EMAIL, invoiceRecipients, sendProblems } from "@/lib/invoices/builder";
 import { loadRateBook } from "@/server/time/approval";
-import { type Access, type InvoiceActor, type InvoiceRow, canEdit, lastCountedPeriodEnd, planFor, projectAccess, projectPhaseRows, recalculate, versionOf } from "./draft";
+import {
+  type Access,
+  type InvoiceActor,
+  type InvoiceRow,
+  canEdit,
+  lastCountedPeriodEnd,
+  planFor,
+  projectAccess,
+  projectPhaseRows,
+  recalculate,
+  sendStarted,
+  versionOf,
+} from "./draft";
 import { addDays } from "@/lib/calc/timesheet";
 
 // What the invoice pages read (invoicing spec, Layout A and C). Bill rates
@@ -61,7 +75,9 @@ export type BuilderView = {
     wipFrom: string | null;
   };
   contacts: { id: string; name: string; email: string | null }[];
+  /** additional: an additional service, shown apart from the base contract (rule 17). */
   fixed: (FixedRow & {
+    additional: boolean;
     /** Bill-rate value of time on the phase in this invoice's period. */
     wipCents: number;
     wipHundredths: number;
@@ -71,12 +87,14 @@ export type BuilderView = {
     /** Hours used ÷ budget, capped at 100 %; null with no budget. */
     suggestBp: number | null;
   })[];
-  hourly: (HourlyRow & { entries: BuilderEntry[] })[];
+  hourly: (HourlyRow & { additional: boolean; entries: BuilderEntry[] })[];
   consultants: ConsultantRow[];
   adjustments: { id: string; description: string; amountCents: number }[];
   warnings: Warning[];
   totals: {
     subtotalCents: number;
+    /** Before adjustments: shown only when there are adjustments. */
+    servicesSubtotalCents: number;
     taxCents: number;
     totalCents: number;
     priorInvoices: { number: string; balanceCents: number }[];
@@ -84,7 +102,17 @@ export type BuilderView = {
   };
   /** Rule 14: what blocks Submit for review / Send. */
   problems: string[];
-  can: { edit: boolean; submit: boolean; returnToDraft: boolean; delete: boolean };
+  can: {
+    edit: boolean;
+    submit: boolean;
+    returnToDraft: boolean;
+    delete: boolean;
+    /** Send… (owner/admin, or the project's Principal in Charge: #26). */
+    send: boolean;
+  };
+  /** Sending started (numbered) but didn't finish: only Retry is left (rule 15). */
+  sendStarted: boolean;
+  number: string | null;
 };
 
 const pct1 = (bp: number) => `${(Math.floor(bp / 10) / 10).toFixed(1).replace(/\.0$/, "")}%`;
@@ -206,6 +234,11 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
   const lastEnd = await lastCountedPeriodEnd(db, inv.projectId);
   const wipFrom = lastEnd ? addDays(lastEnd, 1) : null;
   const wip = await fixedPhaseWip(db, inv, wipFrom);
+  const extraPhases = await db
+    .select({ id: projectPhases.id })
+    .from(projectPhases)
+    .where(and(eq(projectPhases.projectId, inv.projectId), eq(projectPhases.isAdditionalService, true)));
+  const additional = new Set(extraPhases.map((x) => x.id));
 
   // Other open invoices on the project (account summary).
   const prior = await db
@@ -292,6 +325,7 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
       const used = w?.usedHundredths ?? 0;
       return {
         ...f,
+        additional: additional.has(f.phaseId),
         wipCents: w?.wipCents ?? 0,
         wipHundredths: w?.wipHundredths ?? 0,
         usedHundredths: used,
@@ -301,6 +335,7 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
     }),
     hourly: plan.hourly.map((h) => ({
       ...h,
+      additional: additional.has(h.phaseId),
       entries: entryRows
         .filter((e) => e.phaseId === h.phaseId)
         .map((e) => ({
@@ -319,6 +354,7 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
     warnings,
     totals: {
       subtotalCents: inv.subtotalCents,
+      servicesSubtotalCents: servicesSubtotal(inv.subtotalCents, adjustments),
       taxCents: inv.taxCents,
       totalCents: inv.totalCents,
       priorInvoices,
@@ -329,8 +365,11 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
       edit: editable,
       submit: editable && inv.status === "draft",
       returnToDraft: access.canReview && inv.status === "in_review",
-      delete: access.canDraft && inv.status === "draft",
+      delete: access.canDraft && inv.status === "draft" && !sendStarted(inv),
+      send: access.canReview && (inv.status === "draft" || inv.status === "in_review"),
     },
+    sendStarted: sendStarted(inv),
+    number: inv.number,
   };
 }
 
