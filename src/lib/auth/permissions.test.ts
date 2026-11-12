@@ -94,8 +94,8 @@ const MATRIX: Row[] = [
     expected: { owner: true, admin: true, project_manager: "pm", staff: false },
   },
   {
-    row: "Create/send invoices: send",
-    actions: ["invoices.send"],
+    row: "Create/send invoices: send; void (never a PM, rule 16)",
+    actions: ["invoices.send", "invoices.void"],
     expected: OA,
   },
   {

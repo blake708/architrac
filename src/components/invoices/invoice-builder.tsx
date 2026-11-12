@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { ErrorBanner } from "@/components/settings/error-banner";
-import { Button } from "@/components/ui/button";
+import { Button, buttonClasses } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Input, Select, Textarea } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
@@ -13,14 +13,18 @@ import { formatDate } from "@/lib/format";
 import { INVOICE_MESSAGES } from "@/lib/invoices/builder";
 import {
   deleteDraft,
+  prepareSend,
   recalculateDraft,
   returnToDraft,
+  sendInvoice,
   submitForReview,
   updateDraftSettings,
 } from "@/server/invoices/actions";
+import type { SendDefaults } from "@/server/invoices/detail";
 import type { BuilderView } from "@/server/invoices/view";
 import { AdjustmentsSection, ConsultantsSection, FixedSection, HourlySection, Section } from "./builder-sections";
 import { Callout, StatusBadge } from "./invoice-bits";
+import { SendDialog } from "./send-dialog";
 import { useBuilder } from "./use-builder";
 
 /**
@@ -35,6 +39,19 @@ export function InvoiceBuilder({ initial }: { initial: BuilderView }) {
   const [returning, setReturning] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
+  const [sendDefaults, setSendDefaults] = useState<SendDefaults | null>(null);
+
+  async function openSend() {
+    setSendDefaults(null);
+    setSending(true);
+    const d = await prepareSend(view.id).catch(() => null);
+    if (!d) {
+      setSending(false);
+      return b.setError("Couldn't get the invoice ready to send. Reload and try again.");
+    }
+    setSendDefaults(d);
+  }
 
   async function submit() {
     setNotice(null);
@@ -69,15 +86,29 @@ export function InvoiceBuilder({ initial }: { initial: BuilderView }) {
                 Recalculate
               </Button>
             )}
+            <a
+              href={`/api/invoices/${view.id}/preview`}
+              target="_blank"
+              rel="noopener"
+              className={buttonClasses("secondary")}
+              aria-disabled={saving || undefined}
+            >
+              Preview PDF
+            </a>
             {view.can.delete && (
               <Button variant="danger" onClick={() => setDeleting(true)}>
                 Delete draft
               </Button>
             )}
             {view.can.returnToDraft && <Button onClick={() => setReturning(true)}>Return to draft</Button>}
-            {view.can.submit && (
+            {view.can.submit && !view.can.send && (
               <Button variant="primary" onClick={() => void submit()} disabled={saving}>
                 Submit for review
+              </Button>
+            )}
+            {view.can.send && (
+              <Button variant="primary" onClick={() => void openSend()} disabled={saving}>
+                {view.sendStarted ? "Retry sending…" : "Send…"}
               </Button>
             )}
           </>
@@ -94,8 +125,15 @@ export function InvoiceBuilder({ initial }: { initial: BuilderView }) {
           </div>
         )}
         {notice && !error && <Callout tone="attention">{notice}</Callout>}
-        {view.status === "in_review" && !view.can.edit && (
-          <Callout tone="attention">{INVOICE_MESSAGES.notEditable}</Callout>
+        {view.sendStarted ? (
+          <Callout tone="danger">
+            {view.can.send
+              ? `Invoice ${view.number} is numbered but didn't finish sending. Retry sending to finish; the email won't go twice.`
+              : `Invoice ${view.number} is being sent. Ask an owner or admin to finish sending it.`}
+          </Callout>
+        ) : (
+          view.status === "in_review" &&
+          !view.can.edit && <Callout tone="attention">{INVOICE_MESSAGES.notEditable}</Callout>
         )}
 
         <SettingsStrip b={b} />
@@ -122,6 +160,18 @@ export function InvoiceBuilder({ initial }: { initial: BuilderView }) {
       </div>
 
       <ReturnDialog open={returning} onOpenChange={setReturning} b={b} />
+      <SendDialog
+        open={sending}
+        onOpenChange={setSending}
+        defaults={sendDefaults}
+        retrying={view.sendStarted}
+        onSend={async (input) => {
+          const r = await sendInvoice({ ...input, invoiceId: view.id, version: view.version });
+          if (r.ok) router.push(`/app/invoices/${view.id}`);
+          else if ("retry" in r && r.retry) router.refresh();
+          return r;
+        }}
+      />
       <Dialog open={deleting} onOpenChange={setDeleting}>
         <DialogContent
           title="Delete this draft?"

@@ -16,7 +16,10 @@ import {
   toggleEntryCore,
   updateDraftSettingsCore,
 } from "./builder";
+import { withFirm } from "@/db/tenant";
+import { loadSendDefaults } from "./detail";
 import type { InvoiceActor } from "./draft";
+import { resendInvoiceCore, sendInvoiceCore, voidInvoiceCore } from "./send";
 
 // Invoice server actions (invoicing spec, Actions). Who is asking comes from
 // the session; each *Core function checks permission before doing anything.
@@ -72,6 +75,26 @@ export async function returnToDraft(input: unknown) {
 }
 export async function deleteDraft(input: unknown) {
   const r = await deleteDraftCore(await actor(), input);
+  if (r.ok) refresh(r.data.projectId);
+  return r;
+}
+
+/** The Send dialog's starting values (number it should get, today's date, email). */
+export async function prepareSend(invoiceId: string) {
+  const a = await actor();
+  if (typeof invoiceId !== "string") return null;
+  return withFirm(a.firmId, (db) => loadSendDefaults(db, a, invoiceId));
+}
+export async function sendInvoice(input: unknown) {
+  const r = await sendInvoiceCore(await actor(), input);
+  refresh();
+  return r;
+}
+export async function resendInvoice(input: unknown) {
+  return andRefresh(resendInvoiceCore(await actor(), input));
+}
+export async function voidInvoice(input: unknown) {
+  const r = await voidInvoiceCore(await actor(), input);
   if (r.ok) refresh(r.data.projectId);
   return r;
 }

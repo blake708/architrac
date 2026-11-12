@@ -204,3 +204,59 @@ test("deleting the draft frees its time for the next one", async ({ page }) => {
   const [{ n }] = await query<{ n: number }>("select count(*)::int as n from time_entries where firm_id = :firm and invoice_id is not null");
   expect(n).toBe(0);
 });
+
+// 1.8 C: preview, send, download, void.
+
+test("the owner starts a new invoice and previews its PDF", async ({ page }) => {
+  await signInAs(page, "kaOwner", "/app/invoices");
+  await page.getByRole("button", { name: "New invoice" }).first().click();
+  const dialog = page.getByRole("dialog", { name: "New invoice" });
+  await dialog.getByLabel("Find a project").fill("medical");
+  await dialog.getByRole("button", { name: /Medical Office Building/ }).click();
+  await expect(page).toHaveURL(/\/app\/invoices\/[0-9a-f-]+\/edit$/, { timeout: 30_000 });
+  const sd = page.getByLabel("% complete for Schematic Design");
+  await sd.fill("10");
+  await sd.press("Enter");
+  // DD 30 % and MEP 50 % stay as set on the phase and consultant: $24,310 + SD $2,790.
+  await expect(total(page)).toHaveText("$27,100");
+  // The owner sends; there's no Submit for review step for them.
+  await expect(page.getByRole("button", { name: "Send…" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Submit for review" })).toHaveCount(0);
+  const href = await page.getByRole("link", { name: "Preview PDF" }).getAttribute("href");
+  const pdf = await page.request.get(href!);
+  expect(pdf.status()).toBe(200);
+  expect(pdf.headers()["content-type"]).toBe("application/pdf");
+  expect((await pdf.body()).subarray(0, 5).toString()).toBe("%PDF-");
+});
+
+test("the owner marks it sent, downloads the saved PDF, and voids it", async ({ page }) => {
+  // Saving the PDF needs file storage: skipped where the R2 keys aren't set (CI).
+  test.skip(!process.env.R2_BUCKET || !process.env.R2_ACCESS_KEY_ID, "R2 isn't set up here");
+  await signInAs(page, "kaOwner", "/app/invoices");
+  await page.getByRole("link", { name: "Draft" }).click();
+  await page.getByRole("button", { name: "Send…" }).click();
+  const send = page.getByRole("dialog", { name: "Send invoice" });
+  await expect(send.getByLabel("To")).toHaveValue("ap@palmetto.example");
+  await send.getByRole("button", { name: "Mark sent without emailing" }).click();
+  await expect(page).toHaveURL(/\/app\/invoices\/[0-9a-f-]+$/, { timeout: 30_000 });
+  await expect(page.getByTestId("invoice-number")).toHaveText(/^\d{4}-001$/);
+  await expect(page.getByTestId("invoice-status")).toHaveText("Sent");
+  await expect(page.getByText("Marked sent, not emailed")).toBeVisible();
+
+  // Download PDF: a short-lived link to the private file.
+  const href = await page.getByRole("link", { name: "Download PDF" }).getAttribute("href");
+  const r = await page.request.get(href!, { maxRedirects: 0 });
+  expect(r.status()).toBe(302);
+  const file = await page.request.get(r.headers().location);
+  expect(file.status()).toBe(200);
+  expect((await file.body()).subarray(0, 5).toString()).toBe("%PDF-");
+
+  await page.getByRole("button", { name: "Void" }).click();
+  const v = page.getByRole("dialog", { name: "Void this invoice?" });
+  await v.getByLabel("Reason").fill("Wrong %");
+  await v.getByRole("button", { name: "Void invoice" }).click();
+  await expect(page.getByTestId("invoice-status")).toHaveText("Void");
+  await expect(page.getByText(/VOID · .* · Wrong %/)).toBeVisible();
+  const [{ n }] = await query<{ n: number }>("select count(*)::int as n from time_entries where firm_id = :firm and invoice_id is not null");
+  expect(n).toBe(0);
+});

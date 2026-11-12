@@ -20,7 +20,19 @@ import { type ConsultantRow, type FixedRow, type HourlyRow, money, sumHundredths
 import { formatDate } from "@/lib/format";
 import { NO_EMAIL, invoiceRecipients, sendProblems } from "@/lib/invoices/builder";
 import { loadRateBook } from "@/server/time/approval";
-import { type Access, type InvoiceActor, type InvoiceRow, canEdit, lastCountedPeriodEnd, planFor, projectAccess, projectPhaseRows, recalculate, versionOf } from "./draft";
+import {
+  type Access,
+  type InvoiceActor,
+  type InvoiceRow,
+  canEdit,
+  lastCountedPeriodEnd,
+  planFor,
+  projectAccess,
+  projectPhaseRows,
+  recalculate,
+  sendStarted,
+  versionOf,
+} from "./draft";
 import { addDays } from "@/lib/calc/timesheet";
 
 // What the invoice pages read (invoicing spec, Layout A and C). Bill rates
@@ -84,7 +96,17 @@ export type BuilderView = {
   };
   /** Rule 14: what blocks Submit for review / Send. */
   problems: string[];
-  can: { edit: boolean; submit: boolean; returnToDraft: boolean; delete: boolean };
+  can: {
+    edit: boolean;
+    submit: boolean;
+    returnToDraft: boolean;
+    delete: boolean;
+    /** Send… (owner/admin, or the project's Principal in Charge: #26). */
+    send: boolean;
+  };
+  /** Sending started (numbered) but didn't finish: only Retry is left (rule 15). */
+  sendStarted: boolean;
+  number: string | null;
 };
 
 const pct1 = (bp: number) => `${(Math.floor(bp / 10) / 10).toFixed(1).replace(/\.0$/, "")}%`;
@@ -329,8 +351,11 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
       edit: editable,
       submit: editable && inv.status === "draft",
       returnToDraft: access.canReview && inv.status === "in_review",
-      delete: access.canDraft && inv.status === "draft",
+      delete: access.canDraft && inv.status === "draft" && !sendStarted(inv),
+      send: access.canReview && (inv.status === "draft" || inv.status === "in_review"),
     },
+    sendStarted: sendStarted(inv),
+    number: inv.number,
   };
 }
 
