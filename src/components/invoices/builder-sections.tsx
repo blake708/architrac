@@ -14,7 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { formatPercentBp } from "@/lib/calc/invoice";
+import { formatPercentBp, nteStanding } from "@/lib/calc/invoice";
+import { feeTotals, nteTotals } from "@/lib/calc/invoice-sections";
 import { hoursText, money } from "@/lib/calc/invoice-plan";
 import { formatDate } from "@/lib/format";
 import { parseMoney, parsePercent } from "@/lib/invoices/builder";
@@ -28,10 +29,15 @@ import {
 import type { BuilderView } from "@/server/invoices/view";
 import type { useBuilder } from "./use-builder";
 
-// The builder's sections (invoicing spec Layout C.4–C.7).
+// The builder's sections (invoicing spec Layout C.4–C.7), grouped like the
+// PDF (rule 17): Fee, Not-to-exceed and Hourly for the base contract, the
+// same for additional services, then Consultants. Adjustments sit with the
+// totals (AdjustmentsPanel).
 
 type Builder = ReturnType<typeof useBuilder>;
 type Props = { b: Builder };
+/** additional: the additional-services copy of a section (rule 17). */
+type GroupProps = Props & { additional: boolean; title: string };
 
 export function Section({
   title,
@@ -125,18 +131,28 @@ function usePercentInputs(
  * WIP (time this period at bill rates) and hours against budget help pick
  * the % (Blake, 2026-11-11).
  */
-export function FixedSection({ b }: Props) {
+export function FixedSection({ b, additional, title }: GroupProps) {
   const { view, run } = b;
   const pct = usePercentInputs(b, (phaseId, bp) =>
     run(setPhasePercent, { phaseId, percentCompleteBp: bp }, phaseId),
   );
-  if (!view.fixed.length) return null;
+  const rows = view.fixed.filter((f) => f.additional === additional);
+  if (!rows.length) return null;
 
-  const total = view.fixed.reduce((n, f) => n + f.thisInvoiceCents, 0);
-  const wipTotal = view.fixed.reduce((n, f) => n + f.wipCents, 0);
+  const total = feeTotals(
+    rows.map((f) => ({
+      name: f.name,
+      feeCents: f.feeCents,
+      percentCompleteBp: f.percentCompleteBp,
+      earnedCents: f.earnedToDateCents,
+      previousCents: f.previouslyBilledCents,
+      thisCents: f.thisInvoiceCents,
+    })),
+  );
+  const wipTotal = rows.reduce((n, f) => n + f.wipCents, 0);
   return (
-    <Section title="Fixed-fee phases">
-      <Table aria-label="Fixed-fee phases">
+    <Section title={title}>
+      <Table aria-label={title}>
         <TableHead>
           <TableRow>
             <TableHeader>Phase</TableHeader>
@@ -161,7 +177,7 @@ export function FixedSection({ b }: Props) {
           </TableRow>
         </TableHead>
         <TableBody>
-          {view.fixed.map((f) => {
+          {rows.map((f) => {
             const { err, input } = pct(
               f.phaseId,
               f.name,
@@ -204,11 +220,17 @@ export function FixedSection({ b }: Props) {
         </TableBody>
         <TableFoot>
           <TableRow>
-            <TableCell colSpan={2}>Fixed-fee total</TableCell>
+            <TableCell>Total</TableCell>
+            <TableCell numeric>{money(total.feeCents)}</TableCell>
             <TableCell numeric>{wipTotal ? money(wipTotal) : "—"}</TableCell>
-            <TableCell colSpan={5} />
+            <TableCell colSpan={2} />
+            <TableCell numeric data-col="overall-pct">
+              {formatPercentBp(total.percentCompleteBp)}
+            </TableCell>
+            <TableCell numeric>{money(total.earnedCents)}</TableCell>
+            <TableCell numeric>{money(total.previousCents)}</TableCell>
             <TableCell numeric className="font-semibold">
-              {money(total)}
+              {money(total.thisCents)}
             </TableCell>
           </TableRow>
         </TableFoot>
@@ -226,18 +248,84 @@ export function FixedSection({ b }: Props) {
   );
 }
 
-/** C.5 Hourly and not-to-exceed phases: role lines, time entries to tick, cap meter. */
-export function HourlySection({ b }: Props) {
-  const { view } = b;
-  if (!view.hourly.length) return null;
+/** C.5 Not-to-exceed phases: limit, billed and remaining, with role lines and time entries. */
+export function NteSection({ b, additional, title }: GroupProps) {
+  const rows = b.view.hourly.filter((h) => h.feeType === "nte" && h.additional === additional);
+  if (!rows.length) return null;
+  const total = nteTotals(
+    rows.map((h) => ({
+      name: h.name,
+      limitCents: h.feeCents,
+      previousCents: h.previouslyBilledCents,
+      thisCents: h.netCents,
+      ...nteStanding({ capCents: h.feeCents, previouslyBilledCents: h.previouslyBilledCents, thisInvoiceCents: h.netCents }),
+      lines: [],
+    })),
+  );
   return (
-    <Section title="Hourly & not-to-exceed phases">
+    <Section title={title}>
       <div className="flex flex-col">
-        {view.hourly.map((h) => (
+        {rows.map((h) => (
           <HourlyPhase key={h.phaseId} b={b} h={h} />
         ))}
       </div>
+      <dl
+        aria-label={`${title} total`}
+        className="m-0 grid grid-cols-[repeat(auto-fit,minmax(110px,1fr))] gap-3 border-t border-line px-[18px] py-3 text-sm font-semibold"
+      >
+        <NteFigure label="Total limit" cents={total.limitCents} />
+        <NteFigure label="Previously billed" cents={total.previousCents} />
+        <NteFigure label="This invoice" cents={total.thisCents} />
+        <NteFigure label="Billed to date" cents={total.billedToDateCents} />
+        <NteFigure label="Remaining" cents={total.remainingCents} />
+      </dl>
     </Section>
+  );
+}
+
+/** C.5 Hourly phases: role lines and time entries to tick. */
+export function HourlySection({ b, additional, title }: GroupProps) {
+  const rows = b.view.hourly.filter((h) => h.feeType === "hourly" && h.additional === additional);
+  if (!rows.length) return null;
+  return (
+    <Section title={title}>
+      <div className="flex flex-col">
+        {rows.map((h) => (
+          <HourlyPhase key={h.phaseId} b={b} h={h} />
+        ))}
+      </div>
+      <div className="flex justify-between border-t border-line px-[18px] py-3 text-sm font-semibold">
+        <span>Total</span>
+        <span className="num">{money(rows.reduce((n, h) => n + h.netCents, 0))}</span>
+      </div>
+    </Section>
+  );
+}
+
+function NteFigure({ label, cents }: { label: string; cents: number }) {
+  return (
+    <div>
+      <dt className="cap text-2xs font-semibold text-muted">{label}</dt>
+      <dd className="num m-0 mt-0.5">{money(cents)}</dd>
+    </div>
+  );
+}
+
+/** One NTE phase's standing: limit, billed before, billed to date, remaining. */
+function NteStanding({ h }: { h: BuilderView["hourly"][number] }) {
+  const st = nteStanding({ capCents: h.feeCents, previouslyBilledCents: h.previouslyBilledCents, thisInvoiceCents: h.netCents });
+  const item = (label: string, cents: number) => (
+    <span>
+      {label} <span className="num text-ink">{money(cents)}</span>
+    </span>
+  );
+  return (
+    <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted" data-nte-standing>
+      {item("Limit", h.feeCents)}
+      {item("Previously billed", h.previouslyBilledCents)}
+      {item("Billed to date", st.billedToDateCents)}
+      {item("Remaining", st.remainingCents)}
+    </div>
   );
 }
 
@@ -260,11 +348,7 @@ function HourlyPhase({ b, h }: Props & { h: BuilderView["hourly"][number] }) {
       <div className="flex flex-wrap items-center gap-3">
         <div className="min-w-0 flex-1">
           <div className="font-medium">{h.name}</div>
-          <div className="text-xs text-muted">
-            {h.feeType === "nte"
-              ? `Not to exceed ${money(h.feeCents)} · ${money(h.previouslyBilledCents)} billed before`
-              : "Hourly"}
-          </div>
+          {h.feeType === "nte" && <NteStanding h={h} />}
         </div>
         {h.feeType === "nte" && h.feeCents > 0 && (
           <ProgressBar
@@ -408,7 +492,16 @@ export function ConsultantsSection({ b }: Props) {
     ),
   );
   if (!view.consultants.length) return null;
-  const total = view.consultants.reduce((n, c) => n + c.thisInvoiceCents, 0);
+  const total = feeTotals(
+    view.consultants.map((c) => ({
+      name: c.label,
+      feeCents: c.clientFeeCents,
+      percentCompleteBp: c.percentCompleteBp,
+      earnedCents: c.earnedToDateCents,
+      previousCents: c.previouslyBilledCents,
+      thisCents: c.thisInvoiceCents,
+    })),
+  );
   return (
     <Section title="Consultants">
       <Table aria-label="Consultants">
@@ -455,9 +548,16 @@ export function ConsultantsSection({ b }: Props) {
         </TableBody>
         <TableFoot>
           <TableRow>
-            <TableCell colSpan={8}>Consultants total</TableCell>
+            <TableCell colSpan={3}>Total</TableCell>
+            <TableCell numeric>{money(total.feeCents)}</TableCell>
+            <TableCell />
+            <TableCell numeric data-col="overall-pct">
+              {formatPercentBp(total.percentCompleteBp)}
+            </TableCell>
+            <TableCell numeric>{money(total.earnedCents)}</TableCell>
+            <TableCell numeric>{money(total.previousCents)}</TableCell>
             <TableCell numeric className="font-semibold">
-              {money(total)}
+              {money(total.thisCents)}
             </TableCell>
           </TableRow>
         </TableFoot>
@@ -466,8 +566,12 @@ export function ConsultantsSection({ b }: Props) {
   );
 }
 
-/** C.7 Adjustments: free lines, may be negative (a retainer credit, decision #12). */
-export function AdjustmentsSection({ b }: Props) {
+/**
+ * C.7 Adjustments, in the totals panel like the PDF: Subtotal, then each
+ * adjustment (free lines, may be negative: a retainer credit, decision
+ * #12), then the total below. No adjustments → no subtotal.
+ */
+export function AdjustmentLines({ b }: Props) {
   const { view, run, fieldErrors } = b;
   const [form, setForm] = useState<{
     lineId?: string;
@@ -475,6 +579,7 @@ export function AdjustmentsSection({ b }: Props) {
     amount: string;
   } | null>(null);
   const [local, setLocal] = useState<string | null>(null);
+  const row = "flex justify-between gap-3 py-1.5";
 
   async function save() {
     if (!form) return;
@@ -493,63 +598,60 @@ export function AdjustmentsSection({ b }: Props) {
   }
 
   return (
-    <Section
-      title="Adjustments"
-      aside={
-        view.can.edit &&
-        !form && (
-          <Button onClick={() => setForm({ description: "", amount: "" })}>
-            Add adjustment
-          </Button>
-        )
-      }
-    >
+    <div aria-label="Adjustments" role="group">
       {view.adjustments.length > 0 && (
-        <Table aria-label="Adjustments">
-          <TableBody>
+        <>
+          <div className={row}>
+            <span className="text-muted">Subtotal</span>
+            <span className="num" data-testid="invoice-subtotal">
+              {money(view.totals.servicesSubtotalCents)}
+            </span>
+          </div>
+          <ul className="m-0 list-none p-0">
             {view.adjustments.map((a) => (
-              <TableRow key={a.id}>
-                <TableCell>{a.description}</TableCell>
-                <TableCell
-                  numeric
-                  className={a.amountCents < 0 ? "text-red" : undefined}
-                >
-                  {a.amountCents < 0
-                    ? `−${money(-a.amountCents)}`
-                    : money(a.amountCents)}
-                </TableCell>
-                <TableCell className="w-[160px] text-right whitespace-nowrap">
-                  {view.can.edit && (
-                    <>
-                      <Button
-                        variant="ghost"
-                        onClick={() =>
-                          setForm({
-                            lineId: a.id,
-                            description: a.description,
-                            amount: (a.amountCents / 100).toFixed(2),
-                          })
-                        }
-                      >
-                        Edit
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        aria-label={`Remove ${a.description}`}
-                        onClick={() => void run(removeLine, { lineId: a.id })}
-                      >
-                        Remove
-                      </Button>
-                    </>
-                  )}
-                </TableCell>
-              </TableRow>
+              <li key={a.id} className="py-1" data-adjustment>
+                <div className="flex justify-between gap-3">
+                  <span className="min-w-0">{a.description}</span>
+                  <span
+                    className={
+                      a.amountCents < 0 ? "num text-red" : "num"
+                    }
+                  >
+                    {a.amountCents < 0
+                      ? `−${money(-a.amountCents)}`
+                      : money(a.amountCents)}
+                  </span>
+                </div>
+                {view.can.edit && (
+                  <div className="-ml-2 flex gap-1">
+                    <Button
+                      variant="ghost"
+                      onClick={() =>
+                        setForm({
+                          lineId: a.id,
+                          description: a.description,
+                          amount: (a.amountCents / 100).toFixed(2),
+                        })
+                      }
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      aria-label={`Remove ${a.description}`}
+                      onClick={() => void run(removeLine, { lineId: a.id })}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                )}
+              </li>
             ))}
-          </TableBody>
-        </Table>
+          </ul>
+        </>
       )}
       {form && (
-        <div className="grid grid-cols-[minmax(220px,2fr)_minmax(140px,1fr)_auto] items-start gap-3 border-t border-line-soft px-[18px] py-4 max-md:grid-cols-1">
+        <div className="my-2 flex flex-col gap-3 rounded-sm border border-line-soft p-3">
           <Input
             label="Description"
             value={form.description}
@@ -566,8 +668,7 @@ export function AdjustmentsSection({ b }: Props) {
             error={local ?? fieldErrors.amountCents}
             hint="Use a minus sign for a credit, like -1,860."
           />
-          {/* Line the buttons up with the boxes, below the field labels. */}
-          <div className="flex gap-2 md:pt-[22px]">
+          <div className="flex gap-2">
             <Button variant="primary" onClick={() => void save()}>
               {form.lineId ? "Save line" : "Add line"}
             </Button>
@@ -577,9 +678,16 @@ export function AdjustmentsSection({ b }: Props) {
           </div>
         </div>
       )}
-      {!view.adjustments.length && !form && (
-        <p className="m-0 px-[18px] pb-4 text-sm text-muted">No adjustments.</p>
+      {view.can.edit && !form && (
+        <div className="-ml-2 py-1">
+          <Button
+            variant="ghost"
+            onClick={() => setForm({ description: "", amount: "" })}
+          >
+            Add adjustment
+          </Button>
+        </div>
       )}
-    </Section>
+    </div>
   );
 }

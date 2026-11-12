@@ -1,6 +1,7 @@
 import path from "node:path";
 import { Document, Font, Image, Page, StyleSheet, Text, View, renderToBuffer } from "@react-pdf/renderer";
-import { formatPercentBp, overallPercentBp } from "@/lib/calc/invoice";
+import { formatPercentBp } from "@/lib/calc/invoice";
+import type { FeeRow, FeeTotals, Group, HourlyRow, NteRow, NteTotals, RoleLine } from "@/lib/calc/invoice-sections";
 import { formatDate, formatMoney } from "@/lib/format";
 import type { InvoicePdfData } from "./pdf-data";
 
@@ -113,12 +114,12 @@ function Table<T>({ cols, rows, totals }: { cols: Col<T>[]; rows: T[]; totals?: 
 
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
 
-/** Fixed-fee phases, with an overall % complete (weighted by fee) in the total row. */
-function FeeTable({ rows }: { rows: InvoicePdfData["fixed"] }) {
+/** The fee-table columns: fixed-fee phases and consultants share them. */
+function FeeTable({ first, rows, total }: { first: string; rows: FeeRow[]; total: FeeTotals }) {
   return (
     <Table
       cols={[
-        { title: "Phase", width: "auto", cell: (r) => r.phase },
+        { title: first, width: "auto", cell: (r) => r.name },
         { title: "Fee", width: 82, num: true, cell: (r) => pdfMoney(r.feeCents) },
         { title: "% complete", width: 56, num: true, cell: (r) => formatPercentBp(r.percentCompleteBp) },
         { title: "Earned to date", width: 82, num: true, cell: (r) => pdfMoney(r.earnedCents) },
@@ -128,17 +129,17 @@ function FeeTable({ rows }: { rows: InvoicePdfData["fixed"] }) {
       rows={rows}
       totals={[
         "Total",
-        pdfMoney(sum(rows.map((r) => r.feeCents))),
-        formatPercentBp(overallPercentBp(rows)),
-        pdfMoney(sum(rows.map((r) => r.earnedCents))),
-        pdfMoney(sum(rows.map((r) => r.previousCents))),
-        pdfMoney(sum(rows.map((r) => r.thisCents))),
+        pdfMoney(total.feeCents),
+        formatPercentBp(total.percentCompleteBp),
+        pdfMoney(total.earnedCents),
+        pdfMoney(total.previousCents),
+        pdfMoney(total.thisCents),
       ]}
     />
   );
 }
 
-function HourlyTable({ rows }: { rows: InvoicePdfData["hourly"] }) {
+function HourlyTable({ rows, totalCents }: { rows: HourlyRow[]; totalCents: number }) {
   return (
     <Table
       cols={[
@@ -149,33 +150,25 @@ function HourlyTable({ rows }: { rows: InvoicePdfData["hourly"] }) {
         { title: "Amount", width: 82, num: true, cell: (r) => pdfMoney(r.amountCents) },
       ]}
       rows={rows}
-      totals={["Total", null, null, null, pdfMoney(sum(rows.map((r) => r.amountCents)))]}
+      totals={["Total", null, null, null, pdfMoney(totalCents)]}
     />
   );
 }
+
+/** "Principal · 3.00 h @ $145.00", or the write-down's label. */
+const roleText = (l: RoleLine) =>
+  l.hoursHundredths === null || l.rateCents === null
+    ? l.role
+    : `${l.role} · ${(l.hoursHundredths / 100).toFixed(2)} h @ ${pdfMoney(l.rateCents)}`;
 
 /**
  * Not-to-exceed phases: one summary row per phase (limit, billed, remaining)
  * with this invoice's hours listed under it, then a total row.
  */
-function NteTable({ rows }: { rows: InvoicePdfData["nte"] }) {
-  const W = 76;
-  const col = { width: W, paddingLeft: 6 };
+function NteTable({ rows, total }: { rows: NteRow[]; total: NteTotals }) {
+  const col = { width: 76, paddingLeft: 6 };
   const heads = ["Limit", "Previously billed", "This invoice", "Billed to date", "Remaining"];
-  const cells = (r: { limitCents: number; previousCents: number; thisCents: number; billedToDateCents: number; remainingCents: number }) => [
-    r.limitCents,
-    r.previousCents,
-    r.thisCents,
-    r.billedToDateCents,
-    r.remainingCents,
-  ];
-  const total = {
-    limitCents: sum(rows.map((r) => r.limitCents)),
-    previousCents: sum(rows.map((r) => r.previousCents)),
-    thisCents: sum(rows.map((r) => r.thisCents)),
-    billedToDateCents: sum(rows.map((r) => r.billedToDateCents)),
-    remainingCents: sum(rows.map((r) => r.remainingCents)),
-  };
+  const cells = (r: NteTotals) => [r.limitCents, r.previousCents, r.thisCents, r.billedToDateCents, r.remainingCents];
   return (
     <View>
       <View style={s.head}>
@@ -189,7 +182,7 @@ function NteTable({ rows }: { rows: InvoicePdfData["nte"] }) {
       {rows.map((r, i) => (
         <View key={i} style={[s.tr, { flexDirection: "column" }]} wrap={false}>
           <View style={s.row}>
-            <Text style={{ flexGrow: 1, fontWeight: 600 }}>{r.phase}</Text>
+            <Text style={{ flexGrow: 1, fontWeight: 600 }}>{r.name}</Text>
             {cells(r).map((c, ci) => (
               <Text key={ci} style={[col, s.num]}>
                 {pdfMoney(c)}
@@ -198,11 +191,7 @@ function NteTable({ rows }: { rows: InvoicePdfData["nte"] }) {
           </View>
           {r.lines.map((l, li) => (
             <View key={li} style={[s.row, s.nteLine]}>
-              <Text style={{ flexGrow: 1, paddingLeft: 10 }}>
-                {l.hoursHundredths === null || l.rateCents === null
-                  ? l.role
-                  : `${l.role} · ${(l.hoursHundredths / 100).toFixed(2)} h @ ${pdfMoney(l.rateCents)}`}
-              </Text>
+              <Text style={{ flexGrow: 1, paddingLeft: 10 }}>{roleText(l)}</Text>
               <Text style={[col, s.num]}>{pdfMoney(l.amountCents)}</Text>
               <Text style={col} />
               <Text style={col} />
@@ -222,20 +211,58 @@ function NteTable({ rows }: { rows: InvoicePdfData["nte"] }) {
   );
 }
 
+// Rough heights in points, to tell whether a section can fit on one page.
+// A row is ~19pt; the title and column heads ~50pt; a page holds ~688pt.
+const ROW_PT = 19;
+const SUB_PT = 13;
+const HEAD_PT = 50;
+const PAGE_BODY_PT = 640;
+const tableHeight = (rows: number) => HEAD_PT + ROW_PT * (rows + 1);
+const nteHeight = (rows: NteRow[]) => HEAD_PT + ROW_PT * (rows.length + 1) + SUB_PT * sum(rows.map((r) => r.lines.length));
+
+/**
+ * A titled section kept on one page: one that would split moves whole to
+ * the next page. A section taller than a page has to split; its title
+ * still stays with its first rows.
+ */
+function Section({ title, height, children }: { title: string; height: number; children: React.ReactNode }) {
+  const fits = height <= PAGE_BODY_PT;
+  return (
+    <View style={s.section} wrap={!fits}>
+      <Text style={s.sectionTitle} minPresenceAhead={fits ? undefined : 80}>
+        {title}
+      </Text>
+      {children}
+    </View>
+  );
+}
+
+/** The Fee, Not-to-exceed and Hourly tables of one group, each in its own section. */
+function GroupTables({ g, titles }: { g: Group; titles: [string, string, string] }) {
+  return (
+    <>
+      {g.fixed.length > 0 && (
+        <Section title={titles[0]} height={tableHeight(g.fixed.length)}>
+          <FeeTable first="Phase" rows={g.fixed} total={g.fixedTotal} />
+        </Section>
+      )}
+      {g.nte.length > 0 && (
+        <Section title={titles[1]} height={nteHeight(g.nte)}>
+          <NteTable rows={g.nte} total={g.nteTotal} />
+        </Section>
+      )}
+      {g.hourly.length > 0 && (
+        <Section title={titles[2]} height={tableHeight(g.hourly.length)}>
+          <HourlyTable rows={g.hourly} totalCents={g.hourlyTotalCents} />
+        </Section>
+      )}
+    </>
+  );
+}
+
 function InvoiceDocument({ d }: { d: InvoicePdfData }) {
   const number = d.number ?? "Draft";
-  // Additional services print apart from the base contract.
-  const contractFixed = d.fixed.filter((r) => !r.additional);
-  const extraFixed = d.fixed.filter((r) => r.additional);
-  const contractHourly = d.hourly.filter((r) => !r.additional);
-  const extraHourly = d.hourly.filter((r) => r.additional);
-  const contractNte = d.nte.filter((r) => !r.additional);
-  const extraNte = d.nte.filter((r) => r.additional);
-  const extraTables = [
-    extraFixed.length > 0 && <FeeTable key="fixed" rows={extraFixed} />,
-    extraNte.length > 0 && <NteTable key="nte" rows={extraNte} />,
-    extraHourly.length > 0 && <HourlyTable key="hourly" rows={extraHourly} />,
-  ].filter(Boolean);
+  const x = d.sections;
   return (
     <Document title={`Invoice ${number}`} author={d.firm.name} creator="ArchiTrac" producer="ArchiTrac">
       <Page size="LETTER" style={s.page}>
@@ -313,81 +340,34 @@ function InvoiceDocument({ d }: { d: InvoicePdfData }) {
           </View>
         )}
 
-        {contractFixed.length > 0 && (
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>Fee</Text>
-            <FeeTable rows={contractFixed} />
-          </View>
-        )}
+        <GroupTables g={x.contract} titles={["Fee", "Not-to-exceed", "Hourly services"]} />
+        <GroupTables
+          g={x.additional}
+          titles={["Additional services", "Additional services · not-to-exceed", "Additional services · hourly"]}
+        />
 
-        {contractNte.length > 0 && (
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>Not-to-exceed</Text>
-            <NteTable rows={contractNte} />
-          </View>
-        )}
-
-        {contractHourly.length > 0 && (
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>Hourly services</Text>
-            <HourlyTable rows={contractHourly} />
-          </View>
-        )}
-
-        {extraTables.length > 0 && (
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>Additional services</Text>
-            {extraTables.map((t, i) => (
-              <View key={i} style={i > 0 ? { marginTop: 10 } : {}}>
-                {t}
-              </View>
-            ))}
-          </View>
-        )}
-
-        {d.consultants.length > 0 && (
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>Consultants</Text>
-            <Table
-              cols={[
-                { title: "Consultant", width: "auto", cell: (r) => r.label },
-                { title: "Fee", width: 82, num: true, cell: (r) => pdfMoney(r.feeCents) },
-                { title: "% complete", width: 56, num: true, cell: (r) => formatPercentBp(r.percentCompleteBp) },
-                { title: "Earned to date", width: 82, num: true, cell: (r) => pdfMoney(r.earnedCents) },
-                { title: "Previously billed", width: 82, num: true, cell: (r) => pdfMoney(r.previousCents) },
-                { title: "This invoice", width: 82, num: true, cell: (r) => pdfMoney(r.thisCents) },
-              ]}
-              rows={d.consultants}
-              totals={[
-                "Total",
-                pdfMoney(sum(d.consultants.map((r) => r.feeCents))),
-                formatPercentBp(overallPercentBp(d.consultants)),
-                pdfMoney(sum(d.consultants.map((r) => r.earnedCents))),
-                pdfMoney(sum(d.consultants.map((r) => r.previousCents))),
-                pdfMoney(sum(d.consultants.map((r) => r.thisCents))),
-              ]}
-            />
-          </View>
-        )}
-
-        {d.adjustments.length > 0 && (
-          <View style={s.section}>
-            <Text style={s.sectionTitle}>Adjustments</Text>
-            <Table
-              cols={[
-                { title: "Description", width: "auto", cell: (r) => r.description },
-                { title: "Amount", width: 82, num: true, cell: (r) => pdfMoney(r.amountCents) },
-              ]}
-              rows={d.adjustments}
-            />
-          </View>
+        {x.consultants.length > 0 && (
+          <Section title="Consultants" height={tableHeight(x.consultants.length)}>
+            <FeeTable first="Consultant" rows={x.consultants} total={x.consultantsTotal} />
+          </Section>
         )}
 
         <View style={s.totals} wrap={false}>
-          <View style={s.totalRow}>
-            <Text>Subtotal</Text>
-            <Text style={s.num}>{pdfMoney(d.subtotalCents)}</Text>
-          </View>
+          {/* Subtotal, then each adjustment, then the total; no subtotal without adjustments. */}
+          {x.adjustments.length > 0 && (
+            <>
+              <View style={s.totalRow}>
+                <Text>Subtotal</Text>
+                <Text style={s.num}>{pdfMoney(x.servicesSubtotalCents)}</Text>
+              </View>
+              {x.adjustments.map((a, i) => (
+                <View key={i} style={s.totalRow}>
+                  <Text style={{ maxWidth: 160 }}>{a.description}</Text>
+                  <Text style={s.num}>{pdfMoney(a.amountCents)}</Text>
+                </View>
+              ))}
+            </>
+          )}
           {d.taxCents !== 0 && (
             <View style={s.totalRow}>
               <Text>Tax</Text>

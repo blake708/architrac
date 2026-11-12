@@ -8,6 +8,7 @@ import {
   invoiceLines,
   invoices,
   memberships,
+  projectPhases,
   projects,
   timeEntries,
   timesheets,
@@ -17,6 +18,7 @@ import type { TenantDb } from "@/db/tenant";
 import { can } from "@/lib/auth/permissions";
 import { type InvoiceStatus, OPEN_STATUSES, hoursSuggestBp, hoursToHundredths, timeValueCents } from "@/lib/calc/invoice";
 import { type ConsultantRow, type FixedRow, type HourlyRow, money, sumHundredths } from "@/lib/calc/invoice-plan";
+import { servicesSubtotal } from "@/lib/calc/invoice-sections";
 import { formatDate } from "@/lib/format";
 import { NO_EMAIL, invoiceRecipients, sendProblems } from "@/lib/invoices/builder";
 import { loadRateBook } from "@/server/time/approval";
@@ -73,7 +75,9 @@ export type BuilderView = {
     wipFrom: string | null;
   };
   contacts: { id: string; name: string; email: string | null }[];
+  /** additional: an additional service, shown apart from the base contract (rule 17). */
   fixed: (FixedRow & {
+    additional: boolean;
     /** Bill-rate value of time on the phase in this invoice's period. */
     wipCents: number;
     wipHundredths: number;
@@ -83,12 +87,14 @@ export type BuilderView = {
     /** Hours used ÷ budget, capped at 100 %; null with no budget. */
     suggestBp: number | null;
   })[];
-  hourly: (HourlyRow & { entries: BuilderEntry[] })[];
+  hourly: (HourlyRow & { additional: boolean; entries: BuilderEntry[] })[];
   consultants: ConsultantRow[];
   adjustments: { id: string; description: string; amountCents: number }[];
   warnings: Warning[];
   totals: {
     subtotalCents: number;
+    /** Before adjustments: shown only when there are adjustments. */
+    servicesSubtotalCents: number;
     taxCents: number;
     totalCents: number;
     priorInvoices: { number: string; balanceCents: number }[];
@@ -228,6 +234,11 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
   const lastEnd = await lastCountedPeriodEnd(db, inv.projectId);
   const wipFrom = lastEnd ? addDays(lastEnd, 1) : null;
   const wip = await fixedPhaseWip(db, inv, wipFrom);
+  const extraPhases = await db
+    .select({ id: projectPhases.id })
+    .from(projectPhases)
+    .where(and(eq(projectPhases.projectId, inv.projectId), eq(projectPhases.isAdditionalService, true)));
+  const additional = new Set(extraPhases.map((x) => x.id));
 
   // Other open invoices on the project (account summary).
   const prior = await db
@@ -314,6 +325,7 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
       const used = w?.usedHundredths ?? 0;
       return {
         ...f,
+        additional: additional.has(f.phaseId),
         wipCents: w?.wipCents ?? 0,
         wipHundredths: w?.wipHundredths ?? 0,
         usedHundredths: used,
@@ -323,6 +335,7 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
     }),
     hourly: plan.hourly.map((h) => ({
       ...h,
+      additional: additional.has(h.phaseId),
       entries: entryRows
         .filter((e) => e.phaseId === h.phaseId)
         .map((e) => ({
@@ -341,6 +354,7 @@ export async function buildView(db: TenantDb, inv: InvoiceRow, access: Access): 
     warnings,
     totals: {
       subtotalCents: inv.subtotalCents,
+      servicesSubtotalCents: servicesSubtotal(inv.subtotalCents, adjustments),
       taxCents: inv.taxCents,
       totalCents: inv.totalCents,
       priorInvoices,

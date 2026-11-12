@@ -4,7 +4,6 @@ import {
   contacts,
   firmSettings,
   firms,
-  invoiceLines,
   invoices,
   memberships,
   projectPhases,
@@ -14,9 +13,11 @@ import {
   users,
 } from "@/db/schema";
 import type { TenantDb } from "@/db/tenant";
-import { OPEN_STATUSES, nteStanding } from "@/lib/calc/invoice";
+import { OPEN_STATUSES } from "@/lib/calc/invoice";
+import type { InvoiceSections } from "@/lib/calc/invoice-sections";
 import { firmDisplayName } from "@/lib/settings/firm-profile";
-import { type InvoiceRow, planFor } from "./draft";
+import type { InvoiceRow } from "./draft";
+import { loadSections } from "./sections";
 
 // Everything the invoice PDF prints (invoicing spec rule 17), read in one
 // go. The PDF itself (pdf.tsx) only lays this out; no math happens there.
@@ -51,37 +52,8 @@ export type InvoicePdfData = {
   billTo: { company: string; contact: string | null; address: string[] };
   project: { number: string; name: string; address: string[] };
   memo: string | null;
-  /** additional: an additional service beyond the base contract; prints in its own table. */
-  fixed: {
-    phase: string;
-    additional: boolean;
-    feeCents: number;
-    percentCompleteBp: number;
-    earnedCents: number;
-    previousCents: number;
-    thisCents: number;
-  }[];
-  hourly: { phase: string; additional: boolean; role: string; hoursHundredths: number | null; rateCents: number | null; amountCents: number }[];
-  /** Not-to-exceed phases: where each stands against its limit, with this invoice's hours under it. */
-  nte: {
-    phase: string;
-    additional: boolean;
-    limitCents: number;
-    previousCents: number;
-    thisCents: number;
-    billedToDateCents: number;
-    remainingCents: number;
-    lines: { role: string; hoursHundredths: number | null; rateCents: number | null; amountCents: number }[];
-  }[];
-  consultants: {
-    label: string;
-    feeCents: number;
-    percentCompleteBp: number;
-    earnedCents: number;
-    previousCents: number;
-    thisCents: number;
-  }[];
-  adjustments: { description: string; amountCents: number }[];
+  /** The tables and adjustments, laid out from the saved lines (rule 17). */
+  sections: InvoiceSections;
   subtotalCents: number;
   taxCents: number;
   totalCents: number;
@@ -91,7 +63,7 @@ export type InvoicePdfData = {
 };
 
 export async function loadPdfData(db: TenantDb, inv: InvoiceRow, mark: PdfMark): Promise<InvoicePdfData> {
-  const [[firm], [settings], [project], [client], billTo, plan, lineRows, prior, entries, extraPhases] = await Promise.all([
+  const [[firm], [settings], [project], [client], billTo, sections, prior, entries] = await Promise.all([
     db.select().from(firms).where(eq(firms.id, inv.firmId)),
     db
       .select({ terms: firmSettings.defaultPaymentTermsDays, remittance: firmSettings.invoiceRemittanceText })
@@ -104,12 +76,7 @@ export async function loadPdfData(db: TenantDb, inv: InvoiceRow, mark: PdfMark):
           .from(contacts)
           .where(eq(contacts.id, inv.billToContactId))
       : Promise.resolve([]),
-    planFor(db, inv),
-    db
-      .select()
-      .from(invoiceLines)
-      .where(and(eq(invoiceLines.invoiceId, inv.id), isNull(invoiceLines.archivedAt)))
-      .orderBy(asc(invoiceLines.sortOrder), asc(invoiceLines.createdAt)),
+    loadSections(db, inv),
     db
       .select({ number: invoices.number, total: invoices.totalCents, paid: invoices.amountPaidCents })
       .from(invoices)
@@ -138,38 +105,7 @@ export async function loadPdfData(db: TenantDb, inv: InvoiceRow, mark: PdfMark):
       .leftJoin(projectPhases, eq(projectPhases.id, timeEntries.projectPhaseId))
       .where(and(eq(timeEntries.invoiceId, inv.id), isNull(timeEntries.archivedAt)))
       .orderBy(asc(timeEntries.workDate), asc(users.lastName)),
-    db
-      .select({ id: projectPhases.id })
-      .from(projectPhases)
-      .where(and(eq(projectPhases.projectId, inv.projectId), eq(projectPhases.isAdditionalService, true))),
   ]);
-  const additional = new Set(extraPhases.map((p) => p.id));
-
-  // Hourly phases list their role lines. NTE phases get a summary row (limit,
-  // billed, remaining) with their role lines and any write-down under it.
-  const hourly: InvoicePdfData["hourly"] = [];
-  const nte: InvoicePdfData["nte"] = [];
-  for (const h of plan.hourly) {
-    const extra = additional.has(h.phaseId);
-    const roles = h.groups.map((g) => ({ role: g.roleName, hoursHundredths: g.hoursHundredths, rateCents: g.rateCents, amountCents: g.amountCents }));
-    if (h.feeType === "nte") {
-      const standing = nteStanding({ capCents: h.feeCents, previouslyBilledCents: h.previouslyBilledCents, thisInvoiceCents: h.netCents });
-      nte.push({
-        phase: h.name,
-        additional: extra,
-        limitCents: h.feeCents,
-        previousCents: h.previouslyBilledCents,
-        thisCents: h.netCents,
-        ...standing,
-        lines: [
-          ...roles,
-          ...(h.writeDownCents > 0
-            ? [{ role: "Not-to-exceed limit reached", hoursHundredths: null, rateCents: null, amountCents: -h.writeDownCents }]
-            : []),
-        ],
-      });
-    } else for (const r of roles) hourly.push({ phase: h.name, additional: extra, ...r });
-  }
   const contact = billTo[0] ? `${billTo[0].first} ${billTo[0].last ?? ""}`.trim() : null;
 
   return {
@@ -189,28 +125,7 @@ export async function loadPdfData(db: TenantDb, inv: InvoiceRow, mark: PdfMark):
     billTo: { company: client?.name ?? "", contact, address: client ? addressLines(client) : [] },
     project: { number: project?.number ?? "", name: project?.name ?? "", address: project ? addressLines(project) : [] },
     memo: inv.memo,
-    fixed: plan.fixed.map((f) => ({
-      phase: f.name,
-      additional: additional.has(f.phaseId),
-      feeCents: f.feeCents,
-      percentCompleteBp: f.percentCompleteBp,
-      earnedCents: f.earnedToDateCents,
-      previousCents: f.previouslyBilledCents,
-      thisCents: f.thisInvoiceCents,
-    })),
-    hourly,
-    nte,
-    consultants: plan.consultants.map((c) => ({
-      label: c.label,
-      feeCents: c.clientFeeCents,
-      percentCompleteBp: c.percentCompleteBp,
-      earnedCents: c.earnedToDateCents,
-      previousCents: c.previouslyBilledCents,
-      thisCents: c.thisInvoiceCents,
-    })),
-    adjustments: lineRows
-      .filter((l) => l.lineType === "adjustment" && l.projectPhaseId === null)
-      .map((l) => ({ description: l.description, amountCents: l.amountCents })),
+    sections,
     subtotalCents: inv.subtotalCents,
     taxCents: inv.taxCents,
     totalCents: inv.totalCents,

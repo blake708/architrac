@@ -1,173 +1,354 @@
 import { extractText, getDocumentProxy } from "unpdf";
 import { describe, expect, it } from "vitest";
+import {
+  type FeeRow,
+  type InvoiceSections,
+  NTE_WRITE_DOWN,
+  feeTotals,
+  group,
+} from "@/lib/calc/invoice-sections";
 import type { InvoicePdfData } from "./pdf-data";
 import { addressLines } from "./pdf-data";
 import { pdfFileName, pdfMoney, renderInvoicePdf } from "./pdf";
 
-// Rule 17: the PDF prints the number, bill-to, fee table, totals and
-// "Page 1 of N"; a draft preview carries the DRAFT watermark.
+// Rule 17: the PDF prints the number, bill-to, the Fee / Not-to-exceed /
+// Hourly / Additional services / Consultants tables, then Subtotal (only
+// with adjustments), the adjustments and the total, and "Page x of N"; a
+// draft preview carries the DRAFT watermark. The numbers in these tables
+// come from invoiceSections() (tested in invoice-sections.test.ts); here
+// we check what prints and where.
+
+const fee = (
+  name: string,
+  feeCents: number,
+  pctBp: number,
+  previousCents: number,
+  thisCents: number,
+): FeeRow => ({
+  name,
+  feeCents,
+  percentCompleteBp: pctBp,
+  earnedCents: previousCents + thisCents,
+  previousCents,
+  thisCents,
+});
+
+const permitting = {
+  // Spec rule 5 example: limit $9,300, $8,200 before, $1,315 of time → $1,100 billed, $215 written down.
+  name: "Permitting",
+  limitCents: 930_000,
+  previousCents: 820_000,
+  thisCents: 110_000,
+  billedToDateCents: 930_000,
+  remainingCents: 0,
+  lines: [
+    {
+      role: "Project Architect",
+      hoursHundredths: 800,
+      rateCents: 11_000,
+      amountCents: 88_000,
+    },
+    {
+      role: "Principal",
+      hoursHundredths: 300,
+      rateCents: 14_500,
+      amountCents: 43_500,
+    },
+    {
+      role: NTE_WRITE_DOWN,
+      hoursHundredths: null,
+      rateCents: null,
+      amountCents: -21_500,
+    },
+  ],
+};
+
+const consultants = [
+  fee("MEP · Coastal Engineers", 1_980_000, 5000, 594_000, 396_000),
+  fee("Structural · Lowcountry SE", 1_020_000, 2000, 0, 204_000),
+];
+
+const sections = (over: Partial<InvoiceSections> = {}): InvoiceSections => ({
+  contract: group(
+    [
+      fee("Schematic Design", 2_790_000, 10000, 1_674_000, 1_116_000),
+      fee("Design Development", 4_650_000, 0, 0, 0),
+    ],
+    [permitting],
+    [
+      {
+        phase: "Owner Meetings",
+        role: "Principal",
+        hoursHundredths: 200,
+        rateCents: 19_500,
+        amountCents: 39_000,
+      },
+    ],
+  ),
+  additional: group(
+    [fee("Interior Finishes Package", 1_000_000, 2500, 0, 250_000)],
+    [],
+    [
+      {
+        phase: "Site Survey",
+        role: "Project Architect",
+        hoursHundredths: 400,
+        rateCents: 11_000,
+        amountCents: 44_000,
+      },
+    ],
+  ),
+  consultants,
+  consultantsTotal: feeTotals(consultants),
+  adjustments: [{ description: "Retainer applied", amountCents: -50_000 }],
+  servicesSubtotalCents: 2_159_000,
+  ...over,
+});
 
 const base: InvoicePdfData = {
   mark: null,
-  firm: { name: "The Middleton Group", logoUrl: null, address: ["12 King St", "Charleston, SC 29401"], phone: "843-555-0100", email: "office@tmg.example" },
+  firm: {
+    name: "The Middleton Group",
+    logoUrl: null,
+    address: ["12 King St", "Charleston, SC 29401"],
+    phone: "843-555-0100",
+    email: "office@tmg.example",
+  },
   number: "26031-04",
   issueDate: "2026-10-16",
   dueDate: "2026-11-15",
   termsDays: 30,
   periodEnd: "2026-10-31",
-  billTo: { company: "Harbor Health", contact: "Pat Lee", address: ["1 Bay Rd", "Mt Pleasant, SC 29464"] },
+  billTo: {
+    company: "Harbor Health",
+    contact: "Pat Lee",
+    address: ["1 Bay Rd", "Mt Pleasant, SC 29464"],
+  },
   project: { number: "26031", name: "Medical Office Building", address: [] },
   memo: "Thank you for your business.",
-  fixed: [
-    { phase: "Schematic Design", additional: false, feeCents: 2_790_000, percentCompleteBp: 10000, earnedCents: 2_790_000, previousCents: 1_674_000, thisCents: 1_116_000 },
-    { phase: "Design Development", additional: false, feeCents: 4_650_000, percentCompleteBp: 0, earnedCents: 0, previousCents: 0, thisCents: 0 },
-  ],
-  hourly: [
-    { phase: "Additional Services", additional: true, role: "Principal", hoursHundredths: 400, rateCents: 19_500, amountCents: 78_000 },
-  ],
-  nte: [
+  sections: sections(),
+  subtotalCents: 2_109_000,
+  taxCents: 0,
+  totalCents: 2_109_000,
+  prior: [{ number: "26031-03", balanceCents: 1_116_000 }],
+  timeDetail: [
     {
-      // Spec rule 5 example: limit $9,300, $8,200 before, $1,315 of time → $1,100 billed, $215 written down.
-      phase: "Permitting",
-      additional: false,
-      limitCents: 930_000,
-      previousCents: 820_000,
-      thisCents: 110_000,
-      billedToDateCents: 930_000,
-      remainingCents: 0,
-      lines: [
-        { role: "Project Architect", hoursHundredths: 800, rateCents: 11_000, amountCents: 88_000 },
-        { role: "Principal", hoursHundredths: 300, rateCents: 14_500, amountCents: 43_500 },
-        { role: "Not-to-exceed limit reached", hoursHundredths: null, rateCents: null, amountCents: -21_500 },
-      ],
+      date: "2026-10-05",
+      person: "Blake Middleton",
+      phase: "Owner Meetings",
+      hours: "2.00",
+      note: "Site visit",
     },
   ],
-  consultants: [
-    { label: "MEP · Coastal Engineers", feeCents: 1_980_000, percentCompleteBp: 5000, earnedCents: 990_000, previousCents: 594_000, thisCents: 396_000 },
-  ],
-  adjustments: [{ description: "Retainer applied", amountCents: -50_000 }],
-  subtotalCents: 1_518_500,
-  taxCents: 0,
-  totalCents: 1_518_500,
-  prior: [{ number: "26031-03", balanceCents: 1_116_000 }],
-  timeDetail: [{ date: "2026-10-05", person: "Blake Middleton", phase: "Additional Services", hours: "4.00", note: "Site visit" }],
   remittance: "Make checks payable to The Middleton Group, LLC.",
 };
 
 async function text(bytes: Uint8Array) {
   const pdf = await getDocumentProxy(bytes);
-  const { text: pages, totalPages } = await extractText(pdf, { mergePages: false });
-  return { all: pages.join("\n"), totalPages };
+  const { text: pages, totalPages } = await extractText(pdf, {
+    mergePages: false,
+  });
+  return { all: pages.join("\n"), pages, totalPages };
 }
 
-describe("invoice PDF", () => {
-  it("prints the number, bill-to, fee table, totals and page numbers", { timeout: 30_000 }, async () => {
-    const bytes = await renderInvoicePdf(base);
-    expect(new TextDecoder().decode(bytes.slice(0, 5))).toBe("%PDF-");
-    const { all, totalPages } = await text(bytes);
-    // Time detail always starts its own page, so there are at least two.
-    expect(totalPages).toBeGreaterThanOrEqual(2);
-    expect(all).toContain(`Page ${totalPages} of ${totalPages}`);
-    for (const s of [
-      "INVOICE",
-      "26031-04",
-      "Harbor Health",
-      "Pat Lee",
-      "Schematic Design",
-      "$11,160.00",
-      "Design Development",
-      "MEP · Coastal Engineers",
-      "$3,960.00",
-      "−$215.00",
-      "Retainer applied",
-      "Amount due this invoice",
-      "$15,185.00",
-      "Total balance due",
-      "$26,345.00",
-      "Site visit",
-      "Make checks payable to The Middleton Group, LLC.",
-      "Net 30",
-    ])
-      expect(all, s).toContain(s);
-    expect(all).not.toContain("DRAFT");
-  });
+const ws = (t: string) => t.replace(/\s+/g, " ");
 
-  it("a draft preview carries the DRAFT watermark and no number", { timeout: 30_000 }, async () => {
-    const { all } = await text(await renderInvoicePdf({ ...base, mark: "DRAFT", number: null, timeDetail: [], prior: [] }));
-    expect(all).toContain("DRAFT");
-    expect(all).toMatch(/Page (\d+) of \1/);
-    expect(all).not.toContain("Total balance due");
+describe("invoice PDF", () => {
+  it(
+    "prints the number, bill-to, every table, totals and page numbers",
+    { timeout: 30_000 },
+    async () => {
+      const bytes = await renderInvoicePdf(base);
+      expect(new TextDecoder().decode(bytes.slice(0, 5))).toBe("%PDF-");
+      const { all, totalPages } = await text(bytes);
+      // Time detail always starts its own page, so there are at least two.
+      expect(totalPages).toBeGreaterThanOrEqual(2);
+      expect(all).toContain(`Page ${totalPages} of ${totalPages}`);
+      for (const s of [
+        "INVOICE",
+        "26031-04",
+        "Harbor Health",
+        "Pat Lee",
+        "Schematic Design",
+        "$11,160.00",
+        "Design Development",
+        "MEP · Coastal Engineers",
+        "$3,960.00",
+        "−$215.00",
+        "Retainer applied",
+        "Amount due this invoice",
+        "$21,090.00",
+        "Total balance due",
+        "$32,250.00",
+        "Site visit",
+        "Make checks payable to The Middleton Group, LLC.",
+        "Net 30",
+      ])
+        expect(all, s).toContain(s);
+      expect(all).not.toContain("DRAFT");
+    },
+  );
+
+  it(
+    "a draft preview carries the DRAFT watermark and no number",
+    { timeout: 30_000 },
+    async () => {
+      const { all } = await text(
+        await renderInvoicePdf({
+          ...base,
+          mark: "DRAFT",
+          number: null,
+          timeDetail: [],
+          prior: [],
+        }),
+      );
+      expect(all).toContain("DRAFT");
+      expect(all).toMatch(/Page (\d+) of \1/);
+      expect(all).not.toContain("Total balance due");
+    },
+  );
+});
+
+describe("tables", () => {
+  it(
+    "fee and consultant totals show fee, overall % complete, earned and billed",
+    { timeout: 30_000 },
+    async () => {
+      const all = ws(
+        (await text(await renderInvoicePdf({ ...base, timeDetail: [] }))).all,
+      );
+      // Contract fee: $27,900 earned of $74,400 → 37.5%.
+      expect(all).toMatch(
+        /Total \$74,400\.00 37\.5% \$27,900\.00 \$16,740\.00 \$11,160\.00/,
+      );
+      // Consultants: $11,940 earned of $30,000 → 39.8%.
+      expect(all).toMatch(
+        /Total \$30,000\.00 39\.8% \$11,940\.00 \$5,940\.00 \$6,000\.00/,
+      );
+    },
+  );
+
+  it(
+    "NTE phases show limit, billed and remaining, with their hours under each phase",
+    { timeout: 30_000 },
+    async () => {
+      const all = ws(
+        (await text(await renderInvoicePdf({ ...base, timeDetail: [] }))).all,
+      );
+      const at = (t: string) => all.indexOf(t);
+      expect(all).toContain("Not-to-exceed");
+      expect(all).toMatch(
+        /Permitting \$9,300\.00 \$8,200\.00 \$1,100\.00 \$9,300\.00 \$0\.00/,
+      );
+      expect(at("Project Architect · 8.00 h @ $110.00")).toBeGreaterThan(
+        at("Permitting"),
+      );
+      expect(at(NTE_WRITE_DOWN)).toBeGreaterThan(
+        at("Principal · 3.00 h @ $145.00"),
+      );
+      // NTE work isn't repeated in the hourly table.
+      expect(all.split("Permitting").length - 1).toBe(1);
+    },
+  );
+
+  it(
+    "additional services print in their own sections after the base contract",
+    { timeout: 30_000 },
+    async () => {
+      const all = ws(
+        (await text(await renderInvoicePdf({ ...base, timeDetail: [] }))).all,
+      );
+      const at = (t: string) => all.indexOf(t);
+      expect(at("Additional services")).toBeGreaterThan(at("Owner Meetings"));
+      expect(at("Interior Finishes Package")).toBeGreaterThan(
+        at("Additional services"),
+      );
+      expect(at("Additional services · hourly")).toBeGreaterThan(
+        at("Interior Finishes Package"),
+      );
+      expect(at("Site Survey")).toBeGreaterThan(
+        at("Additional services · hourly"),
+      );
+      expect(at("Consultants")).toBeGreaterThan(at("Site Survey"));
+      expect(all).toMatch(
+        /Total \$10,000\.00 25% \$2,500\.00 \$0\.00 \$2,500\.00/,
+      );
+    },
+  );
+
+  it("no additional services → no section", { timeout: 30_000 }, async () => {
+    const s = sections({ additional: group([], [], []) });
+    const { all } = await text(
+      await renderInvoicePdf({ ...base, sections: s, timeDetail: [] }),
+    );
+    expect(all).not.toContain("Additional services");
   });
 });
 
-describe("fee tables", () => {
-  const data: InvoicePdfData = {
-    ...base,
-    timeDetail: [],
-    prior: [],
-    adjustments: [],
-    fixed: [
-      ...base.fixed,
-      { phase: "Interior Finishes Package", additional: true, feeCents: 1_000_000, percentCompleteBp: 2500, earnedCents: 250_000, previousCents: 0, thisCents: 250_000 },
-    ],
-    hourly: [{ ...base.hourly[0]!, phase: "Owner Meetings", additional: false }, { ...base.hourly[0]!, phase: "Site Survey", additional: true, role: "Project Architect" }],
-    consultants: [
-      ...base.consultants,
-      { label: "Structural · Lowcountry SE", feeCents: 1_020_000, percentCompleteBp: 2000, earnedCents: 204_000, previousCents: 0, thisCents: 204_000 },
-    ],
-  };
+describe("totals", () => {
+  it(
+    "subtotal, then each adjustment, then the amount due",
+    { timeout: 30_000 },
+    async () => {
+      const all = ws(
+        (await text(await renderInvoicePdf({ ...base, timeDetail: [] }))).all,
+      );
+      expect(all).toMatch(
+        /Subtotal \$21,590\.00 Retainer applied −\$500\.00 Amount due this invoice \$21,090\.00/,
+      );
+      // No separate Adjustments table any more.
+      expect(all).not.toMatch(/Adjustments/i);
+    },
+  );
 
-  it("the fee and consultant totals show fee, overall % complete, earned and billed", { timeout: 30_000 }, async () => {
-    const { all } = await text(await renderInvoicePdf(data));
-    // Contract fee: $27,900 earned of $74,400 → 37.5%.
-    expect(all).toMatch(/Total\s*\$74,400\.00\s*37\.5%\s*\$27,900\.00\s*\$16,740\.00\s*\$11,160\.00/);
-    // Consultants: $11,940 earned of $30,000 → 39.8%.
-    expect(all).toMatch(/Total\s*\$30,000\.00\s*39\.8%\s*\$11,940\.00\s*\$5,940\.00\s*\$6,000\.00/);
+  it("no adjustments → no subtotal line", { timeout: 30_000 }, async () => {
+    const s = sections({ adjustments: [], servicesSubtotalCents: 2_109_000 });
+    const all = ws(
+      (
+        await text(
+          await renderInvoicePdf({ ...base, sections: s, timeDetail: [] }),
+        )
+      ).all,
+    );
+    expect(all).not.toContain("Subtotal");
+    expect(all).toContain("Amount due this invoice $21,090.00");
   });
+});
 
-  it("additional services print in their own section, after the contract fee and hourly work", { timeout: 30_000 }, async () => {
-    const { all } = await text(await renderInvoicePdf(data));
-    const at = (t: string) => all.indexOf(t);
-    expect(at("Additional services")).toBeGreaterThan(at("Design Development"));
-    expect(at("Additional services")).toBeGreaterThan(at("Owner Meetings"));
-    expect(at("Interior Finishes Package")).toBeGreaterThan(at("Additional services"));
-    expect(at("Site Survey")).toBeGreaterThan(at("Additional services"));
-    // Its own total: $10,000 fee at 25%.
-    expect(all).toMatch(/Total\s*\$10,000\.00\s*25%\s*\$2,500\.00\s*\$0\.00\s*\$2,500\.00/);
-    // The contract fee total leaves the additional service out.
-    expect(all).toMatch(/Total\s*\$74,400\.00/);
-  });
-
-  it("NTE phases show limit, billed and remaining, with their hours under each phase", { timeout: 30_000 }, async () => {
-    const second = {
-      phase: "Bidding",
-      additional: false,
-      limitCents: 500_000,
-      previousCents: 100_000,
-      thisCents: 58_000,
-      billedToDateCents: 158_000,
-      remainingCents: 342_000,
-      lines: [{ role: "Project Manager", hoursHundredths: 400, rateCents: 14_500, amountCents: 58_000 }],
-    };
-    const { all } = await text(await renderInvoicePdf({ ...data, nte: [...base.nte, second] }));
-    const at = (t: string) => all.indexOf(t);
-    expect(all).toContain("Not-to-exceed");
-    expect(all).toMatch(/Permitting\s*\$9,300\.00\s*\$8,200\.00\s*\$1,100\.00\s*\$9,300\.00\s*\$0\.00/);
-    // Hours sit directly under their phase, before the next phase.
-    expect(at("Project Architect · 8.00 h @ $110.00")).toBeGreaterThan(at("Permitting"));
-    expect(at("Not-to-exceed limit reached")).toBeGreaterThan(at("Principal · 3.00 h @ $145.00"));
-    expect(at("Bidding")).toBeGreaterThan(at("Not-to-exceed limit reached"));
-    expect(at("Project Manager · 4.00 h @ $145.00")).toBeGreaterThan(at("Bidding"));
-    expect(all).toContain("−$215.00");
-    expect(all).toMatch(/Total\s*\$14,300\.00\s*\$9,200\.00\s*\$1,680\.00\s*\$10,880\.00\s*\$3,420\.00/);
-    // NTE work isn't repeated in the hourly table.
-    expect(all.split("Permitting").length - 1).toBe(1);
-  });
-
-  it("no additional services → no section", { timeout: 30_000 }, async () => {
-    const { all } = await text(await renderInvoicePdf({ ...data, fixed: base.fixed, hourly: [data.hourly[0]!], nte: base.nte }));
-    expect(all).not.toContain("Additional services");
-  });
+describe("page breaks", () => {
+  it(
+    "a section that would split moves whole to the next page",
+    { timeout: 30_000 },
+    async () => {
+      // Enough fixed-fee phases to push the Consultants section near the foot of page 1.
+      const many = Array.from({ length: 22 }, (_, i) =>
+        fee(
+          `Phase ${String(i + 1).padStart(2, "0")}`,
+          100_000,
+          5000,
+          0,
+          50_000,
+        ),
+      );
+      const s = sections({
+        contract: group(many, [], []),
+        additional: group([], [], []),
+      });
+      const { pages } = await text(
+        await renderInvoicePdf({
+          ...base,
+          sections: s,
+          timeDetail: [],
+          memo: null,
+        }),
+      );
+      const page = (t: string) => pages.findIndex((p) => p.includes(t));
+      // Each section's title, rows and total row land on the same page.
+      expect(page("Phase 01")).toBe(page("Phase 22"));
+      expect(page("Consultants")).toBe(page("Structural · Lowcountry SE"));
+      expect(page("Consultants")).toBe(page("$30,000.00"));
+    },
+  );
 });
 
 describe("PDF helpers", () => {
@@ -180,9 +361,14 @@ describe("PDF helpers", () => {
     expect(pdfFileName("2026 128")).toBe("Invoice-2026-128.pdf");
   });
   it("address lines", () => {
-    expect(addressLines({ addressLine1: "1 Bay Rd", addressLine2: null, city: "Mt Pleasant", state: "SC", postalCode: "29464" })).toEqual([
-      "1 Bay Rd",
-      "Mt Pleasant, SC 29464",
-    ]);
+    expect(
+      addressLines({
+        addressLine1: "1 Bay Rd",
+        addressLine2: null,
+        city: "Mt Pleasant",
+        state: "SC",
+        postalCode: "29464",
+      }),
+    ).toEqual(["1 Bay Rd", "Mt Pleasant, SC 29464"]);
   });
 });

@@ -22,8 +22,9 @@ import {
 } from "@/server/invoices/actions";
 import type { SendDefaults } from "@/server/invoices/detail";
 import type { BuilderView } from "@/server/invoices/view";
-import { AdjustmentsSection, ConsultantsSection, FixedSection, HourlySection, Section } from "./builder-sections";
+import { AdjustmentLines, ConsultantsSection, FixedSection, HourlySection, NteSection, Section } from "./builder-sections";
 import { Callout, StatusBadge } from "./invoice-bits";
+import { ADDITIONAL_TITLES, CONTRACT_TITLES } from "./invoice-tables";
 import { SendDialog } from "./send-dialog";
 import { useBuilder } from "./use-builder";
 
@@ -150,12 +151,15 @@ export function InvoiceBuilder({ initial }: { initial: BuilderView }) {
 
         <div className="flex flex-wrap items-start gap-4">
           <div className="flex min-w-0 flex-[999_1_640px] flex-col gap-4">
-            <FixedSection b={b} />
-            <HourlySection b={b} />
+            <FixedSection b={b} additional={false} title={CONTRACT_TITLES[0]} />
+            <NteSection b={b} additional={false} title={CONTRACT_TITLES[1]} />
+            <HourlySection b={b} additional={false} title={CONTRACT_TITLES[2]} />
+            <FixedSection b={b} additional title={ADDITIONAL_TITLES[0]} />
+            <NteSection b={b} additional title={ADDITIONAL_TITLES[1]} />
+            <HourlySection b={b} additional title={ADDITIONAL_TITLES[2]} />
             <ConsultantsSection b={b} />
-            <AdjustmentsSection b={b} />
           </div>
-          <Totals view={view} />
+          <Totals b={b} />
         </div>
       </div>
 
@@ -268,16 +272,14 @@ function SettingsStrip({ b }: { b: ReturnType<typeof useBuilder> }) {
   );
 }
 
-/** C.8 Totals (always from the server). */
-function Totals({ view }: { view: BuilderView }) {
+/** C.8 Totals (always from the server): Subtotal and adjustments (when there are any), tax, total. */
+function Totals({ b }: { b: ReturnType<typeof useBuilder> }) {
+  const { view } = b;
   const t = view.totals;
   const row = "flex justify-between gap-4 py-1.5";
   return (
     <aside aria-label="Totals" className="sticky top-4 flex-[1_1_280px] rounded-sm border border-line bg-surface px-[18px] py-4">
-      <div className={row}>
-        <span className="text-muted">Subtotal</span>
-        <span className="num">{money(t.subtotalCents)}</span>
-      </div>
+      <AdjustmentLines b={b} />
       {t.taxCents > 0 && (
         <div className={row}>
           <span className="text-muted">Tax</span>

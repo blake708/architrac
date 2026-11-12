@@ -164,6 +164,8 @@ test("a % below what's billed shows an error; a retainer credit lowers the total
   await signInAs(page, "kaPm", "/app/invoices");
   await page.getByRole("link", { name: "Draft" }).click();
   await expect(total(page)).toHaveText("$24,310");
+  // No adjustments yet: no subtotal line.
+  await expect(page.getByTestId("invoice-subtotal")).toHaveCount(0);
   const sd = page.getByLabel("% complete for Schematic Design");
   await sd.fill("101");
   await sd.press("Enter");
@@ -174,6 +176,11 @@ test("a % below what's billed shows an error; a retainer credit lowers the total
   await page.getByLabel("Amount").fill("-1,000");
   await page.getByRole("button", { name: "Add line" }).click();
   await expect(total(page)).toHaveText("$23,310");
+  // Totals read Subtotal, then the adjustment, then the total (rule 17).
+  const totals = page.getByRole("complementary", { name: "Totals" });
+  await expect(page.getByTestId("invoice-subtotal")).toHaveText("$24,310");
+  await expect(totals.locator("[data-adjustment]")).toContainText("Retainer applied");
+  await expect(totals.locator("[data-adjustment]")).toContainText("−$1,000");
 });
 
 test("the PM submits it for review and can no longer edit it", async ({ page }) => {
@@ -242,6 +249,9 @@ test("the owner marks it sent, downloads the saved PDF, and voids it", async ({ 
   await expect(page.getByTestId("invoice-number")).toHaveText(/^\d{4}-001$/);
   await expect(page.getByTestId("invoice-status")).toHaveText("Sent");
   await expect(page.getByText("Marked sent, not emailed")).toBeVisible();
+  // The page lays the invoice out like the PDF: Fee and Consultants tables with total rows.
+  await expect(page.getByRole("table", { name: "Fee" }).locator("tfoot")).toContainText("Total");
+  await expect(page.getByRole("table", { name: "Consultants" })).toContainText("$19,800");
 
   // Download PDF: a short-lived link to the private file.
   const href = await page.getByRole("link", { name: "Download PDF" }).getAttribute("href");

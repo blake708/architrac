@@ -1,13 +1,15 @@
-import { and, asc, eq, isNull } from "drizzle-orm";
-import { companies, contacts, firms, invoiceLines, invoices, users } from "@/db/schema";
+import { and, eq, isNull } from "drizzle-orm";
+import { companies, contacts, firms, invoices, users } from "@/db/schema";
 import type { TenantDb } from "@/db/tenant";
 import { can } from "@/lib/auth/permissions";
-import { type InvoiceStatus, formatPercentBp, invoiceDueDate } from "@/lib/calc/invoice";
+import { type InvoiceStatus, invoiceDueDate } from "@/lib/calc/invoice";
+import type { InvoiceSections } from "@/lib/calc/invoice-sections";
 import { formatDate, formatMoney, todayIn } from "@/lib/format";
 import { defaultSendMessage, invoiceRecipients } from "@/lib/invoices/builder";
 import { firmDisplayName } from "@/lib/settings/firm-profile";
 import { type InvoiceActor, type InvoiceRow, projectAccess } from "./draft";
 import { peekNumber } from "./number";
+import { loadSections } from "./sections";
 
 // The invoice page after it's sent (invoicing spec Layout D, first
 // version: payments, aging and the activity timeline come in 1.8 D), and
@@ -27,7 +29,8 @@ export type InvoiceDetail = {
   sentAt: string | null;
   sentTo: string[];
   emailed: boolean;
-  lines: { id: string; type: string; description: string; percent: string | null; amountCents: number }[];
+  /** The tables and adjustments, laid out like the PDF (rule 17). */
+  sections: InvoiceSections;
   subtotalCents: number;
   taxCents: number;
   totalCents: number;
@@ -102,14 +105,7 @@ export async function loadInvoiceDetail(db: TenantDb, actor: InvoiceActor, invoi
   if (!inv) return null;
   const access = await projectAccess(db, actor, inv.projectId);
   if (!access || (!access.canDraft && !access.canReview)) return null;
-  const [lines, p] = await Promise.all([
-    db
-      .select()
-      .from(invoiceLines)
-      .where(and(eq(invoiceLines.invoiceId, inv.id), isNull(invoiceLines.archivedAt)))
-      .orderBy(asc(invoiceLines.sortOrder), asc(invoiceLines.createdAt)),
-    people(db, inv, actor),
-  ]);
+  const [sections, p] = await Promise.all([loadSections(db, inv), people(db, inv, actor)]);
   const project = { id: access.project.id, number: access.project.number, name: access.project.name };
   const sent = inv.status === "sent" || inv.status === "partially_paid" || inv.status === "paid";
   return {
@@ -124,13 +120,7 @@ export async function loadInvoiceDetail(db: TenantDb, actor: InvoiceActor, invoi
     sentAt: inv.sentAt?.toISOString() ?? null,
     sentTo: inv.sentTo ?? [],
     emailed: inv.emailedAt !== null,
-    lines: lines.map((l) => ({
-      id: l.id,
-      type: l.lineType,
-      description: l.description,
-      percent: l.percentCompleteBp === null ? null : formatPercentBp(l.percentCompleteBp),
-      amountCents: l.amountCents,
-    })),
+    sections,
     subtotalCents: inv.subtotalCents,
     taxCents: inv.taxCents,
     totalCents: inv.totalCents,
