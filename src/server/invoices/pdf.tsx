@@ -1,6 +1,6 @@
 import path from "node:path";
 import { Document, Font, Image, Page, StyleSheet, Text, View, renderToBuffer } from "@react-pdf/renderer";
-import { formatPercentBp } from "@/lib/calc/invoice";
+import { formatPercentBp, overallPercentBp } from "@/lib/calc/invoice";
 import { formatDate, formatMoney } from "@/lib/format";
 import type { InvoicePdfData } from "./pdf-data";
 
@@ -112,9 +112,54 @@ function Table<T>({ cols, rows, totals }: { cols: Col<T>[]; rows: T[]; totals?: 
 
 const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
 
+/** Fixed-fee phases, with an overall % complete (weighted by fee) in the total row. */
+function FeeTable({ rows }: { rows: InvoicePdfData["fixed"] }) {
+  return (
+    <Table
+      cols={[
+        { title: "Phase", width: "auto", cell: (r) => r.phase },
+        { title: "Fee", width: 82, num: true, cell: (r) => pdfMoney(r.feeCents) },
+        { title: "% complete", width: 56, num: true, cell: (r) => formatPercentBp(r.percentCompleteBp) },
+        { title: "Earned to date", width: 82, num: true, cell: (r) => pdfMoney(r.earnedCents) },
+        { title: "Previously billed", width: 82, num: true, cell: (r) => pdfMoney(r.previousCents) },
+        { title: "This invoice", width: 82, num: true, cell: (r) => pdfMoney(r.thisCents) },
+      ]}
+      rows={rows}
+      totals={[
+        "Total",
+        pdfMoney(sum(rows.map((r) => r.feeCents))),
+        formatPercentBp(overallPercentBp(rows)),
+        pdfMoney(sum(rows.map((r) => r.earnedCents))),
+        pdfMoney(sum(rows.map((r) => r.previousCents))),
+        pdfMoney(sum(rows.map((r) => r.thisCents))),
+      ]}
+    />
+  );
+}
+
+function HourlyTable({ rows }: { rows: InvoicePdfData["hourly"] }) {
+  return (
+    <Table
+      cols={[
+        { title: "Phase", width: 150, cell: (r) => r.phase },
+        { title: "Role", width: "auto", cell: (r) => r.role },
+        { title: "Hours", width: 50, num: true, cell: (r) => (r.hoursHundredths === null ? "" : (r.hoursHundredths / 100).toFixed(2)) },
+        { title: "Rate", width: 70, num: true, cell: (r) => (r.rateCents === null ? "" : pdfMoney(r.rateCents)) },
+        { title: "Amount", width: 82, num: true, cell: (r) => pdfMoney(r.amountCents) },
+      ]}
+      rows={rows}
+      totals={["Total", null, null, null, pdfMoney(sum(rows.map((r) => r.amountCents)))]}
+    />
+  );
+}
+
 function InvoiceDocument({ d }: { d: InvoicePdfData }) {
   const number = d.number ?? "Draft";
-  const hasHourly = d.hourly.length > 0;
+  // Additional services print apart from the base contract.
+  const contractFixed = d.fixed.filter((r) => !r.additional);
+  const extraFixed = d.fixed.filter((r) => r.additional);
+  const contractHourly = d.hourly.filter((r) => !r.additional);
+  const extraHourly = d.hourly.filter((r) => r.additional);
   return (
     <Document title={`Invoice ${number}`} author={d.firm.name} creator="ArchiTrac" producer="ArchiTrac">
       <Page size="LETTER" style={s.page}>
@@ -192,45 +237,29 @@ function InvoiceDocument({ d }: { d: InvoicePdfData }) {
           </View>
         )}
 
-        {d.fixed.length > 0 && (
+        {contractFixed.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>Fee</Text>
-            <Table
-              cols={[
-                { title: "Phase", width: "auto", cell: (r) => r.phase },
-                { title: "Fee", width: 82, num: true, cell: (r) => pdfMoney(r.feeCents) },
-                { title: "% complete", width: 56, num: true, cell: (r) => formatPercentBp(r.percentCompleteBp) },
-                { title: "Earned to date", width: 82, num: true, cell: (r) => pdfMoney(r.earnedCents) },
-                { title: "Previously billed", width: 82, num: true, cell: (r) => pdfMoney(r.previousCents) },
-                { title: "This invoice", width: 82, num: true, cell: (r) => pdfMoney(r.thisCents) },
-              ]}
-              rows={d.fixed}
-              totals={[
-                "Total",
-                pdfMoney(sum(d.fixed.map((r) => r.feeCents))),
-                null,
-                pdfMoney(sum(d.fixed.map((r) => r.earnedCents))),
-                pdfMoney(sum(d.fixed.map((r) => r.previousCents))),
-                pdfMoney(sum(d.fixed.map((r) => r.thisCents))),
-              ]}
-            />
+            <FeeTable rows={contractFixed} />
           </View>
         )}
 
-        {hasHourly && (
+        {contractHourly.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>Hourly services</Text>
-            <Table
-              cols={[
-                { title: "Phase", width: 150, cell: (r) => r.phase },
-                { title: "Role", width: "auto", cell: (r) => r.role },
-                { title: "Hours", width: 50, num: true, cell: (r) => (r.hoursHundredths === null ? "" : (r.hoursHundredths / 100).toFixed(2)) },
-                { title: "Rate", width: 70, num: true, cell: (r) => (r.rateCents === null ? "" : pdfMoney(r.rateCents)) },
-                { title: "Amount", width: 82, num: true, cell: (r) => pdfMoney(r.amountCents) },
-              ]}
-              rows={d.hourly}
-              totals={["Total", null, null, null, pdfMoney(sum(d.hourly.map((r) => r.amountCents)))]}
-            />
+            <HourlyTable rows={contractHourly} />
+          </View>
+        )}
+
+        {(extraFixed.length > 0 || extraHourly.length > 0) && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>Additional services</Text>
+            {extraFixed.length > 0 && <FeeTable rows={extraFixed} />}
+            {extraHourly.length > 0 && (
+              <View style={extraFixed.length > 0 ? { marginTop: 10 } : {}}>
+                <HourlyTable rows={extraHourly} />
+              </View>
+            )}
           </View>
         )}
 
@@ -247,7 +276,14 @@ function InvoiceDocument({ d }: { d: InvoicePdfData }) {
                 { title: "This invoice", width: 82, num: true, cell: (r) => pdfMoney(r.thisCents) },
               ]}
               rows={d.consultants}
-              totals={["Total", null, null, null, null, pdfMoney(sum(d.consultants.map((r) => r.thisCents)))]}
+              totals={[
+                "Total",
+                pdfMoney(sum(d.consultants.map((r) => r.feeCents))),
+                formatPercentBp(overallPercentBp(d.consultants)),
+                pdfMoney(sum(d.consultants.map((r) => r.earnedCents))),
+                pdfMoney(sum(d.consultants.map((r) => r.previousCents))),
+                pdfMoney(sum(d.consultants.map((r) => r.thisCents))),
+              ]}
             />
           </View>
         )}

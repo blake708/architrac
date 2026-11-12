@@ -51,15 +51,17 @@ export type InvoicePdfData = {
   billTo: { company: string; contact: string | null; address: string[] };
   project: { number: string; name: string; address: string[] };
   memo: string | null;
+  /** additional: an additional service beyond the base contract; prints in its own table. */
   fixed: {
     phase: string;
+    additional: boolean;
     feeCents: number;
     percentCompleteBp: number;
     earnedCents: number;
     previousCents: number;
     thisCents: number;
   }[];
-  hourly: { phase: string; role: string; hoursHundredths: number | null; rateCents: number | null; amountCents: number }[];
+  hourly: { phase: string; additional: boolean; role: string; hoursHundredths: number | null; rateCents: number | null; amountCents: number }[];
   consultants: {
     label: string;
     feeCents: number;
@@ -78,7 +80,7 @@ export type InvoicePdfData = {
 };
 
 export async function loadPdfData(db: TenantDb, inv: InvoiceRow, mark: PdfMark): Promise<InvoicePdfData> {
-  const [[firm], [settings], [project], [client], billTo, plan, lineRows, prior, entries] = await Promise.all([
+  const [[firm], [settings], [project], [client], billTo, plan, lineRows, prior, entries, extraPhases] = await Promise.all([
     db.select().from(firms).where(eq(firms.id, inv.firmId)),
     db
       .select({ terms: firmSettings.defaultPaymentTermsDays, remittance: firmSettings.invoiceRemittanceText })
@@ -125,14 +127,19 @@ export async function loadPdfData(db: TenantDb, inv: InvoiceRow, mark: PdfMark):
       .leftJoin(projectPhases, eq(projectPhases.id, timeEntries.projectPhaseId))
       .where(and(eq(timeEntries.invoiceId, inv.id), isNull(timeEntries.archivedAt)))
       .orderBy(asc(timeEntries.workDate), asc(users.lastName)),
+    db
+      .select({ id: projectPhases.id })
+      .from(projectPhases)
+      .where(and(eq(projectPhases.projectId, inv.projectId), eq(projectPhases.isAdditionalService, true))),
   ]);
+  const additional = new Set(extraPhases.map((p) => p.id));
 
   const hourly: InvoicePdfData["hourly"] = [];
   for (const h of plan.hourly) {
     for (const g of h.groups)
-      hourly.push({ phase: h.name, role: g.roleName, hoursHundredths: g.hoursHundredths, rateCents: g.rateCents, amountCents: g.amountCents });
+      hourly.push({ phase: h.name, additional: additional.has(h.phaseId), role: g.roleName, hoursHundredths: g.hoursHundredths, rateCents: g.rateCents, amountCents: g.amountCents });
     if (h.writeDownCents > 0)
-      hourly.push({ phase: h.name, role: "Not-to-exceed limit reached", hoursHundredths: null, rateCents: null, amountCents: -h.writeDownCents });
+      hourly.push({ phase: h.name, additional: additional.has(h.phaseId), role: "Not-to-exceed limit reached", hoursHundredths: null, rateCents: null, amountCents: -h.writeDownCents });
   }
   const contact = billTo[0] ? `${billTo[0].first} ${billTo[0].last ?? ""}`.trim() : null;
 
@@ -155,6 +162,7 @@ export async function loadPdfData(db: TenantDb, inv: InvoiceRow, mark: PdfMark):
     memo: inv.memo,
     fixed: plan.fixed.map((f) => ({
       phase: f.name,
+      additional: additional.has(f.phaseId),
       feeCents: f.feeCents,
       percentCompleteBp: f.percentCompleteBp,
       earnedCents: f.earnedToDateCents,

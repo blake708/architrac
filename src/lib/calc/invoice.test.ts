@@ -16,6 +16,7 @@ import {
   invoiceTotals,
   lastBilledBp,
   nteCap,
+  overallPercentBp,
   paymentProblem,
   periodStart,
   previouslyBilled,
@@ -140,6 +141,21 @@ describe("rule 3: fixed-fee line", () => {
     expect(formatPercentBp(3025)).toBe("30.25%");
     expect(formatPercentBp(3050)).toBe("30.5%");
     expect(formatPercentBp(3005)).toBe("30.05%");
+  });
+
+  it("overall % complete weights each row by its fee", () => {
+    // $10,000 at 100% + $30,000 at 20% → $16,000 of $40,000 = 40%.
+    expect(
+      overallPercentBp([
+        { feeCents: 1_000_000, earnedCents: 1_000_000 },
+        { feeCents: 3_000_000, earnedCents: 600_000 },
+      ]),
+    ).toBe(4000);
+    // Rounds half up to the basis point: 1 of 3 → 33.33%.
+    expect(overallPercentBp([{ feeCents: 300, earnedCents: 100 }])).toBe(3333);
+    expect(overallPercentBp([{ feeCents: 300, earnedCents: 200 }])).toBe(6667);
+    expect(overallPercentBp([])).toBe(0);
+    expect(overallPercentBp([{ feeCents: 0, earnedCents: 0 }])).toBe(0);
   });
 });
 

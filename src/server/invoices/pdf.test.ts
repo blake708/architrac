@@ -19,12 +19,12 @@ const base: InvoicePdfData = {
   project: { number: "26031", name: "Medical Office Building", address: [] },
   memo: "Thank you for your business.",
   fixed: [
-    { phase: "Schematic Design", feeCents: 2_790_000, percentCompleteBp: 10000, earnedCents: 2_790_000, previousCents: 1_674_000, thisCents: 1_116_000 },
-    { phase: "Design Development", feeCents: 4_650_000, percentCompleteBp: 0, earnedCents: 0, previousCents: 0, thisCents: 0 },
+    { phase: "Schematic Design", additional: false, feeCents: 2_790_000, percentCompleteBp: 10000, earnedCents: 2_790_000, previousCents: 1_674_000, thisCents: 1_116_000 },
+    { phase: "Design Development", additional: false, feeCents: 4_650_000, percentCompleteBp: 0, earnedCents: 0, previousCents: 0, thisCents: 0 },
   ],
   hourly: [
-    { phase: "Additional Services", role: "Principal", hoursHundredths: 400, rateCents: 19_500, amountCents: 78_000 },
-    { phase: "Additional Services", role: "Not-to-exceed limit reached", hoursHundredths: null, rateCents: null, amountCents: -21_500 },
+    { phase: "Additional Services", additional: true, role: "Principal", hoursHundredths: 400, rateCents: 19_500, amountCents: 78_000 },
+    { phase: "Additional Services", additional: true, role: "Not-to-exceed limit reached", hoursHundredths: null, rateCents: null, amountCents: -21_500 },
   ],
   consultants: [
     { label: "MEP · Coastal Engineers", feeCents: 1_980_000, percentCompleteBp: 5000, earnedCents: 990_000, previousCents: 594_000, thisCents: 396_000 },
@@ -81,6 +81,50 @@ describe("invoice PDF", () => {
     expect(all).toContain("DRAFT");
     expect(all).toContain("Page 1 of 1");
     expect(all).not.toContain("Total balance due");
+  });
+});
+
+describe("fee tables", () => {
+  const data: InvoicePdfData = {
+    ...base,
+    timeDetail: [],
+    prior: [],
+    adjustments: [],
+    fixed: [
+      ...base.fixed,
+      { phase: "Interior Finishes Package", additional: true, feeCents: 1_000_000, percentCompleteBp: 2500, earnedCents: 250_000, previousCents: 0, thisCents: 250_000 },
+    ],
+    hourly: [{ ...base.hourly[0]!, phase: "Owner Meetings", additional: false }, { ...base.hourly[0]!, phase: "Site Survey", additional: true, role: "Project Architect" }],
+    consultants: [
+      ...base.consultants,
+      { label: "Structural · Lowcountry SE", feeCents: 1_020_000, percentCompleteBp: 2000, earnedCents: 204_000, previousCents: 0, thisCents: 204_000 },
+    ],
+  };
+
+  it("the fee and consultant totals show fee, overall % complete, earned and billed", { timeout: 30_000 }, async () => {
+    const { all } = await text(await renderInvoicePdf(data));
+    // Contract fee: $27,900 earned of $74,400 → 37.5%.
+    expect(all).toMatch(/Total\s*\$74,400\.00\s*37\.5%\s*\$27,900\.00\s*\$16,740\.00\s*\$11,160\.00/);
+    // Consultants: $11,940 earned of $30,000 → 39.8%.
+    expect(all).toMatch(/Total\s*\$30,000\.00\s*39\.8%\s*\$11,940\.00\s*\$5,940\.00\s*\$6,000\.00/);
+  });
+
+  it("additional services print in their own section, after the contract fee and hourly work", { timeout: 30_000 }, async () => {
+    const { all } = await text(await renderInvoicePdf(data));
+    const at = (t: string) => all.indexOf(t);
+    expect(at("Additional services")).toBeGreaterThan(at("Design Development"));
+    expect(at("Additional services")).toBeGreaterThan(at("Owner Meetings"));
+    expect(at("Interior Finishes Package")).toBeGreaterThan(at("Additional services"));
+    expect(at("Site Survey")).toBeGreaterThan(at("Additional services"));
+    // Its own total: $10,000 fee at 25%.
+    expect(all).toMatch(/Total\s*\$10,000\.00\s*25%\s*\$2,500\.00\s*\$0\.00\s*\$2,500\.00/);
+    // The contract fee total leaves the additional service out.
+    expect(all).toMatch(/Total\s*\$74,400\.00/);
+  });
+
+  it("no additional services → no section", { timeout: 30_000 }, async () => {
+    const { all } = await text(await renderInvoicePdf({ ...data, fixed: base.fixed, hourly: [data.hourly[0]!] }));
+    expect(all).not.toContain("Additional services");
   });
 });
 
