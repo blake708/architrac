@@ -1,7 +1,16 @@
 import { withSentryConfig } from "@sentry/nextjs/config";
 import type { NextConfig } from "next";
 
-const nextConfig: NextConfig = {};
+const nextConfig: NextConfig = {
+  // The invoice PDF (src/server/invoices/pdf.tsx) is drawn by
+  // @react-pdf/renderer, which runs as plain Node code (not bundled) and
+  // reads its font files from disk while the app runs. Ship them with
+  // every server function.
+  serverExternalPackages: ["@react-pdf/renderer"],
+  outputFileTracingIncludes: {
+    "/**": ["./src/server/invoices/fonts/**/*"],
+  },
+};
 
 // Sentry reads SENTRY_ORG, SENTRY_PROJECT and SENTRY_AUTH_TOKEN from the
 // environment (set in the deploy workflows). Without them, the build still
