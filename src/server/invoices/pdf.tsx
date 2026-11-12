@@ -55,6 +55,7 @@ const s = StyleSheet.create({
   head: { flexDirection: "row", borderBottomWidth: 1, borderBottomColor: INK, paddingBottom: 3 },
   total: { flexDirection: "row", paddingVertical: 4, fontWeight: 700 },
   num: { fontFamily: "Plex Mono", textAlign: "right" },
+  nteLine: { marginTop: 2, fontSize: 8, color: MUTED },
   totals: { marginTop: 16, marginLeft: "auto", width: 250 },
   totalRow: { flexDirection: "row", justifyContent: "space-between", paddingVertical: 3 },
   due: { borderTopWidth: 1, borderTopColor: INK, marginTop: 3, paddingTop: 5, fontWeight: 700, fontSize: 11 },
@@ -153,6 +154,74 @@ function HourlyTable({ rows }: { rows: InvoicePdfData["hourly"] }) {
   );
 }
 
+/**
+ * Not-to-exceed phases: one summary row per phase (limit, billed, remaining)
+ * with this invoice's hours listed under it, then a total row.
+ */
+function NteTable({ rows }: { rows: InvoicePdfData["nte"] }) {
+  const W = 76;
+  const col = { width: W, paddingLeft: 6 };
+  const heads = ["Limit", "Previously billed", "This invoice", "Billed to date", "Remaining"];
+  const cells = (r: { limitCents: number; previousCents: number; thisCents: number; billedToDateCents: number; remainingCents: number }) => [
+    r.limitCents,
+    r.previousCents,
+    r.thisCents,
+    r.billedToDateCents,
+    r.remainingCents,
+  ];
+  const total = {
+    limitCents: sum(rows.map((r) => r.limitCents)),
+    previousCents: sum(rows.map((r) => r.previousCents)),
+    thisCents: sum(rows.map((r) => r.thisCents)),
+    billedToDateCents: sum(rows.map((r) => r.billedToDateCents)),
+    remainingCents: sum(rows.map((r) => r.remainingCents)),
+  };
+  return (
+    <View>
+      <View style={s.head}>
+        <Text style={[s.th, { flexGrow: 1 }]}>Phase</Text>
+        {heads.map((h) => (
+          <Text key={h} style={[s.th, col, { textAlign: "right" }]}>
+            {h}
+          </Text>
+        ))}
+      </View>
+      {rows.map((r, i) => (
+        <View key={i} style={[s.tr, { flexDirection: "column" }]} wrap={false}>
+          <View style={s.row}>
+            <Text style={{ flexGrow: 1, fontWeight: 600 }}>{r.phase}</Text>
+            {cells(r).map((c, ci) => (
+              <Text key={ci} style={[col, s.num]}>
+                {pdfMoney(c)}
+              </Text>
+            ))}
+          </View>
+          {r.lines.map((l, li) => (
+            <View key={li} style={[s.row, s.nteLine]}>
+              <Text style={{ flexGrow: 1, paddingLeft: 10 }}>
+                {l.hoursHundredths === null || l.rateCents === null
+                  ? l.role
+                  : `${l.role} · ${(l.hoursHundredths / 100).toFixed(2)} h @ ${pdfMoney(l.rateCents)}`}
+              </Text>
+              <Text style={[col, s.num]}>{pdfMoney(l.amountCents)}</Text>
+              <Text style={col} />
+              <Text style={col} />
+            </View>
+          ))}
+        </View>
+      ))}
+      <View style={s.total} wrap={false}>
+        <Text style={{ flexGrow: 1 }}>Total</Text>
+        {cells(total).map((c, ci) => (
+          <Text key={ci} style={[col, s.num]}>
+            {pdfMoney(c)}
+          </Text>
+        ))}
+      </View>
+    </View>
+  );
+}
+
 function InvoiceDocument({ d }: { d: InvoicePdfData }) {
   const number = d.number ?? "Draft";
   // Additional services print apart from the base contract.
@@ -160,6 +229,13 @@ function InvoiceDocument({ d }: { d: InvoicePdfData }) {
   const extraFixed = d.fixed.filter((r) => r.additional);
   const contractHourly = d.hourly.filter((r) => !r.additional);
   const extraHourly = d.hourly.filter((r) => r.additional);
+  const contractNte = d.nte.filter((r) => !r.additional);
+  const extraNte = d.nte.filter((r) => r.additional);
+  const extraTables = [
+    extraFixed.length > 0 && <FeeTable key="fixed" rows={extraFixed} />,
+    extraNte.length > 0 && <NteTable key="nte" rows={extraNte} />,
+    extraHourly.length > 0 && <HourlyTable key="hourly" rows={extraHourly} />,
+  ].filter(Boolean);
   return (
     <Document title={`Invoice ${number}`} author={d.firm.name} creator="ArchiTrac" producer="ArchiTrac">
       <Page size="LETTER" style={s.page}>
@@ -244,6 +320,13 @@ function InvoiceDocument({ d }: { d: InvoicePdfData }) {
           </View>
         )}
 
+        {contractNte.length > 0 && (
+          <View style={s.section}>
+            <Text style={s.sectionTitle}>Not-to-exceed</Text>
+            <NteTable rows={contractNte} />
+          </View>
+        )}
+
         {contractHourly.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>Hourly services</Text>
@@ -251,15 +334,14 @@ function InvoiceDocument({ d }: { d: InvoicePdfData }) {
           </View>
         )}
 
-        {(extraFixed.length > 0 || extraHourly.length > 0) && (
+        {extraTables.length > 0 && (
           <View style={s.section}>
             <Text style={s.sectionTitle}>Additional services</Text>
-            {extraFixed.length > 0 && <FeeTable rows={extraFixed} />}
-            {extraHourly.length > 0 && (
-              <View style={extraFixed.length > 0 ? { marginTop: 10 } : {}}>
-                <HourlyTable rows={extraHourly} />
+            {extraTables.map((t, i) => (
+              <View key={i} style={i > 0 ? { marginTop: 10 } : {}}>
+                {t}
               </View>
-            )}
+            ))}
           </View>
         )}
 

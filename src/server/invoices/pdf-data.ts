@@ -14,7 +14,7 @@ import {
   users,
 } from "@/db/schema";
 import type { TenantDb } from "@/db/tenant";
-import { OPEN_STATUSES } from "@/lib/calc/invoice";
+import { OPEN_STATUSES, nteStanding } from "@/lib/calc/invoice";
 import { firmDisplayName } from "@/lib/settings/firm-profile";
 import { type InvoiceRow, planFor } from "./draft";
 
@@ -62,6 +62,17 @@ export type InvoicePdfData = {
     thisCents: number;
   }[];
   hourly: { phase: string; additional: boolean; role: string; hoursHundredths: number | null; rateCents: number | null; amountCents: number }[];
+  /** Not-to-exceed phases: where each stands against its limit, with this invoice's hours under it. */
+  nte: {
+    phase: string;
+    additional: boolean;
+    limitCents: number;
+    previousCents: number;
+    thisCents: number;
+    billedToDateCents: number;
+    remainingCents: number;
+    lines: { role: string; hoursHundredths: number | null; rateCents: number | null; amountCents: number }[];
+  }[];
   consultants: {
     label: string;
     feeCents: number;
@@ -134,12 +145,30 @@ export async function loadPdfData(db: TenantDb, inv: InvoiceRow, mark: PdfMark):
   ]);
   const additional = new Set(extraPhases.map((p) => p.id));
 
+  // Hourly phases list their role lines. NTE phases get a summary row (limit,
+  // billed, remaining) with their role lines and any write-down under it.
   const hourly: InvoicePdfData["hourly"] = [];
+  const nte: InvoicePdfData["nte"] = [];
   for (const h of plan.hourly) {
-    for (const g of h.groups)
-      hourly.push({ phase: h.name, additional: additional.has(h.phaseId), role: g.roleName, hoursHundredths: g.hoursHundredths, rateCents: g.rateCents, amountCents: g.amountCents });
-    if (h.writeDownCents > 0)
-      hourly.push({ phase: h.name, additional: additional.has(h.phaseId), role: "Not-to-exceed limit reached", hoursHundredths: null, rateCents: null, amountCents: -h.writeDownCents });
+    const extra = additional.has(h.phaseId);
+    const roles = h.groups.map((g) => ({ role: g.roleName, hoursHundredths: g.hoursHundredths, rateCents: g.rateCents, amountCents: g.amountCents }));
+    if (h.feeType === "nte") {
+      const standing = nteStanding({ capCents: h.feeCents, previouslyBilledCents: h.previouslyBilledCents, thisInvoiceCents: h.netCents });
+      nte.push({
+        phase: h.name,
+        additional: extra,
+        limitCents: h.feeCents,
+        previousCents: h.previouslyBilledCents,
+        thisCents: h.netCents,
+        ...standing,
+        lines: [
+          ...roles,
+          ...(h.writeDownCents > 0
+            ? [{ role: "Not-to-exceed limit reached", hoursHundredths: null, rateCents: null, amountCents: -h.writeDownCents }]
+            : []),
+        ],
+      });
+    } else for (const r of roles) hourly.push({ phase: h.name, additional: extra, ...r });
   }
   const contact = billTo[0] ? `${billTo[0].first} ${billTo[0].last ?? ""}`.trim() : null;
 
@@ -170,6 +199,7 @@ export async function loadPdfData(db: TenantDb, inv: InvoiceRow, mark: PdfMark):
       thisCents: f.thisInvoiceCents,
     })),
     hourly,
+    nte,
     consultants: plan.consultants.map((c) => ({
       label: c.label,
       feeCents: c.clientFeeCents,

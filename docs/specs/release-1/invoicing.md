@@ -132,9 +132,11 @@ Money is integer cents; `roundHalfUp(x)` rounds to the nearest cent, .5 up. Put 
     - Header: firm logo (`firms.logo_url`) left; firm name, address, phone right. Title **INVOICE**, number, issue date, due date, terms "Net {n}".
     - Two blocks: **Bill to** (company name, billing contact, address) and **Project** (number, name, address, "Services through {period_end}").
     - Memo to client (if any).
-    - **Fee** table (fixed phases incl. phases with nothing this period): Phase · Fee · % complete · Earned to date · Previously billed · This invoice; total row.
-    - **Hourly services** table: Phase · Role · Hours · Rate · Amount (NTE adjustments shown under their phase).
-    - **Consultants** table and **Adjustments** table (omitted when empty).
+    - **Fee** table (fixed phases incl. phases with nothing this period): Phase · Fee · % complete · Earned to date · Previously billed · This invoice; total row with the overall % complete (total earned ÷ total fee, weighted by fee) (Blake, 2026-11-12).
+    - **Not-to-exceed** table (Blake, 2026-11-12): one row per NTE phase: Phase · Limit · Previously billed · This invoice · Billed to date · Remaining (never below 0); this invoice's role lines (role · hours @ rate · amount) and any limit write-down listed directly under the phase; total row. No % column.
+    - **Hourly services** table (hourly phases only): Phase · Role · Hours · Rate · Amount.
+    - **Additional services** section (Blake, 2026-11-12): phases with `is_additional_service` print here, apart from the base contract, using the same Fee / Not-to-exceed / Hourly tables, each with its own total.
+    - **Consultants** table (total row: Fee · overall % complete · Earned to date · Previously billed · This invoice) and **Adjustments** table (omitted when empty).
     - Totals: Subtotal, Tax (omitted if 0), **Amount due this invoice**; then Account summary: prior invoices outstanding (list numbers + balances), **Total balance due**.
     - Optional appendix "Time detail" (date · person · phase · hours · note) when `include_time_detail` is on (default on if any hourly line).
     - Footer every page: remittance text ("Make checks payable to {firm name}…"), "Page x of y".

@@ -226,6 +226,19 @@ export function nteCap(input: { capCents: number; previouslyBilledCents: number;
   return { netCents, writeDownCents, pctOfCapBp, warning };
 }
 
+/**
+ * An NTE phase's standing after this invoice, for the PDF's Not-to-exceed
+ * table: billed to date = previously billed + this invoice; remaining =
+ * the limit less that, never below 0.
+ */
+export function nteStanding(input: { capCents: number; previouslyBilledCents: number; thisInvoiceCents: number }): {
+  billedToDateCents: number;
+  remainingCents: number;
+} {
+  const billedToDateCents = input.previouslyBilledCents + input.thisInvoiceCents;
+  return { billedToDateCents, remainingCents: Math.max(0, input.capCents - billedToDateCents) };
+}
+
 // ---------------------------------------------------------------------------
 // Rule 6: consultants
 

@@ -24,7 +24,23 @@ const base: InvoicePdfData = {
   ],
   hourly: [
     { phase: "Additional Services", additional: true, role: "Principal", hoursHundredths: 400, rateCents: 19_500, amountCents: 78_000 },
-    { phase: "Additional Services", additional: true, role: "Not-to-exceed limit reached", hoursHundredths: null, rateCents: null, amountCents: -21_500 },
+  ],
+  nte: [
+    {
+      // Spec rule 5 example: limit $9,300, $8,200 before, $1,315 of time → $1,100 billed, $215 written down.
+      phase: "Permitting",
+      additional: false,
+      limitCents: 930_000,
+      previousCents: 820_000,
+      thisCents: 110_000,
+      billedToDateCents: 930_000,
+      remainingCents: 0,
+      lines: [
+        { role: "Project Architect", hoursHundredths: 800, rateCents: 11_000, amountCents: 88_000 },
+        { role: "Principal", hoursHundredths: 300, rateCents: 14_500, amountCents: 43_500 },
+        { role: "Not-to-exceed limit reached", hoursHundredths: null, rateCents: null, amountCents: -21_500 },
+      ],
+    },
   ],
   consultants: [
     { label: "MEP · Coastal Engineers", feeCents: 1_980_000, percentCompleteBp: 5000, earnedCents: 990_000, previousCents: 594_000, thisCents: 396_000 },
@@ -79,7 +95,7 @@ describe("invoice PDF", () => {
   it("a draft preview carries the DRAFT watermark and no number", { timeout: 30_000 }, async () => {
     const { all } = await text(await renderInvoicePdf({ ...base, mark: "DRAFT", number: null, timeDetail: [], prior: [] }));
     expect(all).toContain("DRAFT");
-    expect(all).toContain("Page 1 of 1");
+    expect(all).toMatch(/Page (\d+) of \1/);
     expect(all).not.toContain("Total balance due");
   });
 });
@@ -122,8 +138,34 @@ describe("fee tables", () => {
     expect(all).toMatch(/Total\s*\$74,400\.00/);
   });
 
+  it("NTE phases show limit, billed and remaining, with their hours under each phase", { timeout: 30_000 }, async () => {
+    const second = {
+      phase: "Bidding",
+      additional: false,
+      limitCents: 500_000,
+      previousCents: 100_000,
+      thisCents: 58_000,
+      billedToDateCents: 158_000,
+      remainingCents: 342_000,
+      lines: [{ role: "Project Manager", hoursHundredths: 400, rateCents: 14_500, amountCents: 58_000 }],
+    };
+    const { all } = await text(await renderInvoicePdf({ ...data, nte: [...base.nte, second] }));
+    const at = (t: string) => all.indexOf(t);
+    expect(all).toContain("Not-to-exceed");
+    expect(all).toMatch(/Permitting\s*\$9,300\.00\s*\$8,200\.00\s*\$1,100\.00\s*\$9,300\.00\s*\$0\.00/);
+    // Hours sit directly under their phase, before the next phase.
+    expect(at("Project Architect · 8.00 h @ $110.00")).toBeGreaterThan(at("Permitting"));
+    expect(at("Not-to-exceed limit reached")).toBeGreaterThan(at("Principal · 3.00 h @ $145.00"));
+    expect(at("Bidding")).toBeGreaterThan(at("Not-to-exceed limit reached"));
+    expect(at("Project Manager · 4.00 h @ $145.00")).toBeGreaterThan(at("Bidding"));
+    expect(all).toContain("−$215.00");
+    expect(all).toMatch(/Total\s*\$14,300\.00\s*\$9,200\.00\s*\$1,680\.00\s*\$10,880\.00\s*\$3,420\.00/);
+    // NTE work isn't repeated in the hourly table.
+    expect(all.split("Permitting").length - 1).toBe(1);
+  });
+
   it("no additional services → no section", { timeout: 30_000 }, async () => {
-    const { all } = await text(await renderInvoicePdf({ ...data, fixed: base.fixed, hourly: [data.hourly[0]!] }));
+    const { all } = await text(await renderInvoicePdf({ ...data, fixed: base.fixed, hourly: [data.hourly[0]!], nte: base.nte }));
     expect(all).not.toContain("Additional services");
   });
 });

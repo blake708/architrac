@@ -16,6 +16,7 @@ import {
   invoiceTotals,
   lastBilledBp,
   nteCap,
+  nteStanding,
   overallPercentBp,
   paymentProblem,
   periodStart,
@@ -189,6 +190,20 @@ describe("rule 4: hourly lines", () => {
 });
 
 describe("rule 5: not-to-exceed", () => {
+  it("standing after this invoice: billed to date and what's left of the limit", () => {
+    // Spec example: limit $9,300, $8,200 before, $1,100 now → all used.
+    expect(nteStanding({ capCents: 930_000, previouslyBilledCents: 820_000, thisInvoiceCents: 110_000 })).toEqual({
+      billedToDateCents: 930_000,
+      remainingCents: 0,
+    });
+    expect(nteStanding({ capCents: 930_000, previouslyBilledCents: 200_000, thisInvoiceCents: 50_000 })).toEqual({
+      billedToDateCents: 250_000,
+      remainingCents: 680_000,
+    });
+    // Billed past a lowered limit: remaining never goes negative.
+    expect(nteStanding({ capCents: 100_000, previouslyBilledCents: 150_000, thisInvoiceCents: 0 }).remainingCents).toBe(0);
+  });
+
   it("over the cap: −21,500 write-down, net $1,100.00, red warning", () => {
     expect(nteCap({ capCents: 930_000, previouslyBilledCents: 820_000, hourlyAmountCents: 131_500 })).toEqual({
       netCents: 110_000,
