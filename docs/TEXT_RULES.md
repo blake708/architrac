@@ -67,14 +67,14 @@ Use the same term for the same thing every time. Starter list; edit to match the
 | Client | The entity that pays | customer, owner (unless the contract role) |
 | Phase | A fee/schedule division (SD, DD, CD, CA) | stage, milestone |
 | Timesheet | One person's hours for one week | time card |
-| Create | Make a new item | add (for new items), new |
+| Create | Make a new item. Exception: buttons that open a new-item form can say "New" (New project, New invoice; Blake, 2026-11-13). | add (for new items) |
 | Add | Put an existing item into a list or project | create (for existing items) |
 | Delete | Remove permanently | remove, erase |
 | Remove | Take off a list. The item stays. | delete |
 | Archive | Hide but keep | close, deactivate |
 | Save | Keep a draft | — |
 | Submit | Send for approval | send, save |
-| Approve / Reject | Approval decisions | accept, decline, deny |
+| Approve / Return | Approval decisions. A returned timesheet goes back to its person to fix (Blake, 2026-11-13). | accept, decline, deny, reject |
 | Module | An add-on area (Build, Marketing, Accounting) | feature, plugin, app |
 
 Industry terms (RFI, submittal, CA, SD, DD, CD, AIA B101) are technical names. Use them without explanation.

@@ -180,4 +180,4 @@ Home is read-only: no writes, no `activity_log` entries.
 5. Should drag-to-change-phase on the board come back in a later release, and what should it do (mark the old phase complete and the new one current)?
 6. Should PMs see an "Invoices outstanding" card limited to their own projects?
 7. Should the board also show `pursuit` projects (in a "Pursuit" column) once Marketing (Release 3) exists?
-8. **Text rules vs. existing labels.** `TEXT_RULES.md` §4 says "Create" (not "New") and "Reject" (not "Return"). The app already uses "New project" and "Return timesheet" / "Returned" everywhere. Home keeps the app's current words to match. Rename app-wide in a separate change?
+8. ~~Text rules vs. existing labels~~ Resolved (Blake, 2026-11-13): keep "New project" and "Return" / "Returned". `TEXT_RULES.md` §4 updated.
