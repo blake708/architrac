@@ -171,11 +171,17 @@ test("a % below what's billed shows an error; a retainer credit lowers the total
   await sd.press("Enter");
   await expect(page.getByText("Enter a % from 0 to 100, up to 2 decimals.")).toBeVisible();
 
+  // Adjustments are managed in a dialog opened from the totals panel.
   await page.getByRole("button", { name: "Add adjustment" }).click();
-  await page.getByLabel("Description").fill("Retainer applied");
-  await page.getByLabel("Amount").fill("-1,000");
-  await page.getByRole("button", { name: "Add line" }).click();
+  const adjust = page.getByRole("dialog", { name: "Adjustments" });
+  await adjust.getByLabel("Description").fill("Retainer applied");
+  await adjust.getByLabel("Amount").fill("-1,000");
+  await adjust.getByRole("button", { name: "Add line" }).click();
+  await expect(adjust.getByRole("listitem")).toContainText("Retainer applied");
+  await adjust.getByRole("button", { name: "Done" }).click();
+  await expect(adjust).toHaveCount(0);
   await expect(total(page)).toHaveText("$23,310");
+  await expect(page.getByRole("button", { name: "Edit adjustments" })).toBeVisible();
   // Totals read Subtotal, then the adjustment, then the total (rule 17).
   const totals = page.getByRole("complementary", { name: "Totals" });
   await expect(page.getByTestId("invoice-subtotal")).toHaveText("$24,310");

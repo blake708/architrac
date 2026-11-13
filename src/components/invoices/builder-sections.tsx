@@ -402,7 +402,7 @@ function HourlyPhase({ b, h }: Props & { h: BuilderView["hourly"][number] }) {
       )}
       {h.entries.length > 0 && (
         <div className="mt-2">
-          <Button variant="ghost" onClick={() => setOpen(true)}>
+          <Button onClick={() => setOpen(true)}>
             Show time entries ({h.entries.length})
           </Button>
           <Dialog open={open} onOpenChange={setOpen}>
@@ -569,34 +569,13 @@ export function ConsultantsSection({ b }: Props) {
 /**
  * C.7 Adjustments, in the totals panel like the PDF: Subtotal, then each
  * adjustment (free lines, may be negative: a retainer credit, decision
- * #12), then the total below. No adjustments → no subtotal.
+ * #12), then the total below. No adjustments → no subtotal. They're added,
+ * edited and removed in a dialog opened from here.
  */
 export function AdjustmentLines({ b }: Props) {
-  const { view, run, fieldErrors } = b;
-  const [form, setForm] = useState<{
-    lineId?: string;
-    description: string;
-    amount: string;
-  } | null>(null);
-  const [local, setLocal] = useState<string | null>(null);
+  const { view } = b;
+  const [open, setOpen] = useState(false);
   const row = "flex justify-between gap-3 py-1.5";
-
-  async function save() {
-    if (!form) return;
-    const cents = parseMoney(form.amount);
-    if (cents === null || cents === 0)
-      return setLocal(
-        "Enter an amount other than $0. Use a minus sign for a credit.",
-      );
-    setLocal(null);
-    const done = await run(saveAdjustment, {
-      lineId: form.lineId,
-      description: form.description,
-      amountCents: cents,
-    });
-    if (done) setForm(null);
-  }
-
   return (
     <div aria-label="Adjustments" role="group">
       {view.adjustments.length > 0 && (
@@ -609,85 +588,168 @@ export function AdjustmentLines({ b }: Props) {
           </div>
           <ul className="m-0 list-none p-0">
             {view.adjustments.map((a) => (
-              <li key={a.id} className="py-1" data-adjustment>
-                <div className="flex justify-between gap-3">
-                  <span className="min-w-0">{a.description}</span>
-                  <span
-                    className={
-                      a.amountCents < 0 ? "num text-red" : "num"
-                    }
-                  >
-                    {a.amountCents < 0
-                      ? `−${money(-a.amountCents)}`
-                      : money(a.amountCents)}
-                  </span>
-                </div>
-                {view.can.edit && (
-                  <div className="-ml-2 flex gap-1">
-                    <Button
-                      variant="ghost"
-                      onClick={() =>
-                        setForm({
-                          lineId: a.id,
-                          description: a.description,
-                          amount: (a.amountCents / 100).toFixed(2),
-                        })
-                      }
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      aria-label={`Remove ${a.description}`}
-                      onClick={() => void run(removeLine, { lineId: a.id })}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                )}
+              <li key={a.id} className={row} data-adjustment>
+                <span className="min-w-0">{a.description}</span>
+                <span className={a.amountCents < 0 ? "num text-red" : "num"}>
+                  {signedMoney(a.amountCents)}
+                </span>
               </li>
             ))}
           </ul>
         </>
       )}
-      {form && (
-        <div className="my-2 flex flex-col gap-3 rounded-sm border border-line-soft p-3">
-          <Input
-            label="Description"
-            value={form.description}
-            onChange={(e) => setForm({ ...form, description: e.target.value })}
-            error={fieldErrors.description}
-            maxLength={200}
-            placeholder="Retainer applied"
-          />
-          <Input
-            label="Amount"
-            inputMode="decimal"
-            value={form.amount}
-            onChange={(e) => setForm({ ...form, amount: e.target.value })}
-            error={local ?? fieldErrors.amountCents}
-            hint="Use a minus sign for a credit, like -1,860."
-          />
-          <div className="flex gap-2">
-            <Button variant="primary" onClick={() => void save()}>
-              {form.lineId ? "Save line" : "Add line"}
-            </Button>
-            <Button variant="ghost" onClick={() => setForm(null)}>
-              Cancel
+      {view.can.edit && (
+        <>
+          <div className="pt-1 pb-2">
+            <Button onClick={() => setOpen(true)}>
+              {view.adjustments.length > 0 ? "Edit adjustments" : "Add adjustment"}
             </Button>
           </div>
-        </div>
-      )}
-      {view.can.edit && !form && (
-        <div className="-ml-2 py-1">
-          <Button
-            variant="ghost"
-            onClick={() => setForm({ description: "", amount: "" })}
-          >
-            Add adjustment
-          </Button>
-        </div>
+          <AdjustmentsDialog b={b} open={open} onOpenChange={setOpen} />
+        </>
       )}
     </div>
+  );
+}
+
+const signedMoney = (cents: number) =>
+  cents < 0 ? `−${money(-cents)}` : money(cents);
+
+type AdjustmentForm = { lineId?: string; description: string; amount: string };
+const BLANK: AdjustmentForm = { description: "", amount: "" };
+
+/** Every adjustment with Edit / Remove, and a form to add or change one. */
+function AdjustmentsDialog({
+  b,
+  open,
+  onOpenChange,
+}: Props & { open: boolean; onOpenChange: (open: boolean) => void }) {
+  const { view, run, fieldErrors } = b;
+  const [form, setForm] = useState<AdjustmentForm>(BLANK);
+  const [local, setLocal] = useState<string | null>(null);
+
+  function close(next: boolean) {
+    if (!next) {
+      setForm(BLANK);
+      setLocal(null);
+    }
+    onOpenChange(next);
+  }
+
+  async function save() {
+    const cents = parseMoney(form.amount);
+    if (cents === null || cents === 0)
+      return setLocal(
+        "Enter an amount other than $0. Use a minus sign for a credit.",
+      );
+    setLocal(null);
+    const done = await run(saveAdjustment, {
+      lineId: form.lineId,
+      description: form.description,
+      amountCents: cents,
+    });
+    if (done) setForm(BLANK);
+  }
+
+  const editing = form.lineId !== undefined;
+  return (
+    <Dialog open={open} onOpenChange={close}>
+      <DialogContent
+        className="max-w-[560px]"
+        title="Adjustments"
+        description="Lines added after the subtotal, like a retainer credit. Use a minus sign for a credit."
+        footer={
+          <>
+            <span className="mr-auto self-center text-sm text-muted">
+              Total this invoice{" "}
+              <span className="num font-semibold text-ink">
+                {money(view.totals.totalCents)}
+              </span>
+            </span>
+            <Button variant="primary" onClick={() => close(false)}>
+              Done
+            </Button>
+          </>
+        }
+      >
+        {view.adjustments.length > 0 && (
+          <ul className="m-0 mb-4 list-none rounded-sm border border-line p-0">
+            {view.adjustments.map((a) => (
+              <li
+                key={a.id}
+                className="flex flex-wrap items-center gap-3 border-b border-line-soft px-3 py-2 last:border-b-0"
+              >
+                <span className="min-w-0 flex-1">{a.description}</span>
+                <span className={a.amountCents < 0 ? "num text-red" : "num"}>
+                  {signedMoney(a.amountCents)}
+                </span>
+                <span className="flex gap-1.5">
+                  <Button
+                    aria-label={`Edit ${a.description}`}
+                    onClick={() => {
+                      setLocal(null);
+                      setForm({
+                        lineId: a.id,
+                        description: a.description,
+                        amount: (a.amountCents / 100).toFixed(2),
+                      });
+                    }}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    aria-label={`Remove ${a.description}`}
+                    onClick={() => {
+                      if (form.lineId === a.id) setForm(BLANK);
+                      void run(removeLine, { lineId: a.id });
+                    }}
+                  >
+                    Remove
+                  </Button>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+        <form
+          className="flex flex-col gap-3"
+          aria-label={editing ? "Edit adjustment" : "New adjustment"}
+          onSubmit={(e) => {
+            e.preventDefault();
+            void save();
+          }}
+        >
+          <div className="cap text-2xs font-semibold text-muted">
+            {editing ? "Edit adjustment" : "New adjustment"}
+          </div>
+          <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3">
+            <Input
+              label="Description"
+              value={form.description}
+              onChange={(e) => setForm({ ...form, description: e.target.value })}
+              error={fieldErrors.description}
+              maxLength={200}
+              placeholder="Retainer applied"
+            />
+            <Input
+              label="Amount"
+              inputMode="decimal"
+              value={form.amount}
+              onChange={(e) => setForm({ ...form, amount: e.target.value })}
+              error={local ?? fieldErrors.amountCents}
+              placeholder="-1,860.00"
+            />
+          </div>
+          <div className="flex gap-2">
+            <Button type="submit">{editing ? "Save line" : "Add line"}</Button>
+            {editing && (
+              <Button variant="ghost" onClick={() => setForm(BLANK)}>
+                Cancel edit
+              </Button>
+            )}
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }

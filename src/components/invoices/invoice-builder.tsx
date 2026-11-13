@@ -278,7 +278,7 @@ function Totals({ b }: { b: ReturnType<typeof useBuilder> }) {
   const t = view.totals;
   const row = "flex justify-between gap-4 py-1.5";
   return (
-    <aside aria-label="Totals" className="sticky top-4 flex-[1_1_280px] rounded-sm border border-line bg-surface px-[18px] py-4">
+    <aside aria-label="Totals" className="sticky top-4 flex-[1_1_340px] rounded-sm border border-line bg-surface px-[18px] py-4">
       <AdjustmentLines b={b} />
       {t.taxCents > 0 && (
         <div className={row}>
