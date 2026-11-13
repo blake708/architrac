@@ -1,7 +1,8 @@
-import { and, asc, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, isNotNull, isNull } from "drizzle-orm";
 import {
   firmRoles,
   invitations,
+  membershipPay,
   memberships,
   rates,
   teams,
@@ -9,12 +10,14 @@ import {
 } from "@/db/schema";
 import type { TenantDb } from "@/db/tenant";
 import { type AppRole, can } from "@/lib/auth/permissions";
+import { hourlyCostCents, resolveRate } from "@/lib/calc/pay";
 import { avgMultiplierHundredths, lookupRate } from "@/lib/calc/rates";
 import {
   type UtilizationView,
   utilizationView,
   utilizationWindow,
 } from "@/lib/calc/utilization";
+import type { PayHistoryRow } from "@/lib/team/pay";
 import type { EmploymentType } from "@/lib/team/profile";
 
 // Team page data (team spec, Data shown and business rules 1–12).
@@ -42,8 +45,13 @@ export type PersonRow = {
   appRole: AppRole;
   firmRoleId: string | null;
   roleName: string | null;
-  /** Owner/admin only. Null = no rate set. */
+  /**
+   * Owner/admin only. Null = no rate set. Cost comes from their pay when
+   * it's entered, else their role's cost rate (ADR 0008).
+   */
   rate?: { billCents: number; costCents: number } | null;
+  /** Owner/admin only: pay history, newest first. */
+  pay?: PayHistoryRow[];
   teamId: string | null;
   teamName: string | null;
   leadsTeam: boolean;
@@ -87,6 +95,8 @@ export type TeamView = {
   canManage: boolean;
   /** Billing roles for the dialogs (owner/admin only). */
   roles: { id: string; name: string }[];
+  /** Today in the firm's time zone, "YYYY-MM-DD". */
+  today: string;
 };
 
 /**
@@ -162,6 +172,9 @@ export async function loadTeam(
   const personRateRows = seesRates
     ? await db.select().from(rates).where(isNotNull(rates.membershipId))
     : [];
+  const payRows = seesRates
+    ? await db.select().from(membershipPay).orderBy(desc(membershipPay.effectiveFrom))
+    : [];
 
   const window = utilizationWindow(opts.today, opts.weekStartsOn);
   const hours = await billableHoursByMembership(db, window);
@@ -219,14 +232,27 @@ export async function loadTeam(
       );
     }
     if (seesRates) {
-      const rate = lookupRate(
-        personRateRows.filter((x) => x.membershipId === m.id),
-        rateRows.filter((x) => x.firmRoleId === m.firmRoleId),
+      const pay = payRows.filter((x) => x.membershipId === m.id);
+      const rate = resolveRate(
+        {
+          personRates: personRateRows.filter((x) => x.membershipId === m.id),
+          roleRates: rateRows.filter((x) => x.firmRoleId === m.firmRoleId),
+          pay,
+          weeklyHours,
+        },
         opts.today,
       );
       row.rate = rate
         ? { billCents: rate.billRateCents, costCents: rate.costRateCents }
         : null;
+      row.pay = pay.map((x) => ({
+        payType: x.payType,
+        amountCents: x.amountCents,
+        burdenBp: x.burdenBp,
+        effectiveFrom: x.effectiveFrom,
+        effectiveTo: x.effectiveTo,
+        hourlyCostCents: hourlyCostCents(x, weeklyHours),
+      }));
     }
     return row;
   });
@@ -327,5 +353,6 @@ export async function loadTeam(
     viewerId: viewer.membershipId,
     canManage,
     roles: canManage ? roleRows : [],
+    today: opts.today,
   };
 }

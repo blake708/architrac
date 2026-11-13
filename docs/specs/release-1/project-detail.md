@@ -92,7 +92,7 @@ Tabs not built yet are **not rendered at all** (no disabled tabs). Later release
 ### Team tab
 | UI element | Source | Notes |
 |---|---|---|
-| "Firm team" list | `project_members` (active) → memberships → users | Avatar, "BM · Principal" (`initials` · `project_role`), sub-line `memberships.title`, right: used hours on this project "42 h" (financial view only). Owner/admin also see "Rate override $185/h" when `bill_rate_override_cents` set. Order: Principal, PM, then others by last name |
+| "Firm team" list | `project_members` (active) → memberships → users | Avatar, "BM · Principal" (`initials` · name of `project_members.firm_role_id`, "No role" if none; then " · Principal in charge" / " · PM"; ADR 0008), sub-line `memberships.title`, right: used hours on this project "42 h" (financial view only). Owner/admin also see "Rate override $185/h" when `bill_rate_override_cents` set. Order: Principal, PM, then others by last name |
 | "Client & consultants" list | Client: `client_company_id` + `client_contact_id`; consultants: `consultants` + `companies` + `companies.billing_contact_id → contacts` | Grid: role caption (Client / discipline), company name, contact "First Last · title", action link "Email" (`mailto:`; hidden when no email). No fees here |
 
 ## Actions
@@ -107,7 +107,7 @@ Tabs not built yet are **not rendered at all** (no disabled tabs). Later release
 | Redistribute fee | Dialog (Rule 6): new total fee, optional new total budget hours, a Lock checkbox per phase, preview "old → new". **Apply** saves through `updatePhases` | Rule 6 | Owner, admin, own PM |
 | Add / edit consultant | Dialog: company (combobox of `companies` kind `consultant`, + quick-create by name), discipline (Select: Civil, Structural, MEP, Landscape, Other… text 1–40), fee (≥ 0), markup % (0–100, 2 decimals → bp, default 0%), billed through (checkbox, default on). Actions `createConsultant` / `updateConsultant` | Company required; fee ≥ 0 | Owner, admin, own PM |
 | Remove consultant | Confirm, then archive | — | Owner, admin, own PM |
-| Add person | Dialog: person (active memberships not already active members), project role (Select: Principal, PM, PA, Designer, Interior designer, Other… text 1–40), bill rate override (money, optional; field rendered **only** for owner/admin). Action `addProjectMember` | Person required; no duplicate active row | Owner, admin, own PM (PM cannot set override) |
+| Add person | Dialog: person (active memberships not already active members), role on this project (Select of the firm's active roles; defaults to the person's own role, marked "(their role)"; when changed, the hint says their cost doesn't change; ADR 0008), bill rate override (money, optional; field rendered **only** for owner/admin). Action `addProjectMember` | Person required; role must be an active firm role; no duplicate active row | Owner, admin, own PM (PM cannot set override) |
 | Change role / override | Inline edit in the list | As above | Same |
 | Remove person | Archive the `project_members` row. Disabled for the membership that is the project's PM or principal (tooltip "Change the PM in Edit project first"). Logged time is untouched | — | Owner, admin, own PM |
 
