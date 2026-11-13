@@ -4,6 +4,7 @@ import {
   companies,
   consultants as consultantsTable,
   contacts,
+  memberships,
   phaseTemplates,
   projectMembers,
   projectPhases,
@@ -178,12 +179,20 @@ export async function createProjectCore(
           });
       }
 
-      const members = [{ membershipId: p.pmMembershipId, projectRole: "PM" }];
-      if (p.principalMembershipId !== p.pmMembershipId)
-        members.push({ membershipId: p.principalMembershipId, projectRole: "Principal" });
-      await db
-        .insert(projectMembers)
-        .values(members.map((m) => ({ firmId: actor.firmId, projectId: project.id, ...m })));
+      // The PM and principal join the team with their own roles (ADR 0008).
+      const members = [...new Set([p.pmMembershipId, p.principalMembershipId])];
+      const own = await db
+        .select({ membershipId: memberships.id, firmRoleId: memberships.firmRoleId })
+        .from(memberships)
+        .where(inArray(memberships.id, members));
+      await db.insert(projectMembers).values(
+        members.map((membershipId) => ({
+          firmId: actor.firmId,
+          projectId: project.id,
+          membershipId,
+          firmRoleId: own.find((o) => o.membershipId === membershipId)?.firmRoleId ?? null,
+        })),
+      );
 
       await db.insert(activityLog).values({
         firmId: actor.firmId,

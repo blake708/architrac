@@ -19,7 +19,7 @@ import { type ConsultantRow, type FixedRow, type HourlyRow, money, sumHundredths
 import { servicesSubtotal } from "@/lib/calc/invoice-sections";
 import { formatDate } from "@/lib/format";
 import { NO_EMAIL, invoiceRecipients, sendProblems } from "@/lib/invoices/builder";
-import { loadRateBook } from "@/server/time/approval";
+import { loadRateBook } from "@/server/time/rate-book";
 import {
   type Access,
   type InvoiceActor,
@@ -401,9 +401,10 @@ async function fixedPhaseWip(db: TenantDb, inv: InvoiceRow, wipFrom: string | nu
         isNull(timeEntries.archivedAt),
       ),
     );
-  const rateOf = await loadRateBook(
+  const { rateOf } = await loadRateBook(
     db,
     rows.map((r) => ({ membershipId: r.membershipId, firmRoleId: r.firmRoleId })),
+    [inv.projectId],
   );
   for (const p of phases) {
     const mine = rows.filter((r) => r.phaseId === p.id);
@@ -412,7 +413,7 @@ async function fixedPhaseWip(db: TenantDb, inv: InvoiceRow, wipFrom: string | nu
       wipCents: timeValueCents(
         inPeriod.map((r) => ({
           hours: r.hours,
-          rateCents: r.rateCents ?? rateOf(r.membershipId, r.firmRoleId, r.workDate)?.billRateCents ?? 0,
+          rateCents: r.rateCents ?? rateOf(r.membershipId, r.firmRoleId, r.workDate, inv.projectId)?.billRateCents ?? 0,
         })),
       ),
       wipHundredths: inPeriod.reduce((n, r) => n + hoursToHundredths(r.hours), 0),

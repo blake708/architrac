@@ -78,7 +78,9 @@ export type TeamMember = {
   name: string;
   initials: string;
   title: string | null;
-  projectRole: string;
+  /** Their billing role on this project (ADR 0008). */
+  firmRoleId: string | null;
+  roleName: string | null;
   isPm: boolean;
   isPrincipal: boolean;
   /** Financial view only. */
@@ -163,7 +165,10 @@ export type ProjectPage = {
     clientContactId: string | null;
     principals: { membershipId: string; name: string }[];
     pms: { membershipId: string; name: string }[];
-    people: { membershipId: string; name: string; title: string | null }[];
+    /** firmRoleId = their own role, the default when they're added. */
+    people: { membershipId: string; name: string; title: string | null; firmRoleId: string | null }[];
+    /** The firm's roles, for the team role select. Names only, no rates. */
+    roles: { id: string; name: string }[];
     defaultMarkupBp: number;
   };
 };
@@ -242,7 +247,8 @@ export async function loadProjectPage(
     .select({
       id: projectMembers.id,
       membershipId: projectMembers.membershipId,
-      projectRole: projectMembers.projectRole,
+      firmRoleId: projectMembers.firmRoleId,
+      roleName: firmRoles.name,
       override: projectMembers.billRateOverrideCents,
       title: memberships.title,
       firstName: users.firstName,
@@ -253,6 +259,7 @@ export async function loadProjectPage(
     .from(projectMembers)
     .innerJoin(memberships, eq(memberships.id, projectMembers.membershipId))
     .innerJoin(users, eq(users.id, memberships.userId))
+    .leftJoin(firmRoles, eq(firmRoles.id, projectMembers.firmRoleId))
     .where(and(eq(projectMembers.projectId, p.id), isNull(projectMembers.archivedAt)));
 
   const used = financial ? await usedHours(db, p.id) : [];
@@ -374,7 +381,8 @@ export async function loadProjectPage(
       name: fullName(m),
       initials: m.initials || initialsFrom(fullName(m)),
       title: m.title,
-      projectRole: m.projectRole,
+      firmRoleId: m.firmRoleId,
+      roleName: m.roleName,
       isPm: m.membershipId === p.pmMembershipId,
       isPrincipal: m.membershipId === p.principalMembershipId,
       ...(financial ? { hours: used.filter((u) => u.membershipId === m.membershipId).reduce((n, u) => n + u.hours, 0) } : {}),
@@ -527,15 +535,26 @@ export async function loadProjectPage(
     const people = await activePeople(db);
     const [settings] = await db.select({ markup: firmSettings.defaultConsultantMarkupBp }).from(firmSettings);
     const titles = await db
-      .select({ id: memberships.id, title: memberships.title })
+      .select({ id: memberships.id, title: memberships.title, firmRoleId: memberships.firmRoleId })
       .from(memberships)
       .where(inArray(memberships.id, people.map((x) => x.membershipId).length ? people.map((x) => x.membershipId) : [p.pmMembershipId]));
-    const titleOf = new Map(titles.map((t) => [t.id, t.title]));
+    const titleOf = new Map(titles.map((t) => [t.id, t]));
+    const roles = await db
+      .select({ id: firmRoles.id, name: firmRoles.name })
+      .from(firmRoles)
+      .where(isNull(firmRoles.archivedAt))
+      .orderBy(asc(firmRoles.sortOrder), asc(firmRoles.name));
     edit = {
       clientContactId: p.clientContactId,
       principals: principalChoices(people).map(({ membershipId, name }) => ({ membershipId, name })),
       pms: pmChoices(people).map(({ membershipId, name }) => ({ membershipId, name })),
-      people: people.map(({ membershipId, name }) => ({ membershipId, name, title: titleOf.get(membershipId) ?? null })),
+      people: people.map(({ membershipId, name }) => ({
+        membershipId,
+        name,
+        title: titleOf.get(membershipId)?.title ?? null,
+        firmRoleId: titleOf.get(membershipId)?.firmRoleId ?? null,
+      })),
+      roles,
       defaultMarkupBp: settings?.markup ?? 1000,
     };
   }

@@ -1,10 +1,9 @@
-import { and, desc, eq, inArray, isNull, or } from "drizzle-orm";
+import { and, eq, inArray, isNull } from "drizzle-orm";
 import { z } from "zod";
 import {
   invoices,
   activityLog,
   memberships,
-  rates,
   reviewSteps,
   teams,
   timeEntries,
@@ -14,8 +13,7 @@ import {
 } from "@/db/schema";
 import { type TenantDb, withFirm } from "@/db/tenant";
 import { can } from "@/lib/auth/permissions";
-import { type RateRow, advanceReview, currentRows, rowsFor } from "@/lib/calc/review-route";
-import { lookupRate } from "@/lib/calc/rates";
+import { advanceReview, currentRows, rowsFor } from "@/lib/calc/review-route";
 import { APPROVAL_MESSAGES, RETURN_NOTE_MAX, bulkMessage, onBehalfNoteProblem, returnNoteProblem } from "@/lib/time/approval";
 import { initials as initialsFromName } from "@/lib/initials";
 import { FORBIDDEN_MESSAGE } from "@/server/settings/common";
@@ -90,39 +88,6 @@ export async function approvalAccess(db: TenantDb, actor: ApprovalActor): Promis
     canOpen = !!waiting;
   }
   return { canOpen, ownerAdmin: active && ownerAdmin, isPrincipal, leadsTeamIds };
-}
-
-// ---------- Rates ----------
-
-/** Every rate row for these people (their overrides and their roles), newest start first. */
-export async function loadRateBook(db: TenantDb, people: readonly { membershipId: string; firmRoleId: string | null }[]) {
-  const ids = [...new Set(people.map((p) => p.membershipId))];
-  const roleIds = [...new Set(people.flatMap((p) => (p.firmRoleId ? [p.firmRoleId] : [])))];
-  const rows: (RateRow & { membershipId: string | null; firmRoleId: string | null })[] = ids.length
-    ? await db
-        .select({
-          membershipId: rates.membershipId,
-          firmRoleId: rates.firmRoleId,
-          effectiveFrom: rates.effectiveFrom,
-          effectiveTo: rates.effectiveTo,
-          billRateCents: rates.billRateCents,
-          costRateCents: rates.costRateCents,
-        })
-        .from(rates)
-        .where(
-          roleIds.length
-            ? or(inArray(rates.membershipId, ids), inArray(rates.firmRoleId, roleIds))
-            : inArray(rates.membershipId, ids),
-        )
-        .orderBy(desc(rates.effectiveFrom))
-    : [];
-  /** The rate for one person on one date (person override → role → none). */
-  return (membershipId: string, firmRoleId: string | null, workDate: string) =>
-    lookupRate(
-      rows.filter((r) => r.membershipId === membershipId),
-      rows.filter((r) => r.firmRoleId !== null && r.firmRoleId === firmRoleId),
-      workDate,
-    );
 }
 
 // ---------- Helpers ----------

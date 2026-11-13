@@ -2,7 +2,6 @@
 // Pure functions: the firm's route + facts about the sheet → the sheet's
 // review rows, who it's waiting on, and the labels the Time page shows.
 
-import { type RatePeriod, lookupRate } from "./rates";
 import { shortDay } from "./timesheet";
 
 export const REVIEW_STEP_KINDS = ["principal_in_charge", "team_leader", "any_principal", "person"] as const;
@@ -192,33 +191,31 @@ export function routeLabel(rows: readonly SavedReviewRow[], initials: (id: strin
 
 // ---------- Freezing rates (rules 2 and 3c) ----------
 
-export type RateRow = RatePeriod & { billRateCents: number; costRateCents: number };
+type Rate = { billRateCents: number; costRateCents: number };
 
-export type FreezeResult =
-  | { ok: true; rates: { billRateCents: number; costRateCents: number }[] }
-  | { ok: false; message: string };
+export type FreezeResult = { ok: true; rates: Rate[] } | { ok: false; message: string };
 
 /**
- * The rate for each entry's work date (person override, then role). If any
- * date has no rate, nothing is frozen and the message lists every such date.
+ * The rate for each entry's work date, from `rateOf` (resolveRate in
+ * pay.ts). If any date has no rate, nothing is frozen and the message lists
+ * every such date.
  */
 export function freezeRates(
   workDates: readonly string[],
-  personRates: readonly RateRow[],
-  roleRates: readonly RateRow[],
+  rateOf: (workDate: string, index: number) => Rate | null,
   personInitials: string,
 ): FreezeResult {
   const missing = new Set<string>();
-  const out = workDates.map((d) => {
-    const r = lookupRate(personRates, roleRates, d);
+  const out = workDates.map((d, i) => {
+    const r = rateOf(d, i);
     if (!r) missing.add(d);
-    return r ? { billRateCents: r.billRateCents, costRateCents: r.costRateCents } : null;
+    return r;
   });
   if (missing.size) {
     const days = [...missing].sort().map(shortDay).join(", ");
     return { ok: false, message: `No rate for ${personInitials} on ${days}. Add one in Settings → Roles & rates.` };
   }
-  return { ok: true, rates: out as { billRateCents: number; costRateCents: number }[] };
+  return { ok: true, rates: out as Rate[] };
 }
 
 // ---------- Approving (rule 3, 1.7 B) ----------

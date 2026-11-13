@@ -1,8 +1,7 @@
-import { and, asc, desc, eq, inArray, isNotNull, isNull, or } from "drizzle-orm";
+import { and, asc, eq, inArray, isNotNull, isNull } from "drizzle-orm";
 import {
   memberships,
   projects,
-  rates,
   reviewSteps,
   teams,
   timeEntries,
@@ -10,6 +9,7 @@ import {
   users,
 } from "@/db/schema";
 import type { TenantDb } from "@/db/tenant";
+import { loadRateBook } from "./rate-book";
 import {
   type RouteStep,
   buildReview,
@@ -148,9 +148,10 @@ export async function startReview(db: TenantDb, who: Submitter, timesheetId: str
 
 /**
  * Rules 2 and 3c: freeze bill and cost rates onto every live entry of the
- * sheet, from the person's override or their role's rate on each work date.
- * The person's role is frozen with them (decision #30), so invoices group
- * hours by the role they had, even if it changes later.
+ * sheet from the rate book (ADR 0008): bill from their role on the project
+ * (else their own), cost from their pay, on each work date.
+ * The role is frozen with them (decision #30), so invoices group hours by
+ * the role they billed as, even if it changes later.
  * Writes nothing if any date has no rate.
  */
 export async function freezeSheetRates(
@@ -161,40 +162,26 @@ export async function freezeSheetRates(
   initials: string,
 ): Promise<{ ok: true } | { ok: false; message: string }> {
   const entries = await db
-    .select({ id: timeEntries.id, workDate: timeEntries.workDate })
+    .select({ id: timeEntries.id, workDate: timeEntries.workDate, projectId: timeEntries.projectId })
     .from(timeEntries)
     .where(and(eq(timeEntries.timesheetId, timesheetId), isNull(timeEntries.archivedAt)));
   if (!entries.length) return { ok: true };
 
-  const rateRows = await db
-    .select({
-      membershipId: rates.membershipId,
-      firmRoleId: rates.firmRoleId,
-      effectiveFrom: rates.effectiveFrom,
-      effectiveTo: rates.effectiveTo,
-      billRateCents: rates.billRateCents,
-      costRateCents: rates.costRateCents,
-    })
-    .from(rates)
-    .where(
-      firmRoleId
-        ? or(eq(rates.membershipId, membershipId), eq(rates.firmRoleId, firmRoleId))
-        : eq(rates.membershipId, membershipId),
-    )
-    // Latest start first, so the newest of overlapping periods wins (rule 1).
-    .orderBy(desc(rates.effectiveFrom));
-  const latestFirst = rateRows;
+  const book = await loadRateBook(db, [{ membershipId, firmRoleId }], entries.map((e) => e.projectId));
   const plan = freezeRates(
     entries.map((e) => e.workDate),
-    latestFirst.filter((r) => r.membershipId === membershipId),
-    latestFirst.filter((r) => r.firmRoleId !== null && r.firmRoleId === firmRoleId),
+    (d, i) => book.rateOf(membershipId, firmRoleId, d, entries[i].projectId),
     initials,
   );
   if (!plan.ok) return plan;
   for (const [i, e] of entries.entries()) {
     await db
       .update(timeEntries)
-      .set({ billRateCents: plan.rates[i].billRateCents, costRateCents: plan.rates[i].costRateCents, firmRoleId })
+      .set({
+        billRateCents: plan.rates[i].billRateCents,
+        costRateCents: plan.rates[i].costRateCents,
+        firmRoleId: book.roleOf(membershipId, firmRoleId, e.projectId),
+      })
       .where(eq(timeEntries.id, e.id));
   }
   return { ok: true };

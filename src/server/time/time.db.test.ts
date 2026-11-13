@@ -634,4 +634,44 @@ describe("review route (1.7 A)", () => {
     );
     expect(logRow.changes.auto).toBe(true);
   });
+
+  it("a PM helping as a Designer: bills at the Designer rate, costs their own pay, counts as Designer (ADR 0008)", async () => {
+    const [pmRole] = await q<{ id: string }>(
+      "insert into firm_roles (firm_id, name, sort_order) values ($1, 'Project manager', 2) returning id",
+      [A.firmId],
+    );
+    await q(
+      "insert into rates (firm_id, firm_role_id, bill_rate_cents, cost_rate_cents, effective_from) values ($1, $2, 15000, 6200, '2026-01-01')",
+      [A.firmId, pmRole.id],
+    );
+    await q("update memberships set firm_role_id = $1, weekly_capacity_hours = 40 where id = $2", [pmRole.id, pd.membershipId]);
+    // On this project they're a Designer ($115 bill / $44 cost).
+    await q("insert into project_members (firm_id, project_id, membership_id, firm_role_id) values ($1, $2, $3, $4)", [
+      A.firmId,
+      A.projectId,
+      pd.membershipId,
+      A.firmRoleId,
+    ]);
+    // $104,000 salary, 25% burden, 40 h → $62.50 an hour.
+    await q(
+      "insert into membership_pay (firm_id, membership_id, pay_type, amount_cents, burden_bp, effective_from) values ($1, $2, 'salary', 10400000, 2500, '2026-01-01')",
+      [A.firmId, pd.membershipId],
+    );
+
+    const week = "2026-05-18";
+    await fullRow(pdA, week);
+    const v = ok(await submitTimesheetCore(pdA, { weekStart: week }));
+    expect(v.status).toBe("approved");
+    expect(
+      await q("select bill_rate_cents, cost_rate_cents, firm_role_id from time_entries where timesheet_id = $1 and archived_at is null", [
+        v.timesheetId,
+      ]),
+    ).toEqual([{ bill_rate_cents: "11500", cost_rate_cents: "6250", firm_role_id: A.firmRoleId }]);
+
+    // Project profit uses the same cost.
+    const { withFirm } = await import("@/db/tenant");
+    const { costedHours } = await import("./used");
+    const costed = await withFirm(A.firmId, (db) => costedHours(db, A.projectId));
+    expect(costed.filter((c) => c.membershipId === pd.membershipId).map((c) => c.rateCents)).toContain(6250);
+  });
 });

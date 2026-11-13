@@ -75,6 +75,7 @@ export const PROJECT_MESSAGES = {
   notFound: "That project doesn't exist or was archived.",
   keepPmPrincipal: "Change the PM or principal in Edit project first",
   alreadyOnTeam: "Already on this project",
+  badRole: "Pick one of the firm's roles",
   notConsultant: "That company isn't a consultant",
   notLinkable: "Pick a contractor, agency, vendor or other company",
   badCompanyContact: "That contact doesn't work for this company",
@@ -212,7 +213,6 @@ export const updateProjectSchema = z
 export type UpdateProjectInput = z.input<typeof updateProjectSchema>;
 
 export const DISCIPLINES = ["Civil", "Structural", "MEP", "Landscape"];
-export const PROJECT_ROLES = ["Principal", "PM", "PA", "Designer", "Interior designer"];
 
 
 export const memberSchema = z.object({
@@ -220,7 +220,8 @@ export const memberSchema = z.object({
   id: z.uuid().nullable(),
   projectId: z.uuid(),
   membershipId: z.uuid({ error: "Pick a person" }),
-  projectRole: z.string().trim().min(1, { error: "Pick a role" }).max(40, { error: PROJECT_MESSAGES.long }),
+  /** Their billing role on this project; defaults to their own (ADR 0008). */
+  firmRoleId: z.uuid({ error: "Pick a role" }),
   /** Owner/admin only; undefined = leave as is. */
   billRateOverrideCents: cents.nullable().optional(),
 });

@@ -67,9 +67,9 @@ test.beforeAll(async () => {
       select :firm, id, 'ALL', 'Full service', 1, 'hourly'::fee_type, 0, 0, 'closed'::phase_status from w
       returning 1
     )
-    insert into project_members (firm_id, project_id, membership_id, project_role)
-    select :firm, b.id, m.id, m.role from b,
-      (values (${owner}, 'PM'), (${membership(PEOPLE.etaStaff.email)}, 'Designer')) as m(id, role)
+    insert into project_members (firm_id, project_id, membership_id)
+    select :firm, b.id, m.id from b,
+      (values (${owner}), (${membership(PEOPLE.etaStaff.email)})) as m(id)
     where (select count(*) from ph) > 0 and (select count(*) from k) > 0
   `);
 });
@@ -255,10 +255,11 @@ test.describe("owner", () => {
     );
     expect(phases.map((p) => p.sort_order)).toEqual([1, 2, 3, 4, 5, 6]);
     expect(phases.map((p) => p.status)).toEqual(["current", "upcoming", "upcoming", "upcoming", "upcoming", "upcoming"]);
-    const team = await query<{ project_role: string }>(
-      "select pm.project_role from project_members pm join projects p on p.id = pm.project_id where p.firm_id = :firm and p.number = '2026-014' order by 1",
+    // The PM and principal join with their own roles (ADR 0008).
+    const team = await query<{ own: boolean }>(
+      "select pm.firm_role_id is not distinct from m.firm_role_id as own from project_members pm join memberships m on m.id = pm.membership_id join projects p on p.id = pm.project_id where p.firm_id = :firm and p.number = '2026-014'",
     );
-    expect(team.map((t) => t.project_role)).toEqual(["PM", "Principal"]);
+    expect(team.map((t) => t.own)).toEqual([true, true]);
     const logs = await query(
       "select 1 from activity_log a join projects p on p.id = a.entity_id where p.firm_id = :firm and p.number = '2026-014' and a.action = 'created'",
     );

@@ -114,7 +114,7 @@ beforeAll(async () => {
   otherId = other.data.id;
 
   await withFirm(A.firmId, async (db) => {
-    await db.insert(projectMembers).values({ firmId: A.firmId, projectId: mobId, membershipId: staff.membershipId, projectRole: "Designer" });
+    await db.insert(projectMembers).values({ firmId: A.firmId, projectId: mobId, membershipId: staff.membershipId, firmRoleId: A.firmRoleId });
     const [mep] = await db.insert(companies).values({ firmId: A.firmId, name: "Coastal MEP Engineers", kind: "consultant" }).returning();
     mepId = mep.id;
     const [ravi] = await db
@@ -143,9 +143,9 @@ describe("who sees what", () => {
     expect(p.financial).toBe(true);
     expect(p.money).toMatchObject({ feeCents: 18_600_000, billedCents: 0, health: "on_track" });
     expect(p.phases[0].money?.feeCents).toBe(9_300_000);
-    expect(p.team.map((m) => [m.projectRole, m.isPrincipal, m.isPm])).toEqual([
-      ["Principal", true, false],
-      ["PM", false, true],
+    expect(p.team.map((m) => [m.roleName, m.isPrincipal, m.isPm])).toEqual([
+      [null, true, false],
+      [null, false, true],
       ["Designer", false, false],
     ]);
     expect(p.team[0]).toHaveProperty("rateOverrideCents");
@@ -211,19 +211,24 @@ describe("edit project", () => {
 
 describe("team", () => {
   it("add a person; PMs can't send a rate override; owners can", async () => {
-    const add = await saveMemberCore(asPm(), { id: null, projectId: mobId, membershipId: outsider.membershipId, projectRole: "Interior designer" });
+    const role = A.firmRoleId;
+    // Only the firm's own, active roles.
+    expect(
+      await saveMemberCore(asPm(), { id: null, projectId: mobId, membershipId: outsider.membershipId, firmRoleId: B.firmRoleId }),
+    ).toEqual({ ok: false, fieldErrors: { firmRoleId: PROJECT_MESSAGES.badRole } });
+    const add = await saveMemberCore(asPm(), { id: null, projectId: mobId, membershipId: outsider.membershipId, firmRoleId: role });
     expect(add.ok).toBe(true);
-    const dupe = await saveMemberCore(asPm(), { id: null, projectId: mobId, membershipId: outsider.membershipId, projectRole: "PA" });
+    const dupe = await saveMemberCore(asPm(), { id: null, projectId: mobId, membershipId: outsider.membershipId, firmRoleId: role });
     expect(dupe).toEqual({ ok: false, fieldErrors: { membershipId: PROJECT_MESSAGES.alreadyOnTeam } });
     const id = add.ok ? add.data.id : "";
     expect(
-      await saveMemberCore(asPm(), { id, projectId: mobId, membershipId: outsider.membershipId, projectRole: "PA", billRateOverrideCents: 9000 }),
+      await saveMemberCore(asPm(), { id, projectId: mobId, membershipId: outsider.membershipId, firmRoleId: role, billRateOverrideCents: 9000 }),
     ).toEqual({ ok: false, error: PROJECT_MESSAGES.editForbidden });
     expect(
-      (await saveMemberCore(owner(), { id, projectId: mobId, membershipId: outsider.membershipId, projectRole: "PA", billRateOverrideCents: 18_500 })).ok,
+      (await saveMemberCore(owner(), { id, projectId: mobId, membershipId: outsider.membershipId, firmRoleId: role, billRateOverrideCents: 18_500 })).ok,
     ).toBe(true);
     const p = (await page(A, "owner"))!;
-    expect(p.team.find((m) => m.membershipId === outsider.membershipId)).toMatchObject({ projectRole: "PA", rateOverrideCents: 18_500 });
+    expect(p.team.find((m) => m.membershipId === outsider.membershipId)).toMatchObject({ firmRoleId: role, roleName: "Designer", rateOverrideCents: 18_500 });
     // Now on the team, they can open the project.
     expect(await page(outsider, "staff")).not.toBeNull();
   });
