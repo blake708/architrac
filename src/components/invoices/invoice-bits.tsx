@@ -1,5 +1,5 @@
 import { Badge, type BadgeTone } from "@/components/ui/badge";
-import type { InvoiceStatus } from "@/lib/calc/invoice";
+import { type InvoiceStatus, agingPill } from "@/lib/calc/invoice";
 import { cn } from "@/lib/cn";
 
 // Small pieces shared by the invoice pages.
@@ -15,6 +15,7 @@ const STATUS: Record<InvoiceStatus, { label: string; tone: BadgeTone }> = {
 };
 
 export const statusLabel = (s: InvoiceStatus) => STATUS[s].label;
+export const statusTone = (s: InvoiceStatus) => STATUS[s].tone;
 
 export function StatusBadge({ status }: { status: InvoiceStatus }) {
   return (
@@ -22,6 +23,13 @@ export function StatusBadge({ status }: { status: InvoiceStatus }) {
       {STATUS[status].label}
     </Badge>
   );
+}
+
+/** "Due in 28 d" (neutral) · "12 d late" (orange) · "45 d late" (red): rule 10. */
+export function AgingBadge({ days }: { days: number }) {
+  const p = agingPill(days);
+  const tone: BadgeTone = p.tone === "danger" ? "red" : p.tone === "attention" ? "orange" : "neutral";
+  return <Badge tone={tone}>{p.label}</Badge>;
 }
 
 /** A warning line (Layout C.3): orange for "look at this", red for "this is wrong". */

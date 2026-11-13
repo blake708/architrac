@@ -29,6 +29,12 @@
   --color-line: #DCDCDC;         /* card + table borders */
   --color-line-soft: #EBEBEB;    /* row dividers, subtle fills */
   --color-track: #E3E3E3;        /* filter-button tray, empty stepper bar */
+  /* Receivables aging bar: one orange ramp, light to dark as invoices get older (mockup) */
+  --color-age-current: #D6E0F2;
+  --color-age-30: #F4C2A6;
+  --color-age-60: #E3895A;
+  --color-age-90: #C2410C;
+  --color-age-90-plus: #7A2A08;
   --color-canvas: #F2F2F2;       /* page background */
   --color-surface-2: #FAFAFA;    /* table header / zebra */
   --color-surface: #FFFFFF;      /* cards */

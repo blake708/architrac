@@ -176,8 +176,8 @@ test.describe("owner", () => {
     const nav = tabs(page).locator("ul");
     expect(await nav.evaluate((el) => el.scrollHeight - el.clientHeight)).toBe(0);
 
-    // Release 1 shows only these tabs.
-    await expect(tabs(page).getByRole("link")).toHaveText(["Overview", "Phases & fees", "Team"]);
+    // Release 1 shows only these tabs (Invoices from 1.8 D).
+    await expect(tabs(page).getByRole("link")).toHaveText(["Overview", "Phases & fees", "Team", "Invoices"]);
   });
 
   test("Phases & fees: the fee table and consultants", async ({ page }) => {
