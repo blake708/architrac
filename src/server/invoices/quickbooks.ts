@@ -13,3 +13,11 @@ export async function queueQuickbooksInvoice(db: TenantDb, invoiceId: string, ki
   void invoiceId;
   void kind;
 }
+
+/** A payment recorded or deleted (invoicing spec Actions; sync spec). Does nothing until 1.9. */
+export async function queueQuickbooksPayment(db: TenantDb, paymentId: string, kind: "create" | "delete"): Promise<void> {
+  // 1.9: insert an integration_sync_jobs row ("payment/create" or "payment/delete").
+  void db;
+  void paymentId;
+  void kind;
+}

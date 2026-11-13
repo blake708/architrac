@@ -19,6 +19,7 @@ import {
 import { withFirm } from "@/db/tenant";
 import { loadSendDefaults } from "./detail";
 import type { InvoiceActor } from "./draft";
+import { deletePaymentCore, recordPaymentCore } from "./payments";
 import { resendInvoiceCore, sendInvoiceCore, voidInvoiceCore } from "./send";
 
 // Invoice server actions (invoicing spec, Actions). Who is asking comes from
@@ -95,6 +96,18 @@ export async function resendInvoice(input: unknown) {
 }
 export async function voidInvoice(input: unknown) {
   const r = await voidInvoiceCore(await actor(), input);
+  if (r.ok) refresh(r.data.projectId);
+  return r;
+}
+
+// Payments (rule 9): owner and admin only.
+export async function recordPayment(input: unknown) {
+  const r = await recordPaymentCore(await actor(), input);
+  if (r.ok) refresh(r.data.projectId);
+  return r;
+}
+export async function deletePayment(input: unknown) {
+  const r = await deletePaymentCore(await actor(), input);
   if (r.ok) refresh(r.data.projectId);
   return r;
 }
