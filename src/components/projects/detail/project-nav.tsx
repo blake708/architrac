@@ -12,6 +12,7 @@ export const projectTabs = [
   { label: "Overview", segment: "", financialOnly: false },
   { label: "Phases & fees", segment: "/phases", financialOnly: true },
   { label: "Team", segment: "/team", financialOnly: false },
+  { label: "Invoices", segment: "/billing", financialOnly: true },
 ] as const;
 
 export function ProjectNav({ projectId, financial }: { projectId: string; financial: boolean }) {

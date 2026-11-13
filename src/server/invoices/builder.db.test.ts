@@ -31,7 +31,8 @@ import {
   updateDraftSettingsCore,
 } from "./builder";
 import type { InvoiceActor } from "./draft";
-import { type BuilderView, loadBuilder, loadInvoicesPage } from "./view";
+import { loadInvoicesPage } from "./list";
+import { type BuilderView, loadBuilder } from "./view";
 
 // The invoice builder against the real database (invoicing spec acceptance
 // tests for 1.8 B). Medical Office Building numbers: SD fee $27,900 billed

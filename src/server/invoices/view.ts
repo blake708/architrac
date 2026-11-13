@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gte, inArray, isNull, lte, ne, or } from "drizzle-orm";
+import { and, asc, eq, gte, inArray, isNull, lte, ne, or } from "drizzle-orm";
 import {
   companies,
   contacts,
@@ -9,13 +9,11 @@ import {
   invoices,
   memberships,
   projectPhases,
-  projects,
   timeEntries,
   timesheets,
   users,
 } from "@/db/schema";
 import type { TenantDb } from "@/db/tenant";
-import { can } from "@/lib/auth/permissions";
 import { type InvoiceStatus, OPEN_STATUSES, hoursSuggestBp, hoursToHundredths, timeValueCents } from "@/lib/calc/invoice";
 import { type ConsultantRow, type FixedRow, type HourlyRow, money, sumHundredths } from "@/lib/calc/invoice-plan";
 import { servicesSubtotal } from "@/lib/calc/invoice-sections";
@@ -424,81 +422,4 @@ async function fixedPhaseWip(db: TenantDb, inv: InvoiceRow, wipFrom: string | nu
     });
   }
   return out;
-}
-
-// ---------------------------------------------------------------------------
-// The Invoices page (Layout A, first version: decision #29)
-
-export type InvoiceListRow = {
-  id: string;
-  number: string | null;
-  status: InvoiceStatus;
-  project: { id: string; number: string; name: string };
-  client: string;
-  periodEnd: string;
-  totalCents: number;
-  updatedAt: string;
-};
-
-export type BillableProject = { id: string; number: string; name: string; client: string; draftId: string | null };
-
-/** Projects this person may start an invoice on (active or on hold). */
-async function myBillableProjectIds(db: TenantDb, actor: InvoiceActor): Promise<Set<string> | "all"> {
-  if (can(actor.member, "invoices.create_draft")) return "all";
-  const me = actor.member.membershipId;
-  const rows = await db
-    .select({ id: projects.id })
-    .from(projects)
-    .where(and(isNull(projects.archivedAt), or(eq(projects.pmMembershipId, me), eq(projects.principalMembershipId, me))));
-  return new Set(rows.map((r) => r.id));
-}
-
-export async function loadInvoicesPage(
-  db: TenantDb,
-  actor: InvoiceActor,
-): Promise<{ rows: InvoiceListRow[]; projects: BillableProject[] }> {
-  const scope = await myBillableProjectIds(db, actor);
-  const rows = await db
-    .select({
-      id: invoices.id,
-      number: invoices.number,
-      status: invoices.status,
-      projectId: projects.id,
-      projectNumber: projects.number,
-      projectName: projects.name,
-      client: companies.name,
-      periodEnd: invoices.periodEnd,
-      totalCents: invoices.totalCents,
-      updatedAt: invoices.updatedAt,
-    })
-    .from(invoices)
-    .innerJoin(projects, eq(projects.id, invoices.projectId))
-    .innerJoin(companies, eq(companies.id, invoices.clientCompanyId))
-    .where(isNull(invoices.archivedAt))
-    .orderBy(desc(invoices.updatedAt));
-  const projectRows = await db
-    .select({ id: projects.id, number: projects.number, name: projects.name, client: companies.name })
-    .from(projects)
-    .innerJoin(companies, eq(companies.id, projects.clientCompanyId))
-    .where(and(isNull(projects.archivedAt), inArray(projects.status, ["active", "on_hold"])))
-    .orderBy(desc(projects.number));
-  const inScope = (id: string) => scope === "all" || scope.has(id);
-  const drafts = new Map(
-    rows.filter((r) => r.status === "draft" || r.status === "in_review").map((r) => [r.projectId, r.id]),
-  );
-  return {
-    rows: rows
-      .filter((r) => inScope(r.projectId))
-      .map((r) => ({
-        id: r.id,
-        number: r.number,
-        status: r.status,
-        project: { id: r.projectId, number: r.projectNumber, name: r.projectName },
-        client: r.client,
-        periodEnd: r.periodEnd,
-        totalCents: r.totalCents,
-        updatedAt: r.updatedAt.toISOString(),
-      })),
-    projects: projectRows.filter((p) => inScope(p.id)).map((p) => ({ ...p, draftId: drafts.get(p.id) ?? null })),
-  };
 }

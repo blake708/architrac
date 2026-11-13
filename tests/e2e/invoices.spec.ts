@@ -104,6 +104,12 @@ test.beforeAll(async () => {
 
 const total = (page: Page) => page.getByTestId("invoice-total");
 
+/** From the Invoices page: the Drafts & review tab, then the draft. */
+async function openDraft(page: Page) {
+  await page.getByRole("tab", { name: /Drafts & review/ }).click();
+  await page.getByRole("link", { name: "Draft" }).click();
+}
+
 test("staff don't see Invoices and can't open the page", async ({ page }) => {
   await signInAs(page, "kaStaff", "/app/invoices");
   await expect(page.getByRole("heading", { name: "You don't have access to this page" })).toBeVisible();
@@ -155,6 +161,8 @@ test("the PM starts an invoice from the Invoices page and bills DD at 30 %", asy
 
   // Back on the list, the draft shows and the project is marked.
   await page.goto("/app/invoices");
+  // The page opens on Open invoices; drafts are under Drafts & review.
+  await page.getByRole("tab", { name: /Drafts & review/ }).click();
   await expect(page.getByRole("table", { name: "Invoices" })).toContainText("2026-014");
   await page.getByRole("button", { name: "New invoice" }).first().click();
   await expect(page.getByRole("dialog", { name: "New invoice" })).toContainText("Draft open");
@@ -162,7 +170,7 @@ test("the PM starts an invoice from the Invoices page and bills DD at 30 %", asy
 
 test("a % below what's billed shows an error; a retainer credit lowers the total", async ({ page }) => {
   await signInAs(page, "kaPm", "/app/invoices");
-  await page.getByRole("link", { name: "Draft" }).click();
+  await openDraft(page);
   await expect(total(page)).toHaveText("$24,310");
   // No adjustments yet: no subtotal line.
   await expect(page.getByTestId("invoice-subtotal")).toHaveCount(0);
@@ -191,7 +199,7 @@ test("a % below what's billed shows an error; a retainer credit lowers the total
 
 test("the PM submits it for review and can no longer edit it", async ({ page }) => {
   await signInAs(page, "kaPm", "/app/invoices");
-  await page.getByRole("link", { name: "Draft" }).click();
+  await openDraft(page);
   await page.getByRole("button", { name: "Submit for review" }).click();
   await expect(page.getByTestId("invoice-status")).toHaveText("In review");
   await expect(page.getByRole("button", { name: "Recalculate" })).toHaveCount(0);
@@ -199,7 +207,7 @@ test("the PM submits it for review and can no longer edit it", async ({ page }) 
 
 test("the owner returns it to draft with a note", async ({ page }) => {
   await signInAs(page, "kaOwner", "/app/invoices");
-  await page.getByRole("link", { name: "Draft" }).click();
+  await openDraft(page);
   await page.getByRole("button", { name: "Return to draft" }).click();
   const dialog = page.getByRole("dialog", { name: "Return to draft" });
   await dialog.getByLabel("Note").fill("Hold DD until the client meeting");
@@ -209,7 +217,7 @@ test("the owner returns it to draft with a note", async ({ page }) => {
 
 test("deleting the draft frees its time for the next one", async ({ page }) => {
   await signInAs(page, "kaOwner", "/app/invoices");
-  await page.getByRole("link", { name: "Draft" }).click();
+  await openDraft(page);
   await page.getByRole("button", { name: "Delete draft" }).click();
   await page.getByRole("dialog", { name: "Delete this draft?" }).getByRole("button", { name: "Delete draft" }).click();
   await expect(page).toHaveURL(/\/app\/invoices$/);
@@ -246,7 +254,7 @@ test("the owner marks it sent, downloads the saved PDF, and voids it", async ({ 
   // Saving the PDF needs file storage: skipped where the R2 keys aren't set (CI).
   test.skip(!process.env.R2_BUCKET || !process.env.R2_ACCESS_KEY_ID, "R2 isn't set up here");
   await signInAs(page, "kaOwner", "/app/invoices");
-  await page.getByRole("link", { name: "Draft" }).click();
+  await openDraft(page);
   await page.getByRole("button", { name: "Send…" }).click();
   const send = page.getByRole("dialog", { name: "Send invoice" });
   await expect(send.getByLabel("To")).toHaveValue("ap@palmetto.example");
@@ -275,4 +283,112 @@ test("the owner marks it sent, downloads the saved PDF, and voids it", async ({ 
   await expect(page.getByText(/VOID · .* · Wrong %/)).toBeVisible();
   const [{ n }] = await query<{ n: number }>("select count(*)::int as n from time_entries where firm_id = :firm and invoice_id is not null");
   expect(n).toBe(0);
+});
+
+// ---------------------------------------------------------------------------
+// 1.8 D: the Invoices page's KPIs, tabs and aging, payments, the project's
+// Invoices tab. Two sent invoices are added straight to the database (so
+// this doesn't need file storage): E2E-121 $11,160 due in 28 days (SD to
+// 100 %), and E2E-088 $5,000, 75 days late.
+
+async function addSentInvoices() {
+  const [{ n }] = await query<{ n: number }>("select count(*)::int as n from invoices where firm_id = :firm and number = 'E2E-121'");
+  if (n > 0) return; // a retry: already added
+  await query(`
+    with p as (
+      select id, client_company_id from projects where firm_id = :firm and number = '2026-014'
+    ), i as (
+      insert into invoices (firm_id, project_id, client_company_id, number, status, issue_date, due_date, period_end, subtotal_cents, total_cents, sent_at)
+      select :firm, p.id, p.client_company_id, v.num, 'sent', current_date + v.due - 30, current_date + v.due, current_date + v.due - 30, v.total, v.total, now() + make_interval(days => v.due - 30)
+      from p, (values ('E2E-121', 28, 1116000), ('E2E-088', -75, 500000)) as v(num, due, total)
+      returning id, number
+    )
+    insert into invoice_lines (firm_id, invoice_id, line_type, description, quantity, rate_cents, amount_cents, project_phase_id, percent_complete_bp, sort_order)
+    select :firm, i.id, 'phase_fee', 'Schematic Design · 100% complete', 1, case when i.number = 'E2E-121' then 1116000 else 500000 end,
+      case when i.number = 'E2E-121' then 1116000 else 500000 end, ph.id, case when i.number = 'E2E-121' then 10000 else 4000 end, 0
+    from i, project_phases ph where ph.firm_id = :firm and ph.code = 'SD'
+  `);
+}
+
+const invoiceRow = (page: Page, number: string) => page.getByRole("table", { name: "Invoices" }).locator(`[data-invoice="${number}"]`);
+
+test("Invoices page: KPIs, aging and status tabs; the owner records and deletes payments", async ({ page }) => {
+  await addSentInvoices();
+  await signInAs(page, "kaOwner", "/app/invoices");
+  const kpis = page.getByRole("region", { name: "Receivables summary" });
+  await expect(kpis).toContainText("$16,160"); // receivables: both open invoices
+  await expect(kpis).toContainText("$5,000"); // over 60 days
+  await expect(page.getByRole("tab", { name: /Open/ })).toHaveAttribute("aria-selected", "true");
+  await expect(invoiceRow(page, "E2E-121")).toContainText("Due in 28 d");
+  await expect(invoiceRow(page, "E2E-088")).toContainText("75 d late");
+  // Most overdue first.
+  await expect(page.getByRole("table", { name: "Invoices" }).locator("tbody tr").first()).toHaveAttribute("data-invoice", "E2E-088");
+
+  // The aging key filters the list; Show all clears it.
+  const aging = page.getByRole("region", { name: "Receivables aging" });
+  await aging.locator('[data-bucket="61_90"]').click();
+  await expect(invoiceRow(page, "E2E-121")).toHaveCount(0);
+  await expect(invoiceRow(page, "E2E-088")).toBeVisible();
+  await aging.getByRole("button", { name: "Show all" }).click();
+  await expect(invoiceRow(page, "E2E-121")).toBeVisible();
+  // So does the Over 60 days tile.
+  await kpis.getByRole("button", { name: /over 60 days/i }).click();
+  await expect(invoiceRow(page, "E2E-121")).toHaveCount(0);
+
+  // Record payment from the page: pick the invoice; the amount starts at its balance.
+  await page.getByRole("button", { name: "Record payment" }).click();
+  const pay = page.getByRole("dialog", { name: "Record payment" });
+  await pay.getByLabel("Invoice").selectOption({ label: "E2E-121 · Palmetto Medical Properties · $11,160 due" });
+  await expect(pay.getByLabel("Amount")).toHaveValue("11160.00");
+  await pay.getByLabel("Amount").fill("5,000");
+  await pay.getByLabel("Reference").fill("1042");
+  await pay.getByRole("button", { name: "Record payment" }).click();
+  await expect(page.getByTestId("toast").last()).toContainText("$6,160 still due");
+  await expect(kpis).toContainText("$11,160");
+
+  // The invoice page: partially paid, the payment listed, logged.
+  await page.getByRole("tab", { name: /All/ }).click();
+  await invoiceRow(page, "E2E-121").getByRole("link").click();
+  await expect(page.getByTestId("invoice-status")).toHaveText("Partially paid");
+  await expect(page.getByTestId("invoice-balance")).toHaveText("$6,160");
+  await expect(page.getByRole("table", { name: "Payments" })).toContainText("1042");
+  await expect(page.getByRole("region", { name: "Activity" })).toContainText("Recorded a $5,000 payment (Check 1042)");
+
+  // Pay the rest here; then delete that payment.
+  await page.getByRole("button", { name: "Record payment" }).first().click();
+  const rest = page.getByRole("dialog", { name: "Record payment" });
+  await expect(rest.getByLabel("Amount")).toHaveValue("6160.00");
+  await rest.getByLabel("Method").selectOption("ach");
+  await rest.getByRole("button", { name: "Record payment" }).click();
+  await expect(page.getByTestId("invoice-status")).toHaveText("Paid");
+  await expect(page.getByTestId("invoice-balance")).toHaveText("$0");
+  await expect(page.getByTestId("invoice-aging")).toHaveCount(0);
+
+  await page.getByRole("button", { name: /Delete the \$6,160 payment/ }).click();
+  await page.getByRole("dialog", { name: "Delete this payment?" }).getByRole("button", { name: "Delete payment" }).click();
+  await expect(page.getByTestId("invoice-status")).toHaveText("Partially paid");
+  await expect(page.getByTestId("invoice-balance")).toHaveText("$6,160");
+  await expect(page.getByRole("region", { name: "Activity" })).toContainText("Deleted the $6,160 payment");
+});
+
+test("the project's Invoices tab: billed, received and outstanding", async ({ page }) => {
+  const [p] = await query<{ id: string }>("select id from projects where firm_id = :firm and number = '2026-014'");
+  await signInAs(page, "kaOwner", `/app/projects/${p.id}`);
+  await page.getByRole("navigation", { name: "Project sections" }).getByRole("link", { name: "Invoices" }).click();
+  await expect(page.getByTestId("project-invoice-summary")).toHaveText("$16,160 billed · $5,000 received · $11,160 outstanding");
+  const row = page.getByRole("table", { name: "Project invoices" }).locator('[data-invoice="E2E-121"]');
+  await expect(row).toContainText("Schematic Design · 100%");
+  await expect(row).toContainText("Partially paid · due");
+  // No New invoice here (decision #29).
+  await expect(page.getByRole("button", { name: "New invoice" })).toHaveCount(0);
+});
+
+test("the PM sees the invoices but can't record or delete payments", async ({ page }) => {
+  await signInAs(page, "kaPm", "/app/invoices");
+  await expect(invoiceRow(page, "E2E-121")).toBeVisible();
+  await expect(page.getByRole("button", { name: "Record payment" })).toHaveCount(0);
+  await invoiceRow(page, "E2E-121").getByRole("link").click();
+  await expect(page.getByRole("table", { name: "Payments" })).toContainText("1042");
+  await expect(page.getByRole("button", { name: "Record payment" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: /Delete the/ })).toHaveCount(0);
 });

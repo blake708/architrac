@@ -1,19 +1,21 @@
-import { and, eq, isNull } from "drizzle-orm";
-import { companies, contacts, firms, invoices, users } from "@/db/schema";
+import { and, asc, eq, isNull } from "drizzle-orm";
+import { activityLog, companies, contacts, firms, invoices, payments, users } from "@/db/schema";
 import type { TenantDb } from "@/db/tenant";
 import { can } from "@/lib/auth/permissions";
-import { type InvoiceStatus, invoiceDueDate } from "@/lib/calc/invoice";
+import { type InvoiceStatus, daysPastDue, invoiceDueDate } from "@/lib/calc/invoice";
 import type { InvoiceSections } from "@/lib/calc/invoice-sections";
 import { formatDate, formatMoney, todayIn } from "@/lib/format";
+import { type ActivityItem, activityItems } from "@/lib/invoices/activity";
 import { defaultSendMessage, invoiceRecipients } from "@/lib/invoices/builder";
+import type { PaymentMethod } from "@/lib/invoices/payments";
 import { firmDisplayName } from "@/lib/settings/firm-profile";
 import { type InvoiceActor, type InvoiceRow, projectAccess } from "./draft";
 import { peekNumber } from "./number";
 import { loadSections } from "./sections";
 
-// The invoice page after it's sent (invoicing spec Layout D, first
-// version: payments, aging and the activity timeline come in 1.8 D), and
-// the Send / Resend dialogs' starting values.
+// The invoice page after it's sent (invoicing spec Layout D): the invoice
+// as billed, its payments, aging and activity; and the Send / Resend
+// dialogs' starting values.
 
 export type EmailDefaults = { to: string; cc: string; subject: string; message: string };
 
@@ -36,9 +38,60 @@ export type InvoiceDetail = {
   totalCents: number;
   paidCents: number;
   void: { at: string; reason: string } | null;
-  can: { download: boolean; resend: boolean; void: boolean };
+  /** today − due date (rule 10); shown while it's open. */
+  daysPastDue: number;
+  today: string;
+  payments: { id: string; receivedOn: string; method: PaymentMethod; reference: string | null; amountCents: number }[];
+  /** Newest first. `when` is in the firm's time zone. */
+  activity: (Omit<ActivityItem, "at"> & { when: string })[];
+  can: { download: boolean; resend: boolean; void: boolean; recordPayment: boolean; deletePayment: boolean };
   resend: EmailDefaults;
 };
+
+/** "Oct 16 · 2:15 PM" in the firm's time zone. */
+function whenText(at: Date, timeZone: string) {
+  const day = at.toLocaleDateString("en-US", { month: "short", day: "numeric", timeZone });
+  const time = at.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone });
+  return `${day} · ${time}`;
+}
+
+async function invoicePayments(db: TenantDb, invoiceId: string) {
+  return db
+    .select({
+      id: payments.id,
+      receivedOn: payments.receivedOn,
+      method: payments.method,
+      reference: payments.reference,
+      amountCents: payments.amountCents,
+    })
+    .from(payments)
+    .where(and(eq(payments.invoiceId, invoiceId), isNull(payments.archivedAt)))
+    .orderBy(asc(payments.receivedOn), asc(payments.createdAt));
+}
+
+async function invoiceActivity(db: TenantDb, invoiceId: string, timeZone: string) {
+  const rows = await db
+    .select({
+      id: activityLog.id,
+      action: activityLog.action,
+      changes: activityLog.changes,
+      first: users.firstName,
+      last: users.lastName,
+      at: activityLog.createdAt,
+    })
+    .from(activityLog)
+    .leftJoin(users, eq(users.id, activityLog.actorUserId))
+    .where(and(eq(activityLog.entityType, "invoice"), eq(activityLog.entityId, invoiceId)));
+  return activityItems(
+    rows.map((r) => ({
+      id: r.id,
+      action: r.action,
+      changes: (r.changes ?? null) as Record<string, unknown> | null,
+      who: `${r.first ?? ""} ${r.last ?? ""}`.trim() || "Someone",
+      at: r.at,
+    })),
+  ).map(({ at, ...rest }) => ({ ...rest, when: whenText(at, timeZone) }));
+}
 
 const plain = (cents: number) => formatMoney(cents, { cents: true });
 
@@ -105,7 +158,14 @@ export async function loadInvoiceDetail(db: TenantDb, actor: InvoiceActor, invoi
   if (!inv) return null;
   const access = await projectAccess(db, actor, inv.projectId);
   if (!access || (!access.canDraft && !access.canReview)) return null;
-  const [sections, p] = await Promise.all([loadSections(db, inv), people(db, inv, actor)]);
+  const [sections, p, paid, activity] = await Promise.all([
+    loadSections(db, inv),
+    people(db, inv, actor),
+    invoicePayments(db, inv.id),
+    invoiceActivity(db, inv.id, actor.timezone),
+  ]);
+  const today = todayIn(actor.timezone);
+  const handlesPayments = can(actor.member, "payments.record");
   const project = { id: access.project.id, number: access.project.number, name: access.project.name };
   const sent = inv.status === "sent" || inv.status === "partially_paid" || inv.status === "paid";
   return {
@@ -126,10 +186,16 @@ export async function loadInvoiceDetail(db: TenantDb, actor: InvoiceActor, invoi
     totalCents: inv.totalCents,
     paidCents: inv.amountPaidCents,
     void: inv.voidedAt ? { at: inv.voidedAt.toISOString(), reason: inv.voidReason ?? "" } : null,
+    daysPastDue: daysPastDue(today, inv.dueDate),
+    today,
+    payments: paid,
+    activity,
     can: {
       download: !!inv.pdfUrl && inv.status !== "draft" && inv.status !== "in_review",
       resend: access.canReview && sent && !!inv.pdfUrl,
       void: can(actor.member, "invoices.void") && inv.status === "sent",
+      recordPayment: handlesPayments && (inv.status === "sent" || inv.status === "partially_paid"),
+      deletePayment: handlesPayments && sent,
     },
     resend: emailDefaults(inv, inv.number ?? "", inv.dueDate, project, p),
   };

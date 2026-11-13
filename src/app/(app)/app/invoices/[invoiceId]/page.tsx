@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { InvoiceDetail } from "@/components/invoices/invoice-detail";
 import { AccessDenied } from "@/components/shell/access-denied";
+import { ToastProvider } from "@/components/ui/toast";
 import { withFirm } from "@/db/tenant";
 import { requireSession } from "@/lib/auth/session";
 import { firmDisplayName } from "@/lib/settings/firm-profile";
@@ -16,5 +17,9 @@ export default async function InvoiceRoute({ params }: { params: Promise<{ invoi
   const detail = await withFirm(session.firm.id, (db) => loadInvoiceDetail(db, actor, invoiceId));
   if (!detail) return <AccessDenied firmName={firmDisplayName(session.firm)} />;
   if (detail.status === "draft" || detail.status === "in_review") redirect(`/app/invoices/${invoiceId}/edit`);
-  return <InvoiceDetail detail={detail} />;
+  return (
+    <ToastProvider>
+      <InvoiceDetail detail={detail} />
+    </ToastProvider>
+  );
 }

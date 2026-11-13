@@ -8,24 +8,32 @@ import { Button, buttonClasses } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/field";
 import { PageHeader } from "@/components/ui/page-header";
+import { useToast } from "@/components/ui/toast";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { money } from "@/lib/calc/invoice-plan";
 import { formatDate } from "@/lib/format";
-import { resendInvoice, voidInvoice } from "@/server/invoices/actions";
+import { methodLabel } from "@/lib/invoices/payments";
+import { deletePayment, resendInvoice, voidInvoice } from "@/server/invoices/actions";
 import type { InvoiceDetail as Detail } from "@/server/invoices/detail";
-import { Callout, StatusBadge } from "./invoice-bits";
+import { AgingBadge, Callout, StatusBadge } from "./invoice-bits";
 import { InvoiceTables, TotalLines } from "./invoice-tables";
+import { RecordPaymentDialog } from "./record-payment-dialog";
 import { ResendDialog } from "./send-dialog";
 
-// A sent invoice (invoicing spec Layout D, first version). Payments, aging
-// and the activity timeline join this page in 1.8 D.
+// A sent invoice (invoicing spec Layout D): the invoice as billed, its
+// payments (owner/admin record and delete them), aging and activity.
 
 export function InvoiceDetail({ detail: d }: { detail: Detail }) {
   const router = useRouter();
   const [resending, setResending] = useState(false);
   const [voiding, setVoiding] = useState(false);
-  const [notice, setNotice] = useState<string | null>(null);
+  const [paying, setPaying] = useState(false);
+  const [removing, setRemoving] = useState<Payment | null>(null);
+  const toast = useToast();
   const [error, setError] = useState<string | null>(null);
   const row = "flex justify-between gap-4 py-1.5";
+  const open = d.status === "sent" || d.status === "partially_paid";
+  const balance = d.status === "void" ? 0 : d.totalCents - d.paidCents;
 
   return (
     <main>
@@ -49,8 +57,15 @@ export function InvoiceDetail({ detail: d }: { detail: Detail }) {
         description={d.client}
         actions={
           <>
-            <span className="self-center" data-testid="invoice-status">
-              <StatusBadge status={d.status} />
+            <span className="flex items-center gap-1.5 self-center">
+              <span data-testid="invoice-status">
+                <StatusBadge status={d.status} />
+              </span>
+              {open && (
+                <span data-testid="invoice-aging">
+                  <AgingBadge days={d.daysPastDue} />
+                </span>
+              )}
             </span>
             {d.can.download && (
               <a href={`/api/invoices/${d.id}/pdf`} target="_blank" rel="noopener" className={buttonClasses("secondary")}>
@@ -63,12 +78,16 @@ export function InvoiceDetail({ detail: d }: { detail: Detail }) {
                 Void
               </Button>
             )}
+            {d.can.recordPayment && (
+              <Button variant="primary" onClick={() => setPaying(true)}>
+                Record payment
+              </Button>
+            )}
           </>
         }
       />
       <div className="flex flex-col gap-4 px-4 pt-5 pb-8 md:px-page-x">
         {error && <ErrorBanner message={error} />}
-        {notice && !error && <Callout tone="attention">{notice}</Callout>}
         {d.void && (
           <Callout tone="danger">
             VOID · {formatDate(d.void.at.slice(0, 10))} · {d.void.reason}
@@ -90,9 +109,11 @@ export function InvoiceDetail({ detail: d }: { detail: Detail }) {
               </Fact>
               </dl>
             </section>
+            <Payments d={d} onDelete={setRemoving} onRecord={() => setPaying(true)} />
             <InvoiceTables x={d.sections} />
+            <Activity items={d.activity} />
           </div>
-          <aside aria-label="Totals" className="flex-[1_1_280px] rounded-sm border border-line bg-surface px-[18px] py-4">
+          <aside aria-label="Totals" className="flex-[1_1_340px] rounded-sm border border-line bg-surface px-[18px] py-4">
             <TotalLines
               servicesSubtotalCents={d.sections.servicesSubtotalCents}
               adjustments={d.sections.adjustments}
@@ -101,11 +122,15 @@ export function InvoiceDetail({ detail: d }: { detail: Detail }) {
             />
             <div className={row}>
               <span className="text-muted">Paid</span>
-              <span className="num">{money(d.paidCents)}</span>
+              <span className="num" data-testid="invoice-paid">
+                {money(d.paidCents)}
+              </span>
             </div>
             <div className={`${row} font-semibold`}>
               <span>Balance</span>
-              <span className="num">{money(d.status === "void" ? 0 : d.totalCents - d.paidCents)}</span>
+              <span className="num" data-testid="invoice-balance">
+                {money(balance)}
+              </span>
             </div>
           </aside>
         </div>
@@ -119,9 +144,29 @@ export function InvoiceDetail({ detail: d }: { detail: Detail }) {
           const r = await resendInvoice({ invoiceId: d.id, ...email });
           if (r.ok) {
             setError(null);
-            setNotice("Email sent.");
+            toast("Email sent.");
           }
           return r;
+        }}
+      />
+      <RecordPaymentDialog
+        open={paying}
+        onOpenChange={setPaying}
+        invoices={[{ id: d.id, number: d.number ?? "", client: d.client, balanceCents: balance }]}
+        today={d.today}
+        onRecorded={(m) => {
+          setError(null);
+          toast(m);
+          router.refresh();
+        }}
+      />
+      <DeletePaymentDialog
+        payment={removing}
+        onClose={() => setRemoving(null)}
+        onDeleted={() => {
+          setError(null);
+          toast("Payment deleted. The balance and status are updated.");
+          router.refresh();
         }}
       />
       <VoidDialog
@@ -130,7 +175,7 @@ export function InvoiceDetail({ detail: d }: { detail: Detail }) {
         onVoid={async (reason) => {
           const r = await voidInvoice({ invoiceId: d.id, reason });
           if (r.ok) {
-            setNotice("Voided. Its time and % complete can be billed again on the next invoice.");
+            toast("Voided. Its time and % complete can be billed again on the next invoice.");
             router.refresh();
           }
           return r;
@@ -197,6 +242,130 @@ function VoidDialog({
           {error && <ErrorBanner message={error} />}
           <Textarea label="Reason" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} error={fieldError} autoFocus />
         </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+type Payment = Detail["payments"][number];
+
+/** Payments received (rule 9). Owners and admins record and delete them. */
+function Payments({ d, onDelete, onRecord }: { d: Detail; onDelete: (p: Payment) => void; onRecord: () => void }) {
+  if (d.payments.length === 0 && !d.can.recordPayment) return null;
+  return (
+    <section aria-labelledby="payments-title" className="rounded-sm border border-line bg-surface">
+      <div className="flex flex-wrap items-center gap-3 px-[18px] pt-4 pb-3">
+        <h2 id="payments-title" className="m-0 text-sm font-semibold">
+          Payments
+        </h2>
+        {d.payments.length === 0 && <span className="text-[12.5px] text-muted">Nothing received yet.</span>}
+        {d.can.recordPayment && (
+          <Button className="ml-auto" onClick={onRecord}>
+            Record payment
+          </Button>
+        )}
+      </div>
+      {d.payments.length > 0 && (
+        <Table aria-label="Payments">
+          <TableHead>
+            <TableRow>
+              <TableHeader>Received</TableHeader>
+              <TableHeader>Method</TableHeader>
+              <TableHeader>Reference</TableHeader>
+              <TableHeader numeric>Amount</TableHeader>
+              {d.can.deletePayment && (
+                <TableHeader>
+                  <span className="sr-only">Delete</span>
+                </TableHeader>
+              )}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {d.payments.map((p) => (
+              <TableRow key={p.id} data-payment={p.id}>
+                <TableCell className="num text-[12.5px]">{formatDate(p.receivedOn)}</TableCell>
+                <TableCell>{methodLabel(p.method)}</TableCell>
+                <TableCell className="text-muted">{p.reference || "—"}</TableCell>
+                <TableCell numeric>{money(p.amountCents)}</TableCell>
+                {d.can.deletePayment && (
+                  <TableCell className="w-0 text-right">
+                    <Button
+                      aria-label={`Delete the ${money(p.amountCents)} payment of ${formatDate(p.receivedOn)}`}
+                      onClick={() => onDelete(p)}
+                    >
+                      Delete
+                    </Button>
+                  </TableCell>
+                )}
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      )}
+    </section>
+  );
+}
+
+/** Who did what to this invoice, newest first (rule 18). */
+function Activity({ items }: { items: Detail["activity"] }) {
+  if (items.length === 0) return null;
+  return (
+    <section aria-labelledby="activity-title" className="rounded-sm border border-line bg-surface px-[18px] py-4">
+      <h2 id="activity-title" className="m-0 mb-3 text-sm font-semibold">
+        Activity
+      </h2>
+      <ol className="m-0 flex list-none flex-col gap-2.5 p-0 text-sm">
+        {items.map((a) => (
+          <li key={a.id} className="flex flex-wrap gap-x-3 gap-y-0.5" data-activity>
+            <span className="num w-[150px] shrink-0 text-xs text-muted">{a.when}</span>
+            <span className="min-w-0 flex-1">
+              <span className="font-medium">{a.who}</span> · {a.text}
+              {a.times > 1 && <span className="text-muted"> ({a.times} times)</span>}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function DeletePaymentDialog({ payment, onClose, onDeleted }: { payment: Payment | null; onClose: () => void; onDeleted: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  return (
+    <Dialog open={payment !== null} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent
+        title="Delete this payment?"
+        description={
+          payment
+            ? `${money(payment.amountCents)} received ${formatDate(payment.receivedOn)}. The balance and status go back to match the payments left.`
+            : undefined
+        }
+        footer={
+          <>
+            <Button variant="ghost" onClick={onClose} disabled={busy}>
+              Keep it
+            </Button>
+            <Button
+              variant="danger"
+              disabled={busy}
+              onClick={async () => {
+                if (!payment) return;
+                setBusy(true);
+                setError(null);
+                const r = await deletePayment({ paymentId: payment.id });
+                setBusy(false);
+                if (!r.ok) return setError(r.error ?? "Couldn't delete the payment. Try again.");
+                onClose();
+                onDeleted();
+              }}
+            >
+              {busy ? "Deleting…" : "Delete payment"}
+            </Button>
+          </>
+        }
+      >
+        {error ? <ErrorBanner message={error} /> : null}
       </DialogContent>
     </Dialog>
   );
