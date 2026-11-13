@@ -19,6 +19,9 @@ type KpiTileProps = {
   note?: ReactNode;
   /** Colours the value, only to carry meaning (e.g. red = over budget). */
   tone?: KpiTone;
+  /** "card" (default) is a bordered box; "header" is flat, for a row of
+   *  tiles inside the white page-header band (see HeaderKpis). */
+  variant?: "card" | "header";
   className?: string;
 };
 
@@ -27,12 +30,16 @@ export function KpiTile({
   value,
   note,
   tone = "default",
+  variant = "card",
   className,
 }: KpiTileProps) {
   return (
     <div
       className={cn(
-        "flex flex-col gap-1 rounded-sm border border-line bg-surface px-4 py-3.5",
+        "flex flex-col gap-1",
+        variant === "card"
+          ? "rounded-sm border border-line bg-surface px-4 py-3.5"
+          : "border-b border-line-soft px-4 pt-5 pb-[22px] md:border-r md:border-b-0 md:px-page-x",
         className,
       )}
     >
@@ -47,5 +54,27 @@ export function KpiTile({
       </span>
       {note && <span className="text-[12.5px] text-muted">{note}</span>}
     </div>
+  );
+}
+
+/**
+ * A row of summary tiles in the page-header band, under a thin rule, as in
+ * the mockup. Pass it to PageHeader as a child, above the tabs.
+ */
+export function HeaderKpis({
+  label,
+  children,
+}: {
+  /** Accessible name for the region, e.g. "Project totals". */
+  label: string;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      aria-label={label}
+      className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] border-t border-line-soft"
+    >
+      {children}
+    </section>
   );
 }

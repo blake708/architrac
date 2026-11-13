@@ -43,8 +43,8 @@ export function TabsTrigger({
   return (
     <RadixTabs.Trigger
       className={cn(
-        "cap -mb-px inline-flex h-11 shrink-0 cursor-pointer items-center border-0 border-b-2 border-solid border-transparent bg-transparent px-3 text-sm font-medium whitespace-nowrap text-ink-3",
-        "hover:text-ink data-[state=active]:border-ink data-[state=active]:font-semibold data-[state=active]:text-ink",
+        "cap inline-flex h-[50px] shrink-0 cursor-pointer items-center border-0 bg-transparent px-3 text-[12.5px] font-medium tracking-[0.07em] whitespace-nowrap text-ink-3",
+        "hover:text-ink data-[state=active]:font-bold data-[state=active]:text-ink data-[state=active]:shadow-[inset_0_-3px_0_var(--color-ink)]",
         "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue",
         "disabled:cursor-not-allowed disabled:text-faint",
         className,
@@ -53,7 +53,7 @@ export function TabsTrigger({
     >
       {children}
       {count !== undefined && (
-        <span className="num ml-2 text-2xs font-medium tracking-normal text-muted">
+        <span className="num ml-2 text-2xs font-medium tracking-normal text-muted normal-case">
           {count}
         </span>
       )}

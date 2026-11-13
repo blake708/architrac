@@ -52,7 +52,7 @@ export function InvoicesPage({ rows, projects }: { rows: InvoiceListRow[]; proje
           />
         ) : (
           <div className="rounded-sm border border-line bg-surface">
-            <Table aria-label="Invoices">
+            <Table aria-label="Invoices" className="table-flush-top">
               <TableHead>
                 <TableRow>
                   <TableHeader>Invoice</TableHeader>

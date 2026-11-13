@@ -38,7 +38,7 @@ export default async function WeekOverviewPage({ params }: { params: Promise<{ w
           approvalsCount={shell.waiting}
           notSubmitted={shell.notSubmitted}
         />
-        <div className="flex flex-col gap-4 px-4 pt-5 pb-8 md:px-page-x">
+        <div className="flex flex-col gap-4 px-4 pt-7 pb-8 md:px-page-x">
           <ApprovalsViewSwitch view="week" waiting={shell.waiting} weekHref={`/app/time/approvals/week/${overview.defaultWeek}`} />
           <WeekOverviewView overview={overview} timezone={ctx.timezone} />
         </div>

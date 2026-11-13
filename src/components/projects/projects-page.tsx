@@ -6,8 +6,9 @@ import { Avatar } from "@/components/ui/avatar";
 import { buttonClasses } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/empty-state";
 import { PlusIcon, SearchIcon } from "@/components/ui/icons";
-import { KpiTile } from "@/components/ui/kpi-tile";
+import { HeaderKpis, KpiTile } from "@/components/ui/kpi-tile";
 import { PageHeader } from "@/components/ui/page-header";
+import { headerTabBarClasses, tabClasses, tabCountClasses, tabRowClasses } from "@/components/ui/tab-styles";
 import { cn } from "@/lib/cn";
 import { formatMoney, formatMoneyShort, formatMoneySigned } from "@/lib/format";
 import { type ListParams, type StatusTab, filterProjects, listQuery } from "@/lib/projects/display";
@@ -69,16 +70,17 @@ export function ProjectsPage({ view, initial }: { view: ProjectsView; initial: L
         eyebrow={`${counts.active} ACTIVE · ${counts.closed} CLOSED · LEADS AND PROPOSALS LIVE IN MARKETING`}
         title="Projects"
         actions={newButton}
-      />
-      <div className="flex flex-col gap-5 px-4 pt-6 pb-8 md:px-page-x">
+      >
         {k && (
-          <section aria-label="Project totals" className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3">
+          <HeaderKpis label="Project totals">
             <KpiTile
+              variant="header"
               label="Active fees"
               value={formatMoney(k.activeFeesCents)}
               note={`${k.activeCount} active ${k.activeCount === 1 ? "project" : "projects"}`}
             />
             <KpiTile
+              variant="header"
               label="Billed to date"
               value={formatMoney(k.billedCents)}
               note={
@@ -88,39 +90,40 @@ export function ProjectsPage({ view, initial }: { view: ProjectsView; initial: L
               }
             />
             <KpiTile
+              variant="header"
               label="Left to bill"
               value={formatMoneySigned(k.activeFeesCents - k.billedCents)}
               note="On active projects"
             />
             <KpiTile
+              variant="header"
               label="Flagged"
               value={k.flagged}
               tone={k.flagged > 0 ? "orange" : "default"}
               note="Active projects at risk or over budget"
             />
-          </section>
+          </HeaderKpis>
         )}
 
-        <div role="tablist" aria-label="Project status" className="flex gap-6 overflow-x-auto overflow-y-hidden border-b border-line">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              role="tab"
-              aria-selected={params.status === t.key}
-              onClick={() => set({ status: t.key })}
-              className={cn(
-                "cursor-pointer border-0 border-b-2 bg-transparent px-1 pb-2.5 text-base whitespace-nowrap",
-                params.status === t.key
-                  ? "border-ink font-semibold text-ink"
-                  : "border-transparent text-ink-3 hover:text-ink",
-              )}
-            >
-              {t.label} <span className="num text-xs text-muted">{counts[t.key]}</span>
-            </button>
-          ))}
+        <div className={headerTabBarClasses}>
+          <div role="tablist" aria-label="Project status" className={tabRowClasses}>
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                role="tab"
+                aria-selected={params.status === t.key}
+                onClick={() => set({ status: t.key })}
+                className={tabClasses(params.status === t.key)}
+              >
+                {t.label}
+                <span className={tabCountClasses}>{counts[t.key]}</span>
+              </button>
+            ))}
+          </div>
         </div>
-
+      </PageHeader>
+      <div className="flex flex-col gap-5 px-4 pt-7 pb-8 md:px-page-x">
         <div className="flex flex-wrap items-center gap-3">
           <label className="relative flex-[0_1_340px]">
             <span className="sr-only">Search projects</span>
@@ -172,7 +175,7 @@ export function ProjectsPage({ view, initial }: { view: ProjectsView; initial: L
               <EmptyState title="You're not on any projects yet" help="Ask your project manager to add you." />
             )
           ) : (
-            <table className="w-full min-w-[1180px] border-collapse text-sm">
+            <table className="table-flush-top w-full min-w-[1180px] border-collapse text-sm">
               <thead className="bg-surface-2">
                 <tr>
                   <th scope="col" className={th}>No.</th>

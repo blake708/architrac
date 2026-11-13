@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { buttonClasses } from "@/components/ui/button";
-import { KpiTile } from "@/components/ui/kpi-tile";
+import { HeaderKpis, KpiTile } from "@/components/ui/kpi-tile";
 import { PageHeader } from "@/components/ui/page-header";
+import { headerTabBarClasses, tabClasses, tabCountClasses, tabRowClasses } from "@/components/ui/tab-styles";
 import { addDays, weekTotals } from "@/lib/calc/timesheet";
 import { cn } from "@/lib/cn";
 import { formatHours } from "@/lib/format";
@@ -83,10 +84,10 @@ export function TimeHeader({
       <PageHeader
         eyebrow={approvalsCount !== null ? "TIMESHEETS · APPROVALS · HISTORY" : "TIMESHEETS · HISTORY"}
         title="Time"
-      />
-      <div className="flex flex-col gap-5 px-4 pt-6 md:px-page-x">
-        <section aria-label="This week" className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3">
+      >
+        <HeaderKpis label="This week">
           <KpiTile
+            variant="header"
             label="This week"
             value={`${formatHours(t.weekTotal)} h`}
             note={
@@ -98,40 +99,39 @@ export function TimeHeader({
             }
           />
           <KpiTile
+            variant="header"
             label="Billable"
             value={`${t.billablePct}%`}
             note={`${formatHours(t.billable)} billable hours${view.targetUtilizationPct !== null ? ` · target ${view.targetUtilizationPct}%` : ""}`}
           />
-          {approvalsCount !== null && <KpiTile label="Ready for you" value={String(approvalsCount)} note="Timesheets waiting on you" />}
+          {approvalsCount !== null && <KpiTile variant="header" label="Ready for you" value={String(approvalsCount)} note="Timesheets waiting on you" />}
           {notSubmitted && (
             <KpiTile
+              variant="header"
               label="Not submitted"
               value={String(notSubmitted.count)}
               tone={notSubmitted.count > 0 ? "orange" : "default"}
               note={notSubmitted.weekLabel}
             />
           )}
-        </section>
-        <nav aria-label="Time sections" className="border-b border-line">
-          <ul className="m-0 flex list-none gap-6 overflow-x-auto overflow-y-hidden p-0">
+        </HeaderKpis>
+        <nav aria-label="Time sections" className={headerTabBarClasses}>
+          <ul className={tabRowClasses}>
             {tabs.map((x) => (
               <li key={x.key}>
                 <Link
                   href={x.href}
                   aria-current={tab === x.key ? "page" : undefined}
-                  className={cn(
-                    "block border-b-2 px-1 pt-3 pb-2.5 text-base whitespace-nowrap no-underline",
-                    tab === x.key ? "border-ink font-semibold text-ink" : "border-transparent text-ink-3 hover:text-ink",
-                  )}
+                  className={tabClasses(tab === x.key)}
                 >
                   {x.label}
-                  {x.count !== null && <span className="num ml-2 text-2xs font-medium text-muted">{x.count}</span>}
+                  {x.count !== null && <span className={tabCountClasses}>{x.count}</span>}
                 </Link>
               </li>
             ))}
           </ul>
         </nav>
-      </div>
+      </PageHeader>
     </>
   );
 }

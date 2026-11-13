@@ -185,7 +185,7 @@ export function UsersSection({
         aria-label="People"
         className="relative overflow-x-auto rounded-sm border border-line bg-surface"
       >
-        <Table className="min-w-[760px]" wrapperClassName="overflow-visible">
+        <Table className="table-flush-top min-w-[760px]" wrapperClassName="overflow-visible">
           <TableHead>
             <TableRow>
               <TableHeader>Person</TableHeader>

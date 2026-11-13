@@ -28,6 +28,7 @@
   --color-line-input: #D4D4D4;   /* input + button borders */
   --color-line: #DCDCDC;         /* card + table borders */
   --color-line-soft: #EBEBEB;    /* row dividers, subtle fills */
+  --color-track: #E3E3E3;        /* filter-button tray, empty stepper bar */
   --color-canvas: #F2F2F2;       /* page background */
   --color-surface-2: #FAFAFA;    /* table header / zebra */
   --color-surface: #FFFFFF;      /* cards */
@@ -82,4 +83,12 @@
   body { background: var(--color-canvas); color: var(--color-ink); font-family: var(--font-sans); font-size: var(--text-base); }
   h1, h2, th, .cap { text-transform: uppercase; letter-spacing: 0.08em; }
   .num { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+  /* Table headers: a thin line above and below, as in the mockup. Small
+     tables nested inside a row (expanded detail) stay plain. */
+  :where(table:not(td table)) > thead > tr > th {
+    border-top: 1px solid var(--color-line);
+    border-bottom: 1px solid var(--color-line);
+  }
+  /* A table at the very top of a card: the card's border is the line above. */
+  .table-flush-top > thead > tr > th { border-top-width: 0; }
 }
