@@ -175,7 +175,7 @@ export function ProjectsPage({ view, initial }: { view: ProjectsView; initial: L
               <EmptyState title="You're not on any projects yet" help="Ask your project manager to add you." />
             )
           ) : (
-            <table className="w-full min-w-[1180px] border-collapse text-sm">
+            <table className="table-flush-top w-full min-w-[1180px] border-collapse text-sm">
               <thead className="bg-surface-2">
                 <tr>
                   <th scope="col" className={th}>No.</th>

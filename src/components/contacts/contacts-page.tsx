@@ -260,7 +260,7 @@ export function ContactsPage({
           </div>
         ) : tab === "companies" ? (
           <div className="overflow-x-auto rounded-sm border border-line bg-surface">
-            <table className="w-full min-w-[900px] border-collapse text-sm">
+            <table className="table-flush-top w-full min-w-[900px] border-collapse text-sm">
               <thead className="bg-surface-2">
                 <tr>
                   <th scope="col" className={th}>Company</th>
@@ -349,7 +349,7 @@ export function ContactsPage({
           </div>
         ) : (
           <div className="overflow-x-auto rounded-sm border border-line bg-surface">
-            <table className="w-full min-w-[900px] border-collapse text-sm">
+            <table className="table-flush-top w-full min-w-[900px] border-collapse text-sm">
               <thead className="bg-surface-2">
                 <tr>
                   {["Person", "Company", "Type", "Contact", "Tags"].map((h) => (

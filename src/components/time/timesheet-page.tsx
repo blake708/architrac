@@ -442,7 +442,7 @@ export function TimesheetPage({
 
         {/* Weekly grid */}
         <section aria-label="Weekly timesheet" className="overflow-x-auto rounded-sm border border-line bg-surface">
-          <table ref={tableRef} className="w-full min-w-[960px] table-fixed border-collapse">
+          <table ref={tableRef} className="table-flush-top w-full min-w-[960px] table-fixed border-collapse">
             <thead>
               <tr className="bg-surface-2">
                 <th scope="col" className={cn(th, "pr-2 pl-5 text-left")}>Project · phase · activity</th>

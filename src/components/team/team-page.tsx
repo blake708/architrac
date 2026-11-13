@@ -253,7 +253,7 @@ export function TeamPage({
               </div>
             ) : (
               <div className="overflow-x-auto rounded-sm border border-line bg-surface">
-                <table className="w-full min-w-[900px] border-collapse text-sm">
+                <table className="table-flush-top w-full min-w-[900px] border-collapse text-sm">
                   <thead className="bg-surface-2">
                     <tr>
                       {["Person", "Role · rate", "Team", "Week", "Utilization · 4 wks", "Access"].map((h, i) => (
