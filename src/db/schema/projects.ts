@@ -158,8 +158,12 @@ export const projectMembers = pgTable(
       .references(() => firms.id),
     projectId: uuid("project_id").notNull(),
     membershipId: uuid("membership_id").notNull(),
-    /** "PM", "Principal", "PA", "Designer". */
-    projectRole: text("project_role").notNull(),
+    /**
+     * Their billing role on this project. Defaults to their own role; a PM
+     * helping out can bill as a Designer here. Cost still comes from their pay.
+     */
+    firmRoleId: uuid("firm_role_id"),
+    /** Bill rate for this person on this project, over the role's. */
     billRateOverrideCents: bigint("bill_rate_override_cents", { mode: "number" }),
     ...timestamps,
     archivedAt: archivedAt(),
@@ -178,6 +182,11 @@ export const projectMembers = pgTable(
       name: "project_members_membership_same_firm_fk",
       columns: [t.firmId, t.membershipId],
       foreignColumns: [memberships.firmId, memberships.id],
+    }),
+    foreignKey({
+      name: "project_members_role_same_firm_fk",
+      columns: [t.firmId, t.firmRoleId],
+      foreignColumns: [firmRoles.firmId, firmRoles.id],
     }),
   ],
 );

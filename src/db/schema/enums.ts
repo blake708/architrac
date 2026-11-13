@@ -8,6 +8,9 @@ export const appRole = pgEnum("app_role", [
   "staff",
 ]);
 
+/** How a person is paid: an annual salary or an hourly wage. */
+export const payType = pgEnum("pay_type", ["salary", "hourly"]);
+
 export const employmentType = pgEnum("employment_type", [
   "full_time",
   "part_time",

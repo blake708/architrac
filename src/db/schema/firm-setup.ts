@@ -16,7 +16,7 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 import { archivedAt, id, timestamps } from "./columns";
-import { activityScope, feeType, scopeKind } from "./enums";
+import { activityScope, feeType, payType, scopeKind } from "./enums";
 import { firms } from "./firms";
 import { firmRoles, memberships, users } from "./people";
 
@@ -71,6 +71,46 @@ export const rates = pgTable(
     ),
     check(
       "rates_dates_order",
+      sql`${t.effectiveTo} is null or ${t.effectiveTo} >= ${t.effectiveFrom}`,
+    ),
+  ],
+);
+
+/**
+ * What a person is paid, effective-dated like rates. Their hourly cost is
+ * worked out from it (src/lib/calc/pay.ts) and replaces their role's cost
+ * rate. A person's periods never overlap (migration 0022). Owner/admin only.
+ */
+export const membershipPay = pgTable(
+  "membership_pay",
+  {
+    id: id(),
+    firmId: uuid("firm_id")
+      .notNull()
+      .references(() => firms.id),
+    membershipId: uuid("membership_id").notNull(),
+    payType: payType("pay_type").notNull(),
+    /** Annual salary (salary) or hourly wage (hourly). */
+    amountCents: bigint("amount_cents", { mode: "number" }).notNull(),
+    /** Taxes and benefits on top of pay, 2500 = 25%. */
+    burdenBp: integer("burden_bp").notNull().default(0),
+    effectiveFrom: date("effective_from").notNull(),
+    /** Last day this pay applies. Null = still current. */
+    effectiveTo: date("effective_to"),
+    createdBy: uuid("created_by").references(() => users.id),
+    ...timestamps,
+  },
+  (t): PgTableExtraConfigValue[] => [
+    index("membership_pay_membership_idx").on(t.firmId, t.membershipId),
+    foreignKey({
+      name: "membership_pay_membership_same_firm_fk",
+      columns: [t.firmId, t.membershipId],
+      foreignColumns: [memberships.firmId, memberships.id],
+    }),
+    check("membership_pay_amount_min", sql`${t.amountCents} >= 0`),
+    check("membership_pay_burden_range", sql`${t.burdenBp} between 0 and 20000`),
+    check(
+      "membership_pay_dates_order",
       sql`${t.effectiveTo} is null or ${t.effectiveTo} >= ${t.effectiveFrom}`,
     ),
   ],

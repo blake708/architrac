@@ -155,6 +155,20 @@
       "when": 1794457924499,
       "tag": "0021_invoice_emailed_at",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1794599447850,
+      "tag": "0022_person_pay",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1794599488156,
+      "tag": "0023_drop_project_role",
+      "breakpoints": true
     }
   ]
 }

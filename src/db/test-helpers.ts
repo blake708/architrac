@@ -52,6 +52,8 @@ export type TestFirm = {
   /** A "Designer" role ($115 bill / $44 cost from 2026-01-01). */
   firmRoleId: string;
   rateId: string;
+  /** The owner's pay ($104,000, 25% burden). Starts in 2099 so no other test's cost changes. */
+  payId: string;
   /** From the firm defaults (seed_firm_defaults). */
   phaseTemplateId: string;
   overheadCategoryId: string;
@@ -135,6 +137,10 @@ export async function createTestFirm(
       "insert into rates (firm_id, firm_role_id, bill_rate_cents, cost_rate_cents, effective_from) values ($1, $2, 11500, 4400, '2026-01-01') returning id",
       [firmId, firmRoleId],
     );
+    const pay = await c.query<{ id: string }>(
+      "insert into membership_pay (firm_id, membership_id, pay_type, amount_cents, burden_bp, effective_from) values ($1, $2, 'salary', 10400000, 2500, '2099-01-01') returning id",
+      [firmId, membershipId],
+    );
     const company = await c.query<{ id: string }>(
       "insert into companies (firm_id, name, kind) values ($1, $2, 'client') returning id",
       [firmId, `${label} Client Co`],
@@ -157,8 +163,8 @@ export async function createTestFirm(
       [firmId, projectId],
     );
     const member = await c.query<{ id: string }>(
-      "insert into project_members (firm_id, project_id, membership_id, project_role) values ($1, $2, $3, 'PM') returning id",
-      [firmId, projectId, membershipId],
+      "insert into project_members (firm_id, project_id, membership_id, firm_role_id) values ($1, $2, $3, $4) returning id",
+      [firmId, projectId, membershipId, firmRoleId],
     );
     const link = await c.query<{ id: string }>(
       "insert into project_contacts (firm_id, project_id, company_id, role) values ($1, $2, $3, 'Owner') returning id",
@@ -194,6 +200,7 @@ export async function createTestFirm(
       phaseRoleId: phaseRole.rows[0].id,
       firmRoleId,
       rateId: rate.rows[0].id,
+      payId: pay.rows[0].id,
       phaseTemplateId: await pick(
         "select id from phase_templates where firm_id = $1 and code = 'SD'",
       ),
@@ -230,6 +237,7 @@ export async function removeTestFirm(pool: Pool, firm: TestFirm) {
       await c.query(`delete from ${t} where firm_id = $1`, [firm.firmId]);
     await c.query("delete from contacts where firm_id = $1", [firm.firmId]);
     await c.query("delete from companies where firm_id = $1", [firm.firmId]);
+    await c.query("delete from membership_pay where firm_id = $1", [firm.firmId]);
     await c.query("delete from rates where firm_id = $1", [firm.firmId]);
     await c.query("delete from activities where firm_id = $1", [firm.firmId]);
     await c.query("delete from overhead_categories where firm_id = $1", [firm.firmId]);
@@ -258,6 +266,7 @@ export async function removeFirmById(pool: Pool, firmId: string) {
       await c.query(`delete from ${t} where firm_id = $1`, [firmId]);
     await c.query("delete from contacts where firm_id = $1", [firmId]);
     await c.query("delete from companies where firm_id = $1", [firmId]);
+    await c.query("delete from membership_pay where firm_id = $1", [firmId]);
     await c.query("delete from rates where firm_id = $1", [firmId]);
     await c.query("delete from activities where firm_id = $1", [firmId]);
     await c.query("delete from overhead_categories where firm_id = $1", [firmId]);

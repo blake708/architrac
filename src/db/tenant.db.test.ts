@@ -28,6 +28,7 @@ import {
   overheadCategories,
   phaseTemplates,
   rates,
+  membershipPay,
   teams,
   timeEntries,
   timesheetRows,
@@ -299,6 +300,34 @@ const cases: TableCase[] = [
       }),
   },
   {
+    table: "membership_pay",
+    visibleFirmIds: (db) =>
+      db
+        .select({ f: membershipPay.firmId })
+        .from(membershipPay)
+        .then((r) => r.map((x) => x.f)),
+    updateB: (db) =>
+      db
+        .update(membershipPay)
+        .set({ amountCents: 1 })
+        .where(eq(membershipPay.id, B.payId))
+        .returning(),
+    readB: (db) =>
+      db
+        .select({ v: membershipPay.amountCents })
+        .from(membershipPay)
+        .where(eq(membershipPay.id, B.payId))
+        .then((r) => r[0]?.v),
+    insertForB: (db) =>
+      db.insert(membershipPay).values({
+        firmId: B.firmId,
+        membershipId: B.membershipId,
+        payType: "hourly",
+        amountCents: 1,
+        effectiveFrom: "2030-01-01",
+      }),
+  },
+  {
     table: "phase_templates",
     visibleFirmIds: (db) =>
       db
@@ -468,17 +497,17 @@ const cases: TableCase[] = [
     updateB: (db) =>
       db
         .update(projectMembers)
-        .set({ projectRole: "hacked" })
+        .set({ billRateOverrideCents: 1 })
         .where(eq(projectMembers.id, B.projectMemberId))
         .returning(),
     readB: (db) =>
       db
-        .select({ v: projectMembers.projectRole })
+        .select({ v: projectMembers.billRateOverrideCents })
         .from(projectMembers)
         .where(eq(projectMembers.id, B.projectMemberId))
         .then((r) => r[0]?.v),
     insertForB: (db) =>
-      db.insert(projectMembers).values({ firmId: B.firmId, projectId: B.projectId, membershipId: B.membershipId, projectRole: "PA" }),
+      db.insert(projectMembers).values({ firmId: B.firmId, projectId: B.projectId, membershipId: B.membershipId }),
   },
   {
     table: "project_contacts",
@@ -984,7 +1013,7 @@ describe("other guards", () => {
     );
     await expectDbError(
       withFirm(A.firmId, (db) =>
-        db.insert(projectMembers).values({ firmId: A.firmId, projectId: A.projectId, membershipId: B.membershipId, projectRole: "PA" }),
+        db.insert(projectMembers).values({ firmId: A.firmId, projectId: A.projectId, membershipId: B.membershipId }),
       ),
       /foreign key/,
     );
