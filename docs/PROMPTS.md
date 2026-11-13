@@ -97,7 +97,7 @@ Implement every acceptance test. Update docs/DATA_MODEL.md if the schema changes
 | 1.6 | timesheet | Time |
 | 1.7 | timesheet-approval | Time |
 | 1.8 | invoicing | Accounting |
-| 1.9 | quickbooks-sync | (none — Settings → Integrations) |
+| R2 | quickbooks-sync (moved from 1.9, #33) | (none — Settings → Integrations) |
 | 1.10 | home | Home |
 
 Before 1.4, run this once:

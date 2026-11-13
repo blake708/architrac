@@ -179,7 +179,7 @@ Clerk's dashboard moves things around now and then. If a label below doesn't mat
 1. **Review the specs.** Read each file in `docs/specs/release-1/`. Correct anything that doesn't match how TMG works, and answer the **Open questions** at the bottom of each. Specs are cheap to change; code isn't.
 2. **Get a developer review.** Have a senior developer review the Release 0 code (database, RLS, auth, permissions) before you build on it. Send them `docs/ARCHITECTURE.md` and the GitHub repo.
 3. **Load demo data.** Use the seed prompt in `docs/PROMPTS.md` so every screen has realistic content.
-4. **Set up QuickBooks sandbox access** at developer.intuit.com (free) before milestone 1.9.
+4. **Set up QuickBooks sandbox access** at developer.intuit.com (free) before the QuickBooks sync (Release 2, decision #33).
 
 ---
 

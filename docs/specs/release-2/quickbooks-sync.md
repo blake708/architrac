@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Release** | 1 |
+| **Release** | 2 (moved from Release 1 milestone 1.9, decision #33; core, not the Accounting add-on) |
 | **Route** | `/app/settings/integrations` (card list) · `/app/settings/integrations/quickbooks` (`?tab=setup\|customers\|log`) · `/api/integrations/quickbooks/connect` · `/api/integrations/quickbooks/callback` · `/api/integrations/quickbooks/customers?q=` (combobox search) · `/api/cron/qbo-sync` (Vercel Cron, hourly) |
 | **Mockup** | `mockup/Settings.dc.html` (Integrations section, QuickBooks card), `mockup/Accounting.dc.html` (header line "SYNCED WITH QUICKBOOKS ONLINE · 6 MIN AGO") |
 | **Status** | Draft |
