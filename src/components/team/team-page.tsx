@@ -6,9 +6,10 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { PlusIcon, SearchIcon } from "@/components/ui/icons";
-import { KpiTile } from "@/components/ui/kpi-tile";
+import { HeaderKpis, KpiTile } from "@/components/ui/kpi-tile";
 import { PageHeader } from "@/components/ui/page-header";
-import { bodyTabBarClasses, bodyTabRowClasses, tabClasses, tabCountClasses } from "@/components/ui/tab-styles";
+import { segmentClasses, segmentGroupClasses } from "@/components/ui/segmented";
+import { headerTabBarClasses, tabClasses, tabCountClasses, tabRowClasses } from "@/components/ui/tab-styles";
 import { useToast } from "@/components/ui/toast";
 import { type Actor, assignableRoles } from "@/lib/auth/user-management";
 import { cn } from "@/lib/cn";
@@ -146,23 +147,25 @@ export function TeamPage({
             </>
           )
         }
-      />
-      <div className="flex flex-col gap-5 px-4 pt-6 pb-8 md:px-page-x">
-        <section aria-label="Team summary" className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3">
+      >
+        <HeaderKpis label="Team summary">
           <KpiTile
+            variant="header"
             label="People"
             value={view.kpis.people}
             note={view.kpis.invited > 0 ? `${view.kpis.invited} invited, not yet signed in` : "Everyone has signed in"}
           />
-          <KpiTile label="Teams" value={view.kpis.teams} note="Each with a leader who reviews time" />
+          <KpiTile variant="header" label="Teams" value={view.kpis.teams} note="Each with a leader who reviews time" />
           {isOwnerAdmin && (
             <>
               <KpiTile
+                variant="header"
                 label="Billable staff"
                 value={view.kpis.billableStaff}
                 note={`${formatWeekHours(view.kpis.billableCapacityHours ?? 0)} / week capacity`}
               />
               <KpiTile
+                variant="header"
                 label="Avg. multiplier"
                 value={formatMultiplier(view.kpis.avgMultiplierHundredths ?? null)}
                 note={
@@ -176,15 +179,16 @@ export function TeamPage({
               />
             </>
           )}
-        </section>
+        </HeaderKpis>
 
-        <div className={bodyTabBarClasses}>
-          <div role="tablist" aria-label="Team views" className={bodyTabRowClasses}>
+        <div className={headerTabBarClasses}>
+          <div role="tablist" aria-label="Team views" className={tabRowClasses}>
             {tabButton("people", "People", view.people.length)}
             {tabButton("teams", "Teams", view.teams.length)}
           </div>
         </div>
-
+      </PageHeader>
+      <div className="flex flex-col gap-5 px-4 pt-7 pb-8 md:px-page-x">
         {tab === "people" ? (
           <div className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-3">
@@ -199,7 +203,7 @@ export function TeamPage({
                   className="h-[var(--height-control)] w-full rounded-sm border border-line-input bg-surface pr-2.5 pl-8 text-base focus:outline-2 focus:-outline-offset-1 focus:outline-blue"
                 />
               </label>
-              <div role="group" aria-label="Filter by team" className="flex flex-wrap gap-1">
+              <div role="group" aria-label="Filter by team" className={segmentGroupClasses}>
                 {[
                   { id: "all", name: "All" },
                   ...view.teams.map((t) => ({ id: t.id, name: t.name })),
@@ -210,10 +214,7 @@ export function TeamPage({
                     type="button"
                     aria-pressed={team === f.id}
                     onClick={() => setTeam(f.id)}
-                    className={cn(
-                      "h-8 cursor-pointer rounded-sm border px-3 text-sm",
-                      team === f.id ? "border-ink bg-ink text-white" : "border-line-input bg-surface text-ink hover:bg-surface-2",
-                    )}
+                    className={segmentClasses(team === f.id)}
                   >
                     {f.name}
                   </button>

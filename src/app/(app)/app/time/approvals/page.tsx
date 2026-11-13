@@ -32,7 +32,7 @@ export default async function ApprovalsPage() {
           approvalsCount={queue.count}
           notSubmitted={shell.notSubmitted}
         />
-        <div className="flex flex-col gap-4 px-4 pt-5 pb-8 md:px-page-x">
+        <div className="flex flex-col gap-4 px-4 pt-7 pb-8 md:px-page-x">
           <ApprovalsViewSwitch view="queue" waiting={queue.count} weekHref={weekHref} />
           <ApprovalsQueueView queue={queue} weekHref={weekHref} />
         </div>

@@ -5,9 +5,10 @@ import { useEffect, useMemo, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PlusIcon, SearchIcon } from "@/components/ui/icons";
-import { KpiTile } from "@/components/ui/kpi-tile";
+import { HeaderKpis, KpiTile } from "@/components/ui/kpi-tile";
 import { PageHeader } from "@/components/ui/page-header";
-import { bodyTabBarClasses, bodyTabRowClasses, tabClasses, tabCountClasses } from "@/components/ui/tab-styles";
+import { segmentClasses, segmentGroupClasses } from "@/components/ui/segmented";
+import { headerTabBarClasses, tabClasses, tabCountClasses, tabRowClasses } from "@/components/ui/tab-styles";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/cn";
 import {
@@ -166,37 +167,40 @@ export function ContactsPage({
             </>
           )
         }
-      />
-      <div className="flex flex-col gap-5 px-4 pt-6 pb-8 md:px-page-x">
-        <section aria-label="Contacts summary" className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-3">
+      >
+        <HeaderKpis label="Contacts summary">
           <KpiTile
+            variant="header"
             label="Companies"
             value={view.kpis.companies}
             note={`${view.kpis.clients} ${view.kpis.clients === 1 ? "client" : "clients"} · ${view.kpis.consultants} ${view.kpis.consultants === 1 ? "consultant" : "consultants"}`}
           />
-          <KpiTile label="People" value={view.kpis.people} note="Across all companies" />
+          <KpiTile variant="header" label="People" value={view.kpis.people} note="Across all companies" />
           {view.kpis.openClients !== undefined && (
             <KpiTile
+              variant="header"
               label="Clients with open balances"
               value={view.kpis.openClients}
               note={`${formatMoney(view.kpis.openCents ?? 0)} outstanding`}
             />
           )}
           <KpiTile
+            variant="header"
             label="Missing billing contact"
             value={view.kpis.missingBilling}
             tone={view.kpis.missingBilling > 0 ? "orange" : "default"}
             note="Invoices to these clients can't be emailed"
           />
-        </section>
+        </HeaderKpis>
 
-        <div className={bodyTabBarClasses}>
-          <div role="tablist" aria-label="Contact views" className={bodyTabRowClasses}>
+        <div className={headerTabBarClasses}>
+          <div role="tablist" aria-label="Contact views" className={tabRowClasses}>
             {tabButton("companies", "Companies", view.companies.length)}
             {tabButton("people", "People", view.contacts.length)}
           </div>
         </div>
-
+      </PageHeader>
+      <div className="flex flex-col gap-5 px-4 pt-7 pb-8 md:px-page-x">
         <div className="flex flex-wrap items-center gap-3">
           <label className="relative flex-[0_1_300px]">
             <span className="sr-only">Search</span>
@@ -209,17 +213,14 @@ export function ContactsPage({
               className="h-[var(--height-control)] w-full rounded-sm border border-line-input bg-surface pr-2.5 pl-8 text-base focus:outline-2 focus:-outline-offset-1 focus:outline-blue"
             />
           </label>
-          <div role="group" aria-label="Filter by type" className="flex flex-wrap gap-1">
+          <div role="group" aria-label="Filter by type" className={segmentGroupClasses}>
             {(["all", ...kindsShown] as KindFilter[]).map((k) => (
               <button
                 key={k}
                 type="button"
                 aria-pressed={kind === k}
                 onClick={() => setKind(k)}
-                className={cn(
-                  "h-8 cursor-pointer rounded-sm border px-3 text-sm",
-                  kind === k ? "border-ink bg-ink text-white" : "border-line-input bg-surface text-ink hover:bg-surface-2",
-                )}
+                className={segmentClasses(kind === k)}
               >
                 {k === "all" ? "All" : KIND_FILTER_LABELS[k]}
               </button>

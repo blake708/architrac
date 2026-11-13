@@ -405,7 +405,7 @@ export function TimesheetPage({
   return (
     <main>
       <TimeHeader view={view} tab="mine" historyCount={historyCount} approvalsCount={approvalsCount} />
-      <div className="flex flex-col gap-4 px-4 pt-5 pb-8 md:px-page-x">
+      <div className="flex flex-col gap-4 px-4 pt-7 pb-8 md:px-page-x">
         {/* Week heading */}
         <h2 className="m-0 text-xl leading-tight font-semibold">{weekTitle(view.weekStart)}</h2>
 

@@ -1,8 +1,8 @@
 import Link from "next/link";
 import { buttonClasses } from "@/components/ui/button";
-import { KpiTile } from "@/components/ui/kpi-tile";
+import { HeaderKpis, KpiTile } from "@/components/ui/kpi-tile";
 import { PageHeader } from "@/components/ui/page-header";
-import { bodyTabBarClasses, bodyTabRowClasses, tabClasses, tabCountClasses } from "@/components/ui/tab-styles";
+import { headerTabBarClasses, tabClasses, tabCountClasses, tabRowClasses } from "@/components/ui/tab-styles";
 import { addDays, weekTotals } from "@/lib/calc/timesheet";
 import { cn } from "@/lib/cn";
 import { formatHours } from "@/lib/format";
@@ -84,10 +84,10 @@ export function TimeHeader({
       <PageHeader
         eyebrow={approvalsCount !== null ? "TIMESHEETS · APPROVALS · HISTORY" : "TIMESHEETS · HISTORY"}
         title="Time"
-      />
-      <div className="flex flex-col gap-5 px-4 pt-6 md:px-page-x">
-        <section aria-label="This week" className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))] gap-3">
+      >
+        <HeaderKpis label="This week">
           <KpiTile
+            variant="header"
             label="This week"
             value={`${formatHours(t.weekTotal)} h`}
             note={
@@ -99,22 +99,24 @@ export function TimeHeader({
             }
           />
           <KpiTile
+            variant="header"
             label="Billable"
             value={`${t.billablePct}%`}
             note={`${formatHours(t.billable)} billable hours${view.targetUtilizationPct !== null ? ` · target ${view.targetUtilizationPct}%` : ""}`}
           />
-          {approvalsCount !== null && <KpiTile label="Ready for you" value={String(approvalsCount)} note="Timesheets waiting on you" />}
+          {approvalsCount !== null && <KpiTile variant="header" label="Ready for you" value={String(approvalsCount)} note="Timesheets waiting on you" />}
           {notSubmitted && (
             <KpiTile
+              variant="header"
               label="Not submitted"
               value={String(notSubmitted.count)}
               tone={notSubmitted.count > 0 ? "orange" : "default"}
               note={notSubmitted.weekLabel}
             />
           )}
-        </section>
-        <nav aria-label="Time sections" className={bodyTabBarClasses}>
-          <ul className={bodyTabRowClasses}>
+        </HeaderKpis>
+        <nav aria-label="Time sections" className={headerTabBarClasses}>
+          <ul className={tabRowClasses}>
             {tabs.map((x) => (
               <li key={x.key}>
                 <Link
@@ -129,7 +131,7 @@ export function TimeHeader({
             ))}
           </ul>
         </nav>
-      </div>
+      </PageHeader>
     </>
   );
 }

@@ -23,7 +23,7 @@ export default async function TimeHistoryPage({ searchParams }: { searchParams: 
   return (
     <main>
       <TimeHeader view={view} tab="history" historyCount={history.total} approvalsCount={approvals} />
-      <div className="flex flex-col gap-4 px-4 pt-5 pb-8 md:px-page-x">
+      <div className="flex flex-col gap-4 px-4 pt-7 pb-8 md:px-page-x">
         <TimeHistory weeks={history.weeks} hasMore={history.hasMore} nextShow={show + 26} />
       </div>
     </main>

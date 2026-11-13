@@ -16,18 +16,13 @@ export function tabClasses(current: boolean, className?: string) {
   );
 }
 
-/** The row of tabs. Its first label lines up with the page's left edge. */
+/** The row of tabs. */
 export const tabRowClasses =
   "m-0 flex list-none gap-1.5 overflow-x-auto overflow-y-hidden p-0";
 
 /** A tab bar inside the white page-header band, under a thin rule. */
 export const headerTabBarClasses =
   "border-t border-line-soft px-1 pt-1 md:px-[calc(var(--spacing-page-x)-12px)]";
-
-/** A tab bar in the page body: a rule under it, and the row pulled left
- *  so the first label lines up with the content above. */
-export const bodyTabBarClasses = "border-b border-line";
-export const bodyTabRowClasses = cn(tabRowClasses, "-ml-3");
 
 /** The small count after a tab's label. */
 export const tabCountClasses =
