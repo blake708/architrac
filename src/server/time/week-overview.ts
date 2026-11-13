@@ -19,7 +19,8 @@ import { addDays, isWeekend, weekDates, weekStartOf, zonedInstant } from "@/lib/
 import { todayIn } from "@/lib/format";
 import { dayTimeLabel } from "@/lib/time/approval";
 import { weekRange } from "@/lib/time/display";
-import { type ApprovalAccess, type ApprovalActor, loadRateBook } from "./approval";
+import { type ApprovalAccess, type ApprovalActor } from "./approval";
+import { loadRateBook } from "./rate-book";
 import { type Person, peopleFor, publicPerson, reviewsFor } from "./approval-read";
 
 // Time → Approvals → Week overview (timesheet-approval spec, Layout 4 and
@@ -173,11 +174,11 @@ export async function loadWeekOverview(
 
   const entries = sheets.length
     ? await db
-        .select({ timesheetId: timeEntries.timesheetId, workDate: timeEntries.workDate, hours: timeEntries.hours, billable: timeEntries.billable })
+        .select({ timesheetId: timeEntries.timesheetId, projectId: timeEntries.projectId, workDate: timeEntries.workDate, hours: timeEntries.hours, billable: timeEntries.billable })
         .from(timeEntries)
         .where(and(inArray(timeEntries.timesheetId, sheets.map((s) => s.id)), isNull(timeEntries.archivedAt)))
     : [];
-  const rateOf = await loadRateBook(db, [...people.values()]);
+  const { rateOf } = await loadRateBook(db, [...people.values()], entries.map((e) => e.projectId));
   const reminded = await recentReminders(db, weekStart, now);
   const nudged = await recentNudges(db, now);
   const me = { membershipId: actor.membershipId, isActivePrincipal: access.isPrincipal };
@@ -207,7 +208,7 @@ export async function loadWeekOverview(
     const es = sheet ? entries.filter((e) => e.timesheetId === sheet.id) : [];
     const total = es.reduce((a, e) => a + Number(e.hours), 0);
     const billable = es.filter((e) => e.billable).reduce((a, e) => a + Number(e.hours), 0);
-    const missingRates = es.filter((e) => !rateOf(p.membershipId, p.firmRoleId, e.workDate)).map((e) => e.workDate);
+    const missingRates = es.filter((e) => !rateOf(p.membershipId, p.firmRoleId, e.workDate, e.projectId)).map((e) => e.workDate);
     const flags = sheet
       ? timesheetFlags({ total, capacity: p.capacity, missingRateDates: missingRates, showRateDates: access.ownerAdmin })
       : [];

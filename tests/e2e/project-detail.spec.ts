@@ -72,9 +72,9 @@ test.beforeAll(async () => {
         ) as v(code, name, ord, ft, fee, hours, status, pct, ends)
         returning 1
       )
-      insert into project_members (firm_id, project_id, membership_id, project_role)
-      select :firm, p.id, m.id, m.role from p,
-        (values (${owner}, 'Principal'), (${pm}, 'PM'), (${membership(PEOPLE.thStaff.email)}, 'Designer')) as m(id, role)
+      insert into project_members (firm_id, project_id, membership_id)
+      select :firm, p.id, m.id from p,
+        (values (${owner}), (${pm}), (${membership(PEOPLE.thStaff.email)})) as m(id)
       where (select count(*) from ph) > 0 and (select count(*) from ravi) > 0 and (select count(*) from gc) > 0
     `);
   }
@@ -102,6 +102,11 @@ test.beforeAll(async () => {
       where firm_id = :firm and (select count(*) from rt) > 0 and (select count(*) from opt) > 0
     `);
   }
+  // Team rows take each person's own role.
+  await query(`
+    update project_members pm set firm_role_id = m.firm_role_id
+    from memberships m where m.id = pm.membership_id and pm.firm_id = :firm and pm.firm_role_id is null
+  `);
   const [p] = await query<{ id: string }>("select id from projects where firm_id = :firm and number = '2026-014'");
   projectId = p.id;
 });
@@ -221,12 +226,16 @@ test.describe("owner", () => {
     await page.getByRole("button", { name: "Add person" }).click();
     const d = page.getByRole("dialog", { name: "Add person" });
     await d.getByLabel("Person *").selectOption({ label: "Abe Pratt" });
-    await d.getByLabel("Project role *").selectOption("Interior designer");
+    // Their own role is picked for them; here they bill as a Principal.
+    const role = d.getByLabel("Role on this project *");
+    await expect(role.locator("option:checked")).toHaveText("Designer (their role)");
+    await role.selectOption({ label: "Principal" });
+    await expect(d).toContainText("Their own role is Designer; their cost doesn't change.");
     await d.getByLabel("Bill rate override ($/h)").fill("185");
     await d.getByRole("button", { name: "Add person" }).click();
     await expect(toast(page)).toHaveText("Abe Pratt added");
     const abe = team.locator('li[data-member="Abe Pratt"]');
-    await expect(abe).toContainText("AP · Interior designer");
+    await expect(abe).toContainText("AP · Principal");
     await expect(abe).toContainText("Rate override $185/h");
 
     const outside = page.getByRole("list", { name: "Client and consultants" });

@@ -329,9 +329,9 @@ export function RatesForm({ initial }: { initial: RatesView }) {
             Roles &amp; hourly rates
           </h2>
           <span className="text-[12.5px] text-muted">
-            Bill rate is what clients pay on hourly work. Cost rate is salary
-            plus burden, used for profit and P&amp;L. Changes apply to time
-            logged from the effective date.
+            Bill rate is what clients pay on hourly work. Cost rate is used for
+            profit and P&amp;L for anyone without pay entered on the Team page.
+            Changes apply to time logged from the effective date.
           </span>
         </header>
         {view.roles.length === 0 ? (

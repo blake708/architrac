@@ -174,6 +174,36 @@ test.describe("managing people", () => {
     await expect(panel).toContainText("(843) 555-0199");
     await expect(panel).toContainText("Principal · final timesheet approval");
   });
+
+  test("pay: the owner enters a salary and the cost follows", async ({ page }) => {
+    // A retry starts from no pay.
+    await query("delete from membership_pay where firm_id = :firm");
+    await signInAs(page, "epsOwner", "/app/team");
+    await personRow(page, "Kim Lee").click();
+    const panel = page.getByRole("dialog", { name: "Kim Lee" });
+    await expect(panel).toContainText("No pay entered. Their role's cost rate is used.");
+    await expect(panel).toContainText("$115 bill / $44 cost");
+
+    await panel.getByRole("button", { name: "Add pay" }).click();
+    await panel.getByLabel("Annual salary ($)").fill("70,200");
+    await panel.getByLabel("Burden (%)").fill("25");
+    await panel.getByLabel("Starts on").fill("2026-01-01");
+    // $70,200 ÷ (40 h × 52) × 1.25
+    await expect(panel).toContainText("$42.19 / h cost");
+    await panel.getByRole("button", { name: "Save pay" }).click();
+    await expect(toast(page)).toHaveText("Pay saved");
+    await expect(panel).toContainText("$70,200 / yr · 25% burden");
+    await expect(panel).toContainText("$115 bill / $42 cost");
+  });
+
+  test("pay: staff never see it, not even their own", async ({ page }) => {
+    await signInAs(page, "epsStaff", "/app/team");
+    await personRow(page, "Kim Lee").click();
+    const own = page.getByRole("dialog", { name: "Kim Lee" });
+    await expect(own).toBeVisible();
+    await expect(own).not.toContainText("Pay");
+    await expect(own).not.toContainText("$");
+  });
 });
 
 test.describe("teams", () => {

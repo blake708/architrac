@@ -25,7 +25,7 @@ Uses the Settings frame from `release-0/settings-firm.md` (page-header band with
 | Group | Section | Route | Eyebrow | Title | Description (exact copy) |
 |---|---|---|---|---|---|
 | Work | Phases & fees | `/app/settings/phases` | WORK | Phases & fees | The phases every new project starts with and how the fee splits across them. |
-| Work | Roles & rates | `/app/settings/rates` | WORK | Roles & rates | Each role's bill rate (what clients pay on hourly work) and cost rate (salary plus burden), plus the firm's overhead rate. Used by Time, Accounting, Reports and project profit. |
+| Work | Roles & rates | `/app/settings/rates` | WORK | Roles & rates | Each role's bill rate (what clients pay on hourly work) and cost rate (used when a person has no pay entered on the Team page, ADR 0008), plus the firm's overhead rate. Used by Time, Accounting, Reports and project profit. |
 | Work | Time & approvals | `/app/settings/time` | WORK | Time & approvals | When timesheets are due, how hours are entered, and who approves them. |
 
 Each section is one form with one Save changes (all-or-nothing, one DB transaction). **Changed 2026-11-02 (Blake): instant saving.** Phases & fees keeps Save changes (shares must total 100%). Roles & rates keeps it for the rates table (each change needs an effective date); the overhead rate, the include-overhead switch and "Use {calc}%" save straight away. Time & approvals has no Save button: every add, remove and rename saves straight away.
@@ -46,7 +46,7 @@ Each section is one form with one Save changes (all-or-nothing, one DB transacti
 
 **B. Roles & rates** — column, gap 16px, max-width 1040px:
 1. **KPI strip** (white card, grid `repeat(auto-fit, minmax(200px,1fr))`, cells padding 16px 20px 18px, right border `#EBEBEB`): label (11px/600 uppercase), value (22px/500, tabular numbers), note (12.5px `#666666`). Four tiles in order: Blended bill rate, Avg. multiplier, Roles flagged, Breakeven (formulas in Business rules 3–6).
-2. **Roles & hourly rates** card (`overflow-x:auto`, table `min-width:820px`). Title "Roles & hourly rates" + hint "Bill rate is what clients pay on hourly work. Cost rate is salary plus burden, used for profit and P&L. Changes apply to time logged from the effective date." Columns:
+2. **Roles & hourly rates** card (`overflow-x:auto`, table `min-width:820px`). Title "Roles & hourly rates" + hint "Bill rate is what clients pay on hourly work. Cost rate is used for profit and P&L for anyone without pay entered on the Team page. Changes apply to time logged from the effective date." Columns:
    - **Role**: name (500) with description under it (12px `#666666`).
    - **People** (right, Plex Mono 12.5px).
    - **Bill rate / h** (right): "$" + number input 70×32 `min 0 step 5`, visually-hidden label "{role} bill rate". For non-billable roles: text "Not billable" (12.5px `#666666`).

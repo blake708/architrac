@@ -5,6 +5,8 @@ import {
   companies,
   consultants,
   contacts,
+  firmRoles,
+  memberships,
   projectContacts,
   projectMembers,
   projects,
@@ -91,17 +93,20 @@ async function editable(db: TenantDb, actor: SettingsActor, projectId: string) {
   return p;
 }
 
-async function ensureMember(db: TenantDb, actor: SettingsActor, projectId: string, membershipId: string, role: string) {
+/** A new PM or principal joins the team with their own role (ADR 0008). */
+async function ensureMember(db: TenantDb, actor: SettingsActor, projectId: string, membershipId: string) {
   const [row] = await db
     .select({ id: projectMembers.id })
     .from(projectMembers)
     .where(and(eq(projectMembers.projectId, projectId), eq(projectMembers.membershipId, membershipId), isNull(projectMembers.archivedAt)));
   if (row) return;
+  const [me] = await db.select({ firmRoleId: memberships.firmRoleId }).from(memberships).where(eq(memberships.id, membershipId));
+  const firmRoleId = me?.firmRoleId ?? null;
   const [added] = await db
     .insert(projectMembers)
-    .values({ firmId: actor.firmId, projectId, membershipId, projectRole: role })
+    .values({ firmId: actor.firmId, projectId, membershipId, firmRoleId })
     .returning({ id: projectMembers.id });
-  await log(db, actor, "project_member", added.id, "created", { membershipId, projectRole: role });
+  await log(db, actor, "project_member", added.id, "created", { membershipId, firmRoleId });
 }
 
 // ---------- Edit project ----------
@@ -148,9 +153,9 @@ export async function updateProjectCore(actor: SettingsActor, raw: unknown, time
       await db.update(projects).set(after).where(eq(projects.id, id));
 
       // A new PM or principal joins the team; the old one stays a member.
-      if (v.pmMembershipId !== before.pmMembershipId) await ensureMember(db, actor, id, v.pmMembershipId, "PM");
+      if (v.pmMembershipId !== before.pmMembershipId) await ensureMember(db, actor, id, v.pmMembershipId);
       if (v.principalMembershipId !== before.principalMembershipId)
-        await ensureMember(db, actor, id, v.principalMembershipId, "Principal");
+        await ensureMember(db, actor, id, v.principalMembershipId);
 
       await log(db, actor, "project", id, changes.status ? "status_changed" : "updated", changes);
     });
@@ -173,13 +178,18 @@ export async function saveMemberCore(actor: SettingsActor, raw: unknown): Promis
   try {
     const id = await withFirm(actor.firmId, async (db) => {
       await editable(db, actor, v.projectId);
+      const [role] = await db
+        .select({ id: firmRoles.id })
+        .from(firmRoles)
+        .where(and(eq(firmRoles.id, v.firmRoleId), isNull(firmRoles.archivedAt)));
+      if (!role) throw new Refused(PROJECT_MESSAGES.badRole, "firmRoleId");
       if (v.id) {
         const [before] = await db
           .select()
           .from(projectMembers)
           .where(and(eq(projectMembers.id, v.id), eq(projectMembers.projectId, v.projectId), isNull(projectMembers.archivedAt)));
         if (!before) throw new Refused(PROJECT_MESSAGES.notFound);
-        const after: Record<string, unknown> = { projectRole: v.projectRole };
+        const after: Record<string, unknown> = { firmRoleId: v.firmRoleId };
         if (v.billRateOverrideCents !== undefined) after.billRateOverrideCents = v.billRateOverrideCents;
         const changes = diff(before as unknown as Record<string, unknown>, after);
         if (Object.keys(changes).length) {
@@ -201,11 +211,11 @@ export async function saveMemberCore(actor: SettingsActor, raw: unknown): Promis
           firmId: actor.firmId,
           projectId: v.projectId,
           membershipId: v.membershipId,
-          projectRole: v.projectRole,
+          firmRoleId: v.firmRoleId,
           billRateOverrideCents: v.billRateOverrideCents ?? null,
         })
         .returning({ id: projectMembers.id });
-      await log(db, actor, "project_member", row.id, "created", { membershipId: v.membershipId, projectRole: v.projectRole });
+      await log(db, actor, "project_member", row.id, "created", { membershipId: v.membershipId, firmRoleId: v.firmRoleId });
       return row.id;
     });
     return { ok: true, data: { id } };

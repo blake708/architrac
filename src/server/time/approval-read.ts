@@ -8,7 +8,8 @@ import { formatMoney } from "@/lib/format";
 import { initials as initialsFromName } from "@/lib/initials";
 import { type ReviewChip, dayTimeLabel, historyLine, reviewChips, shortWeekRange } from "@/lib/time/approval";
 import { weekRange } from "@/lib/time/display";
-import { type ApprovalAccess, type ApprovalActor, approvalAccess, loadRateBook } from "./approval";
+import { type ApprovalAccess, type ApprovalActor, approvalAccess } from "./approval";
+import { loadRateBook } from "./rate-book";
 import { loadRoute } from "./review";
 import { type ViewRow, loadWeek } from "./week";
 
@@ -180,11 +181,15 @@ export async function loadQueue(db: TenantDb, actor: ApprovalActor, access: Appr
   ]);
   const entries = mine.length
     ? await db
-        .select({ timesheetId: timeEntries.timesheetId, workDate: timeEntries.workDate, hours: timeEntries.hours, billable: timeEntries.billable })
+        .select({ timesheetId: timeEntries.timesheetId, projectId: timeEntries.projectId, workDate: timeEntries.workDate, hours: timeEntries.hours, billable: timeEntries.billable })
         .from(timeEntries)
         .where(and(inArray(timeEntries.timesheetId, mine.map((s) => s.id)), isNull(timeEntries.archivedAt)))
     : [];
-  const rateOf = await loadRateBook(db, mine.map((s) => people.get(s.membershipId)!));
+  const { rateOf } = await loadRateBook(
+    db,
+    mine.map((s) => people.get(s.membershipId)!),
+    entries.map((e) => e.projectId),
+  );
   // Full names in the table (Blake, 2026-11-10): "Also waiting on Pat Dunn".
   const fullName = (id: string) => people.get(id)?.name ?? "someone";
 
@@ -195,7 +200,7 @@ export async function loadQueue(db: TenantDb, actor: ApprovalActor, access: Appr
     const days = dates.map((d) => mineEntries.filter((e) => e.workDate === d).reduce((a, e) => a + Number(e.hours), 0));
     const total = mineEntries.reduce((a, e) => a + Number(e.hours), 0);
     const billable = mineEntries.filter((e) => e.billable).reduce((a, e) => a + Number(e.hours), 0);
-    const missing = mineEntries.filter((e) => !rateOf(p.membershipId, p.firmRoleId, e.workDate)).map((e) => e.workDate);
+    const missing = mineEntries.filter((e) => !rateOf(p.membershipId, p.firmRoleId, e.workDate, e.projectId)).map((e) => e.workDate);
     const flags = timesheetFlags({ total, capacity: p.capacity, missingRateDates: missing, showRateDates: access.ownerAdmin });
     return {
       timesheetId: s.id,
@@ -284,6 +289,7 @@ export async function loadApprovalDetail(
   const entries = await db
     .select({
       rowId: timeEntries.timesheetRowId,
+      projectId: timeEntries.projectId,
       workDate: timeEntries.workDate,
       hours: timeEntries.hours,
       billable: timeEntries.billable,
@@ -296,10 +302,10 @@ export async function loadApprovalDetail(
   const billable = entries.filter((e) => e.billable).reduce((a, e) => a + Number(e.hours), 0);
 
   // Frozen rates once approved, else the lookup preview.
-  const rateOf = await loadRateBook(db, [p]);
+  const { rateOf } = await loadRateBook(db, [p], entries.map((e) => e.projectId));
   const perEntry = entries.map((e) => {
     if (sheet.status === "approved" && e.bill !== null && e.cost !== null) return { ...e, rate: { billRateCents: e.bill, costRateCents: e.cost } };
-    const r = rateOf(p.membershipId, p.firmRoleId, e.workDate);
+    const r = rateOf(p.membershipId, p.firmRoleId, e.workDate, e.projectId);
     return { ...e, rate: r ? { billRateCents: r.billRateCents, costRateCents: r.costRateCents } : null };
   });
   const missing = perEntry.filter((e) => !e.rate).map((e) => e.workDate);

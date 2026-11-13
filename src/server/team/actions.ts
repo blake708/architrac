@@ -10,6 +10,7 @@ import {
   saveTeamCore,
   teamInviteCore,
 } from "./team";
+import { savePayCore } from "./pay";
 
 // Team page server actions (team spec, Actions). Who is asking comes from the
 // session; each *Core checks owner/admin before doing anything. Access level,
@@ -34,6 +35,10 @@ export async function movePerson(input: unknown) {
 
 export async function saveTeam(input: unknown) {
   return saveTeamCore(await actor(), input);
+}
+
+export async function savePay(input: unknown) {
+  return savePayCore(await actor(), input);
 }
 
 export async function archiveTeam(teamId: unknown) {

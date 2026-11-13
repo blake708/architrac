@@ -55,7 +55,7 @@ export const SETTINGS_SECTIONS: readonly SettingsSection[] = [
     href: "/app/settings/rates",
     title: "Roles & rates",
     description:
-      "Each role's bill rate (what clients pay on hourly work) and cost rate (salary plus burden), plus the firm's overhead rate. Used by Time, Accounting, Reports and project profit.",
+      "Each role's bill rate (what clients pay on hourly work) and cost rate (used when a person has no pay entered on the Team page), plus the firm's overhead rate. Used by Time, Accounting, Reports and project profit.",
     hasSave: true,
   },
   {

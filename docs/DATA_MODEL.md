@@ -158,7 +158,25 @@ Effective-dated so old time keeps the rate in force when it was worked.
 
 Constraints (1.1): one role's (or one person's) periods never overlap (`EXCLUDE USING gist`, needs `btree_gist`); `effective_to ≥ effective_from`; amounts ≥ 0. A change from date D closes the current row on D − 1 and inserts a new one (settings-rates-phases rule 8).
 
-**Rate lookup rule:** for a time entry on date D for person P: person override effective on D → else their role's rate effective on D → else error (block approval).
+**Rate lookup rule** (ADR 0008, `resolveRate`): for a time entry on date D for person P on project X:
+- **Bill:** P's `project_members.bill_rate_override_cents` on X → the rate of P's role on X (`project_members.firm_role_id`) effective on D → P's person override → P's own role.
+- **Cost:** P's pay effective on D (`membership_pay`) → P's person override → P's own role.
+- Either missing → error (block approval). The role frozen on the entry is P's role on X, else their own.
+
+### membership_pay  (Team drawer → Pay, ADR 0008; owner/admin only)
+Effective-dated like rates. A person's hourly cost is worked out from it and replaces their role's cost rate.
+| column | type | notes |
+|---|---|---|
+| id, firm_id | | |
+| membership_id | uuid fk | same-firm composite FK |
+| pay_type | enum pay_type | `salary` | `hourly` |
+| amount_cents | bigint | annual salary, or hourly wage |
+| burden_bp | integer | taxes and benefits on top, 0–20000 (2500 = 25%) |
+| effective_from | date | |
+| effective_to | date null | null = current |
+| created_by, created_at, updated_at | | |
+
+Constraints: one person's periods never overlap (`EXCLUDE USING gist`); dates in order; amount ≥ 0. A change from date D closes the current row on D − 1 and inserts a new one, like rates. Cost/hour: salary ÷ (weekly hours × 52) × (1 + burden), or wage × (1 + burden), rounded half up (`hourlyCostCents`). The activity log says pay changed, never the amounts.
 
 ### phase_templates  (Settings → Phases & fees)
 Firm's standard phase list. Default phases are copied to every new project; optional phases are offered when adding a phase to a project.
@@ -292,7 +310,9 @@ The backbone: time, budgets, invoices and the snapshot all hang off this.
 Phase budget hours = Σ role hours unless `budget_hours_manual`. A phase with no mix uses the firm's blended bill rate. Changing a phase's fee recalculates its role hours at that day's rates (Blake, 2026-11-03).
 
 ### project_members
-| id, firm_id, project_id, membership_id | project_role text ("PM", "Principal", "PA", "Designer") | bill_rate_override_cents null | archived_at; one active row per person per project |
+| id, firm_id, project_id, membership_id | firm_role_id uuid fk null (their billing role on this project; defaults to their own role, ADR 0008) | bill_rate_override_cents null | archived_at; one active row per person per project |
+
+`project_role` (free text) was replaced by `firm_role_id` in migrations 0022–0023. PM and Principal labels come from `projects.pm_membership_id` / `principal_membership_id`.
 
 ### project_contacts  (contractors, agencies, vendors on a project)
 | id, firm_id, project_id, company_id | contact_id null | role text null ("General contractor") | archived_at |

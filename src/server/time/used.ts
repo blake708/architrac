@@ -1,7 +1,7 @@
 import { and, eq, inArray, isNotNull, isNull, sql } from "drizzle-orm";
-import { memberships, rates, timeEntries, timesheets } from "@/db/schema";
+import { memberships, timeEntries, timesheets } from "@/db/schema";
 import type { TenantDb } from "@/db/tenant";
-import { lookupRate } from "@/lib/calc/rates";
+import { loadRateBook } from "./rate-book";
 
 // Logged time, for the screens that read it (project page, projects list,
 // snapshot, Settings). Every non-archived entry counts, drafts included
@@ -54,8 +54,8 @@ export async function hoursByCategory(db: TenantDb): Promise<Map<string, number>
 
 /**
  * Hours per phase, person and cost rate on one project, for the snapshot:
- * the rate frozen at approval, else the rate in force on the work date
- * (person override, then their role). Null = no rate (counts hours, no cost).
+ * the rate frozen at approval, else the rate book's cost on the work date
+ * (their pay, else their role; ADR 0008). Null = no rate (counts hours, no cost).
  * Owner/admin only: callers check financials.view first.
  */
 export async function costedHours(db: TenantDb, projectId: string) {
@@ -73,17 +73,11 @@ export async function costedHours(db: TenantDb, projectId: string) {
     .innerJoin(memberships, eq(memberships.id, timesheets.membershipId))
     .where(and(eq(timeEntries.projectId, projectId), isNotNull(timeEntries.projectPhaseId), live));
   if (!rows.length) return [];
-  const rateRows = await db.select().from(rates);
+  const { rateOf } = await loadRateBook(db, rows, [projectId]);
   const grouped = new Map<string, { phaseId: string; membershipId: string; rateCents: number | null; hours: number }>();
   for (const r of rows) {
     const rateCents =
-      r.frozen ??
-      lookupRate(
-        rateRows.filter((x) => x.membershipId === r.membershipId),
-        rateRows.filter((x) => x.firmRoleId !== null && x.firmRoleId === r.firmRoleId),
-        r.workDate,
-      )?.costRateCents ??
-      null;
+r.frozen ?? rateOf(r.membershipId, r.firmRoleId, r.workDate, projectId)?.costRateCents ?? null;
     const key = `${r.phaseId}|${r.membershipId}|${rateCents}`;
     const g = grouped.get(key) ?? { phaseId: r.phaseId!, membershipId: r.membershipId, rateCents, hours: 0 };
     g.hours += Number(r.hours);

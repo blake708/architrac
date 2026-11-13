@@ -12,11 +12,9 @@ import { useToast } from "@/components/ui/toast";
 import { fmtHours } from "@/lib/calc/project-detail";
 import { KIND_LABELS, type CompanyKind } from "@/lib/contacts/form";
 import { formatMoney } from "@/lib/format";
-import { PROJECT_MESSAGES, PROJECT_ROLES, moneyInput, parseMoney } from "@/lib/projects/form";
+import { PROJECT_MESSAGES, moneyInput, parseMoney } from "@/lib/projects/form";
 import { addLink, removeLink, removeMember, saveMember } from "@/server/projects/actions";
 import type { CompanyChoice, LinkedCompany, ProjectPage, TeamMember } from "@/server/projects/page";
-
-const OTHER = "__other";
 
 /** Team tab (project-detail spec): firm team, then client and outside companies. */
 export function TeamTab({ p, linkable }: { p: ProjectPage; linkable: CompanyChoice[] }) {
@@ -52,7 +50,8 @@ export function TeamTab({ p, linkable }: { p: ProjectPage; linkable: CompanyChoi
                 <Avatar name={m.name} initials={m.initials} size="md" />
                 <span className="min-w-0 flex-1">
                   <span className="block font-medium">
-                    {m.initials} · {m.projectRole}
+                    {m.initials} · {m.roleName ?? "No role"}
+                    {m.isPrincipal ? " · Principal in charge" : m.isPm ? " · PM" : ""}
                   </span>
                   <span className="block text-xs text-muted">
                     {m.name}
@@ -227,19 +226,20 @@ function MemberDialog({
   onSaved: (message: string) => void;
 }) {
   const [pending, startTransition] = useTransition();
-  const known = row ? PROJECT_ROLES.includes(row.projectRole) : true;
   const [v, setV] = useState({
     membershipId: row?.membershipId ?? "",
-    role: row ? (known ? row.projectRole : OTHER) : "",
-    otherRole: row && !known ? row.projectRole : "",
+    firmRoleId: row?.firmRoleId ?? "",
     override: row?.rateOverrideCents != null ? moneyInput(row.rateOverrideCents) : "",
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const set = (x: Partial<typeof v>) => setV((s) => ({ ...s, ...x }));
-  const choices = (p.edit?.people ?? []).filter((x) => !p.team.some((m) => m.membershipId === x.membershipId));
+  const people = p.edit?.people ?? [];
+  const roles = p.edit?.roles ?? [];
+  const choices = people.filter((x) => !p.team.some((m) => m.membershipId === x.membershipId));
+  const ownRoleId = people.find((x) => x.membershipId === v.membershipId)?.firmRoleId ?? null;
+  const ownRole = roles.find((r) => r.id === ownRoleId)?.name;
 
   function save() {
-    const projectRole = v.role === OTHER ? v.otherRole : v.role;
     const override = v.override.trim() === "" ? null : parseMoney(v.override);
     if (p.canSetOverride && v.override.trim() !== "" && override === null)
       return setErrors({ billRateOverrideCents: "Enter an hourly rate" });
@@ -248,7 +248,7 @@ function MemberDialog({
         id: row?.id ?? null,
         projectId: p.id,
         membershipId: v.membershipId,
-        projectRole,
+        firmRoleId: v.firmRoleId,
         // Only owners and admins send a rate (PMs never see the field).
         ...(p.canSetOverride ? { billRateOverrideCents: override } : {}),
       });
@@ -274,7 +274,12 @@ function MemberDialog({
       >
         <div className="flex flex-col gap-4">
           {!row && (
-            <Select label="Person *" value={v.membershipId} error={errors.membershipId} onChange={(e) => set({ membershipId: e.target.value })}>
+            <Select label="Person *" value={v.membershipId} error={errors.membershipId} onChange={(e) => {
+                // Their own role is the default; it can be changed for this project.
+                const own = people.find((x) => x.membershipId === e.target.value)?.firmRoleId;
+                set({ membershipId: e.target.value, firmRoleId: own ?? "" });
+              }}
+            >
               <option value="">{choices.length ? "Choose…" : "Everyone is already on this project"}</option>
               {choices.map((c) => (
                 <option key={c.membershipId} value={c.membershipId}>
@@ -284,18 +289,25 @@ function MemberDialog({
               ))}
             </Select>
           )}
-          <div className="grid grid-cols-2 gap-4">
-            <Select label="Project role *" value={v.role} error={v.role === OTHER ? undefined : errors.projectRole} onChange={(e) => set({ role: e.target.value })}>
-              <option value="">Choose…</option>
-              {PROJECT_ROLES.map((r) => (
-                <option key={r} value={r}>{r}</option>
-              ))}
-              <option value={OTHER}>Other…</option>
-            </Select>
-            {v.role === OTHER && (
-              <Input label="Other role *" value={v.otherRole} maxLength={40} error={errors.projectRole} onChange={(e) => set({ otherRole: e.target.value })} />
-            )}
-          </div>
+          <Select
+            label="Role on this project *"
+            hint={
+              ownRole && v.firmRoleId && v.firmRoleId !== ownRoleId
+                ? `Bills at this role's rate here. Their own role is ${ownRole}; their cost doesn't change.`
+                : "Bills at this role's rate on this project."
+            }
+            value={v.firmRoleId}
+            error={errors.firmRoleId}
+            onChange={(e) => set({ firmRoleId: e.target.value })}
+          >
+            <option value="">Choose…</option>
+            {roles.map((r) => (
+              <option key={r.id} value={r.id}>
+                {r.name}
+                {r.id === ownRoleId ? " (their role)" : ""}
+              </option>
+            ))}
+          </Select>
           {p.canSetOverride && (
             <Input
               label="Bill rate override ($/h)"

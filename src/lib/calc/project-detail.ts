@@ -109,7 +109,7 @@ const FIELD_NAMES: Record<string, string> = {
   feeCents: "fee",
   budgetHours: "budget hours",
   percentCompleteBp: "% complete",
-  projectRole: "role",
+  firmRoleId: "role",
   billRateOverrideCents: "rate override",
   markupBp: "markup",
   billedThrough: "billed through",

@@ -88,6 +88,7 @@ export async function cleanE2eData() {
           "contacts",
           "companies",
           "rates",
+          "membership_pay",
           "review_steps",
           "activities",
           "overhead_categories",

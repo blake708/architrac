@@ -20,6 +20,7 @@ import {
   revokeInvite,
 } from "@/server/settings/actions";
 import type { PersonRow } from "@/server/team/view";
+import { PaySection } from "./pay-section";
 
 function Row({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -34,6 +35,7 @@ function Row({ label, children }: { label: string; children: React.ReactNode }) 
 export function PersonDrawer({
   person,
   viewer,
+  today,
   onClose,
   onEdit,
   onChanged,
@@ -41,6 +43,7 @@ export function PersonDrawer({
 }: {
   person: PersonRow | null;
   viewer: Actor;
+  today: string;
   onClose: () => void;
   onEdit: (p: PersonRow) => void;
   /** After a change: show a message and reload the data. */
@@ -137,6 +140,10 @@ export function PersonDrawer({
           <Row label="License">{p.licenseNote ?? "—"}</Row>
           <Row label="With firm since">{p.startDate ? p.startDate.slice(0, 4) : "—"}</Row>
         </dl>
+
+        {p.kind === "member" && p.pay !== undefined && canManage && (
+          <PaySection membershipId={p.id} pay={p.pay} weeklyHours={p.weeklyHours} today={today} onChanged={onChanged} />
+        )}
 
         <h3 className="cap mt-6 mb-2 text-xs font-semibold">Access</h3>
         {p.kind === "invited" ? (

@@ -361,6 +361,7 @@ export function TeamPage({
       <PersonDrawer
         person={tab === "people" ? person : null}
         viewer={viewer}
+        today={view.today}
         onClose={() => setPersonId(null)}
         onEdit={(p) => setEditing(p)}
         onChanged={changed}

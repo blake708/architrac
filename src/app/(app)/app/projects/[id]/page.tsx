@@ -116,7 +116,7 @@ export default async function ProjectOverview({
                 <Avatar name={m.name} initials={m.initials} size="sm" />
                 <span className="min-w-0">
                   <span className="block font-medium">{m.name}</span>
-                  <span className="block text-xs text-muted">{m.title ?? m.projectRole}</span>
+                  <span className="block text-xs text-muted">{m.title ?? m.roleName}</span>
                 </span>
                 {m.hours !== undefined && <span className="num ml-auto text-xs text-muted">{fmtHours(m.hours)} h logged</span>}
               </li>

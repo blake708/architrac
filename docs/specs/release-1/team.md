@@ -51,7 +51,8 @@ The firm's people directory and team structure. Everyone looks people up here; o
 | Access pill | rule 6 | |
 | Drawer: Email | `users.email` (invited: invite email) | `mailto:` link |
 | Drawer: Phone | **Data model addition needed** (`memberships.phone`) | "—" if empty |
-| Drawer: Role · rates | role name + "· $115 bill / $44 cost" | owner/admin only; others see role name only |
+| Drawer: Role · rates | role name + "· $115 bill / $44 cost". Cost is from their pay when entered, else the role's cost rate (ADR 0008) | owner/admin only; others see role name only |
+| Drawer: Pay | Current pay ("$70,200 / yr · 25% burden" + "$42.19 / h cost"), or "No pay entered. Their role's cost rate is used."; Add / Change pay form (Salary / Hourly, amount, burden %, starts on, live hourly cost); history with dates. `membership_pay` (ADR 0008) | owner/admin only; never sent to PM or staff |
 | Drawer: Weekly hours | "{capacity} h · utilization target {target}%" | `target_utilization_bp / 100` |
 | Drawer: Employment | `memberships.employment_type` | "Full time", "Part time", "Contract" |
 | Drawer: License | **Data model addition needed** (`memberships.license_note`) | "Licensed architect · SC, NC" |

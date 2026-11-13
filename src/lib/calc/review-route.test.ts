@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { resolveRate } from "./pay";
 import {
   type ReviewContext,
   type RouteStep,
@@ -190,9 +191,10 @@ describe("freezeRates (rules 2 and 3c)", () => {
     { effectiveFrom: "2026-10-14", effectiveTo: null, billRateCents: 11000, costRateCents: 4400 },
   ];
   const week = ["2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15", "2026-10-16"];
+  const none = { personRates: [], roleRates: [], pay: [], weeklyHours: 40 };
 
   it("each day gets the rate in force on its date", () => {
-    const r = freezeRates(week, [], roleRates, "KL");
+    const r = freezeRates(week, (d) => resolveRate({ ...none, roleRates }, d), "KL");
     expect(r.ok && r.rates.map((x) => x.costRateCents)).toEqual([4200, 4200, 4400, 4400, 4400]);
     expect(r.ok && r.rates.every((x) => x.billRateCents === 11000)).toBe(true);
     // KL's 2026-014 row: Mon 3, Tue 3, Wed 2, Thu 2, Fri 2 → $516 cost.
@@ -201,13 +203,14 @@ describe("freezeRates (rules 2 and 3c)", () => {
   });
 
   it("a person override wins", () => {
-    const person = [{ effectiveFrom: "2026-10-01", effectiveTo: null, billRateCents: 12000, costRateCents: 4600 }];
-    const r = freezeRates(week, person, roleRates, "KL");
+    const personRates = [{ effectiveFrom: "2026-10-01", effectiveTo: null, billRateCents: 12000, costRateCents: 4600 }];
+    const r = freezeRates(week, (d) => resolveRate({ ...none, personRates, roleRates }, d), "KL");
     expect(r.ok && r.rates.every((x) => x.billRateCents === 12000 && x.costRateCents === 4600)).toBe(true);
   });
 
   it("a missing rate blocks and lists the dates", () => {
-    expect(freezeRates(["2026-10-14", "2026-10-15", "2026-10-14"], [], roleRates.slice(0, 1), "KL")).toEqual({
+    const first = roleRates.slice(0, 1);
+    expect(freezeRates(["2026-10-14", "2026-10-15", "2026-10-14"], (d) => resolveRate({ ...none, roleRates: first }, d), "KL")).toEqual({
       ok: false,
       message: "No rate for KL on Oct 14, Oct 15. Add one in Settings → Roles & rates.",
     });

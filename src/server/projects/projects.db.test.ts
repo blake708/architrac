@@ -104,6 +104,8 @@ beforeAll(async () => {
   // The test firm starts with one project of its own ("2026-001"); archive it
   // so the list matches fixture F1.
   await asFirm(pool, A.firmId, (c) => c.query("update projects set archived_at = now() where id = $1", [A.projectId]));
+  // The PM's own role, so the team row can show it's copied (ADR 0008).
+  await asFirm(pool, A.firmId, (c) => c.query("update memberships set firm_role_id = $1 where id = $2", [A.firmRoleId, pm.membershipId]));
 
   const mobFees = [930_000, 2_790_000, 4_650_000, 6_510_000, 930_000, 2_790_000, 0];
   const mob = await createProjectCore(
@@ -133,7 +135,7 @@ beforeAll(async () => {
   if (!bistro.ok) throw new Error(JSON.stringify(bistro));
   bistroId = bistro.data.id;
   await withFirm(A.firmId, (db) =>
-    db.insert(projectMembers).values({ firmId: A.firmId, projectId: bistroId, membershipId: staff.membershipId, projectRole: "Designer" }),
+    db.insert(projectMembers).values({ firmId: A.firmId, projectId: bistroId, membershipId: staff.membershipId, firmRoleId: A.firmRoleId }),
   );
 
   const westside = await createProjectCore(
@@ -180,10 +182,11 @@ describe("creating a project", () => {
     const team = await withFirm(A.firmId, (db) =>
       db.select().from(projectMembers).where(eq(projectMembers.projectId, mobId)),
     );
-    expect(team.map((m) => [m.membershipId, m.projectRole]).sort()).toEqual(
+    // Each joins with their own role: the PM's is Designer, the owner has none.
+    expect(team.map((m) => [m.membershipId, m.firmRoleId]).sort()).toEqual(
       [
-        [pm.membershipId, "PM"],
-        [A.membershipId, "Principal"],
+        [pm.membershipId, A.firmRoleId],
+        [A.membershipId, null],
       ].sort(),
     );
     const logs = await withFirm(A.firmId, (db) =>
@@ -197,7 +200,7 @@ describe("creating a project", () => {
     const team = await withFirm(A.firmId, (db) =>
       db.select().from(projectMembers).where(eq(projectMembers.projectId, bistroId)),
     );
-    expect(team.filter((m) => m.membershipId === A.membershipId).map((m) => m.projectRole)).toEqual(["PM"]);
+    expect(team.filter((m) => m.membershipId === A.membershipId)).toHaveLength(1);
   });
 
   it("a project that isn't active starts with every phase upcoming", async () => {
