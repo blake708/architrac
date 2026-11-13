@@ -36,7 +36,7 @@ Badges use the tint as background and the strong color as text (e.g. green-tint 
 | **Table** | Header row surface-2, 11px uppercase muted, 1px line bottom border; body 13px; numeric columns right-aligned in mono; row divider line-soft; hover row surface-2. |
 | **Card** | White, 1px line border, 2px radius, 20px padding; header with uppercase title and optional actions on the right. |
 | **KPI tile** | Card with caption label, 26px Barlow value (tabular figures, as in the mockup), optional delta/status line. |
-| **Tabs** | Underline style: 13px uppercase, active tab ink with 2px bottom border, inactive muted. |
+| **Tabs** (menu bar) | Underline style, as in the mockup: 12.5px uppercase (0.07em), 50px tall, 12px side padding, 6px apart; current tab bold ink with a 3px rule under it, others ink-3. Counts in mono 11px muted. Use `tabClasses()` from `src/components/ui/tab-styles.ts` (or `Tabs` from `ui/tabs.tsx`). On a project page the phase stepper and tabs sit inside the white header band, each under a `line-soft` rule. |
 | **Badge** | 11px uppercase, 2px radius, 2px 6px padding, tint background + strong text. |
 | **Progress bar** | 10px high, line-soft track, blue fill. At ≥ 90% the percent text turns orange (fill stays blue). Over 100% the bar is rescaled to the amount used: blue up to the budget, then a red hatched segment for the overrun, and red percent text. Used for hours vs budget. |
 | **Avatar** | Circle, initials 11px weight 600, ink-2 background, white text. |

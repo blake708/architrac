@@ -7,6 +7,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { PlusIcon, SearchIcon } from "@/components/ui/icons";
 import { KpiTile } from "@/components/ui/kpi-tile";
 import { PageHeader } from "@/components/ui/page-header";
+import { bodyTabBarClasses, bodyTabRowClasses, tabClasses, tabCountClasses } from "@/components/ui/tab-styles";
 import { useToast } from "@/components/ui/toast";
 import { cn } from "@/lib/cn";
 import {
@@ -136,12 +137,10 @@ export function ContactsPage({
         setTab(key);
         setOpen(null);
       }}
-      className={cn(
-        "-mb-px cursor-pointer border-0 border-b-2 bg-transparent px-1 pb-2.5 text-base",
-        tab === key ? "border-ink font-semibold text-ink" : "border-transparent text-ink-3 hover:text-ink",
-      )}
+      className={tabClasses(tab === key)}
     >
-      {label} <span className="num text-xs text-muted">{count}</span>
+      {label}
+      <span className={tabCountClasses}>{count}</span>
     </button>
   );
 
@@ -191,9 +190,11 @@ export function ContactsPage({
           />
         </section>
 
-        <div role="tablist" aria-label="Contact views" className="flex gap-6 border-b border-line">
-          {tabButton("companies", "Companies", view.companies.length)}
-          {tabButton("people", "People", view.contacts.length)}
+        <div className={bodyTabBarClasses}>
+          <div role="tablist" aria-label="Contact views" className={bodyTabRowClasses}>
+            {tabButton("companies", "Companies", view.companies.length)}
+            {tabButton("people", "People", view.contacts.length)}
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">

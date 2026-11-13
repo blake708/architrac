@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { PlusIcon, SearchIcon } from "@/components/ui/icons";
 import { KpiTile } from "@/components/ui/kpi-tile";
 import { PageHeader } from "@/components/ui/page-header";
+import { bodyTabBarClasses, bodyTabRowClasses, tabClasses, tabCountClasses } from "@/components/ui/tab-styles";
 import { useToast } from "@/components/ui/toast";
 import { type Actor, assignableRoles } from "@/lib/auth/user-management";
 import { cn } from "@/lib/cn";
@@ -123,12 +124,10 @@ export function TeamPage({
         setTab(key);
         setPersonId(null);
       }}
-      className={cn(
-        "-mb-px cursor-pointer border-0 border-b-2 bg-transparent px-1 pb-2.5 text-base",
-        tab === key ? "border-ink font-semibold text-ink" : "border-transparent text-ink-3 hover:text-ink",
-      )}
+      className={tabClasses(tab === key)}
     >
-      {label} <span className="num text-xs text-muted">{count}</span>
+      {label}
+      <span className={tabCountClasses}>{count}</span>
     </button>
   );
 
@@ -179,9 +178,11 @@ export function TeamPage({
           )}
         </section>
 
-        <div role="tablist" aria-label="Team views" className="flex gap-6 border-b border-line">
-          {tabButton("people", "People", view.people.length)}
-          {tabButton("teams", "Teams", view.teams.length)}
+        <div className={bodyTabBarClasses}>
+          <div role="tablist" aria-label="Team views" className={bodyTabRowClasses}>
+            {tabButton("people", "People", view.people.length)}
+            {tabButton("teams", "Teams", view.teams.length)}
+          </div>
         </div>
 
         {tab === "people" ? (

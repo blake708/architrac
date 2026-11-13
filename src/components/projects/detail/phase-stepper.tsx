@@ -10,19 +10,30 @@ export function PhaseStepper({ phases }: { phases: PhaseRow[] }) {
   if (phases.length === 0) return null;
   const firstCurrent = phases.find((p) => p.status === "current")?.id;
   return (
-    <div className="overflow-x-auto border-b border-line bg-surface px-4 pt-1 pb-4 md:px-page-x">
+    <div className="overflow-x-auto border-t border-line-soft px-4 pt-6 pb-7 md:px-page-x">
       <ol
         aria-label="Project phases"
-        className="m-0 grid list-none gap-2 p-0"
+        className="m-0 grid list-none gap-2.5 p-0"
         style={{ gridTemplateColumns: `repeat(${phases.length}, minmax(120px, 1fr))` }}
       >
         {phases.map((p) => {
           const done = p.status === "complete" || p.status === "closed";
           return (
-            <li key={p.id} aria-current={p.id === firstCurrent ? "step" : undefined} data-phase={p.code}>
+            <li
+              key={p.id}
+              aria-current={p.id === firstCurrent ? "step" : undefined}
+              data-phase={p.code}
+              className="flex flex-col gap-2"
+            >
               <span aria-hidden="true" className="block h-1.5 rounded-[1px]" style={{ background: BAR[p.status] }} />
-              <span className={cn("cap mt-2 flex items-center gap-1 text-2xs", p.status === "current" ? "font-semibold text-ink" : "text-ink-2")}>
-                {done && <CheckIcon className="size-3.5 text-green" aria-label="Complete" />}
+              <span
+                className={cn(
+                  "cap flex items-center gap-1.5 text-xs tracking-[0.06em]",
+                  p.status === "current" ? "font-bold text-ink" : "font-medium",
+                  p.status !== "current" && (done ? "text-ink" : "text-muted"),
+                )}
+              >
+                {done && <CheckIcon className="size-[13px] text-green" aria-label="Complete" />}
                 {p.name}
               </span>
               <span className="block text-xs text-muted">{stepperNote(p)}</span>

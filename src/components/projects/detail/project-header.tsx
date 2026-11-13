@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { PageHeader } from "@/components/ui/page-header";
 import { SCOPE_LABELS } from "@/lib/projects/form";
@@ -9,13 +9,18 @@ import type { NewProjectOptions } from "@/server/projects/view";
 import { HealthBadge } from "../project-bits";
 import { EditProjectDrawer } from "./edit-project-drawer";
 
-/** Number, name, client and address; health and Edit project on the right. */
+/**
+ * Number, name, client and address; health and Edit project on the right.
+ * The phase stepper and tabs come in as children, in the same white band.
+ */
 export function ProjectHeader({
   p,
   edit,
+  children,
 }: {
   p: ProjectPage;
   edit: { options: NewProjectOptions; addressLookup: boolean } | null;
+  children?: ReactNode;
 }) {
   const [editing, setEditing] = useState(false);
   const meta = [
@@ -32,7 +37,12 @@ export function ProjectHeader({
           <span data-testid="project-meta">
             {meta.map((m, i) => (
               <span key={i}>
-                {i > 0 && " · "}
+                {i > 0 && (
+                  <>
+                    {" "}
+                    <span aria-hidden="true" className="mx-[3px]">·</span>{" "}
+                  </>
+                )}
                 {m}
               </span>
             ))}
@@ -40,6 +50,7 @@ export function ProjectHeader({
         }
         title={p.name}
         description={[p.client.name, place].filter(Boolean).join(" · ")}
+        alignActions="start"
         actions={
           <>
             {p.money && (
@@ -50,7 +61,9 @@ export function ProjectHeader({
             {p.canEdit && edit && <Button onClick={() => setEditing(true)}>Edit project</Button>}
           </>
         }
-      />
+      >
+        {children}
+      </PageHeader>
       {p.canEdit && edit && editing && (
         <EditProjectDrawer p={p} options={edit.options} addressLookup={edit.addressLookup} onClose={() => setEditing(false)} />
       )}

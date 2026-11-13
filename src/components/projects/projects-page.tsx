@@ -8,6 +8,7 @@ import { EmptyState } from "@/components/ui/empty-state";
 import { PlusIcon, SearchIcon } from "@/components/ui/icons";
 import { KpiTile } from "@/components/ui/kpi-tile";
 import { PageHeader } from "@/components/ui/page-header";
+import { bodyTabBarClasses, bodyTabRowClasses, tabClasses, tabCountClasses } from "@/components/ui/tab-styles";
 import { cn } from "@/lib/cn";
 import { formatMoney, formatMoneyShort, formatMoneySigned } from "@/lib/format";
 import { type ListParams, type StatusTab, filterProjects, listQuery } from "@/lib/projects/display";
@@ -101,24 +102,22 @@ export function ProjectsPage({ view, initial }: { view: ProjectsView; initial: L
           </section>
         )}
 
-        <div role="tablist" aria-label="Project status" className="flex gap-6 overflow-x-auto overflow-y-hidden border-b border-line">
-          {TABS.map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              role="tab"
-              aria-selected={params.status === t.key}
-              onClick={() => set({ status: t.key })}
-              className={cn(
-                "cursor-pointer border-0 border-b-2 bg-transparent px-1 pb-2.5 text-base whitespace-nowrap",
-                params.status === t.key
-                  ? "border-ink font-semibold text-ink"
-                  : "border-transparent text-ink-3 hover:text-ink",
-              )}
-            >
-              {t.label} <span className="num text-xs text-muted">{counts[t.key]}</span>
-            </button>
-          ))}
+        <div className={bodyTabBarClasses}>
+          <div role="tablist" aria-label="Project status" className={bodyTabRowClasses}>
+            {TABS.map((t) => (
+              <button
+                key={t.key}
+                type="button"
+                role="tab"
+                aria-selected={params.status === t.key}
+                onClick={() => set({ status: t.key })}
+                className={tabClasses(params.status === t.key)}
+              >
+                {t.label}
+                <span className={tabCountClasses}>{counts[t.key]}</span>
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">

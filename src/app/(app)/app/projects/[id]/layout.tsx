@@ -25,10 +25,11 @@ export default async function ProjectLayout({
     <ToastProvider>
       <FlashToast />
       <main>
-        <ProjectHeader p={p} edit={edit} />
-        <PhaseStepper phases={p.phases} />
-        <ProjectNav projectId={p.id} financial={p.financial} />
-        <div className="flex flex-col gap-5 px-4 pt-6 pb-8 md:px-page-x">{children}</div>
+        <ProjectHeader p={p} edit={edit}>
+          <PhaseStepper phases={p.phases} />
+          <ProjectNav projectId={p.id} financial={p.financial} />
+        </ProjectHeader>
+        <div className="flex flex-col gap-4 px-4 pt-7 pb-8 md:px-page-x">{children}</div>
       </main>
     </ToastProvider>
   );
