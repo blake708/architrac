@@ -1,7 +1,7 @@
 import { and, asc, eq, inArray, isNull } from "drizzle-orm";
 import { activityLog, memberships, timeEntries, timesheetReviewSteps, timesheets, users } from "@/db/schema";
 import type { TenantDb } from "@/db/tenant";
-import { type SavedReviewRow, STEP_LABELS, andList, currentRows, rowsFor, stepSummary } from "@/lib/calc/review-route";
+import { type SavedReviewRow, STEP_LABELS, andList, currentRows, partlyApproved, rowsFor, stepSummary } from "@/lib/calc/review-route";
 import { type Flag, billablePct, timesheetFlags } from "@/lib/calc/timesheet-flags";
 import { isWeekend, weekDates } from "@/lib/calc/timesheet";
 import { formatMoney } from "@/lib/format";
@@ -38,6 +38,8 @@ export type QueueItem = {
   billable: number;
   billablePct: number;
   step: { label: string; note: string } | null;
+  /** An earlier step or another PIC already approved (Home's "Partly approved"). */
+  partlyApproved: boolean;
   /** First flag (Layout 3), or null when clean. */
   flag: Flag | null;
 };
@@ -211,6 +213,7 @@ export async function loadQueue(db: TenantDb, actor: ApprovalActor, access: Appr
       billable,
       billablePct: billablePct(billable, total),
       step: stepSummary(reviews.get(s.id) ?? [], actor.membershipId, fullName),
+      partlyApproved: partlyApproved(reviews.get(s.id) ?? []),
       flag: flags[0] ?? null,
     };
   });

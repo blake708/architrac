@@ -59,6 +59,11 @@ const MATRIX: Row[] = [
     expected: OA,
   },
   {
+    row: "Home: All firm board",
+    actions: ["home.all_projects"],
+    expected: OA,
+  },
+  {
     row: "Create projects",
     actions: ["projects.create"],
     expected: { owner: true, admin: true, project_manager: true, staff: false },

@@ -9,6 +9,7 @@ import {
   andList,
   buildReview,
   currentRows,
+  partlyApproved,
   rowsFor,
   stepSummary,
   canRecallReview,
@@ -295,6 +296,13 @@ describe("stepSummary", () => {
     expect(stepSummary(rows, "BM", init)?.note).toBe("Also waiting on PD");
     const two = [row(1, "team_leader", "JR"), row(2, "principal_in_charge", "BM")];
     expect(stepSummary(two, "JR", init)).toEqual({ label: "Step 1 of 2 · Team leader", note: "Then Principal in Charge" });
+  });
+
+  it("partlyApproved: someone approved part of it; skipped rows don't count", () => {
+    expect(partlyApproved([row(1, "principal_in_charge", "BM"), row(1, "principal_in_charge", "PD")])).toBe(false);
+    expect(partlyApproved([row(1, "principal_in_charge", "BM", "approved"), row(1, "principal_in_charge", "PD")])).toBe(true);
+    expect(partlyApproved([row(1, "team_leader", null, "skipped"), row(2, "principal_in_charge", "BM")])).toBe(false);
+    expect(partlyApproved([row(1, "team_leader", "JR", "approved"), row(2, "principal_in_charge", "BM")])).toBe(true);
   });
 
   it("andList", () => {

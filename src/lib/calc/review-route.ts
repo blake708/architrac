@@ -300,6 +300,11 @@ export function stepSummary(
   return { label, note: next ? `Then ${STEP_LABELS[next.kind]}` : "Last step" };
 }
 
+/** Someone already approved part of the review (an earlier step, or another PIC). Home's "Partly approved". */
+export function partlyApproved(rows: readonly SavedReviewRow[]): boolean {
+  return rows.some((r) => r.status === "approved");
+}
+
 /** "BM" / "BM and PD", for the Approve-for button and dialog. */
 export function andList(names: readonly string[]): string {
   return names.length > 1 ? `${names.slice(0, -1).join(", ")} and ${names[names.length - 1]}` : (names[0] ?? "");

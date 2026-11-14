@@ -88,6 +88,8 @@ const RULES = {
   // See a project's fee, billed and health (projects-list): PMs only on
   // projects they manage or are principal on; staff never.
   "projects.view_fees": { ...OWNER_ADMIN, project_manager: "own_projects" },
+  // Home's "All firm" board: every active project, not only your own (home spec).
+  "home.all_projects": OWNER_ADMIN,
   // View projects
   "projects.view": {
     owner: true,

@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNotNull, isNull, lte, sum } from "drizzle-orm";
 import {
   firmRoles,
   invitations,
@@ -6,6 +6,8 @@ import {
   memberships,
   rates,
   teams,
+  timeEntries,
+  timesheets,
   users,
 } from "@/db/schema";
 import type { TenantDb } from "@/db/tenant";
@@ -100,12 +102,26 @@ export type TeamView = {
 };
 
 /**
- * Billable hours per membership in the utilization window. Time entries
- * arrive in milestone 1.6; until then everyone has 0 (spec: show "0%").
+ * Billable hours per membership in the utilization window (rule 4):
+ * billable project time on submitted or approved timesheets.
  */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars -- reads time_entries from 1.6
 export async function billableHoursByMembership(db: TenantDb, window: { from: string; to: string }): Promise<Map<string, number>> {
-  return new Map();
+  const rows = await db
+    .select({ membershipId: timesheets.membershipId, hours: sum(timeEntries.hours) })
+    .from(timeEntries)
+    .innerJoin(timesheets, eq(timesheets.id, timeEntries.timesheetId))
+    .where(
+      and(
+        isNull(timeEntries.archivedAt),
+        eq(timeEntries.billable, true),
+        isNotNull(timeEntries.projectId),
+        gte(timeEntries.workDate, window.from),
+        lte(timeEntries.workDate, window.to),
+        inArray(timesheets.status, ["submitted", "approved"]),
+      ),
+    )
+    .groupBy(timesheets.membershipId);
+  return new Map(rows.map((r) => [r.membershipId, Number(r.hours ?? 0)]));
 }
 
 function accessPill(appRole: AppRole, leadsTeam: boolean): AccessPill {

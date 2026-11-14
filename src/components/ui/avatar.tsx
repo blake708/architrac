@@ -8,14 +8,15 @@ type AvatarProps = {
   initials?: string;
   /** Photo (users.avatar_url). Shown instead of initials when set. */
   src?: string | null;
-  /** sm = 28px, md = 32px (header), lg = 36px (people table), xl = 52px (profile). */
-  size?: "sm" | "md" | "lg" | "xl";
+  /** xs = 22px (Home cards), sm = 28px, md = 32px (header), lg = 36px (people table), xl = 52px (profile). */
+  size?: "xs" | "sm" | "md" | "lg" | "xl";
   /** Background behind initials (Team uses a shade per person). */
   color?: string;
   className?: string;
 };
 
 const sizes = {
+  xs: "size-[22px] text-[9px]",
   sm: "size-7",
   md: "size-8",
   lg: "size-9 text-xs",
