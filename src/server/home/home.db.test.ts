@@ -21,7 +21,8 @@ import { approvalAccess, approveStepCore } from "@/server/time/approval";
 import { queueCount } from "@/server/time/approval-read";
 import type { TimeActor } from "@/server/time/write";
 import { submitTimesheetCore } from "@/server/time/write";
-import { loadActiveCount, loadBoard, loadOutstanding, loadWaiting, loadYourTime } from "./home";
+import { notSubmittedKpi } from "@/server/time/week-overview";
+import { loadActiveCount, loadBoard, loadDue, loadFirmHealth, loadOutstanding, loadWaiting, loadYourTime } from "./home";
 
 // Home against the real database (home spec, acceptance tests). The pure
 // rules are in src/lib/calc/home.test.ts.
@@ -258,6 +259,91 @@ describe("Invoices outstanding", () => {
   });
 });
 
+describe("Firm health", () => {
+  beforeAll(async () => {
+    // 2026-002's DD (fixed $1,000) is 50% complete and unbilled → $500.
+    await q("update project_phases set percent_complete_bp = 5000 where project_id = $1 and code = 'DD'", [ids.p2]);
+    // 2026-003 gets an hourly phase with 6 approved hours at $150 → $900,
+    // plus 2 non-billable hours that don't count.
+    const [phase] = await q<{ id: string }>(
+      "insert into project_phases (firm_id, project_id, code, name, sort_order, fee_type, fee_cents, status) values ($1, $2, 'AS', 'Added services', 2, 'hourly', 0, 'current') returning id",
+      [A.firmId, ids.p3],
+    );
+    const [sheet] = await q<{ id: string }>(
+      "insert into timesheets (firm_id, membership_id, week_start, status) values ($1, $2, '2026-09-21', 'approved') returning id",
+      [A.firmId, pm.membershipId],
+    );
+    const [row] = await q<{ id: string }>(
+      "insert into timesheet_rows (firm_id, timesheet_id, row_type, project_id, project_phase_id, activity_id, billable) values ($1, $2, 'project', $3, $4, $5, true) returning id",
+      [A.firmId, sheet.id, ids.p3, phase.id, A.activityId],
+    );
+    for (const [day, hours, billable] of [["2026-09-21", 4, true], ["2026-09-22", 2, true], ["2026-09-23", 2, false]] as const)
+      await q(
+        "insert into time_entries (firm_id, timesheet_id, timesheet_row_id, work_date, project_id, project_phase_id, activity_id, hours, billable, bill_rate_cents) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, 15000)",
+        [A.firmId, sheet.id, row.id, day, ids.p3, phase.id, A.activityId, hours, billable],
+      );
+    // Owner: 40 h a week, no target; PM: 40 h, target 80%; DS: 24 h, target 70%.
+    await q("update memberships set weekly_capacity_hours = 40, target_utilization_bp = null where id = $1", [A.membershipId]);
+    await q("update memberships set weekly_capacity_hours = 40, target_utilization_bp = 8000 where id = $1", [pm.membershipId]);
+    await q("update memberships set weekly_capacity_hours = 24, target_utilization_bp = 7000 where id = $1", [ds.membershipId]);
+  });
+
+  it("gives owners receivables, unbilled work, utilization and late timesheets", async () => {
+    const h = (await withFirm(A.firmId, (db) => loadFirmHealth(db, OWNER, new Date("2026-10-18T15:00:00Z"))))!;
+    expect(h.receivables).toEqual({ totalCents: 600_000, count: 1, over60: 0 });
+    // $500 earned on 2026-002 + $900 of hours on 2026-003. 2026-001 is billed in full.
+    expect(h.unbilled).toEqual({ cents: 140_000, projects: 2 });
+    // Window Sep 14 – Oct 11: PM's 6 billable approved hours + DS's 40
+    // submitted ones (week of Oct 5) = 46 h over (40 + 40 + 24) × 4 = 416 h → 11%.
+    // Target: (40 × 80% + 24 × 70%) ÷ 64 = 76.25% → 76%; the owner has none.
+    expect(h.utilization).toEqual({ pct: 11, targetPct: 76 });
+    // The Approvals tab's own figure.
+    const tab = await withFirm(A.firmId, async (db) => notSubmittedKpi(db, OWNER, await approvalAccess(db, OWNER), new Date("2026-10-18T15:00:00Z")));
+    expect(h.notSubmitted).toEqual(tab);
+  });
+
+  it("returns nothing for PMs and staff", async () => {
+    expect(await withFirm(A.firmId, (db) => loadFirmHealth(db, PM))).toBeNull();
+    expect(await withFirm(A.firmId, (db) => loadFirmHealth(db, DS))).toBeNull();
+  });
+});
+
+describe("Due this week", () => {
+  // Thursday Oct 15: week of Oct 12 – 18.
+  const THU = new Date("2026-10-15T15:00:00Z");
+
+  beforeAll(async () => {
+    await q("update project_phases set end_date = '2026-10-09' where project_id = $1 and code = 'DD'", [ids.p2]);
+    await q("update project_phases set end_date = '2026-10-16' where project_id = $1 and code = 'P2A'", [ids.p3]);
+  });
+
+  it("gives a PM their timesheet, approvals and phases, but no invoices", async () => {
+    const d = await withFirm(A.firmId, (db) => loadDue(db, PM, THU));
+    expect(d.weekStart).toBe("2026-10-12");
+    expect(d.items.map((i) => [i.kind, i.title, i.flag])).toEqual([
+      ["phase", "Design Development ends", "6 days late"],
+      ["timesheet", "Submit timesheet", "3 days late"],
+      ["approvals", "Approve 1 timesheet", ""],
+      ["phase", "Phase 2A ends", ""],
+    ]);
+    expect(d.items.find((i) => i.kind === "timesheet")?.detail).toBe("Week of Oct 5");
+  });
+
+  it("adds open invoices for owners", async () => {
+    const d = await withFirm(A.firmId, (db) => loadDue(db, OWNER, THU));
+    const inv = d.items.find((i) => i.kind === "invoice")!;
+    expect(inv).toMatchObject({ title: "Invoice HomeA-100 due", flag: "", date: "2026-10-16" });
+    // The owner isn't on 2026-002, so its phase isn't theirs.
+    expect(d.items.some((i) => i.title === "Design Development ends")).toBe(false);
+  });
+
+  it("gives staff only their own timesheet and phases", async () => {
+    const d = await withFirm(A.firmId, (db) => loadDue(db, DS, THU));
+    expect(d.items.map((i) => i.kind).sort()).toEqual(["phase"]);
+    expect(d.items.some((i) => i.kind === "invoice" || i.kind === "approvals")).toBe(false);
+  });
+});
+
 describe("tenant isolation", () => {
   it("shows firm B none of firm A's projects, time or invoices", async () => {
     const b = await board(B_OWNER);
@@ -268,5 +354,10 @@ describe("tenant isolation", () => {
     const o = (await withFirm(B.firmId, (db) => loadOutstanding(db, B_OWNER)))!;
     expect(o.count).toBe(0);
     expect((await withFirm(B.firmId, (db) => loadWaiting(db, B_OWNER)))?.count ?? 0).toBe(0);
+    const h = (await withFirm(B.firmId, (db) => loadFirmHealth(db, B_OWNER)))!;
+    expect(h.receivables.count).toBe(0);
+    expect(h.unbilled).toEqual({ cents: 0, projects: 0 });
+    const d = await withFirm(B.firmId, (db) => loadDue(db, B_OWNER, new Date("2026-10-15T15:00:00Z")));
+    expect(d.items.some((i) => i.kind === "phase" || i.kind === "invoice")).toBe(false);
   });
 });
