@@ -1,15 +1,17 @@
 import Link from "next/link";
+import type { ReactNode } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { CheckIcon, ChevronRightIcon, WarningIcon } from "@/components/ui/icons";
+import { CheckIcon, ChevronRightIcon, LockIcon, WarningIcon } from "@/components/ui/icons";
+import { KpiTile } from "@/components/ui/kpi-tile";
 import { withFirm } from "@/db/tenant";
-import { TIMESHEET_PILL, outstandingLine, weekOf } from "@/lib/calc/home";
+import { DUE_CHIP, TIMESHEET_PILL, dueDay, outstandingLine, unbilledNote, utilizationNote, weekOf } from "@/lib/calc/home";
 import { OVER_60 } from "@/lib/calc/receivables";
 import { cn } from "@/lib/cn";
 import { formatHours, formatMoney } from "@/lib/format";
 import { dayHeader } from "@/lib/time/display";
-import { loadBoard, loadOutstanding, loadWaiting, loadYourTime } from "@/server/home/home";
+import { loadBoard, loadDue, loadFirmHealth, loadOutstanding, loadWaiting, loadYourTime } from "@/server/home/home";
 import type { TimeActor } from "@/server/time/write";
 import { ProjectBoard } from "./project-board";
 
@@ -198,6 +200,130 @@ export async function OutstandingWidget({ actor }: { actor: TimeActor }) {
             ))}
           </ul>
         </>
+      )}
+    </Card>
+  );
+}
+
+// ---------- Firm health ----------
+
+const tileLink = "block text-ink no-underline hover:bg-surface-2 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue";
+
+function FirmHealthFrame({ children }: { children: ReactNode }) {
+  return (
+    <section aria-labelledby="firm-health-title" className="border-t border-line-soft">
+      <div className="flex items-center gap-2.5 px-4 pt-3 md:px-page-x">
+        <h2 id="firm-health-title" className="m-0 text-2xs font-semibold text-ink-2">
+          Firm health
+        </h2>
+        <span className="inline-flex items-center gap-1 text-xs text-muted">
+          <LockIcon className="size-3" />
+          Owners and admins only
+        </span>
+      </div>
+      <div className="grid grid-cols-[repeat(auto-fit,minmax(180px,1fr))]">{children}</div>
+    </section>
+  );
+}
+
+export async function FirmHealthWidget({ actor }: { actor: TimeActor }) {
+  const h = await withFirm(actor.firmId, (db) => loadFirmHealth(db, actor));
+  if (!h) return null;
+  const u = h.utilization;
+  return (
+    <FirmHealthFrame>
+      <Link href="/app/invoices" className={tileLink}>
+        <KpiTile variant="header" label="Receivables" value={formatMoney(h.receivables.totalCents)} note={outstandingLine(h.receivables)} />
+      </Link>
+      <Link href="/app/invoices" className={tileLink}>
+        <KpiTile variant="header" label="Unbilled work" value={formatMoney(h.unbilled.cents)} note={unbilledNote(h.unbilled.projects)} />
+      </Link>
+      <Link href="/app/team" className={tileLink}>
+        <KpiTile
+          variant="header"
+          label="Utilization"
+          value={u.pct === null ? "—" : `${u.pct}%`}
+          tone={u.pct !== null && u.targetPct !== null && u.pct < u.targetPct ? "orange" : "default"}
+          note={utilizationNote(u.targetPct)}
+        />
+      </Link>
+      <Link href={`/app/time/approvals/week/${h.notSubmitted.weekStart}`} className={tileLink}>
+        <KpiTile
+          variant="header"
+          label="Not submitted"
+          value={String(h.notSubmitted.count)}
+          tone={h.notSubmitted.count > 0 ? "orange" : "default"}
+          note={`Timesheets · ${weekOf(h.notSubmitted.weekStart)}`}
+        />
+      </Link>
+    </FirmHealthFrame>
+  );
+}
+
+export function FirmHealthSkeleton() {
+  return (
+    <div role="status" aria-label="Loading firm health…">
+      <FirmHealthFrame>
+        {Array.from({ length: 4 }, (_, i) => (
+          <div key={i} className="flex flex-col gap-2 px-4 pt-5 pb-[22px] md:px-page-x">
+            <div className={cn(block, "h-3 w-24")} />
+            <div className={cn(block, "h-7 w-32")} />
+            <div className={cn(block, "h-3 w-40")} />
+          </div>
+        ))}
+      </FirmHealthFrame>
+    </div>
+  );
+}
+
+// ---------- Due this week ----------
+
+export async function DueWidget({ actor }: { actor: TimeActor }) {
+  const d = await withFirm(actor.firmId, (db) => loadDue(db, actor));
+  return (
+    <Card title="Due this week" description={weekOf(d.weekStart)} padded={false}>
+      {d.items.length === 0 ? (
+        <p className="m-0 flex items-center gap-2 px-[var(--spacing-card)] pb-[var(--spacing-card)] text-sm">
+          <CheckIcon className="size-4 text-green" />
+          Nothing due this week.
+        </p>
+      ) : (
+        <ul className="m-0 list-none border-t border-line-soft p-0">
+          {d.items.map((i) => {
+            const day = dueDay(i.date, d.weekStart);
+            const chip = DUE_CHIP[i.kind];
+            return (
+              <li key={i.key} className="border-b border-line-soft last:border-b-0">
+                <Link
+                  href={i.href}
+                  className="flex items-center gap-3.5 px-[var(--spacing-card)] py-3 text-ink no-underline hover:bg-surface-2"
+                >
+                  <span className="flex w-10 shrink-0 flex-col items-center leading-[1.1]">
+                    <span className="cap text-2xs font-semibold text-muted">{day.top}</span>
+                    <span className="num text-[19px] font-semibold">{day.day}</span>
+                  </span>
+                  <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                    <span className="flex flex-wrap items-center gap-2">
+                      <Badge tone={chip.tone}>{chip.label}</Badge>
+                      <span className="font-medium">{i.title}</span>
+                    </span>
+                    <span className="truncate text-xs text-muted">{i.detail}</span>
+                  </span>
+                  {i.flag && (
+                    <span className="flex items-center gap-1 text-xs font-semibold whitespace-nowrap text-red">
+                      <WarningIcon className="size-3.5" />
+                      {i.flag}
+                    </span>
+                  )}
+                  <ChevronRightIcon className="size-4 shrink-0 text-muted" />
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+      {d.more > 0 && (
+        <p className="num m-0 border-t border-line-soft px-[var(--spacing-card)] py-2 text-xs text-muted">{`+${d.more} more`}</p>
       )}
     </Card>
   );

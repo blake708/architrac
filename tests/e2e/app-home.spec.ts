@@ -14,6 +14,9 @@ test("an owner sees every widget, and All firm is remembered after a reload", as
   await expect(page.getByRole("heading", { name: "My projects" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Your time" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Invoices outstanding" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Due this week" })).toBeVisible();
+  const health = page.getByRole("region", { name: "Firm health" });
+  for (const tile of ["Receivables", "Unbilled work", "Utilization", "Not submitted"]) await expect(health.getByText(tile, { exact: true })).toBeVisible();
 
   const scope = page.getByRole("group", { name: "Projects to show" });
   await expect(scope.getByRole("button", { name: "Mine" })).toHaveAttribute("aria-pressed", "true");
@@ -27,13 +30,15 @@ test("an owner sees every widget, and All firm is remembered after a reload", as
   );
 });
 
-test("staff get no New project, no invoices, no toggle and no billed %", async ({ page }) => {
+test("staff get no New project, no Firm health, no invoices, no toggle and no billed %", async ({ page }) => {
   await signInAs(page, "alphaStaff", "/app");
   await expect(page.getByRole("heading", { name: "Your time" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "My projects" })).toBeVisible();
   await expect(page.getByRole("link", { name: "New project" })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Due this week" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Firm health" })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Invoices outstanding" })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Waiting on you" })).toHaveCount(0);
   await expect(page.getByRole("group", { name: "Projects to show" })).toHaveCount(0);
-  expect(await page.content()).not.toMatch(/billed|billedPct/i);
+  expect(await page.content()).not.toMatch(/billed|billedPct|unbilled|receivables/i);
 });

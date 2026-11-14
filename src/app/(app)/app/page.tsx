@@ -4,6 +4,9 @@ import {
   BoardSkeleton,
   BoardWidget,
   CardSkeleton,
+  DueWidget,
+  FirmHealthSkeleton,
+  FirmHealthWidget,
   OutstandingWidget,
   WaitingWidget,
   YourTimeWidget,
@@ -31,9 +34,9 @@ export default async function AppHomePage() {
     active: await loadActiveCount(db),
     waiting: await canSeeWaiting(db, actor),
   }));
-  const invoices = can(actor.member, "financials.view");
+  // Firm health and invoices: owner/admin only (rules 9, 12).
+  const financials = can(actor.member, "financials.view");
   const canCreate = can(actor.member, "projects.create");
-  const left = waiting || invoices;
 
   return (
     <main>
@@ -54,7 +57,15 @@ export default async function AppHomePage() {
             )}
           </>
         }
-      />
+      >
+        {financials && (
+          <WidgetBoundary label="Firm health">
+            <Suspense fallback={<FirmHealthSkeleton />}>
+              <FirmHealthWidget actor={actor} />
+            </Suspense>
+          </WidgetBoundary>
+        )}
+      </PageHeader>
       <div className="flex flex-col gap-6 px-4 pt-7 pb-8 md:px-page-x">
         <WidgetBoundary label="Projects">
           <Suspense fallback={<BoardSkeleton />}>
@@ -62,30 +73,33 @@ export default async function AppHomePage() {
           </Suspense>
         </WidgetBoundary>
         <div className="flex flex-wrap items-start gap-6">
-          {left && (
-            <div className="flex min-w-0 flex-[999_1_460px] flex-col gap-6">
-              {waiting && (
-                <WidgetBoundary label="Approvals">
-                  <Suspense fallback={<CardSkeleton label="approvals" />}>
-                    <WaitingWidget actor={actor} />
-                  </Suspense>
-                </WidgetBoundary>
-              )}
-              {invoices && (
-                <WidgetBoundary label="Invoices">
-                  <Suspense fallback={<CardSkeleton label="invoices" />}>
-                    <OutstandingWidget actor={actor} />
-                  </Suspense>
-                </WidgetBoundary>
-              )}
-            </div>
-          )}
-          <div className={left ? "min-w-0 flex-[1_1_400px]" : "w-full max-w-140"}>
+          <div className="flex min-w-0 flex-[999_1_460px] flex-col gap-6">
+            <WidgetBoundary label="Due this week">
+              <Suspense fallback={<CardSkeleton label="due this week" />}>
+                <DueWidget actor={actor} />
+              </Suspense>
+            </WidgetBoundary>
+            {waiting && (
+              <WidgetBoundary label="Approvals">
+                <Suspense fallback={<CardSkeleton label="approvals" />}>
+                  <WaitingWidget actor={actor} />
+                </Suspense>
+              </WidgetBoundary>
+            )}
+          </div>
+          <div className="flex min-w-0 flex-[1_1_400px] flex-col gap-6">
             <WidgetBoundary label="Your time">
               <Suspense fallback={<CardSkeleton label="your time" />}>
                 <YourTimeWidget actor={actor} />
               </Suspense>
             </WidgetBoundary>
+            {financials && (
+              <WidgetBoundary label="Invoices">
+                <Suspense fallback={<CardSkeleton label="invoices" />}>
+                  <OutstandingWidget actor={actor} />
+                </Suspense>
+              </WidgetBoundary>
+            )}
           </div>
         </div>
       </div>
