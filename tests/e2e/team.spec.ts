@@ -78,7 +78,7 @@ const personRow = (page: Page, name: string) =>
 const toast = (page: Page) => page.getByTestId("toast").last();
 
 test.describe("what each role sees", () => {
-  test("owner: four KPIs, rates and 0% utilization before timesheets", async ({ page }) => {
+  test("owner: four KPIs, rates and 0% utilization with no time logged", async ({ page }) => {
     await signInAs(page, "epsOwner", "/app/team");
     const summary = page.getByRole("region", { name: "Team summary" });
     await expect(summary).toContainText("Billable staff");
