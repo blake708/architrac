@@ -5,20 +5,22 @@
 | **Release** | 1 |
 | **Route** | `/app` (signed-in landing page) |
 | **Mockup** | `mockup/Home.dc.html` |
-| **Status** | Ready (revised 2026-11-13 for the review route, #23) |
+| **Status** | Ready (revised 2026-11-13 for the review route, #23; Firm health and Due this week added 2026-11-13) |
 
 > **Revised 2026-11-13 (Blake).** Timesheet review now follows each firm's own review steps (decisions #3 b, #23; `timesheet-approval.md`). The approval card reuses the Approvals tab's queue. Aging uses the Invoices page's 5 buckets. Billed % uses the Projects list's math. Cards also show hours used vs budget hours. Board columns: standard phases, then optional phases in use, then "Other". All text follows `docs/TEXT_RULES.md`.
 
+> **Revised 2026-11-13 (Blake), second pass.** To match the mockup, Release 1 also shows the **Firm health** strip (Receivables, Unbilled work, Utilization, Not submitted; owner/admin) and **Due this week** (your timesheets, approvals, phase end dates, invoices due), built from Release 1 data only. Payables, Proposals out and the AR/AP chart stay deferred.
+
 ## Purpose
-The page everyone lands on after signing in. In Release 1 it answers four questions with Release 1 data only: *Where is my time this week? Which projects am I on and where are they? Which timesheets wait on me? (owner/admin) What do clients owe us?* Everything else in the mockup is deferred (see Out of scope).
+The page everyone lands on after signing in. In Release 1 it answers these questions with Release 1 data only: *What is due this week? Where is my time this week? Which projects am I on and where are they? Which timesheets wait on me? (owner/admin) How is the firm doing, and what do clients owe us?* Everything else in the mockup is deferred (see Out of scope).
 
 ## Who can see it
 | Role | Access |
 |---|---|
-| Owner | All four widgets. "Mine / All firm" toggle. Billed % and hours bar on every card. |
+| Owner | Every widget, including Firm health and invoice rows in Due this week. "Mine / All firm" toggle. Billed % and hours bar on every card. |
 | Admin | Same as Owner. |
-| Project manager | Your time, My projects. Billed % only on projects where they are PM. Hours bar on every card. |
-| Staff | Your time, My projects. Hours bar on every card. No billed %. |
+| Project manager | Due this week (no invoices), Your time, My projects. Billed % only on projects where they are PM. Hours bar on every card. |
+| Staff | Due this week (no invoices), Your time, My projects. Hours bar on every card. No billed %. |
 | Any approver | **Waiting on you** card for anyone who can open the Approvals tab (`approvalAccess().canOpen`): owner/admin, principals, team leaders, people named on the review route, and anyone a sheet waits on. Role does not matter. |
 | Client (portal) | None. |
 
@@ -28,7 +30,7 @@ The page everyone lands on after signing in. In Release 1 it answers four questi
    - Eyebrow (mono, uppercase via CSS): "{Weekday}, {Month} {D}, {YYYY} · {n} active projects". Example: "SUNDAY, OCTOBER 18, 2026 · 10 ACTIVE PROJECTS".
    - H1: "Good {morning|afternoon|evening}, {first name}".
    - Actions: `Log time` (secondary, clock icon → `/app/time`), `New project` (primary → `/app/projects/new`, owner/admin/PM only). The mockup's `New document` button is not rendered.
-   - The mockup's "Firm health" KPI strip is **not** rendered in R1.
+   - **Firm health** strip (owner/admin only), under a thin rule: section label "Firm health" + lock icon and "Owners and admins only", then 4 header KPI tiles (`HeaderKpis` style), each a link (rule 12): **Receivables** → `/app/invoices`; **Unbilled work** → `/app/invoices`; **Utilization** → `/app/team`; **Not submitted** → `/app/time/approvals/week/{week}`. The mockup's Payables and Proposals out tiles are not rendered.
 2. **My projects** section (full width): `SectionHeader` "My projects", owner/admin `SegmentedFilter` Mine | All firm, link "All projects" → `/app/projects`. Below: a horizontally scrolling **phase board** with one read-only column per phase (rule 6). Grid `grid-auto-columns: minmax(176px, 1fr)`, column bg `#E6E6E6`, min-height 150px. Column header = phase name (uppercase via CSS) + count (mono). `ProjectCard`s inside (white, 1px `#DCDCDC` border):
    - project name (600 weight), link to `/app/projects/<id>`
    - grey line "{scope kind} · {project_type}", or only `project_type` when `scope_kind` is empty. Example: "Tenant upfit · Medical".
@@ -39,8 +41,18 @@ The page everyone lands on after signing in. In Release 1 it answers four questi
    - **billed bar** (5px, fill `#2F5BAA`) + "{n}% billed" (mono), rule 7, only when the viewer can see it
    Cards are links. Cards are **not draggable**.
 3. Two-column row (`flex-wrap`, gap 24px):
-   - **Left column** (`flex: 999 1 460px`), stacked: **Waiting on you** card (approvers only) then **Invoices outstanding** card (owner/admin only). If both are hidden, the left column is not rendered and Your time takes the row at max-width 560px.
-   - **Right column** (`flex: 1 1 400px`): **Your time** card.
+   - **Left column** (`flex: 999 1 460px`), stacked: **Due this week** card (everyone) then **Waiting on you** card (approvers only).
+   - **Right column** (`flex: 1 1 400px`), stacked: **Your time** card then **Invoices outstanding** card (owner/admin only).
+
+### Due this week card
+Header "Due this week", sub "Week of {Mon D}". Up to 8 rows (rule 13), each a link:
+- date column 40px: weekday ("Mon") over the day number when the date is in this week; month ("Aug") over the day number for older, late items
+- chip by source: `Time` (grey), `Projects` (blue), `Invoices` (green)
+- title (500 weight) and a grey detail line
+- red flag with warning icon when late: "{n} days late" or "{n} days past due"
+- chevron
+
+More than 8: footer "+{n} more". Nothing due: green check + "Nothing due this week."
 
 ### Your time card
 Header "Your time", sub "Week of {Mon D}", status pill, link "Open timesheet" → `/app/time/week/{week_start}`. Big number = total hours (26px) + "of {capacity} hours · {b}% billable". Bar chart 116px high: one bar per weekday (Mon–Fri always, Sat/Sun only when they have hours), hours label above each bar, day label under. Under the chart, a one-line status message (rule 3). If last week needs attention, an orange banner above the chart (rule 4).
@@ -78,6 +90,8 @@ Header "Invoices outstanding", link "All invoices" → `/app/invoices`. Big numb
 | Approval rows | rule 5 | |
 | Invoice totals / aging / list | `invoices` with `status in (sent, partially_paid)`, rule 9 | |
 | Invoice client / project | `invoices.client_company_id` → `companies.name`; `invoices.project_id` → `projects.name` | |
+| Firm health tiles | rule 12 | owner/admin only; never in the payload otherwise |
+| Due this week rows | rule 13 | |
 
 ## Actions
 | Action | What happens | Validation | Permission |
@@ -89,6 +103,8 @@ Header "Invoices outstanding", link "All invoices" → `/app/invoices`. Big numb
 | Open timesheet | navigate `/app/time/week/<week_start>` | | all |
 | Click approval row | navigate `/app/time/approvals/<timesheetId>` (approving happens on the approval screen, not here) | | approvers |
 | Click invoice row | navigate `/app/invoices/<id>` | | owner, admin |
+| Click a Firm health tile | navigate to its page (Layout) | | owner, admin |
+| Click a Due this week row | navigate to the row's link (rule 13) | | all |
 
 Home is read-only: no writes, no `activity_log` entries.
 
@@ -112,7 +128,19 @@ Home is read-only: no writes, no `activity_log` entries.
 8. **Hours** (card) = hours logged on the project, drafts included (decision #20, `hoursByPhase()` in `src/server/time/used.ts`), vs Σ `project_phases.budget_hours`. Text "{used} of {budget} h", hours to one decimal place when not whole. Bar capped at 100%; bar fill `#B42318` when used > budget. Budget 0 → no bar, text "{used} h · no budget". Every role sees it (hours are not money).
 9. **Invoices outstanding.** Open = `status in (sent, partially_paid)`. Balance = `balanceCents()`; days past due = `daysPastDue()`; buckets = `agingTotals()` (all in `src/lib/calc/receivables.ts` and `invoice.ts`). Total = Σ balance. "Over 60 days" counts invoices in the `OVER_60` buckets (61–90, 90+). Example: invoice 2026-118, Coastal Credit Union Branch, due 2026-08-17, balance $19,000. On 2026-10-18, d = 62 → in 61–90 and "over 60 days", list flag "62 days past due". Money formatted `$184,250` with `src/lib/format.ts`.
 10. All widget queries run in parallel in the server component. Each widget renders on its own: one failing widget shows its own error, and the others still render.
-11. Invoice data is queried only when the user is owner/admin; for other roles the server never runs or returns it. Billed % is left out of the payload for every card the viewer cannot see it on.
+11. Invoice data and Firm health are queried only when the user is owner/admin (`financials.view`); for other roles the server never runs or returns them. Billed % is left out of the payload for every card the viewer cannot see it on.
+12. **Firm health** (owner/admin). Each tile reuses the calculation of the page it links to, so the numbers match:
+    - **Receivables** = Invoices outstanding's total (rule 9). Note "{n} open invoices · {m} over 60 days".
+    - **Unbilled work** = for every non-archived project, Σ the lines a new invoice would get now, from the invoice builder's own `planDraft()` (`src/lib/calc/invoice-plan.ts`), through `unbilledCents()`: fixed phases bill fee × % complete − billed; hourly and NTE phases bill approved, billable, rated time not on a sent invoice (time reserved on a draft still counts), with the NTE write-down; billed-through consultants by % complete. Note "Time and fees not yet invoiced · {n} projects" (projects with an amount > 0). Expenses are not included until Release 2. Example: DD $1,000 fixed at 50%, nothing billed → $500; 6 approved hours at $150 on an hourly phase → $900; total $1,400 across 2 projects.
+    - **Utilization** = the Team page's 4-week window and rule (`team.md` rule 4) for the whole firm: Σ billable hours ÷ Σ (weekly capacity × 4) of active people with capacity > 0, rounded half-up (`firmUtilization()`). Target = people's targets weighted by capacity, whole %. Value orange when below target. Note "Billable hours, last 4 weeks · target {t}%". Example: 141 h at 40 h (target 85%) + 72 h at 24 h (target 75%) → 213 / 256 = 83%, target 81%. No capacity → "—".
+    - **Not submitted** = the Approvals tab's "Not submitted" KPI (`notSubmittedKpi()`): missing sheets for the most recent week whose due time has passed. Value orange when > 0. Note "Timesheets · Week of {Mon D}".
+13. **Due this week** (everyone). Week = the week containing today. Items due on or before the week's last day, for this viewer only:
+    - **Your timesheets** (chip Time): last week's and this week's sheet when missing, `draft` or `rejected` and its due date (`dueDate()`) is on or before the week's end. Title "Submit timesheet" ("Submit returned timesheet" when returned), detail "Week of {Mon D}", link to that week. Late (due date before today): "{n} days late".
+    - **Approvals** (chip Time): one row "Approve {n} timesheets" dated today, when the viewer can open the Approvals tab and `queueCount()` > 0. Link `/app/time/approvals`.
+    - **Phases** (chip Projects): phases with `status in (current, upcoming)` and `end_date` on or before the week's end, on `active` projects where the viewer is principal, PM or on the team (rule 1's "Mine", for every role). Title "{phase name} ends", detail project name, link to the project. Late: "{n} days late".
+    - **Invoices** (chip Invoices, owner/admin only): open invoices due on or before the week's end. Title "Invoice {number} due", detail "{project} · {client}", link to the invoice. Past due: "{n} days past due".
+
+    Sorted by date (late items first), then Time, Projects, Invoices; up to 8 shown (`dueList()`).
 
 ## States
 - **Empty, My projects (Mine):** "No active projects for you." Owner/admin also get the link "Show all firm projects".
@@ -120,6 +148,8 @@ Home is read-only: no writes, no `activity_log` entries.
 - **Empty, Your time:** no timesheet this week → 0 hours, all bars 0 height, status "Not started · due {date}".
 - **Empty, Waiting on you:** green check + "No timesheets to approve."
 - **Empty, Invoices outstanding:** "$0" + "No open invoices."
+- **Empty, Due this week:** green check + "Nothing due this week."
+- **Empty, Firm health:** tiles show "$0", "0%" or "0"; Utilization shows "—" with no capacity.
 - **Loading:** each widget shows its own skeleton (board: 7 grey columns with 2 card skeletons; cards: grey blocks) via `Suspense` per widget. Screen-reader text "Loading {widget}…".
 - **Error:** per-widget inline message "{Widget} not loaded." + `Retry` button (loads the data again).
 - **Permission denied:** n/a. Every signed-in member can view Home; role-restricted widgets are not rendered.
@@ -127,17 +157,15 @@ Home is read-only: no writes, no `activity_log` entries.
 ## Out of scope (for this release)
 | Mockup widget / control | Release | Why |
 |---|---|---|
-| Firm health strip, Receivables tile | 2 | KPI strip ships with Reports/snapshot; R1 shows receivables inside Invoices outstanding |
 | Firm health, Payables tile | 2 | needs `vendor_bills` |
-| Firm health, Unbilled work tile | 2 | needs the snapshot's earned-vs-billed calculation and expenses |
-| Firm health, Utilization tile (firm-wide) | 2 | belongs to Reports; per-person utilization is on Team in R1 |
+| Firm health, expenses in Unbilled work | 2 | needs expenses |
 | Firm health, Proposals out tile | 3 | needs `proposals` (Marketing) |
+| Module chips on Firm health tiles | 2 | the tiles are core features in R1, not modules |
 | Receivables vs. payables chart/table (12 weekly snapshots) | 2 | needs AP data and weekly AR snapshots |
 | Due this week: Build RFIs/submittals | 4 | `rfis`, `submittals` |
 | Due this week: Schedule items (e.g. MEP kickoff) | 3 | `tasks` |
 | Due this week: Marketing proposal follow-ups | 3 | `proposals`, `leads` |
-| Due this week: Accounting invoice follow-ups | 2 | follow-up reminders; R1 shows past-due invoices in Invoices outstanding |
-| Due this week: "Submit timesheet" | 1 (covered) | replaced by Your time status + last-week banner |
+| Due this week: Accounting invoice follow-ups | 2 | follow-up reminders; R1 lists invoices due and past due instead |
 | Drag a card to move a project to another phase | later / open question | phase status changes happen on the Project page in R1 |
 | `New document` button | 2 | `documents` |
 | Top-bar "Search everything" | 2 | global search across modules |
@@ -170,6 +198,13 @@ Home is read-only: no writes, no `activity_log` entries.
 - [ ] Given open invoices of $19,000 (due 2026-08-17) and $11,160 (due 2026-10-30), on 2026-10-18, then total shows "$30,160", "2 open invoices · 1 over 60 days", the 61–90 cell "$19,000", Current "$11,160", and the first list row is 2026-118 flagged "62 days past due".
 - [ ] Given a `paid`, `void`, `draft`, `in_review` or `written_off` invoice, then it is excluded from Invoices outstanding.
 - [ ] Given the invoices query throws, then only the Invoices outstanding card shows "Invoices not loaded." with Retry, and the other widgets render.
+- [ ] Given an owner, then the Firm health strip shows Receivables, Unbilled work, Utilization and Not submitted; given a PM or staff member, then the strip is absent and none of its figures are in the payload.
+- [ ] Given DD ($1,000 fixed) at 50% with nothing billed and 6 approved billable hours at $150 on another project's hourly phase, then Unbilled work shows "$1,400" and "· 2 projects"; non-billable or unapproved hours do not count; time on a sent invoice does not count.
+- [ ] Given people with 141 h of 160 (target 85%) and 72 h of 96 (target 75%), then Utilization shows "83%" and "target 81%".
+- [ ] Given the Approvals tab's Not submitted KPI shows 2 for the week of Nov 2, then the Home tile shows "2" and "Timesheets · Week of Nov 2".
+- [ ] Given today is Thu Oct 15, a PM whose last week's sheet is missing (due Mon Oct 12), one sheet waiting on them, a DD phase on their project that ended Oct 9 and is still current, and a phase on their team project ending Oct 16, then Due this week lists, in order: "Design Development ends" (6 days late), "Submit timesheet" (3 days late), "Approve 1 timesheet", "Phase 2A ends".
+- [ ] Given an owner with an open invoice due this week, then Due this week lists "Invoice {number} due"; given staff or a PM, then no invoice rows appear.
+- [ ] Given more than 8 items, then 8 rows show and the footer reads "+{n} more"; given none, then "Nothing due this week."
 - [ ] Given a user of firm B, then no projects, timesheets or invoices of firm A appear in any widget.
 
 ## Open questions
@@ -181,3 +216,4 @@ Home is read-only: no writes, no `activity_log` entries.
 6. Should PMs see an "Invoices outstanding" card limited to their own projects?
 7. Should the board also show `pursuit` projects (in a "Pursuit" column) once Marketing (Release 3) exists?
 8. ~~Text rules vs. existing labels~~ Resolved (Blake, 2026-11-13): keep "New project" and "Return" / "Returned". `TEXT_RULES.md` §4 updated.
+9. ~~Firm health and Due this week in R1~~ Resolved (Blake, 2026-11-13): show Receivables, Unbilled work, Utilization and Not submitted; Due this week lists your timesheets, approvals, phase end dates and invoices due.

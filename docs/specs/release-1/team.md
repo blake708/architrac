@@ -47,7 +47,7 @@ The firm's people directory and team structure. Everyone looks people up here; o
 | Rate line | rule 2 → "$115 / h"; bill rate 0 → "Not billable"; none found → "No rate set" (orange) | owner/admin only; stripped server-side otherwise |
 | Team | `memberships.team_id` → `teams.name`; sub-line rule 7 | "No team" if null |
 | Week | `memberships.weekly_capacity_hours` | "40 h", "24 h" |
-| Utilization | rule 4 | "88% / 85%"; "—" when target is 0/null or invited. Until time entries exist (1.6) everyone shows "0% / {target}%" (Blake, 2026-11-02) |
+| Utilization | rule 4 | "88% / 85%"; "—" when target is 0/null or invited. Reads submitted and approved timesheets (wired in 1.10, 2026-11-13; before that everyone showed "0% / {target}%") |
 | Access pill | rule 6 | |
 | Drawer: Email | `users.email` (invited: invite email) | `mailto:` link |
 | Drawer: Phone | **Data model addition needed** (`memberships.phone`) | "—" if empty |
