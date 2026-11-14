@@ -1,10 +1,11 @@
-// Home (home spec, business rules 2–9). Pure functions: the page and the
+// Home (home spec, business rules 2–9, 12–13). Pure functions: the page and the
 // tests share them. Dates are "YYYY-MM-DD" strings; money is in cents.
 
 import { type InvoiceStatus, daysPastDue } from "./invoice";
 import type { PhaseStatus } from "./projects";
 import { type AgingTotal, OVER_60, agingTotals, balanceCents, isOpen, monthDay } from "./receivables";
-import { type TimesheetStatus, isWeekend } from "./timesheet";
+import { type TimesheetStatus, addDays, isWeekend } from "./timesheet";
+import { utilizationPct } from "./utilization";
 
 const utc = (iso: string) => new Date(`${iso}T00:00:00Z`);
 
@@ -235,4 +236,169 @@ export function outstanding(invoices: readonly HomeInvoice[], today: string): Ou
 /** "2 open invoices · 1 over 60 days" */
 export function outstandingLine(o: Pick<Outstanding, "count" | "over60">): string {
   return `${o.count} open ${o.count === 1 ? "invoice" : "invoices"} · ${o.over60} over 60 days`;
+}
+
+// ---------- Firm health (rule 12) ----------
+
+export type FirmUtilizationPerson = { billableHours: number; weeklyCapacityHours: number; targetBp: number | null };
+
+/**
+ * The firm's utilization over the Team page's 4-week window: Σ billable ÷
+ * Σ (capacity × 4), with the same rounding as one person. Target = the
+ * people's targets weighted by capacity, as a whole percent (null if no one
+ * has one). People with no capacity don't count.
+ */
+export function firmUtilization(people: readonly FirmUtilizationPerson[]): { pct: number | null; targetPct: number | null } {
+  const counted = people.filter((p) => p.weeklyCapacityHours > 0);
+  const capacity = counted.reduce((n, p) => n + p.weeklyCapacityHours, 0);
+  const pct = utilizationPct(
+    counted.reduce((n, p) => n + p.billableHours, 0),
+    capacity,
+  );
+  const targeted = counted.filter((p) => p.targetBp);
+  const targetCapacity = targeted.reduce((n, p) => n + p.weeklyCapacityHours, 0);
+  const targetPct = targetCapacity
+    ? Math.round(targeted.reduce((n, p) => n + p.weeklyCapacityHours * (p.targetBp ?? 0), 0) / targetCapacity / 100)
+    : null;
+  return { pct, targetPct };
+}
+
+/** "Billable hours, last 4 weeks · target 75%" */
+export function utilizationNote(targetPct: number | null): string {
+  return targetPct === null ? "Billable hours, last 4 weeks" : `Billable hours, last 4 weeks · target ${targetPct}%`;
+}
+
+/** What a new invoice for the project would bill now: Σ its planned lines (never below 0). */
+export function unbilledCents(plan: { lines: readonly { amountCents: number }[] }): number {
+  return Math.max(0, plan.lines.reduce((n, l) => n + l.amountCents, 0));
+}
+
+/** "Time and fees not yet invoiced · 4 projects" */
+export function unbilledNote(projects: number): string {
+  return projects === 0
+    ? "Time and fees not yet invoiced"
+    : `Time and fees not yet invoiced · ${projects} ${projects === 1 ? "project" : "projects"}`;
+}
+
+// ---------- Due this week (rule 13) ----------
+
+export type DueKind = "timesheet" | "approvals" | "phase" | "invoice";
+
+/** The chip on each row. */
+export const DUE_CHIP: Record<DueKind, { label: string; tone: "neutral" | "blue" | "green" }> = {
+  timesheet: { label: "Time", tone: "neutral" },
+  approvals: { label: "Time", tone: "neutral" },
+  phase: { label: "Projects", tone: "blue" },
+  invoice: { label: "Invoices", tone: "green" },
+};
+
+export type DueItem = {
+  key: string;
+  kind: DueKind;
+  date: string;
+  title: string;
+  detail: string;
+  href: string;
+  /** Red flag text, e.g. "5 days late"; "" when not late. */
+  flag: string;
+};
+
+export const DUE_MAX = 8;
+
+const KIND_ORDER: DueKind[] = ["timesheet", "approvals", "phase", "invoice"];
+const days = (n: number) => `${n} ${n === 1 ? "day" : "days"}`;
+
+/** Whole days from `from` to `to`. */
+const daysBetween = (from: string, to: string) => Math.round((utc(to).getTime() - utc(from).getTime()) / 86_400_000);
+
+/** Your timesheets not yet submitted, due on or before the week's end. */
+export function timesheetDue(
+  sheets: readonly { weekStart: string; status: TimesheetStatus | null; dueDate: string }[],
+  weekEnd: string,
+  today: string,
+): DueItem[] {
+  return sheets
+    .filter((s) => (s.status === null || s.status === "draft" || s.status === "rejected") && s.dueDate <= weekEnd)
+    .map((s) => ({
+      key: `timesheet:${s.weekStart}`,
+      kind: "timesheet",
+      date: s.dueDate,
+      title: s.status === "rejected" ? "Submit returned timesheet" : "Submit timesheet",
+      detail: weekOf(s.weekStart),
+      href: `/app/time/week/${s.weekStart}`,
+      flag: s.dueDate < today ? `${days(daysBetween(s.dueDate, today))} late` : "",
+    }));
+}
+
+/** One line for everything in your Approvals queue. */
+export function approvalsDue(count: number, today: string): DueItem[] {
+  if (count <= 0) return [];
+  return [
+    {
+      key: "approvals",
+      kind: "approvals",
+      date: today,
+      title: `Approve ${count} ${count === 1 ? "timesheet" : "timesheets"}`,
+      detail: "Waiting on you",
+      href: "/app/time/approvals",
+      flag: "",
+    },
+  ];
+}
+
+/** Unfinished phases with an end date on or before the week's end. */
+export function phasesDue(
+  phases: readonly { id: string; projectId: string; projectName: string; name: string; status: PhaseStatus; endDate: string | null }[],
+  weekEnd: string,
+  today: string,
+): DueItem[] {
+  return phases.flatMap((p): DueItem[] =>
+    p.endDate && p.endDate <= weekEnd && (p.status === "current" || p.status === "upcoming")
+      ? [
+          {
+            key: `phase:${p.id}`,
+            kind: "phase",
+            date: p.endDate,
+            title: `${p.name} ends`,
+            detail: p.projectName,
+            href: `/app/projects/${p.projectId}`,
+            flag: p.endDate < today ? `${days(daysBetween(p.endDate, today))} late` : "",
+          },
+        ]
+      : [],
+  );
+}
+
+/** Open invoices due on or before the week's end. */
+export function invoicesDue(invoices: readonly HomeInvoice[], weekEnd: string, today: string): DueItem[] {
+  return invoices.flatMap((i): DueItem[] => {
+    if (!isOpen(i.status) || i.dueDate > weekEnd) return [];
+    const d = daysPastDue(today, i.dueDate);
+    return [
+      {
+        key: `invoice:${i.id}`,
+        kind: "invoice",
+        date: i.dueDate,
+        title: i.number ? `Invoice ${i.number} due` : "Invoice due",
+        detail: `${i.projectName} · ${i.clientName}`,
+        href: `/app/invoices/${i.id}`,
+        flag: d > 0 ? `${days(d)} past due` : "",
+      },
+    ];
+  });
+}
+
+/** Oldest first (late items lead), then by kind; up to 8 shown. */
+export function dueList(items: readonly DueItem[]): { items: DueItem[]; more: number } {
+  const sorted = [...items].sort(
+    (a, b) => a.date.localeCompare(b.date) || KIND_ORDER.indexOf(a.kind) - KIND_ORDER.indexOf(b.kind) || a.title.localeCompare(b.title),
+  );
+  return { items: sorted.slice(0, DUE_MAX), more: Math.max(0, sorted.length - DUE_MAX) };
+}
+
+/** The date column: "Mon / 19" in this week, "Sep / 16" outside it. */
+export function dueDay(date: string, weekStart: string): { top: string; day: number } {
+  const inWeek = date >= weekStart && date <= addDays(weekStart, 6);
+  const top = new Intl.DateTimeFormat("en-US", inWeek ? { weekday: "short", timeZone: "UTC" } : { month: "short", timeZone: "UTC" }).format(utc(date));
+  return { top, day: utc(date).getUTCDate() };
 }
